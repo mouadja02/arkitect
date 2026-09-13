@@ -3,17 +3,23 @@
 // built. Structural checks prove a library parses and hashes; they cannot
 // notice that "Cloud Run" is wearing Cloud Scheduler's artwork. That needs eyes.
 //
-//   node contact-sheet.mjs --pack devops           write the HTML sheet
-//   node contact-sheet.mjs --pack devops --png     ...and rasterise it
-//   node contact-sheet.mjs --all --png             every pack worth reviewing
+//   node contact-sheet.mjs --pack devops                   write the HTML sheet
+//   node contact-sheet.mjs --pack devops --png             rasterise it instead
+//   node contact-sheet.mjs --pack devops --png --keep-html ...and keep the HTML
+//   node contact-sheet.mjs --all --png                     every pack worth reviewing
 //
 // The HTML is local and self-contained: every icon is already a data URI in the
 // library, so nothing is fetched while the sheet renders.
+//
+// Chrome needs a profile directory, and a profile holds cookies, history and
+// login data. It lives in a temporary directory that is removed after every
+// shot, pass or fail, so the only thing a PNG run adds to the skill is the PNG.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, mkdtempSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join } from 'node:path';
 import { readLibrary } from './lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +38,9 @@ const CHROME_CANDIDATES = [
   '/usr/bin/google-chrome',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ];
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const CHROME_TIMEOUT = 120000;
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -64,63 +73,115 @@ function findChrome() {
   return null;
 }
 
-function rasterise(htmlPath, pngPath, height) {
-  const chrome = findChrome();
-  if (!chrome) {
-    console.log('    (no Chrome found - open the HTML yourself to review it)');
-    return false;
-  }
-  const tmp = join(SHEET_DIR, '.shot');
-  mkdirSync(tmp, { recursive: true });
-  execFileSync(chrome, [
-    '--headless', '--disable-gpu', '--hide-scrollbars',
-    `--screenshot=${pngPath}`,
-    `--window-size=1600,${Math.min(height, 30000)}`,
-    `--user-data-dir=${tmp}`,
-    `file:///${htmlPath.replace(/\\/g, '/')}`,
-  ], { stdio: 'pipe', timeout: 120000 });
-  return existsSync(pngPath);
+const runChrome = (exe, args) => execFileSync(exe, args, { stdio: 'pipe', timeout: CHROME_TIMEOUT });
+
+// Older versions kept Chrome's profile here. Nothing uses it now; say so, but
+// never delete a directory this run did not create.
+export function staleProfile(sheetDir = SHEET_DIR) {
+  const legacy = join(sheetDir, '.shot');
+  return existsSync(legacy) ? legacy : null;
 }
 
-function build(packId, { png = false } = {}) {
+// Screenshot the sheet into a scratch directory and copy it over `pngPath` only
+// once it is a real PNG. A crash, a timeout or an empty screenshot leaves the
+// previous sheet exactly as it was, and can never pass for a fresh one.
+export function rasterise(html, pngPath, height, { chrome, runner = runChrome } = {}) {
+  const work = mkdtempSync(join(tmpdir(), 'arkitect-sheet-'));
+  try {
+    const htmlPath = join(work, 'sheet.html');
+    const shot = join(work, 'sheet.png');
+    writeFileSync(htmlPath, html);
+    try {
+      runner(chrome, [
+        '--headless', '--disable-gpu', '--hide-scrollbars',
+        `--screenshot=${shot}`,
+        `--window-size=1600,${Math.min(height, 30000)}`,
+        `--user-data-dir=${join(work, 'profile')}`,
+        pathToFileURL(htmlPath).href,
+      ]);
+    } catch (error) {
+      const timedOut = error.code === 'ETIMEDOUT' || error.signal === 'SIGTERM';
+      return { ok: false, error: timedOut ? `Chrome timed out after ${CHROME_TIMEOUT / 1000}s` : `Chrome failed: ${String(error.message).split('\n')[0]}` };
+    }
+    if (!existsSync(shot)) return { ok: false, error: 'Chrome exited without writing a screenshot' };
+    const bytes = readFileSync(shot);
+    if (bytes.length <= PNG_SIGNATURE.length || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+      return { ok: false, error: 'the screenshot is empty or not a PNG' };
+    }
+    copyFileSync(shot, pngPath);
+    return { ok: true };
+  } finally {
+    // Chrome's helpers can hold the profile open for a moment after it exits.
+    rmSync(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
+}
+
+export function build(packId, { png = false, keepHtml = false, sheetDir = SHEET_DIR, chrome = findChrome(), runner } = {}) {
   const catalog = JSON.parse(readFileSync(CATALOG_FILE, 'utf8'));
   const pack = catalog.packs.find((p) => p.id === packId);
   if (!pack) throw new Error(`no pack "${packId}" in the catalog`);
 
   const entries = readLibrary(join(LIB_DIR, pack.file));
-  mkdirSync(SHEET_DIR, { recursive: true });
-  const htmlPath = join(SHEET_DIR, `${packId}.html`);
-  writeFileSync(htmlPath, sheetHtml(pack, entries));
+  const html = sheetHtml(pack, entries);
+  mkdirSync(sheetDir, { recursive: true });
+  const result = { pack, count: entries.length, htmlPath: null, pngPath: null, error: null, note: null };
+  const writeHtml = () => { result.htmlPath = join(sheetDir, `${packId}.html`); writeFileSync(result.htmlPath, html); };
+
+  // Without --png the HTML is what was asked for.
+  if (!png) { writeHtml(); return result; }
+  if (!chrome) {
+    writeHtml();
+    result.note = 'no Chrome found - open the HTML yourself to review it';
+    return result;
+  }
 
   // 12 across, ~104px per row, plus the header.
   const height = 140 + Math.ceil(entries.length / 12) * 104;
-  let pngPath = null;
-  if (png) {
-    pngPath = join(SHEET_DIR, `${packId}.png`);
-    if (!rasterise(htmlPath, pngPath, height)) pngPath = null;
-  }
-  return { pack, count: entries.length, htmlPath, pngPath };
+  const pngPath = join(sheetDir, `${packId}.png`);
+  const shot = rasterise(html, pngPath, height, { chrome, runner });
+  if (shot.ok) result.pngPath = pngPath;
+  else result.error = shot.error;
+  if (keepHtml) writeHtml();
+  return result;
 }
 
 function main(argv) {
   const png = argv.includes('--png');
+  const keepHtml = argv.includes('--keep-html');
   const catalog = JSON.parse(readFileSync(CATALOG_FILE, 'utf8'));
   const ids = argv.includes('--all')
     ? catalog.packs.map((p) => p.id).filter((id) => !SKIP.has(id))
     : [argv[argv.indexOf('--pack') + 1]].filter(Boolean);
 
   if (!ids.length) {
-    console.error('usage: contact-sheet.mjs (--pack <id> | --all) [--png]');
+    console.error('usage: contact-sheet.mjs (--pack <id> | --all) [--png [--keep-html]]');
     process.exit(2);
   }
 
+  const stale = staleProfile();
+  if (stale) {
+    console.warn(`warning: ${stale} is a Chrome profile (cookies, history, login data) left by an older\n`
+      + '         contact-sheet.mjs. Nothing uses it any more - delete it.\n');
+  }
+
+  let failed = 0;
   for (const id of ids) {
-    const r = build(id, { png });
-    console.log(`  ${id.padEnd(26)} ${String(r.count).padStart(5)} icons  -> `
-      + `${r.pngPath ? 'contact-sheets/' + id + '.png' : 'contact-sheets/' + id + '.html'}`);
+    const r = build(id, { png, keepHtml });
+    const head = `  ${id.padEnd(26)} ${String(r.count).padStart(5)} icons  -> `;
+    if (r.error) {
+      failed++;
+      console.log(`${head}FAILED: ${r.error}`);
+      continue;
+    }
+    const wrote = [r.pngPath, r.htmlPath].filter(Boolean).map((p) => `contact-sheets/${basename(p)}`);
+    console.log(`${head}${wrote.join(' + ')}${r.note ? `  (${r.note})` : ''}`);
   }
   if (SKIP.size && argv.includes('--all')) {
     console.log(`\nskipped: ${[...SKIP].join(', ')} (catch-all packs, see sources.json for the pin)`);
+  }
+  if (failed) {
+    console.error(`\n${failed} sheet${failed === 1 ? '' : 's'} failed; the existing PNG for each is unchanged.`);
+    process.exit(1);
   }
 }
 

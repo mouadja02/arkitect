@@ -156,6 +156,14 @@ Structural checks cannot notice that "Cloud Run" is wearing Cloud Scheduler's ar
 Contact sheets can. Every pack is rendered as a labelled grid and committed as a PNG in
 `assets/libraries/contact-sheets/`, so a reviewer can look rather than trust.
 
+`contact-sheet.mjs --png` runs headless Chrome with a throwaway profile in the system
+temp directory and removes it afterwards, whether the shot worked or not. The only file
+it adds is `<pack>.png`, and only once the screenshot is a real PNG; a failed pack is
+reported as `FAILED` and keeps its previous sheet. Add `--keep-html` to keep the page
+it rendered; without `--png` that HTML is the output. Older versions left the profile
+(cookies, history, login data) in `contact-sheets/.shot/` — if you have that
+directory, delete it.
+
 ## Coverage, honestly
 
 Across the five reference diagrams, only 20 of 97 embedded image placements — 9 distinct

@@ -1016,6 +1016,80 @@ test('every generated pack renders as a parseable SVG', () => {
   }
 });
 
+// ------------------------------------------------------------- contact sheets
+
+const sheets = await import(`file://${join(SCRIPTS, 'contact-sheet.mjs').replace(/\\/g, '/')}`);
+const PNG_BYTES = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from('fake shot')]);
+
+// Stands in for Chrome: fills the profile it was handed with the kind of files
+// a real one leaves, then does whatever `shoot` says with the screenshot path.
+function fakeChrome(calls, shoot) {
+  const flag = (args, name) => args.find((a) => a.startsWith(`--${name}=`)).slice(name.length + 3);
+  return (exe, args) => {
+    const call = { profile: flag(args, 'user-data-dir'), shot: flag(args, 'screenshot'), html: fileURLToPath(args.at(-1)) };
+    calls.push(call);
+    assert(existsSync(call.html), 'the sheet HTML exists while Chrome runs');
+    mkdirSync(call.profile, { recursive: true });
+    for (const f of ['Cookies', 'History', 'Login Data']) writeFileSync(join(call.profile, f), 'private');
+    shoot(call.shot);
+  };
+}
+
+test('a contact sheet leaves only its PNG, and a failed shot keeps the old one (#44)', () => {
+  const sheetDir = join(TMP, 'contact-sheets');
+  mkdirSync(sheetDir, { recursive: true });
+  const committed = join(sheetDir, 'file-types.png');
+  const listing = () => readdirSync(sheetDir).sort().join(',');
+  writeFileSync(committed, 'committed sheet');
+  const before = listing();
+
+  const calls = [];
+  const ok = sheets.build('file-types', { png: true, sheetDir, chrome: 'chrome', runner: fakeChrome(calls, (shot) => writeFileSync(shot, PNG_BYTES)) });
+  assert(ok.pngPath === committed && !ok.error && !ok.htmlPath, 'reports the PNG and no HTML');
+  assert(readFileSync(committed).equals(PNG_BYTES), 'the new screenshot replaced the sheet');
+  assert(!calls[0].profile.startsWith(ROOT) && !calls[0].html.startsWith(ROOT), 'profile and HTML live outside the repository');
+  assert(!existsSync(dirname(calls[0].profile)), 'the scratch directory is removed');
+  eq(listing(), before, 'nothing new beside the PNG');
+
+  const failures = [
+    ['Chrome crashes', (shot) => { throw new Error('boom'); }, /Chrome failed: boom/],
+    ['Chrome times out', () => { throw Object.assign(new Error('spawnSync chrome ETIMEDOUT'), { code: 'ETIMEDOUT' }); }, /timed out/],
+    ['no screenshot', () => {}, /without writing/],
+    ['an empty screenshot', (shot) => writeFileSync(shot, ''), /not a PNG/],
+    ['a screenshot that is not a PNG', (shot) => writeFileSync(shot, '<svg/>'), /not a PNG/],
+  ];
+  for (const [why, shoot, message] of failures) {
+    writeFileSync(committed, 'committed sheet');
+    const r = sheets.build('file-types', { png: true, sheetDir, chrome: 'chrome', runner: fakeChrome(calls, shoot) });
+    assert(r.error && message.test(r.error) && !r.pngPath, `${why}: reported as "${r.error}"`);
+    eq(readFileSync(committed, 'utf8'), 'committed sheet', `${why}: the previous sheet is untouched`);
+    assert(!existsSync(dirname(calls.at(-1).profile)), `${why}: the scratch profile is removed`);
+    eq(listing(), before, `${why}: nothing left beside the sheet`);
+  }
+});
+
+test('the sheet HTML stays only when it is the output or --keep-html asks for it (#44)', () => {
+  const sheetDir = join(TMP, 'contact-sheets-html');
+  const html = join(sheetDir, 'file-types.html');
+  const never = () => { throw new Error('Chrome must not run'); };
+
+  const plain = sheets.build('file-types', { sheetDir, chrome: 'chrome', runner: never });
+  assert(plain.htmlPath === html && existsSync(html) && !plain.pngPath, 'without --png the HTML is the sheet');
+  rmSync(html);
+
+  const kept = sheets.build('file-types', { png: true, keepHtml: true, sheetDir, chrome: 'chrome', runner: fakeChrome([], (shot) => writeFileSync(shot, PNG_BYTES)) });
+  assert(kept.pngPath && kept.htmlPath === html && existsSync(html), '--keep-html keeps it beside the PNG');
+  rmSync(html);
+
+  const noChrome = sheets.build('file-types', { png: true, sheetDir, chrome: null, runner: never });
+  assert(noChrome.htmlPath === html && existsSync(html) && !noChrome.error && /no Chrome/.test(noChrome.note), 'no Chrome falls back to the HTML');
+
+  eq(sheets.staleProfile(sheetDir), null, 'no legacy profile reported when there is none');
+  mkdirSync(join(sheetDir, '.shot'));
+  eq(sheets.staleProfile(sheetDir), join(sheetDir, '.shot'), 'a legacy profile is reported');
+  assert(existsSync(join(sheetDir, '.shot')), 'and never deleted');
+});
+
 // ------------------------------------------------------------- generation
 
 const SPEC = join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json');
