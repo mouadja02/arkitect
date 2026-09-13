@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { readLibrary, titleAliases } from './lib/drawio-core.mjs';
 import {
-  sha256, download, readZip, readTgz, splitSvg, viewBoxOf, paintMark, conceptTile,
+  sha256, download, readZip, readTgz, sizedSvg, tintUnpaintedMark, paintMark, conceptTile,
   fileSheet, dataUri, writeLibrary, prettyTitle, slugify, aliasSet, withPlurals, withShortName,
   normalise, pngSize, downscalePng,
 } from './lib/icon-build.mjs';
@@ -39,6 +39,8 @@ export const MANIFEST_FILE = join(LIB_DIR, 'sources.json');
 export const CATALOG_FILE = join(REF_DIR, 'icon-catalog.json');
 
 const ICON_SIZE = 78; // the AWS palette's service-icon footprint; keeps packs interchangeable
+// Renders where the builder chose the colour, so the catalog row records it.
+const PAINTED = new Set(['tinted', 'tile-bright']);
 
 export const loadManifest = () => JSON.parse(readFileSync(MANIFEST_FILE, 'utf8'));
 
@@ -237,19 +239,26 @@ async function buildBrandEntries(icons, manifest, cache) {
       const opened = await openSource('devicon', manifest, cache);
       const path = `icons/${icon.deviconName}/${icon.deviconName}-${icon.deviconVariant}.svg`;
       const svgText = readText(opened, path);
-      // devicon ships full-colour artwork; only the canvas size is normalised.
-      // The root is rebuilt for that, but every namespace it declares must come
-      // along: gRPC and Memcached paint gradients through xlink:href, and an
-      // undeclared prefix makes the whole SVG unparseable - it never renders.
-      const { attrs, inner } = splitSvg(svgText);
-      const [x, y, w, h] = viewBoxOf(svgText);
-      const namespaces = [...attrs.matchAll(/\sxmlns:[\w.-]+\s*=\s*"[^"]*"/g)].map((m) => m[0]).join('');
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg"${namespaces} width="64" height="64" `
-        + `viewBox="${x} ${y} ${w} ${h}">${inner}</svg>`;
+      // A devicon `original` is full-colour artwork and ships verbatim, only
+      // resized. A mark with no paint of its own is flagged `"paint": "tint"`
+      // in sources.json and filled with its brand colour (#31): a recorded
+      // decision per icon, never inferred from the variant's name.
+      if (icon.paint !== undefined && icon.paint !== 'tint') {
+        throw new Error(`${icon.slug}: unknown paint "${icon.paint}" (the only one is "tint")`);
+      }
+      let painted;
+      try {
+        painted = icon.paint === 'tint'
+          ? tintUnpaintedMark(svgText, icon.hex)
+          : { svg: sizedSvg(svgText), render: 'verbatim-colour' };
+      } catch (error) {
+        throw new Error(`${icon.slug} (${path}): ${error.message}`);
+      }
       out.push({
-        slug: icon.slug, title: icon.title, svg,
+        slug: icon.slug, title: icon.title, svg: painted.svg,
         aliases: withShortName(icon.aliases, icon.title),
-        source: icon.source, upstreamId: path, render: 'verbatim-colour',
+        source: icon.source, upstreamId: path, render: painted.render,
+        ...(painted.render === 'tinted' ? { hex: icon.hex } : {}),
       });
       continue;
     }
@@ -410,6 +419,8 @@ async function buildPack(pack, manifest, cache, claimed) {
       upstreamId: e.upstreamId,
       licence: licenceOf(e.source, manifest),
       render: e.render,
+      // The colour the builder painted, whichever package the mark came from (#31).
+      ...(PAINTED.has(e.render) ? { hex: e.hex } : {}),
       mime: e.mime ?? 'image/svg+xml',
       width: e.width ?? ICON_SIZE,
       height: e.height ?? ICON_SIZE,

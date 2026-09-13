@@ -27,7 +27,7 @@ One file per pack in `skills/arkitect-drawio/assets/libraries/`, one row per pac
 | Tier | Packs | Where the artwork comes from |
 |---|---|---|
 | Vendor | `aws` `azure` `gcp` | The vendors' own published icon sets, embedded verbatim |
-| Curated | `data-platforms` `databases` `ai-frameworks` `ml-training` `streaming-orchestration` `observability` `devops` `security-identity` `github` `saas-collab` `languages-runtimes` | Simple Icons and devicon, painted in the brand's own colour |
+| Curated | `data-platforms` `databases` `ai-frameworks` `ml-training` `streaming-orchestration` `observability` `devops` `security-identity` `github` `saas-collab` `languages-runtimes` | Simple Icons painted in the brand's own colour; devicon's full-colour marks verbatim, and a devicon mark with no paint of its own tinted where `sources.json` says `"paint": "tint"` |
 | Generated | `agents` `primitives` `file-types` | Lucide and Octicon glyphs composed into tiles and document sheets |
 | Catch-all | `brands` | Every remaining Simple Icons mark, ranked last |
 
