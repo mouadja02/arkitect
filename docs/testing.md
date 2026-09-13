@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `194 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `201 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -87,7 +87,7 @@ artwork audit (#18/#33).
 | Hand-drawn stroke | deterministic per seed; roughness 0 draws straight |
 | Icons | tracing preserves holes; `--outline` drops fills; raster embedding; tracing a raster refused; overwrite needs `--force`; the house library stays in sync; removal is complete |
 | Icon resolution | a name that only appears inside a different product (`postgres`, `grafana`, `queue`) becomes a placeholder with a reason; the 359-query answer key in `tests/excalidraw-icon-queries.json` draws no different product unattended, and draws at least 80% of its drawable answers |
-| Rendering | the SVG covers the whole scene and is stable across runs |
+| Rendering | the SVG covers the whole scene and is stable across runs; `render` takes its format from the `--out` extension or `--out-dir` + `--format`, refuses another extension, a directory given to `--out`, both flags, a contradicting `--format`, a malformed `--scale`, `--padding`, `--width`, `--style` or `--background`, and PNG-only flags on an SVG, exiting 2 with nothing written; with a stand-in browser a PNG render writes real PNG bytes at the requested width, reports its format, size and browser, and removes its profile, while a crash, a timeout, no screenshot, a non-PNG or an empty one exits 1 and leaves the previous preview byte-identical; no browser, or an unusable `ARKITECT_BROWSER` pin, exits 1 naming what was tried; discovery covers Edge, Chrome and Chromium on Windows, macOS and Linux, PATH first; a snap Chromium, directly or behind Ubuntu's `chromium-browser` wrapper, works in `~/snap/chromium/common` and leaves nothing there; where a browser is installed, a real one renders a real 600px PNG (#39) |
 | Shipped knowledge | the record claims no evidence it lacks; the style guide says out loud which rules are defaults |
 | Docker | the compose file pins the official image and publishes container port 80 |
 | Templates | both committed examples are valid and match what their specs build, compared element by element through a projection that keeps type, geometry, points, stroke, fill, font, text, bindings by position and embedded file hashes and drops ids, seeds, nonces, timestamps and index keys; the failure names the first differing element and field; the projection is proven blind to reissued ids and to see a caption moved 4px and a changed embedded file (#50) |

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Render a .excalidraw scene to a standalone SVG so the diagram can actually be
-// looked at without opening the app.
+// Render a .excalidraw scene to SVG, or to PNG with a local Edge, Chrome or
+// Chromium, so the diagram can actually be looked at without opening the app.
 //
-//   node render-excalidraw.mjs scene.excalidraw --out preview.svg
+//   node render-excalidraw.mjs scene.excalidraw                          scene.svg beside it
 //   node render-excalidraw.mjs scene.excalidraw --out preview.svg --style clean
-//   node render-excalidraw.mjs scene.excalidraw --out preview.svg --scale 2
+//   node render-excalidraw.mjs scene.excalidraw --out preview.png --width 2200
+//   node render-excalidraw.mjs scene.excalidraw --out-dir .analysis/renders   scene.png
 //
 // --style rough (default) reproduces the hand-drawn stroke; --style clean draws
 // exact geometry, which is the better choice when the question is whether the
@@ -12,8 +13,10 @@
 // hand-drawn fonts are not installed here and fills are flat. Open the scene in
 // the local container when exact appearance matters.
 
-import { writeFileSync } from 'node:fs';
-import { readScene, elementBox, bbox, LINE_HEIGHT, positionals } from './lib/excalidraw-core.mjs';
+import { writeFileSync, statSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { basename, dirname, extname, join } from 'node:path';
+import { readScene, elementBox, bbox, LINE_HEIGHT } from './lib/excalidraw-core.mjs';
+import { locateBrowser, rasteriseSvg, workRootFor } from './lib/browser.mjs';
 import { roughPath, roughRect, roughDiamond, roughEllipse, roundedRectPath, adaptiveRadius } from './lib/rough.mjs';
 
 const FONT_STACK = {
@@ -253,34 +256,163 @@ export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', ba
 `;
 }
 
-function main(argv) {
-  const positional = positionals(argv, ['--out', '--padding', '--scale', '--style', '--background']);
-  const flag = (n) => { const i = argv.indexOf(n); return i === -1 ? null : argv[i + 1]; };
-  const src = positional[0];
-  const out = flag('--out') ?? (src ? src.replace(/\.excalidraw$/, '') + '.svg' : null);
-  if (!src) {
-    console.error('usage: render-excalidraw.mjs <scene.excalidraw> [--out preview.svg] [--style rough|clean] [--scale N] [--padding N]');
-    process.exit(2);
+export const RENDER_USAGE = `usage: render-excalidraw.mjs <scene.excalidraw> [--out FILE.svg|FILE.png | --out-dir DIR [--format png|svg]]
+  [--style rough|clean] [--scale N] [--padding PX] [--background COLOUR] [--width PX] [--browser PATH] [--no-sandbox]
+With no output flag it writes <scene>.svg beside the scene; --out-dir writes PNG unless --format svg.
+A PNG needs a local Edge, Chrome or Chromium (--browser or ARKITECT_BROWSER pins one) and is --width px wide (default 2200).
+--no-sandbox is opt-in, for a Linux host where Chromium cannot start its sandbox.`;
+
+export class RenderUsageError extends Error {}
+
+const VALUE_FLAGS = ['--out', '--out-dir', '--format', '--style', '--scale', '--padding', '--background', '--width', '--browser'];
+const isDirectory = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
+
+// Every flag is checked before anything is drawn or written (#39). The --out
+// extension decides the format; a directory belongs to --out-dir.
+export function parseRenderArgs(argv) {
+  const given = {};
+  const files = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '-h' || arg === '--help') return { help: true };
+    if (arg === '--no-sandbox') { given.noSandbox = true; continue; }
+    if (VALUE_FLAGS.includes(arg)) {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--')) throw new RenderUsageError(`${arg} needs a value`);
+      if (Object.hasOwn(given, arg)) throw new RenderUsageError(`${arg} given twice`);
+      given[arg] = value;
+      continue;
+    }
+    if (arg.startsWith('-') && arg.length > 1) throw new RenderUsageError(`unknown option ${arg}`);
+    files.push(arg);
+  }
+  if (files.length !== 1) throw new RenderUsageError(files.length ? `expected one scene, got ${files.length}` : 'expected a .excalidraw scene');
+  const [scene] = files;
+
+  const numberFlag = (flag, fallback, ok, expected) => {
+    const raw = given[flag];
+    if (raw === undefined) return fallback;
+    const n = /^\d+(\.\d+)?$/.test(raw) ? Number(raw) : NaN;
+    if (!ok(n)) throw new RenderUsageError(`${flag} expects ${expected}, got ${raw}`);
+    return n;
+  };
+  const scale = numberFlag('--scale', 1, (n) => n > 0, 'a positive number');
+  const padding = numberFlag('--padding', 40, (n) => n >= 0, 'a non-negative number');
+  const width = numberFlag('--width', 2200, (n) => Number.isInteger(n) && n >= 1 && n <= 16000, 'a whole number of pixels from 1 to 16000');
+  const style = given['--style'] ?? 'rough';
+  if (style !== 'rough' && style !== 'clean') throw new RenderUsageError(`--style expects rough or clean, got ${style}`);
+  const background = given['--background'] ?? null;
+  if (background !== null && !/^[#\w(),.% -]+$/.test(background)) {
+    throw new RenderUsageError(`--background expects a colour such as #ffffff or white, got ${background}`);
+  }
+  const format = given['--format'];
+  if (format !== undefined && format !== 'png' && format !== 'svg') throw new RenderUsageError(`--format expects png or svg, got ${format}`);
+
+  const out = given['--out'];
+  const outDir = given['--out-dir'];
+  if (out !== undefined && outDir !== undefined) throw new RenderUsageError('use --out FILE or --out-dir DIR, not both');
+  let target;
+  let kind;
+  if (out !== undefined) {
+    if (/[\\/]$/.test(out) || isDirectory(out)) {
+      throw new RenderUsageError(`--out ${out} is a directory; use --out-dir ${out.replace(/[\\/]+$/, '')}`);
+    }
+    const ext = extname(out).toLowerCase();
+    if (ext !== '.svg' && ext !== '.png') {
+      throw new RenderUsageError(`--out must end in .svg or .png, got ${ext ? `"${ext}"` : 'no extension'}; use --out-dir DIR for a directory`);
+    }
+    kind = ext.slice(1);
+    if (format !== undefined && format !== kind) throw new RenderUsageError(`--format ${format} contradicts --out ${out}`);
+    target = out;
+  } else {
+    kind = format ?? (outDir !== undefined ? 'png' : 'svg');
+    target = join(outDir ?? dirname(scene), `${basename(scene).replace(/\.excalidraw$/i, '')}.${kind}`);
+  }
+  if (kind === 'svg') {
+    for (const flag of ['--width', '--browser']) {
+      if (given[flag] !== undefined) throw new RenderUsageError(`${flag} only applies to PNG output`);
+    }
+    if (given.noSandbox) throw new RenderUsageError('--no-sandbox only applies to PNG output');
+  }
+  return { scene, out: target, format: kind, style, scale, padding, width, background, browser: given['--browser'], noSandbox: Boolean(given.noSandbox) };
+}
+
+// Exit 0 written, 1 when the PNG could not be made (nothing replaced), 2 on a
+// usage error or an unreadable scene. The dependencies stand in for the
+// browser in the tests.
+export function run(argv, { log = console.log, error = console.error, platform = process.platform, env = process.env, isExecutable, runner } = {}) {
+  let options;
+  try {
+    options = parseRenderArgs(argv);
+  } catch (e) {
+    if (!(e instanceof RenderUsageError)) throw e;
+    error(`${e.message}\n${RENDER_USAGE}`);
+    return 2;
+  }
+  if (options.help) { log(RENDER_USAGE); return 0; }
+
+  let scene;
+  try {
+    scene = readScene(options.scene);
+  } catch (e) {
+    error(e.code === 'ENOENT' ? `no scene at ${options.scene}` : e instanceof SyntaxError ? `${options.scene} is not valid JSON` : e.message);
+    return 2;
   }
 
-  const scene = readScene(src);
-  const svg = sceneToSvg(scene, {
-    padding: flag('--padding') ? Number(flag('--padding')) : 40,
-    scale: flag('--scale') ? Number(flag('--scale')) : 1,
-    style: flag('--style') ?? 'rough',
-    background: flag('--background'),
-  });
-  writeFileSync(out, svg);
+  const svg = sceneToSvg(scene, { padding: options.padding, scale: options.scale, style: options.style, background: options.background });
+  const size = /<svg\b[^>]*?\swidth="([\d.]+)"[^>]*?\sheight="([\d.]+)"/.exec(svg);
+  let bytes = Buffer.from(svg);
+  let dims = { width: Math.ceil(Number(size[1])), height: Math.ceil(Number(size[2])) };
+  let browser = null;
+  if (options.format === 'png') {
+    const found = locateBrowser(options.browser, { platform, env, isExecutable });
+    if (!found.path) {
+      error(`cannot render a PNG: ${found.error}; ${options.out} is unchanged`);
+      if (!found.source) for (const p of found.tried) error(`  tried ${p}`);
+      error('Install Edge, Chrome or Chromium, point --browser or ARKITECT_BROWSER at one, or render with --format svg.');
+      return 1;
+    }
+    try {
+      const shot = rasteriseSvg(svg, {
+        browser: found.path, width: options.width, noSandbox: options.noSandbox, runner,
+        workRoot: workRootFor(found.path, { platform, env }),
+      });
+      bytes = shot.bytes;
+      dims = { width: shot.width, height: shot.height };
+    } catch (e) {
+      const hint = platform === 'linux' && !options.noSandbox ? ' On Linux, a browser that cannot start its sandbox needs --no-sandbox.' : '';
+      error(`PNG render failed with ${found.path}: ${e.message}. ${options.out} is unchanged.${hint}`);
+      return 1;
+    }
+    browser = { path: found.path, source: found.source };
+  }
 
-  const view = bbox(scene.elements.filter((e) => !e.isDeleted));
-  console.log(JSON.stringify({
-    wrote: out,
-    bytes: Buffer.byteLength(svg),
-    elements: scene.elements.filter((e) => !e.isDeleted).length,
+  // Only now is the previous preview replaced, and atomically: a crash part-way
+  // through a write never leaves a truncated file under its name.
+  mkdirSync(dirname(options.out), { recursive: true });
+  const temporary = `${options.out}.${process.pid}.tmp`;
+  try {
+    writeFileSync(temporary, bytes);
+    renameSync(temporary, options.out);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+
+  const live = scene.elements.filter((e) => !e.isDeleted);
+  const view = bbox(live);
+  log(JSON.stringify({
+    wrote: options.out,
+    format: options.format,
+    bytes: bytes.length,
+    width: dims.width,
+    height: dims.height,
+    ...(browser ? { browser } : {}),
+    elements: live.length,
     files: Object.keys(scene.files ?? {}).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
     note: 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
   }, null, 2));
+  return 0;
 }
 
-if (process.argv[1] && process.argv[1].endsWith('render-excalidraw.mjs')) main(process.argv.slice(2));
+if (process.argv[1] && process.argv[1].endsWith('render-excalidraw.mjs')) process.exitCode = run(process.argv.slice(2));

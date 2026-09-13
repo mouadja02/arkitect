@@ -27,6 +27,10 @@ jobs:
 
       # There is nothing to install. That is the point.
       - name: Suite
+        # Ubuntu also ships an arbitrary Chromium snapshot whose headless
+        # screenshot hangs. Exercise the installed stable Chrome explicitly.
+        env:
+          ARKITECT_BROWSER: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
         run: node tests/run-tests.mjs
 
       - name: CLI smoke test
@@ -60,6 +64,8 @@ jobs:
           test "$got" = "$want"
 
       - name: Suite
+        env:
+          ARKITECT_BROWSER: /usr/bin/google-chrome
         run: node tests/run-tests.mjs
 
   plugin:

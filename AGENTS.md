@@ -87,7 +87,7 @@ node bin/arkitect.mjs excalidraw icon "postgres"                # native librari
 node bin/arkitect.mjs excalidraw libraries --unnamed
 node bin/arkitect.mjs excalidraw build spec.json --out docs/arch.excalidraw
 node bin/arkitect.mjs excalidraw validate docs/arch.excalidraw
-node bin/arkitect.mjs excalidraw render docs/arch.excalidraw --out .analysis/renders
+node bin/arkitect.mjs excalidraw render docs/arch.excalidraw --out-dir .analysis/renders   # PNG
 ```
 
 Rendering a `.drawio` to PNG uses local Draw.io Desktop on Linux/macOS/Windows:
@@ -105,7 +105,10 @@ platform/version guesses or probing. `--page-index-passthrough` is an explicit
 debugging escape hatch, not the normal rendering path.
 The Windows original `skills/arkitect-drawio/scripts/render-drawio.ps1`
 remains supported unchanged. See `docs/cli.md` for overrides and troubleshooting.
-Excalidraw renders with `arkitect excalidraw render`, no app required.
+Excalidraw renders with `arkitect excalidraw render`, no app required: `--out-dir DIR`
+writes `<name>.png` using a local Edge, Chrome or Chromium (pin one with
+`--browser` or `ARKITECT_BROWSER`), `--out FILE.svg|FILE.png` picks the format
+by extension, and `--format svg` needs no browser at all.
 
 Draw.io generator changes must be built, validated, rendered and visually
 inspected before a PR. Never commit renders; only renders built from committed
