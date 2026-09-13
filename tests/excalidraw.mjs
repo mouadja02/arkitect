@@ -1191,6 +1191,22 @@ test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH
       { browser: '/snap/bin/chromium', width: 1600, workRoot: root, runner: () => { throw new Error('the browser must not start'); } });
   } catch (error) { tooTall = error.message; }
   assert(/past Chromium's 16000px limit; use a smaller --width/.test(tooTall), `an impossible screenshot is refused before the browser starts: ${tooTall}`);
+
+  // A profile a helper will not let go of never fails a render that already has
+  // its PNG; on CI this surfaced as ENOTEMPTY from the cleanup.
+  const kept = browserLib.rasteriseSvg(svg, {
+    browser: '/snap/bin/chromium', width: 300, workRoot: root,
+    runner: (exe, args) => {
+      const shot = args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
+      const png = Buffer.alloc(33);
+      browserLib.PNG_SIGNATURE.copy(png, 0);
+      png.write('IHDR', 12, 'latin1');
+      writeFileSync(shot, png);
+    },
+    remove: () => { const e = new Error("ENOTEMPTY: directory not empty, rmdir 'profile/Default'"); e.code = 'ENOTEMPTY'; throw e; },
+  });
+  assert(kept.bytes.subarray(0, 8).equals(browserLib.PNG_SIGNATURE), 'the PNG is returned even when its work directory will not delete');
+  rmSync(root, { recursive: true, force: true });
 });
 
 // Runs wherever a Chromium-based browser is installed, which includes every CI

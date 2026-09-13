@@ -7,7 +7,7 @@
 // with the PNG signature; Chromium's stderr is not evidence either way.
 
 import { accessSync, constants, statSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, openSync, closeSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -89,18 +89,33 @@ export function workRootFor(browser, { platform = process.platform, env = proces
   return snap ? join(env.HOME, 'snap', name, 'common') : tmpdir();
 }
 
-// The browser's output goes to a file, never a pipe. A piped child only counts
-// as finished once every process holding the pipe has closed it, and
-// Chromium's helpers can outlive the browser holding it open, so the call would
-// return only when the timeout killed it.
+// Chromium leaves helper processes running after the browser exits. On Linux
+// and macOS CI they held an inherited stdout pipe open until the timeout, and
+// then kept writing into the profile while it was being deleted. So the
+// browser's output goes to a file, never a pipe, and on POSIX the browser leads
+// its own process group, which is ended as soon as the browser returns.
 const runBrowser = (exe, args, { timeout, log }) => {
   const fd = openSync(log, 'w');
+  const group = process.platform !== 'win32';
   try {
-    return execFileSync(exe, args, { stdio: ['ignore', fd, fd], timeout });
+    const r = spawnSync(exe, args, { stdio: ['ignore', fd, fd], timeout, detached: group, killSignal: 'SIGKILL', windowsHide: true });
+    if (group && r.pid) {
+      try { process.kill(-r.pid, 'SIGKILL'); } catch { /* the whole group has already exited */ }
+    }
+    if (r.error) throw r.error;
+    if (r.status !== 0) {
+      const error = new Error(`exited with ${r.status ?? r.signal}`);
+      error.status = r.status;
+      error.signal = r.signal;
+      throw error;
+    }
+    return r;
   } finally {
     closeSync(fd);
   }
 };
+
+const removeWork = (dir) => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 
 // The last of what the browser printed, for a failure message.
 const said = (log) => {
@@ -115,7 +130,7 @@ const said = (log) => {
 // Screenshots an SVG document whose root carries its width and height in CSS
 // pixels, `width` pixels wide. Returns the PNG bytes and their dimensions, or
 // throws saying why. `runner` stands in for the browser in the tests.
-export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = runBrowser, timeout = TIMEOUT, workRoot = tmpdir() }) {
+export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = runBrowser, timeout = TIMEOUT, workRoot = tmpdir(), remove = removeWork }) {
   const size = /<svg\b[^>]*?\swidth="([\d.]+)"[^>]*?\sheight="([\d.]+)"/.exec(svg);
   if (!size) throw new Error('the SVG carries no width and height to size the screenshot by');
   const w = Math.max(1, Math.ceil(Number(size[1])));
@@ -141,7 +156,11 @@ export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = 
       + `<img src="${pathToFileURL(svgPath).href}" width="${width}" height="${outH}">`);
     const args = [
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
-      '--disable-crash-reporter', '--force-device-scale-factor=1', `--user-data-dir=${join(work, 'profile')}`,
+      '--disable-crash-reporter', '--force-device-scale-factor=1',
+      // Nothing that waits on the outside world: on macOS CI, Chrome started its
+      // updater and never exited. The same set headless automation tools pass.
+      '--disable-background-networking', '--disable-component-update', '--disable-default-apps', '--disable-sync',
+      '--no-service-autorun', '--password-store=basic', '--use-mock-keychain', `--user-data-dir=${join(work, 'profile')}`,
       `--window-size=${width},${outH}`, `--screenshot=${shot}`,
       ...(noSandbox ? ['--no-sandbox'] : []),
       pathToFileURL(page).href,
@@ -160,7 +179,8 @@ export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = 
     }
     return { bytes, width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
   } finally {
-    // Chromium's helpers can hold the profile open for a moment after it exits.
-    rmSync(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    // Best effort, with retries: a helper slow to let go of the profile must
+    // never turn a screenshot already in hand into a failed render.
+    try { remove(work); } catch { /* nothing more can be done from here */ }
   }
 }
