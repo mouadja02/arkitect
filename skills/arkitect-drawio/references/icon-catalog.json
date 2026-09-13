@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T19:39:00.444Z",
+  "generated": "2026-09-13T19:49:11.427Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "dc9e4c876459452fd93cf2a764d6366034ffc652f5b8df590da873110945697c"
+    "sha256": "16655052ac10dd0d65987ed6ef5e4b1dfa83377edfaec7c4f7673d4e168e8c8e"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -44,6 +44,42 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://www.apache.org/foundation/marks/",
       "archiveSha256": "f81b9016971a364c929b5ae96e70226eb4eeccf0e64837af72ac54bdb6becf94"
+    },
+    "jax-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/jax-ml/jax/blob/adb0562417371429beddf7d575a0753dc957de19/LICENSE",
+      "archiveSha256": "91ce6b62012847f349023f137f7ad498297c92e06876b7f0d0b5c0c9cf55adf3"
+    },
+    "flax-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/google/flax/blob/01854da11286b4109c59d7fd9205f3822fe807d6/LICENSE",
+      "archiveSha256": "464841feb834c68e279043a83943d07242830f7ac3f38d9d5f2f7f75f9a62f76"
+    },
+    "lightgbm-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/lightgbm-org/LightGBM/blob/6d386edf77a363750669ba622b133ca4e794e353/LICENSE",
+      "archiveSha256": "d37f7f80589526a7b3504db35668234adcc5d7c03a94b7a53fdeb22039155655"
+    },
+    "catboost-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/catboost/catboost/blob/bc912d111cd9afc7efb89857e119634049b54e76/LICENSE",
+      "archiveSha256": "2f348300728deffa0ad31d533ddbd1defeaeaedc6e77f3e38e3a9ae29b912225"
+    },
+    "metaflow-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/Netflix/metaflow/blob/72591a0a9e17e8070523cfcdfbdf38e11ee1dba1/LICENSE",
+      "archiveSha256": "a81a2d8a675930016804d1e94b475d2a289a3a9ecc850254d9cec910da97386b"
+    },
+    "signoz-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/SigNoz/signoz/blob/c8e9e362f7ec90578a828d0c39c8db6408abc035/LICENSE",
+      "archiveSha256": "bf700c4998467125a799aa7fd4889c33a0080910b35a9229676f67e44a96310d"
     },
     "lucide": {
       "package": "lucide-static@1.45.0",
@@ -159,9 +195,9 @@
       "description": "Training frameworks, experiment tracking and the numeric stack",
       "rank": 20,
       "file": "ml-training.drawio",
-      "count": 27,
-      "onDemand": 6,
-      "sha256": "ea3defd6a94d1b5bfa78e0facfe33581a3a3364c8a9f47039c240bbc7e4944b0"
+      "count": 32,
+      "onDemand": 10,
+      "sha256": "6e3bb0fcc2645fd776337b66f702723709a7cff9a387d912dcb3e584b87027ef"
     },
     {
       "id": "streaming-orchestration",
@@ -179,9 +215,9 @@
       "description": "Metrics, logs, traces, alerting and incident response",
       "rank": 20,
       "file": "observability.drawio",
-      "count": 26,
+      "count": 27,
       "onDemand": 4,
-      "sha256": "6e57a4594656e270e1b3952f5d2e1c9c35a2c4dcf1475c818a41586783148503"
+      "sha256": "e59f62412762bdce21024e826ef7b57a3633a1ddb01bad33c46f7a0566a0fc0b"
     },
     {
       "id": "devops",
@@ -190,7 +226,7 @@
       "rank": 20,
       "file": "devops.drawio",
       "count": 55,
-      "onDemand": 6,
+      "onDemand": 8,
       "sha256": "c879ee299751ca82abd21c8a52e8e8acd5c3d5c475fab7ed25bb19b2f023fddf"
     },
     {
@@ -200,7 +236,7 @@
       "rank": 20,
       "file": "security-identity.drawio",
       "count": 26,
-      "onDemand": 3,
+      "onDemand": 6,
       "sha256": "03c6e44b7e645f9064faaf1589d3e85c7f3570062343560c03eb0e5ca442602d"
     },
     {
@@ -278,9 +314,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4865,
-    "committed": 4799,
-    "onDemand": 66
+    "total": 4880,
+    "committed": 4805,
+    "onDemand": 75
   },
   "icons": [
     {
@@ -36003,6 +36039,99 @@
       "libraryIndex": 26
     },
     {
+      "id": "ml-training/jax",
+      "pack": "ml-training",
+      "title": "JAX",
+      "aliases": [
+        "jax",
+        "google jax"
+      ],
+      "source": "jax-logo",
+      "upstreamId": "https://raw.githubusercontent.com/jax-ml/jax/adb0562417371429beddf7d575a0753dc957de19/images/jax_logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 451,
+      "height": 261,
+      "sha256": "e54db5895ff7d50cef211ce9bee882eb9b081dd2278facacceabb33a51b41620",
+      "bytes": "committed",
+      "libraryIndex": 27
+    },
+    {
+      "id": "ml-training/flax",
+      "pack": "ml-training",
+      "title": "Flax",
+      "aliases": [
+        "flax"
+      ],
+      "source": "flax-logo",
+      "upstreamId": "https://raw.githubusercontent.com/google/flax/01854da11286b4109c59d7fd9205f3822fe807d6/images/flax_logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 248,
+      "height": 279,
+      "sha256": "b5a8cafc01480a0d278f57f45f2e69f0e04a51bc3b4fc5a157076910c7c9fa63",
+      "bytes": "committed",
+      "libraryIndex": 28
+    },
+    {
+      "id": "ml-training/lightgbm",
+      "pack": "ml-training",
+      "title": "LightGBM",
+      "aliases": [
+        "lightgbm",
+        "light gbm"
+      ],
+      "source": "lightgbm-logo",
+      "upstreamId": "https://raw.githubusercontent.com/lightgbm-org/LightGBM/6d386edf77a363750669ba622b133ca4e794e353/docs/logo/LightGBM_logo_black_text.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 4645,
+      "height": 1052,
+      "sha256": "86cf187bd3d6d837d1c538fd08c02a048a81f83725f447e8d0e481f986048c39",
+      "bytes": "committed",
+      "libraryIndex": 29
+    },
+    {
+      "id": "ml-training/catboost",
+      "pack": "ml-training",
+      "title": "CatBoost",
+      "aliases": [
+        "catboost",
+        "cat boost"
+      ],
+      "source": "catboost-logo",
+      "upstreamId": "https://raw.githubusercontent.com/catboost/catboost/bc912d111cd9afc7efb89857e119634049b54e76/logo/catboost.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 559,
+      "height": 235,
+      "sha256": "7a5d32a2354742abcfa05ffe3bb799fd0236a151f82bca0afdd577a42fc1b8f8",
+      "bytes": "committed",
+      "libraryIndex": 30
+    },
+    {
+      "id": "ml-training/metaflow",
+      "pack": "ml-training",
+      "title": "Metaflow",
+      "aliases": [
+        "metaflow"
+      ],
+      "source": "metaflow-logo",
+      "upstreamId": "https://raw.githubusercontent.com/Netflix/metaflow/72591a0a9e17e8070523cfcdfbdf38e11ee1dba1/docs/metaflow.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 144,
+      "height": 24,
+      "sha256": "3af7d8352e471ea5643071ad2ae979221eed492dee6fd8c023f9f4c4f851dd2f",
+      "bytes": "committed",
+      "libraryIndex": 31
+    },
+    {
       "id": "ml-training/xgboost",
       "pack": "ml-training",
       "title": "XGBoost",
@@ -36093,6 +36222,77 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://langfuse.com/> --name langfuse"
+    },
+    {
+      "id": "ml-training/flyte",
+      "pack": "ml-training",
+      "title": "Flyte",
+      "aliases": [
+        "flyte"
+      ],
+      "source": "vendor",
+      "upstreamId": "flyte",
+      "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/flyte/icon/color/flyte-icon-color.svg",
+      "brandUrl": "https://flyte.org/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/lfai/artwork/blob/main/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "LF AI & Data publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/flyte/icon/color/flyte-icon-color.svg --name flyte"
+    },
+    {
+      "id": "ml-training/feast",
+      "pack": "ml-training",
+      "title": "Feast",
+      "aliases": [
+        "feast",
+        "feast feature store"
+      ],
+      "source": "vendor",
+      "upstreamId": "feast",
+      "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/feast/icon/color/feast-icon-color.svg",
+      "brandUrl": "https://feast.dev/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/lfai/artwork/blob/main/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "LF AI & Data publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/feast/icon/color/feast-icon-color.svg --name feast"
+    },
+    {
+      "id": "ml-training/kserve",
+      "pack": "ml-training",
+      "title": "KServe",
+      "aliases": [
+        "kserve",
+        "k serve"
+      ],
+      "source": "vendor",
+      "upstreamId": "kserve",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/kserve/icon/color/k-serve-icon-color.svg",
+      "brandUrl": "https://kserve.github.io/website/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/kserve/icon/color/k-serve-icon-color.svg --name kserve"
+    },
+    {
+      "id": "ml-training/seldon",
+      "pack": "ml-training",
+      "title": "Seldon Core",
+      "aliases": [
+        "seldon",
+        "seldon core"
+      ],
+      "source": "vendor",
+      "upstreamId": "seldon",
+      "upstreamUrl": "https://raw.githubusercontent.com/SeldonIO/seldon-core/402619eb9064b2ced678539fa3c0a1a0bd8f723a/docs-gb/images/logo.svg",
+      "brandUrl": "https://www.seldon.io/",
+      "licence": "none - Business Source License 1.1",
+      "licenceUrl": "https://github.com/SeldonIO/seldon-core/blob/402619eb9064b2ced678539fa3c0a1a0bd8f723a/LICENSE",
+      "bytes": "on-demand",
+      "reason": "Seldon Core v2's repository, logo included, is under the Business Source License 1.1, which is not an open-source licence and grants no redistribution of the artwork for this use",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/SeldonIO/seldon-core/402619eb9064b2ced678539fa3c0a1a0bd8f723a/docs-gb/images/logo.svg --name seldon"
     },
     {
       "id": "streaming-orchestration/apachekafka",
@@ -37189,6 +37389,24 @@
       "sha256": "da25a114153f72fce311a961dd295611060507f4b6fbde61d7f565b3461339a6",
       "bytes": "committed",
       "libraryIndex": 25
+    },
+    {
+      "id": "observability/signoz",
+      "pack": "observability",
+      "title": "SigNoz",
+      "aliases": [
+        "signoz"
+      ],
+      "source": "signoz-logo",
+      "upstreamId": "https://raw.githubusercontent.com/SigNoz/signoz/c8e9e362f7ec90578a828d0c39c8db6408abc035/frontend/src/assets/Logos/signoz-brand-logo.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 100,
+      "height": 100,
+      "sha256": "cc0a1ace499a08d09398d78dc08d351e0901bd991abb5cdf69ea619ed5a2b525",
+      "bytes": "committed",
+      "libraryIndex": 26
     },
     {
       "id": "observability/nagios",
@@ -38402,6 +38620,40 @@
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://systemd.io/> --name systemd"
     },
     {
+      "id": "devops/kustomize",
+      "pack": "devops",
+      "title": "Kustomize",
+      "aliases": [
+        "kustomize"
+      ],
+      "source": "vendor",
+      "upstreamId": "kustomize",
+      "upstreamUrl": "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/19002092f6df6a0bb602a5f241fba17bce74fe15/site/static/favicons/android-192x192.png",
+      "brandUrl": "https://kustomize.io/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "Kustomize is a Kubernetes SIG project with no published logo: the only image is its documentation site's favicon, and Kubernetes project artwork is published only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/kubernetes-sigs/kustomize/19002092f6df6a0bb602a5f241fba17bce74fe15/site/static/favicons/android-192x192.png --name kustomize"
+    },
+    {
+      "id": "devops/dagger",
+      "pack": "devops",
+      "title": "Dagger",
+      "aliases": [
+        "dagger",
+        "dagger.io"
+      ],
+      "source": "vendor",
+      "upstreamId": "dagger",
+      "brandUrl": "https://dagger.io/brand/",
+      "licence": "none - Dagger trademark guidelines",
+      "licenceUrl": "https://dagger.io/legal_pages/trademark-guidelines/",
+      "bytes": "on-demand",
+      "reason": "Dagger's trademark guidelines require written permission to use the logo and forbid modifying or recombining it; no licence covers the artwork",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://dagger.io/brand/> --name dagger"
+    },
+    {
       "id": "security-identity/vault",
       "pack": "security-identity",
       "title": "Vault",
@@ -38944,6 +39196,58 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.crowdstrike.com/> --name crowdstrike"
+    },
+    {
+      "id": "security-identity/sigstore",
+      "pack": "security-identity",
+      "title": "Sigstore",
+      "aliases": [
+        "sigstore"
+      ],
+      "source": "vendor",
+      "upstreamId": "sigstore",
+      "upstreamUrl": "https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/sigstore/icons/color/sigstore_icon-color.svg",
+      "brandUrl": "https://www.sigstore.dev/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/sigstore/community/blob/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/Sigstore_BrandGuide_March2023.pdf",
+      "bytes": "on-demand",
+      "reason": "Sigstore's brand guide publishes the artwork as a Linux Foundation project, copyright The Linux Foundation with all rights reserved under its trademark usage terms; nothing licenses the logos beyond a link to the project",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/sigstore/icons/color/sigstore_icon-color.svg --name sigstore"
+    },
+    {
+      "id": "security-identity/cosign",
+      "pack": "security-identity",
+      "title": "Cosign",
+      "aliases": [
+        "cosign",
+        "sigstore cosign"
+      ],
+      "source": "vendor",
+      "upstreamId": "cosign",
+      "upstreamUrl": "https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/cosign/icons/color/sigstore_cosign-icon-color.svg",
+      "brandUrl": "https://docs.sigstore.dev/cosign/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/sigstore/community/blob/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/Sigstore_BrandGuide_March2023.pdf",
+      "bytes": "on-demand",
+      "reason": "Sigstore's brand guide publishes the artwork as a Linux Foundation project, copyright The Linux Foundation with all rights reserved under its trademark usage terms; nothing licenses the logos beyond a link to the project",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/cosign/icons/color/sigstore_cosign-icon-color.svg --name cosign"
+    },
+    {
+      "id": "security-identity/spiffe",
+      "pack": "security-identity",
+      "title": "SPIFFE",
+      "aliases": [
+        "spiffe"
+      ],
+      "source": "vendor",
+      "upstreamId": "spiffe",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/spiffe/icon/color/spiffe-icon-color.svg",
+      "brandUrl": "https://spiffe.io/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/spiffe/icon/color/spiffe-icon-color.svg --name spiffe"
     },
     {
       "id": "github/github",

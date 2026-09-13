@@ -935,6 +935,80 @@ test('Apache Iceberg, Pinot and Beam ship byte-for-byte from the pinned ASF orig
   eq(`${iceberg.width}x${iceberg.height}`, '78x21', 'the Iceberg lockup is drawn wide, not squashed into a square');
 });
 
+// #20: a logo the project itself authored and ships in its own repository,
+// under that repository's OSI licence, ships byte-for-byte when no separate
+// logo or trademark policy governs it. [source, file, licence, where it came from]
+const PROJECT_LOGOS = {
+  'ml-training/jax': ['jax-logo', 'jax_logo.svg', 'Apache-2.0',
+    'https://raw.githubusercontent.com/jax-ml/jax/adb0562417371429beddf7d575a0753dc957de19/images/jax_logo.svg'],
+  'ml-training/flax': ['flax-logo', 'flax_logo.svg', 'Apache-2.0',
+    'https://raw.githubusercontent.com/google/flax/01854da11286b4109c59d7fd9205f3822fe807d6/images/flax_logo.svg'],
+  'ml-training/lightgbm': ['lightgbm-logo', 'LightGBM_logo_black_text.svg', 'MIT',
+    'https://raw.githubusercontent.com/lightgbm-org/LightGBM/6d386edf77a363750669ba622b133ca4e794e353/docs/logo/LightGBM_logo_black_text.svg'],
+  'ml-training/catboost': ['catboost-logo', 'catboost.png', 'Apache-2.0',
+    'https://raw.githubusercontent.com/catboost/catboost/bc912d111cd9afc7efb89857e119634049b54e76/logo/catboost.png'],
+  'ml-training/metaflow': ['metaflow-logo', 'metaflow.svg', 'Apache-2.0',
+    'https://raw.githubusercontent.com/Netflix/metaflow/72591a0a9e17e8070523cfcdfbdf38e11ee1dba1/docs/metaflow.svg'],
+  'observability/signoz': ['signoz-logo', 'signoz-brand-logo.svg', 'MIT',
+    'https://raw.githubusercontent.com/SigNoz/signoz/c8e9e362f7ec90578a828d0c39c8db6408abc035/frontend/src/assets/Logos/signoz-brand-logo.svg'],
+};
+
+test('JAX, Flax, LightGBM, CatBoost, Metaflow and SigNoz ship their own logos under their own repositories\' licences (#20)', () => {
+  const manifest = packs.loadManifest();
+  const cat = finder.loadCatalog();
+  for (const [id, [key, file, licence, upstream]] of Object.entries(PROJECT_LOGOS)) {
+    const src = manifest.sources[key];
+    eq(`${src?.type} ${src?.terms} ${src?.licence}`, `local-files licence ${licence}`, `${key} source`);
+    const commit = upstream.split('/')[5];
+    assert(/^[0-9a-f]{40}$/.test(commit) && src.licenceUrl.endsWith(`/blob/${commit}/LICENSE`),
+      `${key} links the LICENSE at the commit its file came from: ${src.licenceUrl}`);
+    assert(/no separate logo or trademark policy governs it \(#20\)/.test(src.note) && src.note.includes(upstream.split(`${commit}/`)[1]),
+      `${key} records the file it took and the finding`);
+    const dir = join(LIB_DIR, src.dir);
+    const files = new Map(readdirSync(dir).sort().map((name) => [name, readFileSync(join(dir, name))]));
+    eq([...files.keys()].join(' '), file, `${key} commits exactly its original`);
+    eq(packs.localFilesDigest(files), src.sha256, `${key} matches its pin`);
+    const icon = cat.icons.find((i) => i.id === id);
+    eq(`${icon?.bytes} ${icon?.source} ${icon?.licence} ${icon?.render}`, `committed ${key} ${licence} verbatim`, `${id} catalog row`);
+    eq(icon.sha256, createHash('sha256').update(files.get(file)).digest('hex'), `${id} embeds the original byte-for-byte`);
+    eq(icon.upstreamId, upstream, `${id} names where its bytes came from`);
+    const entry = core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`))[icon.libraryIndex];
+    const fitted = finder.recommendedSize(icon);
+    eq(`${entry.w}x${entry.h} ${entry.aspect} ${entry.mime}`, `${fitted.width}x${fitted.height} fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
+      `${id} library cell keeps the artwork's aspect and format`);
+  }
+});
+
+test('the #20 projects whose artwork no licence covers stay on-demand, each with its finding and a fetch source (#20)', () => {
+  const cat = finder.loadCatalog();
+  const pinned = /^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[0-9a-f]{40}\//;
+  for (const [id, licence, why] of [
+    ['ml-training/flyte', /Linux Foundation/, /link to its project/],
+    ['ml-training/feast', /Linux Foundation/, /link to its project/],
+    ['ml-training/kserve', /Linux Foundation/, /link to its project/],
+    ['security-identity/spiffe', /Linux Foundation/, /link to its project/],
+    ['security-identity/sigstore', /Linux Foundation/, /all rights reserved/],
+    ['security-identity/cosign', /Linux Foundation/, /all rights reserved/],
+    ['devops/kustomize', /no published logo/, /favicon/],
+    ['ml-training/seldon', /Business Source License/, /not an open-source licence/],
+    ['devops/dagger', /Dagger trademark guidelines/, /written permission/],
+  ]) {
+    const icon = cat.icons.find((i) => i.id === id);
+    eq(icon?.bytes, 'on-demand', id);
+    assert(licence.test(icon.licence) && why.test(icon.reason) && /^https:\/\//.test(icon.licenceUrl ?? ''),
+      `${id} records its finding: ${icon.licence} / ${icon.reason}`);
+    // Dagger publishes no artwork file to point at, only a brand page.
+    if (id === 'devops/dagger') assert(icon.brandUrl === 'https://dagger.io/brand/', `${id} points at the brand page`);
+    else assert(pinned.test(icon.upstreamUrl ?? '') && icon.fetch.includes(icon.upstreamUrl), `${id} fetches pinned artwork: ${icon.upstreamUrl}`);
+  }
+  for (const [q, id] of [['jax', 'ml-training/jax'], ['flax', 'ml-training/flax'], ['lightgbm', 'ml-training/lightgbm'],
+    ['catboost', 'ml-training/catboost'], ['metaflow', 'ml-training/metaflow'], ['signoz', 'observability/signoz']]) {
+    const r = finder.resolve(q);
+    assert(r.confident, `"${q}" is not confident: ${r.reason}`);
+    eq(r.icon.id, id, `"${q}"`);
+  }
+});
+
 test('the Apache and CNCF marks that stay on-demand record the licence finding, the reason and a fetch source (#11)', () => {
   const cat = finder.loadCatalog();
   const row = (id) => cat.icons.find((i) => i.id === id);

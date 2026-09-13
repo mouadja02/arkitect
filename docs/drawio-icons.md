@@ -65,8 +65,8 @@ Neither rule changes a score, only whether the top result may be used without as
 Lowering the score instead would widen the margin over the runner-up and hand confidence
 to a *different* wrong answer — `delta` would become the airline.
 
-This is measured, not asserted. `tests/icon-queries.json` is an answer key of 366
-queries — the vocabulary of data, ML, platform and cloud engineers, plus 34 that must
+This is measured, not asserted. `tests/icon-queries.json` is an answer key of 375
+queries — the vocabulary of data, ML, platform and cloud engineers, plus 28 that must
 come back flagged — and the suite fails on any confident wrong answer, or if precision
 at rank 1 drops below its floor. Change a judgement row deliberately, never to make a
 tuning change pass.
@@ -77,7 +77,7 @@ Vendor artwork is embedded **byte-for-byte**. Microsoft and Google grant permiss
 use their icons in architecture diagrams and forbid altering the icon shape, so there is
 no optimisation pass — and the untouched bytes keep the recorded SHA-256 meaningful.
 
-Sixty-six products are catalogued with a URL, a licence note and the exact
+Seventy-five products are catalogued with a URL, a licence note and the exact
 `fetch-logo` command, but **no bytes**. For most, no permissively licensed mark exists.
 Seven were removed from Simple Icons 16 at the brand owner's request; shipping them
 from an older pin would have made the rest of `ATTRIBUTION.md` dishonest. Four Apache
@@ -92,6 +92,17 @@ License, so Apache Iceberg, Pinot and Beam ship the official originals byte-for-
 at their own aspect. CNCF artwork is published only under the Linux Foundation
 trademark guidelines, which allow a logo as a link to its project and nothing broader,
 so Crossplane, Flux and Open Policy Agent stay on-demand (#11).
+
+A project's own repository licence counts when the project authored the logo and
+ships it there, and nothing else governs it: JAX, Flax, LightGBM, CatBoost,
+Metaflow and SigNoz ship the logo committed in their own repositories, each under
+that repository's Apache-2.0 or MIT licence, byte-for-byte from a pinned commit. A
+published logo or trademark policy overrides the repository licence. So Flyte and
+Feast (LF AI & Data), KServe and SPIFFE (CNCF), and Sigstore and Cosign (their
+brand guide) stay on-demand under the Linux Foundation guidelines, as does Dagger,
+whose guidelines require written permission. Seldon Core's repository is under the
+Business Source License, which is not an open-source licence, and Kustomize
+publishes no logo at all (#20).
 
 See `assets/libraries/ATTRIBUTION.md` for per-source terms and
 `references/pack-index.md` for the full on-demand list.
