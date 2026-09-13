@@ -54,8 +54,10 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    listed under `unknownKinds` in the report; treat a non-empty list like an
    unresolved icon: fix the spec, or report it.
 5. **Never overwrite blind.** Both builders write a timestamped sibling backup
-   before replacing an existing file. Any other edit route means copying the
-   file yourself first.
+   before replacing an existing file, then keep the oldest backup and the newest
+   five of that file and delete the rest, listed under `pruned` in the report
+   (`--keep-backups N`; `0` keeps all). Suggest `*.backup-*` for the project's
+   `.gitignore`. Any other edit route means copying the file yourself first.
 6. **Validate.** Errors block delivery. Warnings about overlap and tight labels
    are judgement calls — check them against the render.
 7. **Render it and actually look at the PNG.** Read the image back. Iterate on

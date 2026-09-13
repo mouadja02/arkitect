@@ -7,14 +7,23 @@ node tests/run-tests.mjs excalidraw
 node tests/run-tests.mjs toolkit
 ```
 
-Offline, deterministic, no network, no Docker, no dependencies. Roughly two
-seconds.
+Offline, deterministic, no network, no Docker, no dependencies. About 20
+seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect about `176 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `194 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)) and they run.
+
+That line is the only place the count is written down, and every full
+`run-tests.mjs` run checks it: passed plus skipped must equal the number of
+tests that ran, the skipped count must equal the tests declared with
+`sourceTest()`, and on a checkout without local sources every skip must be one
+of those. A pull request that adds a test updates the line; when it no longer
+matches, the runner prints the line to use. With local sources present, the
+runner also prints the fresh-clone expectation beside the local numbers. Quote
+that, never the local result (#47).
 
 Each suite writes its scratch to `tests/output/<engine>/` and is a separate
 process, so they cannot tread on each other.
@@ -27,7 +36,7 @@ process, so they cannot tread on each other.
 |---|---|
 | Generation | valid native output; unique ids; every edge connected at both ends; no overlaps; learned style tokens applied; a legend only when earned |
 | Spec checks | a spec naming a missing node, parent or boundary, a cycle, or a missing, repeated or reserved id is refused before any backup or write, every problem listed; the CLI exits 1 and leaves the target untouched; nested boundaries still build; Draw.io automatic edge ids skip taken ids and an unknown edge kind draws as a flow (#36); in both engines an unknown node or edge kind still builds and the report and CLI name its field, value, fallback and the valid kinds, an inherited name such as `constructor` counts as unknown, and the Excalidraw arrow it draws carries the flow stroke (#48) |
-| Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35) |
+| Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35); after a successful write each builder keeps the oldest backup of that target and the newest five, counting `-10` as newer than `-2` and any later second as newer than every counter, never reusing a counter that pruning freed, and never touches another file's backups, a lookalike stem, another extension or a hand-named copy; `--keep-backups N` sets the count, `0` keeps all, and a malformed value exits 2 before any backup is written or deleted (#49) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |
 | Plugin shape | the manifest is valid, all four skills are well formed, the learning skills are user-invoked only, no hard-coded install paths |
@@ -53,6 +62,8 @@ process, so they cannot tread on each other.
 | Validator | rejects duplicate ids, missing parents, broken edge endpoints; `--page 0` through the dispatcher validates that page, before or after the files, and `--strict` still fails on a warning; a page the file lacks fails, in the CLI and the API, without claiming a page was checked; a missing, negative, fractional, exponent, empty or non-numeric page value, a repeated `--page` and an unknown flag exit 2 with no stack trace; the API throws on a malformed index (#37) |
 | Command lines | `build --out <file> <spec>` builds the spec and never writes to it; a malformed, missing or second spec, a missing `--out` or value, or an unknown flag exits 2 in one line with nothing written; `analyze --page` is checked the same way, a page the file lacks exits 1, and `--page` without `--cells`/`--images` or `--cells` over two files is refused (#37) |
 | The record | carries no diagram content, no page names, no modification times |
+| Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50); no edge in it runs through a caption (#45) |
+| Caption routing | an edge leaving an icon downward, or entering one from below, in the same column, attaches below the caption (34px, more for a caption on several lines); horizontal, diagonal and box-to-box edges are left to the router; the validator estimates each route from its ports and warns, naming the edge and the icon, when it crosses a caption, and names exactly the two crossings when those attachments are stripped (#45) |
 
 ### Excalidraw
 
@@ -79,7 +90,7 @@ artwork audit (#18/#33).
 | Rendering | the SVG covers the whole scene and is stable across runs; `render` takes its format from the `--out` extension or `--out-dir` + `--format`, refuses another extension, a directory given to `--out`, both flags, a contradicting `--format`, a malformed `--scale`, `--padding`, `--width`, `--style` or `--background`, and PNG-only flags on an SVG, exiting 2 with nothing written; with a stand-in browser a PNG render writes real PNG bytes at the requested width, reports its format, size and browser, and removes its profile, while a crash, a timeout, no screenshot, a non-PNG or an empty one exits 1 and leaves the previous preview byte-identical; no browser, or an unusable `ARKITECT_BROWSER` pin, exits 1 naming what was tried; discovery covers Edge, Chrome and Chromium on Windows, macOS and Linux, PATH first; a snap Chromium, directly or behind Ubuntu's `chromium-browser` wrapper, works in `~/snap/chromium/common` and leaves nothing there; where a browser is installed, a real one renders a real 600px PNG (#39) |
 | Shipped knowledge | the record claims no evidence it lacks; the style guide says out loud which rules are defaults |
 | Docker | the compose file pins the official image and publishes container port 80 |
-| Templates | both committed examples are valid and still match their specs |
+| Templates | both committed examples are valid and match what their specs build, compared element by element through a projection that keeps type, geometry, points, stroke, fill, font, text, bindings by position and embedded file hashes and drops ids, seeds, nonces, timestamps and index keys; the failure names the first differing element and field; the projection is proven blind to reissued ids and to see a caption moved 4px and a changed embedded file (#50) |
 
 ## The icon-store tests write to the real store
 
@@ -157,8 +168,12 @@ LLM graders. See [../evals/README.md](../evals/README.md).
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs the suite on Ubuntu, Windows and macOS against
-Node 20 and 22, on every push and pull request. It is the same command you run
-locally, with no sources present — so CI always sees the fresh-clone result.
+Node 20, 22 and 24, on every push and pull request. It is the same command you
+run locally, with no sources present — so CI always sees the fresh-clone result.
+Each of those jobs uses the npm bundled with its Node, so one more job upgrades
+Node 22 to the newest npm and runs the suite again; the packaging tests call the
+npm beside Node, and a change in npm's output (npm 12's `npm pack --json`, #54)
+turns CI red instead of only a fresh install.
 
 `.github/workflows/changelog.yml` runs on every pull request. It fails when
 `bin/`, `skills/` or `docs/` change and no `changelog.d/` fragment is added,

@@ -69,7 +69,10 @@ Read `references/style-guide.md` before laying anything out, and
    (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.
 
 5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling backup
-   before replacing an existing file. If you edit XML by any other route, call
+   before replacing an existing file. Once the new file is written it keeps the
+   oldest backup and the newest five of that file, deletes the rest and lists them
+   under `pruned` (`--keep-backups N`; `0` keeps all). Suggest `*.backup-*` for the
+   user's `.gitignore`. If you edit XML by any other route, call
    `backupExisting()` or copy the file yourself first.
 
 6. **Validate.**
@@ -78,8 +81,10 @@ Read `references/style-guide.md` before laying anything out, and
    ```
    Add `--page N` (0-based) to check one page; a page the file does not have fails.
    Errors (duplicate ids, missing parents, broken edge endpoints, unreadable embedded
-   images) must be fixed. Warnings about overlaps and tight labels are judgement calls —
-   check them against the render.
+   images) must be fixed. Warnings about overlaps, tight labels and edges running
+   through an icon's caption are judgement calls — check them against the render.
+   The builder already attaches a vertical edge below an icon's caption; a crossing
+   usually means a diagonal route or a hand edit.
 
 7. **Render and actually look at it.**
    ```bash

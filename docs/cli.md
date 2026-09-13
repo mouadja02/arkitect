@@ -69,6 +69,14 @@ arkitect excalidraw render docs/arch.excalidraw --out preview.svg
 arkitect excalidraw learn --sources <files> --merge
 ```
 
+Both `build` commands copy an existing target to
+`<name>.backup-YYYYMMDD-HHMMSS[-n].<ext>` before replacing it. Once the new file
+is written they keep the oldest of those backups and the newest five, delete the
+rest and list them under `pruned` in the report. `--keep-backups N` changes how
+many recent ones stay; `0` keeps all. Only that file's own backup names are ever
+deleted. Add `*.backup-*` to your project's `.gitignore` so the ones kept stay
+out of commits.
+
 ```powershell
 ./skills/arkitect-excalidraw/scripts/render-excalidraw.ps1 `
   -Path docs/arch.excalidraw -OutDir .analysis/renders -Width 2200

@@ -17,10 +17,12 @@ clean checkout, before opening a pull request.
 node tests/run-tests.mjs
 ```
 
-The bar is **0 failed**, and no test that used to pass may start skipping. On a
-clone with no reference diagrams of your own, the expected shape is
-`176 passed, 0 failed, 7 skipped` — the skips are the tests that need a local
-corpus. A drop in the passing count is a regression even if nothing says FAIL.
+The bar is **0 failed**, and no test that used to pass may start skipping. The
+result to expect on a clone with no reference diagrams of your own is stated
+once, in [testing.md](testing.md), and the runner fails when it no longer matches
+what ran; the skips are the tests that need a local corpus. A pull request that
+adds a test updates that line. A drop in the passing count is a regression even
+if nothing says FAIL.
 
 ```bash
 node bin/arkitect.mjs doctor
@@ -83,7 +85,9 @@ editor stay forbidden on user content.
 
 **7. Backups before overwrites.** Both builders write a timestamped sibling
 backup before replacing an existing file. Do not remove that, and do not add a
-write path that skips it.
+write path that skips it. Retention (#49) deletes only the builder's own
+exact-name backups of the file it just wrote, only after that write succeeded,
+and always keeps the newest and the oldest; do not widen what it may delete.
 
 **8. Style rules carry evidence.** A rule in `references/style-guide.md` states
 its count and confidence. A rule marked `default` is one the corpus does not
@@ -111,6 +115,11 @@ reformat, re-indent or "clean up" those files.
 - **Described.** The pull request says what changed, why, what could break, and
   exactly what was run to verify it. If generated output changed, it shows the
   before and after render.
+- **Examples stay fresh.** A change that alters what a generator builds rebuilds
+  the committed worked examples in `skills/*/assets/templates/` and re-renders
+  their PNGs in the same pull request, and says so. Agents copy those examples,
+  so a stale one teaches the old output. The suite fails when a committed
+  example no longer matches its spec (#50).
 - **Reversible.** Say how to undo it in one line.
 
 ## Areas, and how much care each needs

@@ -25,6 +25,15 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
+// Tests that need reference diagrams of your own. They skip on a clone without
+// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
+// in docs/testing.md against how many are declared this way (#47).
+let sourceDependent = 0;
+function sourceTest(name, fn) {
+  sourceDependent++;
+  test(name, fn);
+}
+
 function test(name, fn) {
   try {
     const r = fn();
@@ -1148,6 +1157,90 @@ test('the sheet HTML stays only when it is the output or --keep-html asks for it
 const SPEC = join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json');
 const OUT = join(TMP, 'generated.drawio');
 
+// Agents read the committed example, and its PNG, before writing a spec, so a
+// stale one teaches the wrong output. Draw.io output is deterministic, so the
+// committed file must be exactly what its spec builds today (#50).
+test('the committed Draw.io starter is exactly what its spec builds (#50)', () => {
+  const committedPath = join(SKILL, 'assets', 'templates', 'starter-architecture.drawio');
+  assert(existsSync(join(SKILL, 'assets', 'templates', 'starter-architecture.png')), 'a rendered PNG ships beside the example');
+  const build = () => builder.buildDiagram(JSON.parse(readFileSync(SPEC, 'utf8'))).xml;
+  const xml = build();
+  eq(build(), xml, 'two builds of the same spec are identical');
+  const committed = readFileSync(committedPath, 'utf8');
+  if (xml === committed) return;
+  const a = committed.split('\n');
+  const b = xml.split('\n');
+  let line = a.findIndex((l, i) => l !== b[i]);
+  if (line === -1) line = Math.min(a.length, b.length);
+  const cell = /<mxCell id="([^"]+)"/.exec(a[line] ?? b[line] ?? '')?.[1];
+  const column = [...(a[line] ?? '')].findIndex((c, i) => c !== (b[line] ?? '')[i]) + 1;
+  throw new Error(`starter-architecture.drawio is stale: line ${line + 1}${cell ? `, cell "${cell}"` : ''}, column ${column} differs from a fresh build. `
+    + 'Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/starter-architecture.spec.json --out <tmp>), '
+    + 'copy it over, and re-render starter-architecture.png in the same pull request.');
+});
+
+// An edge attached to the bottom of an icon ran through the caption hanging
+// there (#45). Vertical edges now attach below the caption, and the validator
+// warns when a route crosses one.
+test('vertical edges attach below icon captions, and the validator names a crossing (#45)', () => {
+  const spec = {
+    context: { packs: ['aws'] },
+    nodes: [
+      { id: 'top', kind: 'icon', icon: 'lambda', label: 'Top function', col: 0, row: 0 },
+      { id: 'bottom', kind: 'icon', icon: 'simple storage service', label: 'Bottom bucket', col: 0, row: 1 },
+      { id: 'side', kind: 'icon', icon: 'opensearch', label: 'Side index', col: 1, row: 0 },
+      { id: 'upper', kind: 'icon', icon: 'eventbridge', label: 'Upper bus', col: 2, row: 0 },
+      { id: 'lower', kind: 'box', label: 'Lower box', col: 2, row: 1 },
+      { id: 'b1', kind: 'box', label: 'Box one', col: 3, row: 0 },
+      { id: 'b2', kind: 'box', label: 'Box two', col: 3, row: 1 },
+    ],
+    edges: [
+      { id: 'down', from: 'top', to: 'bottom' },
+      { id: 'up', from: 'lower', to: 'upper' },
+      { id: 'across', from: 'top', to: 'side' },
+      { id: 'diagonal', from: 'bottom', to: 'side' },
+      { id: 'boxes', from: 'b1', to: 'b2' },
+    ],
+  };
+  const { xml } = builder.buildDiagram(spec);
+  const out = join(TMP, 'captions.drawio');
+  writeFileSync(out, xml);
+  const cells = core.extractCells(core.readMxfile(out).pages[0].xml);
+  const style = (id) => core.parseStyle(cells.find((c) => c.id === id).style);
+  const at = (s, end) => JSON.stringify([s[`${end}X`], s[`${end}Y`], s[`${end}Dx`], s[`${end}Dy`], s[`${end}Perimeter`]]);
+  eq(at(style('down'), 'exit'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge leaving an icon downward starts below its caption');
+  eq(style('down').entryY, undefined, 'and enters the node below from the top as before');
+  eq(at(style('up'), 'entry'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge entering an icon from below ends below its caption');
+  eq(style('up').exitY, undefined, 'a box has no caption to avoid');
+  for (const id of ['across', 'diagonal', 'boxes']) {
+    assert(style(id).exitY === undefined && style(id).entryY === undefined, `${id} is left to the router`);
+  }
+  const r = validator.validateFile(out);
+  assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'no route crosses a caption');
+  eq(r.info.pages[0].captionCrossings, 0, 'no crossing counted');
+
+  // The same diagram attached the old way: exactly the two vertical edges cross.
+  const old = join(TMP, 'captions-old.drawio');
+  writeFileSync(old, xml.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;"]*;/g, ''));
+  const before = validator.validateFile(old);
+  eq(JSON.stringify(before.warnings.filter((w) => w.includes('caption')).sort()), JSON.stringify([
+    'page 0: edge "down" runs through the caption of "top"',
+    'page 0: edge "up" runs through the caption of "upper"',
+  ]), 'the validator names each crossing edge and the icon whose caption it crosses');
+  eq(before.info.pages[0].captionCrossings, 2, 'and counts them');
+
+  // A caption on three lines gets room for three lines.
+  const tall = builder.buildDiagram({ ...spec, nodes: spec.nodes.map((n) => (n.id === 'top' ? { ...n, label: 'Top\nfunction\nwith notes' } : n)) }).xml;
+  assert(/id="down" style="[^"]*exitDy=49;/.test(tall), 'a three-line caption pushes the attachment to 49px');
+});
+
+test('the committed Draw.io starter has no edge through a caption (#45)', () => {
+  const r = validator.validateFile(join(SKILL, 'assets', 'templates', 'starter-architecture.drawio'));
+  assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'caption crossings in the worked example');
+});
+
 test('a generated diagram is valid, connected and portable', () => {
   const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
   const { xml, report } = builder.buildDiagram(spec);
@@ -1242,6 +1335,74 @@ test('rapid updates in the same second never overwrite an earlier backup (#35)',
   versions.forEach((v, i) => eq(readFileSync(backups[i], 'utf8'), v, `backup ${i} lost its version`));
   assert(backups[0].endsWith('rapid.backup-20260913-101500-1.drawio'), `unexpected collision name: ${backups[0]}`);
   assert(backups[2].endsWith('rapid.backup-20260913-101500-3.drawio'), `unexpected collision name: ${backups[2]}`);
+});
+
+test('retention keeps the oldest backup and the newest five, and touches nothing else (#49)', () => {
+  const dir = join(TMP, 'retention');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'arch.drawio');
+  // Not backups of this target: a hand-named copy, another diagram's, the other
+  // engine's extension, a lookalike stem, a counter the builder never writes.
+  const foreign = ['arch.backup-old.drawio', 'other.backup-20260913-101500.drawio', 'arch.backup-20260913-101500.excalidraw',
+    'arch.v2.backup-20260913-101500.drawio', 'arch.backup-20260913-101500-0.drawio'];
+  for (const f of foreign) writeFileSync(join(dir, f), 'not ours');
+  const now = new Date('2026-09-13T10:15:00.000Z');
+  const made = [];
+  for (let i = 0; i < 12; i++) {
+    writeFileSync(target, `version ${i}`);
+    made.push(builder.backupExisting(target, { now }));
+    builder.pruneBackups(target);
+  }
+  eq(new Set(made).size, made.length, 'a counter freed by pruning is never reused, so the newest backup is never pruned');
+  const ours = () => readdirSync(dir).filter((f) => f !== 'arch.drawio' && !foreign.includes(f)).sort();
+  eq(JSON.stringify(ours()), JSON.stringify([made[0], ...made.slice(7)].map((p) => basename(p)).sort()),
+    'the oldest and the newest five, with -10 and -11 counted as newer than -2');
+  eq(readFileSync(made[0], 'utf8'), 'version 0', 'the oldest backup still holds the first version');
+  for (const f of foreign) eq(readFileSync(join(dir, f), 'utf8'), 'not ours', `${f} was touched`);
+
+  builder.backupExisting(target, { now: new Date('2026-09-13T10:15:01.000Z') });
+  eq(JSON.stringify(builder.pruneBackups(target).map((p) => basename(p))), JSON.stringify([basename(made[7])]),
+    'a later second is newer than every counter of an earlier one');
+  eq(JSON.stringify(builder.pruneBackups(target, { keep: 1 }).map((p) => basename(p))),
+    JSON.stringify(made.slice(8).map((p) => basename(p))), 'keep 1 leaves the oldest and the newest');
+  builder.backupExisting(target, { now });
+  eq(builder.pruneBackups(target, { keep: 0 }).length, 0, 'keep 0 deletes nothing');
+  for (const bad of [-1, 1.5, NaN, '5']) {
+    let threw = false;
+    try { builder.pruneBackups(target, { keep: bad }); } catch { threw = true; }
+    assert(threw, `keep ${JSON.stringify(bad)} was accepted`);
+  }
+  eq(builder.pruneBackups(join(dir, 'no-such-dir', 'arch.drawio')).length, 0, 'a missing directory prunes nothing');
+});
+
+test('build prunes old backups only after writing, and --keep-backups sets how many (#49)', () => {
+  const dir = join(TMP, 'retention-cli');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'arch.drawio');
+  const specPath = join(dir, 'spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }] }));
+  const build = (...extra) => spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', out, ...extra], { encoding: 'utf8' });
+  const backupsOf = () => readdirSync(dir).filter((f) => f.startsWith('arch.backup-'));
+  let report;
+  for (let i = 0; i < 8; i++) {
+    const r = build();
+    eq(r.status, 0, `build ${i}: ${r.stderr}`);
+    report = JSON.parse(r.stdout);
+  }
+  eq(backupsOf().length, 6, 'seven rebuilds leave the oldest backup and the newest five');
+  eq(report.pruned.length, 1, 'the last build reports the backup it pruned');
+  assert(!existsSync(report.pruned[0]) && existsSync(report.backup), 'the pruned backup is gone and the new one stays');
+  const two = JSON.parse(build('--keep-backups', '2').stdout);
+  eq(two.pruned.length, 4, '--keep-backups 2 reports the four it removed');
+  eq(backupsOf().length, 3, 'and leaves the oldest and the newest two');
+  eq(JSON.parse(build('--keep-backups', '0').stdout).pruned.length, 0, '--keep-backups 0 removes nothing');
+  eq(backupsOf().length, 4, 'and keeps the new backup');
+  for (const bad of [['--keep-backups', '-1'], ['--keep-backups', 'two'], ['--keep-backups', '1.5'], ['--keep-backups']]) {
+    eq(build(...bad).status, 2, `${bad.join(' ')} exits 2`);
+  }
+  eq(backupsOf().length, 4, 'a refused flag writes no backup and deletes none');
 });
 
 test('the validator rejects a broken diagram', () => {
@@ -1631,7 +1792,7 @@ clearTestLogos();
 
 // ------------------------------------------------------------- analysis
 
-test('all five reference diagrams summarize without emitting page XML', () => {
+sourceTest('all five reference diagrams summarize without emitting page XML', () => {
   if (!haveSources) return 'skip';
   const out = node('analyze-drawio.mjs', sourceList);
   for (const marker of ['<mxCell', '<mxGraphModel', '<root>', 'data:image/']) {
@@ -1642,7 +1803,7 @@ test('all five reference diagrams summarize without emitting page XML', () => {
   assert(parsed.files.every((f) => f.pages.length >= 1), 'pages summarized');
 });
 
-test('page inventory matches the shipped record', () => {
+sourceTest('page inventory matches the shipped record', () => {
   if (!haveSources) return 'skip';
   // Structure only: page names are authored text and never enter the record,
   // so the invariant is the shape of each file, not what its pages are called.
@@ -1664,7 +1825,7 @@ test('the record carries no page names', () => {
   }
 });
 
-test('reference diagrams are unmodified since analysis', () => {
+sourceTest('reference diagrams are unmodified since analysis', () => {
   if (!haveSources) return 'skip';
   const record = JSON.parse(readFileSync(join(SKILL, 'references', 'source-analysis.json'), 'utf8'));
   sourceList.forEach((p, i) => {
@@ -1805,7 +1966,7 @@ function repoFiles(dir, acc = []) {
   return acc;
 }
 
-test('no sensitive string from the reference diagrams appears in the repository', () => {
+sourceTest('no sensitive string from the reference diagrams appears in the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.drawio.sha256');
   let sensitive;
 
@@ -1927,5 +2088,6 @@ test('scripts avoid hard-coded absolute paths', () => {
 // -------------------------------------------------------------
 
 console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
+console.log(`source-dependent: ${sourceDependent}`);
 if (!haveSources) console.log('(reference-diagram tests skipped: .analysis/sources.local.json not present)');
 if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }

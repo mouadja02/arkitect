@@ -15,7 +15,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import {
-  emptyScene, writeScene, backupExisting, reindex,
+  emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
   rectangle, ellipse, diamond, line, arrow, text, frame, image as imageEl,
   bindLabel, bindArrow, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
@@ -826,11 +826,19 @@ export function buildDiagram(spec) {
 }
 
 function main(argv) {
-  const [specPath] = positionals(argv, ['--out']);
-  const outIdx = argv.indexOf('--out');
-  const out = outIdx === -1 ? null : argv[outIdx + 1];
+  const usage = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N]';
+  const [specPath] = positionals(argv, ['--out', '--keep-backups']);
+  const flag = (name) => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
+  const out = flag('--out');
   if (!specPath || !out) {
-    console.error('usage: build-diagram.mjs <spec.json> --out <file.excalidraw>');
+    console.error(usage);
+    process.exit(2);
+  }
+  // Absent means the default; present with no value is a usage error.
+  const rawKeep = flag('--keep-backups');
+  const keep = rawKeep === null ? String(DEFAULT_KEEP_BACKUPS) : String(rawKeep);
+  if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
+    console.error(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}\n${usage}`);
     process.exit(2);
   }
 
@@ -847,11 +855,14 @@ function main(argv) {
   const { scene, report } = built;
   const backup = backupExisting(out);
   writeScene(out, scene);
+  // Only once the new file is written: a failed write keeps every backup (#49).
+  const pruned = pruneBackups(out, { keep: Number(keep) });
 
   const view = bbox(scene.elements);
   console.log(JSON.stringify({
     wrote: out,
     backup,
+    pruned,
     elements: scene.elements.length,
     embeddedFiles: Object.keys(scene.files).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,

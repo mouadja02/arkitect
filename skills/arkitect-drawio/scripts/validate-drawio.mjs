@@ -199,6 +199,63 @@ export function validateFile(path, { pageIndex = null } = {}) {
       }
     }
 
+    // Caption crossings (#45). A caption hangs below its icon, where an
+    // orthogonal edge attached to the icon's bottom runs straight through it.
+    // Routes are estimated from each end's port - an explicit exit/entry
+    // constraint, else the side facing the other end - as a straight line or a
+    // Z, so this is a warning to check in the render. Edges with waypoints are
+    // skipped rather than guessed.
+    const captions = [];
+    for (const c of cells) {
+      if (!c.vertex || !c.value) continue;
+      const s = parseStyle(c.style);
+      if (s.verticalLabelPosition !== 'bottom') continue;
+      const g = abs.get(c.id);
+      if (!g) continue;
+      const lines = c.value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').split('\n');
+      const size = Number(s.fontSize ?? 12);
+      const width = Math.max(...lines.map((l) => l.trim().length)) * size * 0.55;
+      captions.push({ id: c.id, x: g.x + g.width / 2 - width / 2, y: g.y + g.height + 2, width, height: lines.length * size * 1.25 });
+    }
+    const port = (box, style, end, other) => {
+      const s = parseStyle(style);
+      if (s[`${end}X`] !== undefined && s[`${end}Y`] !== undefined) {
+        const ry = Number(s[`${end}Y`]);
+        return {
+          x: box.x + Number(s[`${end}X`]) * box.width + Number(s[`${end}Dx`] ?? 0),
+          y: box.y + ry * box.height + Number(s[`${end}Dy`] ?? 0),
+          vertical: ry === 0 || ry === 1,
+        };
+      }
+      const cx = box.x + box.width / 2; const cy = box.y + box.height / 2;
+      const ox = other.x + other.width / 2; const oy = other.y + other.height / 2;
+      return Math.abs(oy - cy) > Math.abs(ox - cx)
+        ? { x: cx, y: oy > cy ? box.y + box.height : box.y, vertical: true }
+        : { x: ox > cx ? box.x + box.width : box.x, y: cy, vertical: false };
+    };
+    const route = (p, q) => {
+      if (Math.abs(p.x - q.x) < 1 || Math.abs(p.y - q.y) < 1) return [[p, q]];
+      if (p.vertical) {
+        const my = (p.y + q.y) / 2;
+        return [[p, { x: p.x, y: my }], [{ x: p.x, y: my }, { x: q.x, y: my }], [{ x: q.x, y: my }, q]];
+      }
+      const mx = (p.x + q.x) / 2;
+      return [[p, { x: mx, y: p.y }], [{ x: mx, y: p.y }, { x: mx, y: q.y }], [{ x: mx, y: q.y }, q]];
+    };
+    const crosses = ([p, q], r) => Math.max(p.x, q.x) > r.x + 1 && Math.min(p.x, q.x) < r.x + r.width - 1
+      && Math.max(p.y, q.y) > r.y + 1 && Math.min(p.y, q.y) < r.y + r.height - 1;
+    let captionCrossings = 0;
+    for (const c of cells) {
+      if (!c.edge || c.waypoints) continue;
+      const a = abs.get(c.source); const b = abs.get(c.target);
+      if (!a || !b) continue;
+      const segments = route(port(a, c.style, 'exit', b), port(b, c.style, 'entry', a));
+      const hit = captions.find((cap) => segments.some((segment) => crosses(segment, cap)));
+      if (!hit) continue;
+      captionCrossings++;
+      if (captionCrossings <= 10) warnings.push(`${label}: edge "${c.id}" runs through the caption of "${hit.id}"`);
+    }
+
     const model = graphModelAttrs(xml);
     pages.push({
       index: idx, name: page.name, compressed: page.compressed,
@@ -206,7 +263,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped,
+      overlaps, clippedLabels: clipped, captionCrossings,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
@@ -234,7 +291,8 @@ function main(argv) {
       for (const p of r.info.pages ?? []) {
         console.log(`   page ${p.index} "${p.name}": ${p.vertices} vertices, ${p.edges} edges, ` +
           `${p.embeddedImages} embedded images, bounds ${p.bounds ? `${p.bounds.width}x${p.bounds.height}` : 'n/a'}` +
-          `${p.overlaps ? `, ${p.overlaps} overlaps` : ''}${p.clippedLabels ? `, ${p.clippedLabels} tight labels` : ''}`);
+          `${p.overlaps ? `, ${p.overlaps} overlaps` : ''}${p.clippedLabels ? `, ${p.clippedLabels} tight labels` : ''}`
+          + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`);
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);

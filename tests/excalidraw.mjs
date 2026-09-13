@@ -30,6 +30,15 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
+// Tests that need reference scenes of your own. They skip on a clone without
+// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
+// in docs/testing.md against how many are declared this way (#47).
+let sourceDependent = 0;
+function sourceTest(name, fn) {
+  sourceDependent++;
+  test(name, fn);
+}
+
 function test(name, fn) {
   try {
     const r = fn();
@@ -806,6 +815,81 @@ test('rapid updates in the same second never overwrite an earlier backup (#35)',
   assert(backups[2].endsWith('rapid.backup-20260913-101500-3.excalidraw'), `unexpected collision name: ${backups[2]}`);
 });
 
+test('retention keeps the oldest backup and the newest five, and touches nothing else (#49)', () => {
+  const dir = join(TMP, 'retention');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'arch.excalidraw');
+  const name = (p) => p.split(/[\\/]/).pop();
+  // Not backups of this target: a hand-named copy, another scene's, the other
+  // engine's extension, a lookalike stem, a counter the builder never writes.
+  const foreign = ['arch.backup-old.excalidraw', 'other.backup-20260913-101500.excalidraw', 'arch.backup-20260913-101500.drawio',
+    'arch.v2.backup-20260913-101500.excalidraw', 'arch.backup-20260913-101500-0.excalidraw'];
+  for (const f of foreign) writeFileSync(join(dir, f), 'not ours');
+  const now = new Date('2026-09-13T10:15:00.000Z');
+  const made = [];
+  for (let i = 0; i < 12; i++) {
+    writeFileSync(target, `version ${i}`);
+    made.push(core.backupExisting(target, { now }));
+    core.pruneBackups(target);
+  }
+  eq(new Set(made).size, made.length, 'a counter freed by pruning is never reused, so the newest backup is never pruned');
+  const ours = () => readdirSync(dir).filter((f) => f !== 'arch.excalidraw' && !foreign.includes(f)).sort();
+  eq(JSON.stringify(ours()), JSON.stringify([made[0], ...made.slice(7)].map(name).sort()),
+    'the oldest and the newest five, with -10 and -11 counted as newer than -2');
+  eq(readFileSync(made[0], 'utf8'), 'version 0', 'the oldest backup still holds the first version');
+  for (const f of foreign) eq(readFileSync(join(dir, f), 'utf8'), 'not ours', `${f} was touched`);
+
+  core.backupExisting(target, { now: new Date('2026-09-13T10:15:01.000Z') });
+  eq(JSON.stringify(core.pruneBackups(target).map(name)), JSON.stringify([name(made[7])]),
+    'a later second is newer than every counter of an earlier one');
+  eq(JSON.stringify(core.pruneBackups(target, { keep: 1 }).map(name)), JSON.stringify(made.slice(8).map(name)),
+    'keep 1 leaves the oldest and the newest');
+  core.backupExisting(target, { now });
+  eq(core.pruneBackups(target, { keep: 0 }).length, 0, 'keep 0 deletes nothing');
+  for (const bad of [-1, 1.5, NaN, '5']) {
+    let threw = false;
+    try { core.pruneBackups(target, { keep: bad }); } catch { threw = true; }
+    assert(threw, `keep ${JSON.stringify(bad)} was accepted`);
+  }
+  eq(core.pruneBackups(join(dir, 'no-such-dir', 'arch.excalidraw')).length, 0, 'a missing directory prunes nothing');
+});
+
+test('build prunes old backups only after writing, and --keep-backups sets how many (#49)', () => {
+  const dir = join(TMP, 'retention-cli');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'arch.excalidraw');
+  const specPath = join(dir, 'spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }] }));
+  const build = (...extra) => {
+    try {
+      return { status: 0, stdout: execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', out, ...extra], { encoding: 'utf8', stdio: 'pipe' }) };
+    } catch (error) {
+      return { status: error.status, stdout: String(error.stdout ?? '') };
+    }
+  };
+  const backupsOf = () => readdirSync(dir).filter((f) => f.startsWith('arch.backup-'));
+  let report;
+  for (let i = 0; i < 8; i++) {
+    const r = build();
+    eq(r.status, 0, `build ${i}`);
+    report = JSON.parse(r.stdout);
+  }
+  eq(backupsOf().length, 6, 'seven rebuilds leave the oldest backup and the newest five');
+  eq(report.pruned.length, 1, 'the last build reports the backup it pruned');
+  assert(!existsSync(report.pruned[0]) && existsSync(report.backup), 'the pruned backup is gone and the new one stays');
+  const two = JSON.parse(build('--keep-backups', '2').stdout);
+  eq(two.pruned.length, 4, '--keep-backups 2 reports the four it removed');
+  eq(backupsOf().length, 3, 'and leaves the oldest and the newest two');
+  eq(JSON.parse(build('--keep-backups', '0').stdout).pruned.length, 0, '--keep-backups 0 removes nothing');
+  eq(backupsOf().length, 4, 'and keeps the new backup');
+  for (const bad of [['--keep-backups', '-1'], ['--keep-backups', 'two'], ['--keep-backups', '1.5'], ['--keep-backups']]) {
+    eq(build(...bad).status, 2, `${bad.join(' ')} exits 2`);
+  }
+  eq(backupsOf().length, 4, 'a refused flag writes no backup and deletes none');
+});
+
 // ------------------------------------------------------------- spec checks (#36)
 
 test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {
@@ -1276,7 +1360,7 @@ test('the style guide matches the state of the corpus', () => {
 // Elbow arrows are routed by the app, which is fussy about the fields it finds.
 // The reference corpus contains arrows the app itself wrote; compare against
 // those rather than guessing.
-test('generated elbow arrows carry the fields the app writes', () => {
+sourceTest('generated elbow arrows carry the fields the app writes', () => {
   if (!haveSources) return 'skip';
   let reference = null;
   for (const p of sourceList) {
@@ -1315,7 +1399,7 @@ test('a bound elbow arrow names the edge it leaves from', () => {
   assert(!('fixedPoint' in plain.startBinding), 'a plain arrow carries no fixedPoint');
 });
 
-test('reference scenes summarize without their text reaching the record', () => {
+sourceTest('reference scenes summarize without their text reaching the record', () => {
   if (!haveSources) return 'skip';
   for (const p of sourceList) {
     const before = createHash('sha256').update(readFileSync(p)).digest('hex');
@@ -1369,7 +1453,7 @@ function repoFiles(dir, out = []) {
   return out;
 }
 
-test('no string from a reference scene leaks into the repository', () => {
+sourceTest('no string from a reference scene leaks into the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.excalidraw.sha256');
   let digests;
 
@@ -1459,6 +1543,100 @@ test('scripts avoid hard-coded absolute paths', () => {
   }
 });
 
+// A committed example and a rebuild of its spec are compared through a
+// projection (#50). Excalidraw draws fresh ids, seeds, nonces and timestamps on
+// every build, so those are dropped; everything that shows is kept: type,
+// geometry, points, stroke, fill, font, text, bindings and containers resolved to
+// element positions, groups by first appearance, and embedded files by hash.
+const VOLATILE_FIELDS = new Set(['id', 'seed', 'versionNonce', 'updated', 'index']);
+const roundDeep = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100
+  : Array.isArray(v) ? v.map(roundDeep)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, roundDeep(v[k])])) : v);
+const payloadHash = (f) => `${f.mimeType}:${createHash('sha256').update(String(f.dataURL)).digest('hex').slice(0, 16)}`;
+
+function projectScene(scene) {
+  const elements = scene.elements ?? [];
+  const position = new Map(elements.map((e, i) => [e.id, `@${i}`]));
+  const groups = new Map();
+  const group = (g) => { if (!groups.has(g)) groups.set(g, `g${groups.size}`); return groups.get(g); };
+  const ref = (id) => (id == null ? id : position.get(id) ?? 'dangling');
+  const file = (id) => (scene.files?.[id] ? payloadHash(scene.files[id]) : 'missing');
+  return {
+    type: scene.type,
+    version: scene.version,
+    appState: roundDeep(scene.appState ?? {}),
+    files: Object.values(scene.files ?? {}).map(payloadHash).sort(),
+    elements: elements.map((e) => Object.fromEntries(Object.keys(e).sort().filter((k) => !VOLATILE_FIELDS.has(k)).map((k) => {
+      const v = e[k];
+      if (k === 'containerId' || k === 'frameId') return [k, ref(v)];
+      if (k === 'groupIds') return [k, v.map(group)];
+      if (k === 'boundElements') return [k, v && v.map((b) => ({ type: b.type, id: ref(b.id) }))];
+      if (k === 'startBinding' || k === 'endBinding') return [k, v && { ...roundDeep(v), elementId: ref(v.elementId) }];
+      if (k === 'fileId') return [k, file(v)];
+      return [k, roundDeep(v)];
+    }))),
+  };
+}
+
+// The first thing that differs, named precisely enough to act on, or null.
+function firstDifference(committed, rebuilt) {
+  for (const key of ['type', 'version', 'appState', 'files']) {
+    if (JSON.stringify(committed[key]) !== JSON.stringify(rebuilt[key])) {
+      return `${key}: ${JSON.stringify(committed[key]).slice(0, 80)} in the committed scene, ${JSON.stringify(rebuilt[key]).slice(0, 80)} rebuilt`;
+    }
+  }
+  const count = Math.max(committed.elements.length, rebuilt.elements.length);
+  for (let i = 0; i < count; i++) {
+    const a = committed.elements[i];
+    const b = rebuilt.elements[i];
+    if (JSON.stringify(a) === JSON.stringify(b)) continue;
+    if (!a || !b) return `element ${i}: only in the ${a ? 'committed scene' : 'rebuild'}`;
+    const key = [...new Set([...Object.keys(a), ...Object.keys(b)])].find((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+    const label = a.text ? ` "${String(a.text).slice(0, 30)}"` : '';
+    return `element ${i} (${a.type}${label}): ${key} ${JSON.stringify(a[key])?.slice(0, 80)} in the committed scene, ${JSON.stringify(b[key])?.slice(0, 80)} rebuilt`;
+  }
+  return null;
+}
+
+test('the example freshness check sees a moved caption or a changed mark, not new ids (#50)', () => {
+  const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.excalidraw'), 'utf8'));
+  const base = projectScene(scene);
+  const copy = () => JSON.parse(JSON.stringify(scene));
+
+  // Every random field redrawn and every id renamed consistently: nothing shows.
+  const reissued = copy();
+  const renamed = (id) => `renamed-${id}`;
+  for (const e of reissued.elements) {
+    e.id = renamed(e.id);
+    e.seed += 1;
+    e.versionNonce += 1;
+    e.updated += 1000;
+    if (e.index) e.index = `${e.index}0`;
+    e.groupIds = (e.groupIds ?? []).map(renamed);
+    if (e.containerId) e.containerId = renamed(e.containerId);
+    if (e.frameId) e.frameId = renamed(e.frameId);
+    if (e.boundElements) e.boundElements = e.boundElements.map((bound) => ({ ...bound, id: renamed(bound.id) }));
+    for (const end of ['startBinding', 'endBinding']) if (e[end]) e[end] = { ...e[end], elementId: renamed(e[end].elementId) };
+  }
+  eq(firstDifference(base, projectScene(reissued)), null, 'new ids, seeds, nonces, timestamps and index keys are not drift');
+
+  // One caption four pixels lower: the element count is unchanged, and it is drift.
+  const moved = copy();
+  const caption = moved.elements.findIndex((e) => e.type === 'text');
+  moved.elements[caption].y += 4;
+  const found = firstDifference(base, projectScene(moved));
+  assert(found?.startsWith(`element ${caption} (text`) && found.includes(': y '), `a moved caption was not named: ${found}`);
+
+  // A different embedded mark behind the same element.
+  const withFiles = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'shared-icon-packs.spec.json'), 'utf8'))).scene;
+  const swapped = JSON.parse(JSON.stringify(withFiles));
+  const [fileId] = Object.keys(swapped.files);
+  assert(fileId, 'the shared-pack example embeds files');
+  swapped.files[fileId].dataURL = swapped.files[fileId].dataURL.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+  const swap = firstDifference(projectScene(withFiles), projectScene(swapped));
+  assert(swap?.startsWith('files'), `a changed embedded file was not named: ${swap}`);
+});
+
 // Both shipped examples are read by the agent before it writes a spec, so a
 // stale one teaches the wrong thing. The PNG matters as much as the JSON here:
 // it is the thing that actually gets looked at.
@@ -1473,8 +1651,10 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
     assert(r.ok, `${name} scene errors: ${r.errors.join('; ')}`);
     const spec = JSON.parse(readFileSync(specPath, 'utf8'));
     const rebuilt = builder.buildDiagram(spec);
-    eq(rebuilt.scene.elements.length, JSON.parse(readFileSync(scenePath, 'utf8')).elements.length,
-      'the committed scene is stale - rebuild it from the spec');
+    const drift = firstDifference(projectScene(JSON.parse(readFileSync(scenePath, 'utf8'))), projectScene(rebuilt.scene));
+    assert(!drift, `the committed ${name}.excalidraw is stale at ${drift}. Rebuild it (node bin/arkitect.mjs excalidraw build `
+      + `skills/arkitect-excalidraw/assets/templates/${name}.spec.json --out <tmp>), copy it over, and re-render ${name}.png `
+      + 'in the same pull request.');
     assert(!rebuilt.report.missingIcons.length,
       `${name} has unresolved icons: ${rebuilt.report.missingIcons.join(', ')}`);
     assert(!rebuilt.report.unknownKinds.length,
@@ -1493,5 +1673,6 @@ test('the docker compose file pins the official image and a port', () => {
 cleanTestIcons();
 
 console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
+console.log(`source-dependent: ${sourceDependent}`);
 if (!haveSources) console.log('(reference-scene tests skipped: .analysis/sources.local.json not present)');
 if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }

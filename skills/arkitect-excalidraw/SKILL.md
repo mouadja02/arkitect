@@ -130,7 +130,10 @@ the generator's defaults; do not undo them by hand:
    particularly the parts about relative arrow points and two-sided bindings.
 
 5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling
-   backup before replacing an existing file. Editing by any other route means
+   backup before replacing an existing file. Once the new scene is written it
+   keeps the oldest backup and the newest five of that file, deletes the rest and
+   lists them under `pruned` (`--keep-backups N`; `0` keeps all). Suggest
+   `*.backup-*` for the user's `.gitignore`. Editing by any other route means
    calling `backupExisting()` or copying the file yourself first.
 
 6. **Validate.**
