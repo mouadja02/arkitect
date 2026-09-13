@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `214 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `215 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -57,9 +57,9 @@ process, so they cannot tread on each other.
 | Duplicate titles | both Compute Optimizer variants retained, disambiguated by index, size and payload hash |
 | AWS pack | built from Amazon's pinned package; every one of the 243 palette ids still present; AgentCore as one official SVG plus five 156px feature rasters matching their pinned digest; the PNG codec round-trips, area-averages and never enlarges; icon cells fit their image instead of stretching square |
 | Catalog | no base64 payloads, required fields present |
-| Brand paint | a devicon mark flagged `"paint": "tint"` is filled with its hex through the root, keeping its namespaces and viewBox, while an explicit fill, `currentColor`, a stroke, a style, a gradient or a root `fill="none"` is refused; gRPC ships tinted `#00b0ad`, the seven full-colour devicon marks keep their pinned digests, and every tinted or tile-bright catalog row, and no other, records its hex (#31) |
+| Brand paint | a devicon mark flagged `"paint": "tint"` is filled with its hex through the root, keeping its namespaces and viewBox, while an explicit fill, `currentColor`, a stroke, a style, a gradient or a root `fill="none"` is refused; gRPC ships tinted `#00b0ad`, the ten full-colour devicon marks keep their pinned digests, and every tinted or tile-bright catalog row, and no other, records its hex (#31) |
 | Licensed originals | Apache Iceberg, Pinot and Beam ship from the `asf-logos` local-files source: its terms record the ASF policy that licenses graphic logos under Apache-2.0, exactly those three originals are committed and match their pin, each catalog row embeds its file byte-for-byte and names its origin URL, and each library cell keeps the artwork's aspect (Iceberg 78x21); Hudi, Samza, ActiveMQ and ZooKeeper stay on-demand with the licence, the reason and the ASF's own render to fetch, and Crossplane, Flux and Open Policy Agent record the Linux Foundation finding and pinned CNCF artwork (#11) |
-| Icon lookup | exact and fuzzy matches; an ambiguous query returns every variant; an unknown service returns no match; a fragment of a different product's name (`tempo`, `cube`) is flagged, not resolved; the 66 products promoted from the catch-all resolve from their curated packs with no copy left in `brands` |
+| Icon lookup | exact and fuzzy matches; an ambiguous query returns every variant; an unknown service returns no match; a fragment of a different product's name (`tempo`, `cube`) is flagged, not resolved; the 66 products promoted from the catch-all resolve from their curated packs with no copy left in `brands`; Teleport, Argo CD and Playwright ship as devicon's full-colour originals and dlt leaves the catch-all, each resolving confidently by name, while `argo` and `argo workflows` stay on the Argo mark (#20) |
 | Resolution accuracy | the 362-query answer key in `tests/icon-queries.json`: zero confident wrong answers, precision at rank 1 above its floor, and the numbers printed on every run |
 | Cell styles | the comma-only data URI form; the embedded payload matches the catalog hash |
 | Logos | transparency read from the IHDR; an opaque PNG flagged; sizing fits the longest side and preserves aspect; non-images refused |

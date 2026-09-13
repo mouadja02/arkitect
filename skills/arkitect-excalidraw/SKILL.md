@@ -61,7 +61,7 @@ the generator's defaults; do not undo them by hand:
    placeholder. The search says which up front: `"draws": "<ref>"`, or
    `"placeholder": "<why>"`.
 
-   Shared packs fill coverage gaps with 4,796 original SVG/PNG marks from the
+   Shared packs fill coverage gaps with 4,799 original SVG/PNG marks from the
    sibling Draw.io skill. Existing successful resolutions keep their artwork;
    use `"icon": "drawio:databases/postgresql"` to choose a shared mark exactly.
    Search and build reports identify these as **embedded**, with source and
