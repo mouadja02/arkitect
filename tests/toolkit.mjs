@@ -434,10 +434,33 @@ test('the changelog CLI checks, assembles into a checkout and gates a pull reque
   eq(run('--check', '--assemble').status, 2, 'two modes');
   eq(run('--check', '--dry-run').status, 2, '--dry-run without --assemble');
   eq(spawnSync(process.execPath, [script, '--require-fragment'], { encoding: 'utf8' }).status, 2, '--require-fragment without a base');
-  if (spawnSync('git', ['--version']).status === 0) {
-    eq(spawnSync(process.execPath, [script, '--require-fragment', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).status, 0,
-      'an empty diff needs no fragment');
-  }
+
+  // The gate against a real repository of its own, so a fragment in this
+  // checkout can never decide it.
+  if (spawnSync('git', ['--version']).status !== 0) return;
+  const repo = join(TMP, 'changelog-repo');
+  mkdirSync(join(repo, 'skills'), { recursive: true });
+  mkdirSync(join(repo, 'changelog.d'), { recursive: true });
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid',
+    '-c', 'commit.gpgsign=false', ...args], { cwd: repo, encoding: 'utf8', stdio: 'pipe' });
+  writeFileSync(join(repo, 'skills', 'x.mjs'), '1\n');
+  git('init', '-q');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'base');
+  const base = git('rev-parse', 'HEAD').trim();
+  const gate = (ref = base) => spawnSync(process.execPath, [script, '--require-fragment', ref, '--root', repo], { encoding: 'utf8' });
+  eq(gate().status, 0, 'an empty diff needs no fragment');
+  writeFileSync(join(repo, 'skills', 'x.mjs'), '2\n');
+  git('commit', '-q', '-a', '-m', 'change');
+  const missing = gate();
+  eq(missing.status, 1, 'a skills/ change without a fragment');
+  assert(missing.stderr.includes('skills/x.mjs') && missing.stderr.includes('skip-changelog'),
+    `the failure names the file and the label:\n${missing.stderr}`);
+  writeFileSync(join(repo, 'changelog.d', '9-x.md'), '### Fixed\n\n- **x** (#9).\n');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'fragment');
+  eq(gate().status, 0, 'adding a fragment satisfies the gate');
+  eq(gate('no-such-ref').status, 2, 'an unknown base is a usage error, not a pass');
 });
 
 test('a pull request that changes bin/, skills/ or docs/ must add a fragment (#32)', () => {
