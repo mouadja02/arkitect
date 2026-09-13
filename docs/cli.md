@@ -287,7 +287,11 @@ search `drawio` on PATH, then `/opt/drawio/drawio`, `/usr/bin/drawio`,
 `/Applications/draw.io.app/Contents/MacOS/draw.io`,
 `C:\Program Files\draw.io\draw.io.exe` and
 `C:\Program Files (x86)\draw.io\draw.io.exe`, in that order. Missing-app errors
-list the candidates tried. Rendering is local; never use the hosted editor.
+list the candidates tried. `arkitect doctor` runs the same discovery: it prints
+the path and how it was found (`DRAWIO_EXE`, `PATH` or `install location`); when
+nothing is found, how many PATH directories it searched and every install
+location it tried; and a warning when `DRAWIO_EXE` is set to something `render`
+would refuse. Rendering is local; never use the hosted editor.
 
 On Linux without `DISPLAY`, the helper announces and uses `xvfb-run -a` if
 available. Install Xvfb separately when needed, and set `HOME` under cron/ssh.

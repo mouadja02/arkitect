@@ -96,25 +96,40 @@ function pathCandidates(name, platform, env) {
   return paths.map(dir => (windows ? win32 : posix).join(dir.replace(/^"|"$/g, ''), name + (windows ? '.exe' : '')));
 }
 
-export function discoverDrawio(override, { platform = process.platform, env = process.env, isExecutable = executable } = {}) {
+const INSTALL_LOCATIONS = ['/opt/drawio/drawio', '/usr/bin/drawio', '/Applications/draw.io.app/Contents/MacOS/draw.io',
+  'C:\\Program Files\\draw.io\\draw.io.exe', 'C:\\Program Files (x86)\\draw.io\\draw.io.exe'];
+
+// Where Draw.io Desktop is and how it was found: `path`, the `source` that won
+// (--drawio-exe, DRAWIO_EXE, PATH or an install location), every path `tried`
+// in order, and which candidates came from PATH (`onPath`). With no usable
+// binary `path` is null and `error` says why. `doctor` reports this, so it can
+// never disagree with `render` (#46).
+export function locateDrawio(override, { platform = process.platform, env = process.env, isExecutable = executable } = {}) {
   // An explicit override is a pin, not a hint. Page indexing differs between
   // builds, so DRAWIO_EXE / --drawio-exe is how you select the build you mean.
   // Falling through to a different binary would silently render with the wrong
   // build, so an unusable override must fail naming it rather than degrade.
   const explicit = override ?? env.DRAWIO_EXE;
   if (explicit) {
-    if (!isExecutable(explicit)) {
-      const source = override ? '--drawio-exe' : 'DRAWIO_EXE';
-      throw new Error(`Draw.io Desktop ${source} ${explicit} is not executable.`);
-    }
-    return explicit;
+    const source = override ? '--drawio-exe' : 'DRAWIO_EXE';
+    return isExecutable(explicit)
+      ? { path: explicit, source, tried: [explicit], onPath: [] }
+      : { path: null, source, tried: [explicit], onPath: [], error: `Draw.io Desktop ${source} ${explicit} is not executable.` };
   }
-  const candidates = [...new Set([...pathCandidates('drawio', platform, env),
-    '/opt/drawio/drawio', '/usr/bin/drawio', '/Applications/draw.io.app/Contents/MacOS/draw.io',
-    'C:\\Program Files\\draw.io\\draw.io.exe', 'C:\\Program Files (x86)\\draw.io\\draw.io.exe'].filter(Boolean))];
-  const found = candidates.find(isExecutable);
-  if (!found) throw new Error(`Draw.io Desktop not found. Tried:\n${candidates.map(p => `  ${p}`).join('\n')}\nInstall Draw.io Desktop or set --drawio-exe / DRAWIO_EXE.`);
-  return found;
+  const onPath = [...new Set(pathCandidates('drawio', platform, env))];
+  const tried = [];
+  for (const candidate of new Set([...onPath, ...INSTALL_LOCATIONS])) {
+    tried.push(candidate);
+    if (isExecutable(candidate)) return { path: candidate, source: onPath.includes(candidate) ? 'PATH' : 'install location', tried, onPath };
+  }
+  return { path: null, source: null, tried, onPath,
+    error: `Draw.io Desktop not found. Tried:\n${tried.map(p => `  ${p}`).join('\n')}\nInstall Draw.io Desktop or set --drawio-exe / DRAWIO_EXE.` };
+}
+
+export function discoverDrawio(override, deps) {
+  const found = locateDrawio(override, deps);
+  if (!found.path) throw new Error(found.error);
+  return found.path;
 }
 
 export const USAGE = `usage: render-drawio.mjs <file> [--page-index N] [--all]

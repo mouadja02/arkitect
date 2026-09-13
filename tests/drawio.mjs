@@ -142,6 +142,29 @@ test('renderer pins an explicit override and never falls through to auto-discove
   }
 });
 
+test('locateDrawio reports the path, the source that won and every path tried (#46)', () => {
+  const linux = { platform: 'linux', env: { PATH: '/tools:/apps' } };
+  const at = (winner, deps = linux) => renderer.locateDrawio(undefined, { ...deps, isExecutable: p => p === winner });
+  const shape = r => JSON.stringify([r.path, r.source, r.tried]);
+  eq(shape(at('/apps/drawio')), JSON.stringify(['/apps/drawio', 'PATH', ['/tools/drawio', '/apps/drawio']]), 'found on PATH');
+  eq(shape(at('/opt/drawio/drawio')), JSON.stringify(['/opt/drawio/drawio', 'install location', ['/tools/drawio', '/apps/drawio', '/opt/drawio/drawio']]),
+    'the official .deb location');
+  eq(shape(at('/usr/bin/drawio', { platform: 'linux', env: { PATH: '/usr/bin' } })), JSON.stringify(['/usr/bin/drawio', 'PATH', ['/usr/bin/drawio']]),
+    'a PATH entry that is also an install location is probed once, as PATH');
+  eq(shape(renderer.locateDrawio(undefined, { platform: 'linux', env: { PATH: '/tools', DRAWIO_EXE: '/pin/drawio' }, isExecutable: p => p === '/pin/drawio' })),
+    JSON.stringify(['/pin/drawio', 'DRAWIO_EXE', ['/pin/drawio']]), 'DRAWIO_EXE');
+  const flag = renderer.locateDrawio('/flag/drawio', { platform: 'linux', env: {}, isExecutable: () => false });
+  eq(shape(flag), JSON.stringify([null, '--drawio-exe', ['/flag/drawio']]), 'an unusable --drawio-exe never falls through');
+  assert(flag.error.includes('--drawio-exe /flag/drawio is not executable'), flag.error);
+  const none = at('nowhere');
+  eq(JSON.stringify([none.path, none.source, none.tried.length]), JSON.stringify([null, null, 7]), 'two PATH entries and five install locations tried');
+  eq(JSON.stringify(none.onPath), JSON.stringify(['/tools/drawio', '/apps/drawio']), 'the PATH candidates are told apart');
+  eq(JSON.stringify(renderer.locateDrawio(undefined, { platform: 'linux', env: { PATH: '/a:/a' }, isExecutable: () => false }).onPath),
+    JSON.stringify(['/a/drawio']), 'a repeated PATH entry is probed once');
+  assert(none.error.startsWith('Draw.io Desktop not found.'), none.error);
+  eq(renderer.discoverDrawio(undefined, { ...linux, isExecutable: p => p === '/opt/drawio/drawio' }), '/opt/drawio/drawio', 'discoverDrawio answers with the same path');
+});
+
 test('renderer splits zero-based pages on all platforms and preserves opt-in Electron flags', () => {
   assert(typeof renderer.render === 'function', 'render missing');
   const file = join(TMP, 'two pages.drawio');
