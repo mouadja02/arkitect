@@ -878,6 +878,9 @@ const DEVICON_VERBATIM = {
   'ml-training/kubeflow': 'f5873bb2d4133f4f5157e13992eb7eac0f1d0be8a37a5cf0c2a9f97bdaef3471',
   'devops/sonarqube': '44ab2530f7a929e37be661b5ce074de01a9192383d54c0705dd7e1516cf3e641',
   'languages-runtimes/csharp': 'd73d492a523c1102b8e59660de27da613f65e5dc47652971fb376c2b09aaaaa4',
+  'security-identity/teleport': 'a45e6ae1cfcaa8f7f065c6e4418d06b540c1cdfc7cf312c05c1f52c711d3bda2',
+  'devops/argocd': '2e3b6661a6a1e94342f63414527f1d1e5be02081aee2369cc7c72b7a0d52c79e',
+  'languages-runtimes/playwright': '1bc125e2248458631f7cc63da68ff708b3197d12e5d5f753d57f0ce205cecf15',
 };
 
 test('gRPC ships tinted in its manifest colour, the other devicon marks stay verbatim, and painted rows record their hex (#31)', () => {
@@ -1243,6 +1246,33 @@ test('the 66 products promoted out of the catch-all now live in curated packs (#
   // Named exactly, each now answers from its curated pack without the catch-all caveat.
   for (const [q, id] of [['kong', 'devops/kong'], ['posthog', 'data-platforms/posthog'], ['thanos', 'observability/thanos'],
     ['vite', 'languages-runtimes/vite'], ['pytest', 'languages-runtimes/pytest'], ['f#', 'languages-runtimes/fsharp']]) {
+    const r = finder.resolve(q);
+    assert(r.confident, `"${q}" is not confident: ${r.reason}`);
+    eq(r.icon.id, id, `"${q}"`);
+  }
+});
+
+test('Teleport, Argo CD, Playwright and dlt ship from sources already pinned (#20)', () => {
+  const cat = finder.loadCatalog();
+  const byId = new Map(cat.icons.filter((i) => i.bytes === 'committed').map((i) => [i.id, i]));
+  // Three full-colour devicon originals, verbatim, and one Simple Icons mark
+  // promoted out of the catch-all. No new source, no new licence.
+  for (const [id, title, source, upstreamId] of [
+    ['security-identity/teleport', 'Teleport', 'devicon@2.17.0', 'icons/teleport/teleport-original.svg'],
+    ['devops/argocd', 'Argo CD', 'devicon@2.17.0', 'icons/argocd/argocd-original.svg'],
+    ['languages-runtimes/playwright', 'Playwright', 'devicon@2.17.0', 'icons/playwright/playwright-original.svg'],
+    ['streaming-orchestration/dlthub', 'dlt', 'simple-icons@16.30.0', 'dlthub'],
+  ]) {
+    const r = byId.get(id);
+    assert(r, `${id} does not ship`);
+    eq(`${r.title} | ${r.source} | ${r.upstreamId}`, `${title} | ${source} | ${upstreamId}`, id);
+    if (source.startsWith('devicon')) eq(r.render, 'verbatim-colour', `${id} ships its own colours`);
+  }
+  assert(!byId.has('brands/dlthub'), 'brands/dlthub still ships a second copy');
+  // The Argo octopus stays Argo's; Argo CD answers from DevOps in colour.
+  for (const [q, id] of [['teleport', 'security-identity/teleport'], ['argocd', 'devops/argocd'], ['argo cd', 'devops/argocd'],
+    ['argo', 'streaming-orchestration/argo'], ['argo workflows', 'streaming-orchestration/argo'],
+    ['playwright', 'languages-runtimes/playwright'], ['dlt', 'streaming-orchestration/dlthub'], ['dlthub', 'streaming-orchestration/dlthub']]) {
     const r = finder.resolve(q);
     assert(r.confident, `"${q}" is not confident: ${r.reason}`);
     eq(r.icon.id, id, `"${q}"`);

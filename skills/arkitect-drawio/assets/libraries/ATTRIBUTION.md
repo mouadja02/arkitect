@@ -25,7 +25,7 @@ Two kinds of terms appear below, and the difference matters:
 | aws-agentcore-extras | permission | [AWS Architecture Icons terms](https://aws.amazon.com/architecture/icons/) | 5 |
 | simple-icons@16.30.0 | licence | [CC0-1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md) | 3467 |
 | simple-icons@15.22.0 | licence | CC0-1.0 | - |
-| devicon@2.17.0 | licence | [MIT](https://github.com/devicons/devicon/blob/master/LICENSE) | 8 |
+| devicon@2.17.0 | licence | [MIT](https://github.com/devicons/devicon/blob/master/LICENSE) | 11 |
 | asf-logos | licence | [Apache-2.0](https://www.apache.org/foundation/marks/) | 3 |
 | lucide-static@1.45.0 | licence | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE) | 89 |
 | @primer/octicons@19.36.0 | licence | [MIT](https://github.com/primer/octicons/blob/main/LICENSE) | 31 |

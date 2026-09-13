@@ -2504,7 +2504,8 @@
           "title": "Argo",
           "hex": "EF7B4D",
           "aliases": [
-            "argo"
+            "argo",
+            "argo workflows"
           ],
           "source": "simple-icons@16.30.0"
         },
@@ -2573,6 +2574,17 @@
           "source": "asf-logos",
           "file": "beam-2.svg",
           "upstreamUrl": "https://www.apache.org/logos/originals/beam-2.svg"
+        },
+        {
+          "slug": "dlthub",
+          "title": "dlt",
+          "hex": "59C1D5",
+          "aliases": [
+            "dlt",
+            "dlthub",
+            "data load tool"
+          ],
+          "source": "simple-icons@16.30.0"
         }
       ],
       "onDemand": [
@@ -3555,6 +3567,19 @@
             "kong"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "argocd",
+          "title": "Argo CD",
+          "aliases": [
+            "argo cd",
+            "argocd",
+            "argo-cd"
+          ],
+          "source": "devicon@2.17.0",
+          "deviconName": "argocd",
+          "deviconVariant": "original",
+          "hex": "ef7b4d"
         }
       ],
       "onDemand": [
@@ -3866,6 +3891,17 @@
             "clerk"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "teleport",
+          "title": "Teleport",
+          "aliases": [
+            "teleport"
+          ],
+          "source": "devicon@2.17.0",
+          "deviconName": "teleport",
+          "deviconVariant": "original",
+          "hex": "512fc9"
         }
       ],
       "onDemand": [
@@ -5146,6 +5182,17 @@
             "cypress"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "playwright",
+          "title": "Playwright",
+          "aliases": [
+            "playwright"
+          ],
+          "source": "devicon@2.17.0",
+          "deviconName": "playwright",
+          "deviconVariant": "original",
+          "hex": "2EAD33"
         }
       ],
       "onDemand": [
