@@ -36,7 +36,7 @@ Read `references/style-guide.md` before laying anything out, and
    pick an id deliberately, narrow with `--pack`, or ask. Do not take the first row
    because it was first.
 
-   Sixty-six products are catalogued without artwork, because their marks carry no
+   Seventy-five products are catalogued without artwork, because their marks carry no
    redistribution licence or their licensed artwork does not draw at icon size. Those
    come back as `bytes: "on-demand"` with the exact
    `fetch-logo` command to run. Run it, then use the cached logo.
@@ -195,9 +195,9 @@ several. Lower rank wins a tie, so a curated pack always beats the catch-all.
 | `data-platforms` | 27 | Warehouses, lakehouses, query engines, BI, product analytics |
 | `databases` | 37 | Relational, document, key-value, graph, vector |
 | `ai-frameworks` | 34 | LLM orchestration, agent frameworks, providers |
-| `ml-training` | 27 | Training, experiment tracking, the numeric stack |
+| `ml-training` | 32 | Training, experiment tracking, the numeric stack |
 | `streaming-orchestration` | 18 | Brokers, stream processors, schedulers |
-| `observability` | 26 | Metrics, logs, traces, alerting, on-call |
+| `observability` | 27 | Metrics, logs, traces, alerting, on-call |
 | `devops` | 55 | IaC, CI/CD, containers, mesh, proxies, distros |
 | `security-identity` | 26 | Secrets, SSO, scanning, runtime security, VPN |
 | `github` | 38 | GitHub marks plus Octicon workflow concepts |

@@ -259,6 +259,17 @@ async function buildBrandEntries(icons, manifest, cache) {
       // licence covers it (#11). A wordmark or lockup keeps its own aspect: the
       // cell fits 78px on its longest side, the way a raster's does.
       const opened = await openSource(icon.source, manifest, cache);
+      // A project that publishes its logo only as a raster ships that raster (#20).
+      if (/\.png$/i.test(icon.file)) {
+        const buf = opened.files.get(icon.file);
+        if (!buf) throw new Error(`${icon.slug}: ${icon.source} has no file "${icon.file}"`);
+        out.push({
+          slug: icon.slug, title: icon.title, ...pngArt(buf),
+          aliases: withShortName(icon.aliases, icon.title),
+          source: icon.source, upstreamId: icon.upstreamUrl ?? icon.file, render: 'verbatim',
+        });
+        continue;
+      }
       const svg = readText(opened, icon.file);
       const [, , width, height] = viewBoxOf(svg);
       const scale = ICON_SIZE / Math.max(width, height);

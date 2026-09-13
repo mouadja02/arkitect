@@ -27,6 +27,12 @@ Two kinds of terms appear below, and the difference matters:
 | simple-icons@15.22.0 | licence | CC0-1.0 | - |
 | devicon@2.17.0 | licence | [MIT](https://github.com/devicons/devicon/blob/master/LICENSE) | 11 |
 | asf-logos | licence | [Apache-2.0](https://www.apache.org/foundation/marks/) | 3 |
+| jax-logo | licence | [Apache-2.0](https://github.com/jax-ml/jax/blob/adb0562417371429beddf7d575a0753dc957de19/LICENSE) | 1 |
+| flax-logo | licence | [Apache-2.0](https://github.com/google/flax/blob/01854da11286b4109c59d7fd9205f3822fe807d6/LICENSE) | 1 |
+| lightgbm-logo | licence | [MIT](https://github.com/lightgbm-org/LightGBM/blob/6d386edf77a363750669ba622b133ca4e794e353/LICENSE) | 1 |
+| catboost-logo | licence | [Apache-2.0](https://github.com/catboost/catboost/blob/bc912d111cd9afc7efb89857e119634049b54e76/LICENSE) | 1 |
+| metaflow-logo | licence | [Apache-2.0](https://github.com/Netflix/metaflow/blob/72591a0a9e17e8070523cfcdfbdf38e11ee1dba1/LICENSE) | 1 |
+| signoz-logo | licence | [MIT](https://github.com/SigNoz/signoz/blob/c8e9e362f7ec90578a828d0c39c8db6408abc035/LICENSE) | 1 |
 | lucide-static@1.45.0 | licence | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE) | 89 |
 | @primer/octicons@19.36.0 | licence | [MIT](https://github.com/primer/octicons/blob/main/LICENSE) | 31 |
 | [azure-v24](https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip) | permission | [Microsoft Azure architecture icon terms](https://learn.microsoft.com/en-us/azure/architecture/icons/) | 638 |
@@ -68,6 +74,42 @@ On-demand only. These marks were removed in 16.x at the brand owners request, so
 
 Official Apache project graphic logos from https://www.apache.org/logos/originals/, committed byte-for-byte on 2026-09-13. The ASF trademark policy: unlike its word trademarks, "our graphic logos are licensed to the public under the Apache License". The licence covers the artwork; Apache, Iceberg, Pinot and Beam remain trademarks of The Apache Software Foundation, used here only to identify the projects.
 
+### jax-logo
+
+**Licence:** Apache-2.0 - <https://github.com/jax-ml/jax/blob/adb0562417371429beddf7d575a0753dc957de19/LICENSE>
+
+JAX's own logo, images/jax_logo.svg in jax-ml/jax at commit adb0562, committed byte-for-byte on 2026-09-13. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; JAX is named here only to identify the project.
+
+### flax-logo
+
+**Licence:** Apache-2.0 - <https://github.com/google/flax/blob/01854da11286b4109c59d7fd9205f3822fe807d6/LICENSE>
+
+Flax's own logo, images/flax_logo.svg in google/flax at commit 01854da, committed byte-for-byte on 2026-09-13. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Flax is named here only to identify the project.
+
+### lightgbm-logo
+
+**Licence:** MIT - <https://github.com/lightgbm-org/LightGBM/blob/6d386edf77a363750669ba622b133ca4e794e353/LICENSE>
+
+LightGBM's own logo, docs/logo/LightGBM_logo_black_text.svg in lightgbm-org/LightGBM at commit 6d386ed, committed byte-for-byte on 2026-09-13 - the logo the project's README shows. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). Wikimedia Commons also records the logo as below the threshold of originality. LightGBM is named here only to identify the project.
+
+### catboost-logo
+
+**Licence:** Apache-2.0 - <https://github.com/catboost/catboost/blob/bc912d111cd9afc7efb89857e119634049b54e76/LICENSE>
+
+CatBoost's own logo, logo/catboost.png in catboost/catboost at commit bc912d1, committed byte-for-byte on 2026-09-13; the project publishes it only as this PNG and a PDF. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; CatBoost is named here only to identify the project.
+
+### metaflow-logo
+
+**Licence:** Apache-2.0 - <https://github.com/Netflix/metaflow/blob/72591a0a9e17e8070523cfcdfbdf38e11ee1dba1/LICENSE>
+
+Metaflow's own logo, docs/metaflow.svg in Netflix/metaflow at commit 72591a0, committed byte-for-byte on 2026-09-13. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Metaflow is named here only to identify the project.
+
+### signoz-logo
+
+**Licence:** MIT - <https://github.com/SigNoz/signoz/blob/c8e9e362f7ec90578a828d0c39c8db6408abc035/LICENSE>
+
+SigNoz's own brand logo, frontend/src/assets/Logos/signoz-brand-logo.svg in SigNoz/signoz at commit c8e9e36, committed byte-for-byte on 2026-09-13. The repository's LICENSE puts everything outside ee/ and cmd/enterprise/ under the MIT Expat licence, this file included, and no separate logo or trademark policy governs it (#20). SigNoz is a trademark of SigNoz, Inc., named here only to identify the project.
+
 ### lucide-static@1.45.0
 
 **Licence:** ISC - <https://github.com/lucide-icons/lucide/blob/main/LICENSE>
@@ -108,7 +150,7 @@ Google now publishes per-service marks only as a legacy archive. On a title coll
 
 ## What is deliberately not here
 
-66 products are catalogued with a URL and a fetch command but no bytes,
+75 products are catalogued with a URL and a fetch command but no bytes,
 because no permissively licensed mark for them exists, or because the brand owner asked
 for it to be removed from the source we would otherwise use. Shipping them anyway would
 contradict the reason the rest of this file can be written honestly.
