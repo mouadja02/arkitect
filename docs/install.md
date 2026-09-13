@@ -98,6 +98,16 @@ arkitect doctor
 Everything the agent does, you can do by hand: write a spec, build, validate,
 render. See **[cli.md](cli.md)**.
 
+### The npm package
+
+`package.json` is kept publishable, and its `files` list is the whole content
+policy: the CLI, the four skills, their bundled icon packs, libraries and
+attribution, the plugin manifest and the docs. It never carries the upstream
+archive cache, cached logos, built icons, downloaded libraries, contact-sheet
+HTML or browser profiles, or backups; a test packs the real tarball to prove it.
+The test suite is not in the package, so `arkitect test` needs a clone. It is a
+CLI distribution only: install the plugin through route A or B.
+
 ## Verify the install
 
 ```bash
@@ -105,7 +115,7 @@ node tests/run-tests.mjs
 ```
 
 Offline, deterministic, a couple of seconds. On a fresh clone expect roughly
-`171 passed, 0 failed, 3 skipped` — the skips are the tests that need reference
+`173 passed, 0 failed, 3 skipped` — the skips are the tests that need reference
 diagrams of your own, which a clone does not have. That is the correct result,
 not a problem.
 

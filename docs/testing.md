@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. Roughly two
 seconds.
 
-On a fresh clone expect about `171 passed, 0 failed, 3 skipped`. The skips are
+On a fresh clone expect about `173 passed, 0 failed, 3 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -31,6 +31,7 @@ process, so they cannot tread on each other.
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |
 | Plugin shape | the manifest is valid, all four skills are well formed, the learning skills are user-invoked only, no hard-coded install paths |
+| Packaging | the real `npm pack` tarball, with a sentinel planted in every local-only location, ships every bundled asset and none of the caches, cached logos, built icons, downloaded libraries, contact-sheet HTML, browser profiles or backups, and unpacks under 60 MB; extracted outside the checkout its CLI runs `version`, `doctor`, both icon searches and a build and validate per engine, and `test` exits 2. Uses the npm beside Node, offline; skips only if there is none (#38) |
 | Redaction | no sensitive string from a reference diagram appears anywhere in the repository |
 
 ### Draw.io

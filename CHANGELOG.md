@@ -63,6 +63,18 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **The npm package carries what it should and nothing local** (#38). `files`
+  listed all of `skills/`, and npm does not read `.gitignore`, so `npm pack`
+  took in whatever had been generated locally: 106 MB packed and 153 MB
+  unpacked, including all nine upstream source archives, cached logos and built
+  icons, the contact-sheet HTML, and the Chrome profile `contact-sheet.mjs`
+  leaves under `contact-sheets/.shot/` (cookies, history, login data). It also
+  left out `.claude-plugin/`, which `doctor` checks. `files` now keeps the
+  bundled assets and excludes every local-only location: 179 files, 16 MB
+  packed, 47 MB unpacked. The plugin manifest ships; the test suite does not,
+  and `arkitect test` outside a checkout exits 2 saying where to find it. A
+  toolkit test packs the real tarball with sentinels planted in each excluded
+  location and runs the CLI from the extracted copy.
 - **A spec that names something that does not exist is refused, not built**
   (#36). A typo in an edge endpoint exited 0 in both engines: Excalidraw dropped
   the connection and the scene still validated, Draw.io wrote a dangling edge.

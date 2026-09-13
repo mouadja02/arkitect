@@ -7,10 +7,12 @@
 //
 // Offline and deterministic, like the others.
 
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { tmpdir } from 'node:os';
+import { gunzipSync } from 'node:zlib';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -314,6 +316,190 @@ test('gitignore keeps derived and third-party material out of the repository', (
   assert(gi.includes('!skills/arkitect-excalidraw/assets/libraries/bundled/'),
     'the bundled libraries must stay committed - they are the offline icon source');
 });
+
+// ------------------------------------------------------ the npm package (#38)
+//
+// What npm publishes is decided by `files` in package.json, not by .gitignore,
+// so local caches and a browser profile left under skills/ used to ride along.
+// These tests pack the real tarball with a sentinel planted in every place that
+// must stay local, read it back, and run the CLI from the extracted copy,
+// outside this checkout.
+
+// Local, generated or third-party material. None of it may ship.
+const LOCAL_ONLY = [
+  /^skills\/arkitect-drawio\/\.cache\//,
+  /^skills\/arkitect-drawio\/assets\/logos\/(?!README\.md$)/,
+  /^skills\/arkitect-drawio\/assets\/libraries\/contact-sheets\/(?:\.shot\/|[^/]+\.html$)/,
+  /^skills\/arkitect-excalidraw\/assets\/icons\/(?!README\.md$)/,
+  /^skills\/arkitect-excalidraw\/assets\/libraries\/(?!README\.md$|bundled\/)/,
+  /^skills\/arkitect-excalidraw\/assets\/libraries\/bundled\/sheets\/[^/]+\.(?:excalidraw|svg)$/,
+  /\.backup-/,
+  /(?:^|\/)(?:\.DS_Store|Thumbs\.db|desktop\.ini)$|\.log$/,
+];
+const isLocalOnly = (p) => LOCAL_ONLY.some((re) => re.test(p));
+
+// One file in each of those places, named so a leftover is obvious.
+const SENTINELS = [
+  'skills/arkitect-drawio/.cache/zz-test-sentinel.tgz',
+  'skills/arkitect-drawio/assets/logos/zz-test-sentinel.png',
+  'skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/zz-test-sentinel',
+  'skills/arkitect-drawio/assets/libraries/contact-sheets/zz-test-sentinel.html',
+  'skills/arkitect-excalidraw/assets/icons/zz-test-sentinel.excalidrawlib',
+  'skills/arkitect-excalidraw/assets/libraries/zz-test-sentinel.excalidrawlib',
+  'skills/arkitect-excalidraw/assets/libraries/bundled/sheets/zz-test-sentinel.svg',
+  'skills/arkitect-drawio/assets/templates/zz-test-sentinel.backup-20260101-000000.drawio',
+];
+
+// What the package is for: the CLI, the skills and their bundled assets.
+const PACKAGE_DIRS = ['bin', 'skills', '.claude-plugin', 'docker', 'docs'];
+const PACKAGE_ROOT_FILES = ['package.json', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'LICENSE', 'NOTICE'];
+// Today's package unpacks to about 47 MB; a stray archive or cache blows past this.
+const PACKAGE_CEILING = 60 * 1024 * 1024;
+
+// npm ships beside node. Calling its script directly needs no shell on Windows.
+const npmCli = [
+  join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  join(dirname(process.execPath), '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+].find(existsSync) ?? null;
+
+function walk(dir, acc = []) {
+  if (!existsSync(dir)) return acc;
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p, acc);
+    else acc.push(relative(ROOT, p).split(sep).join('/'));
+  }
+  return acc;
+}
+
+// A .tgz read with no dependency: gunzip, then ustar headers, honouring the pax
+// `path` record node-tar writes for a name that does not fit the header.
+function readTarball(file) {
+  const buf = gunzipSync(readFileSync(file));
+  const entries = [];
+  let paxPath = null;
+  for (let off = 0; off + 512 <= buf.length;) {
+    const header = buf.subarray(off, off + 512);
+    if (header.every((b) => b === 0)) break;
+    const field = (from, to) => header.subarray(from, to).toString('utf8').replace(/\0[\s\S]*$/, '');
+    const size = parseInt(field(124, 136).trim() || '0', 8);
+    const type = field(156, 157) || '0';
+    const body = buf.subarray(off + 512, off + 512 + size);
+    off += 512 + Math.ceil(size / 512) * 512;
+    if (type === 'x') { paxPath = body.toString('utf8').match(/^\d+ path=(.*)$/m)?.[1] ?? null; continue; }
+    if (type === 'g') continue;
+    const prefix = field(345, 500);
+    const path = paxPath ?? (prefix ? `${prefix}/${field(0, 100)}` : field(0, 100));
+    paxPath = null;
+    if (type === '0') entries.push({ path, bytes: body });
+  }
+  return entries;
+}
+
+function packAndExtract() {
+  const tmp = mkdtempSync(join(tmpdir(), 'arkitect-pack-'));
+  const planted = [];
+  try {
+    for (const rel of SENTINELS) {
+      const file = join(ROOT, ...rel.split('/'));
+      // Remember the outermost directory this creates, so cleanup removes only
+      // what the test added and never a real cache that was already there.
+      let created = null;
+      for (let d = dirname(file); !existsSync(d); d = dirname(d)) created = d;
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, 'arkitect packaging sentinel - must never be published\n');
+      planted.push(created ?? file);
+    }
+    const r = spawnSync(process.execPath, [npmCli, 'pack', '--json', '--ignore-scripts', '--pack-destination', tmp],
+      { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    if (r.status !== 0) throw new Error(`npm pack exited ${r.status}: ${(r.stderr || r.error?.message || '').trim().slice(-400)}`);
+    const [info] = JSON.parse(r.stdout);
+    const entries = readTarball(join(tmp, info.filename));
+    for (const e of entries) {
+      assert(e.path.startsWith('package/') && !e.path.split('/').includes('..'), `unexpected tarball entry ${e.path}`);
+      const out = join(tmp, ...e.path.split('/'));
+      mkdirSync(dirname(out), { recursive: true });
+      writeFileSync(out, e.bytes);
+    }
+    return {
+      tmp,
+      root: join(tmp, 'package'),
+      files: entries.map((e) => e.path.slice('package/'.length)),
+      bytes: entries.reduce((n, e) => n + e.bytes.length, 0),
+    };
+  } catch (error) {
+    rmSync(tmp, { recursive: true, force: true });
+    throw error;
+  } finally {
+    for (const p of planted.reverse()) rmSync(p, { recursive: true, force: true });
+  }
+}
+
+let packResult = null;
+function packOnce() {
+  if (!packResult) {
+    try { packResult = { value: packAndExtract() }; } catch (error) { packResult = { error }; }
+  }
+  if (packResult.error) throw packResult.error;
+  return packResult.value;
+}
+
+test('the npm package ships the bundled assets and nothing local (#38)', () => {
+  if (!npmCli) { console.log('      (npm was not found beside node)'); return 'skip'; }
+  for (const s of SENTINELS) assert(isLocalOnly(s), `sentinel ${s} is not in a local-only location`);
+  const { files, bytes } = packOnce();
+
+  const leaked = files.filter(isLocalOnly);
+  assert(!leaked.length, `local-only files in the package:\n        ${leaked.slice(0, 10).join('\n        ')}`);
+  for (const dir of ['tests', 'evals', '.github', '.analysis']) {
+    assert(!files.some((f) => f.startsWith(`${dir}/`)), `${dir}/ is in the package`);
+  }
+
+  const shipped = new Set(files);
+  const expected = [...PACKAGE_DIRS.flatMap((d) => walk(join(ROOT, d))), ...PACKAGE_ROOT_FILES].filter((f) => !isLocalOnly(f));
+  const missing = expected.filter((f) => !shipped.has(f));
+  assert(!missing.length, `missing from the package:\n        ${missing.slice(0, 10).join('\n        ')}`);
+  for (const f of ['bin/arkitect.mjs', '.claude-plugin/plugin.json', 'skills/arkitect-drawio/references/icon-catalog.json',
+    'skills/arkitect-drawio/assets/libraries/ATTRIBUTION.md', 'skills/arkitect-excalidraw/assets/libraries/bundled/index.json',
+    'skills/arkitect-excalidraw/assets/libraries/bundled/ATTRIBUTION.md', 'LICENSE', 'NOTICE']) {
+    assert(shipped.has(f), `${f} is not in the package`);
+  }
+  assert(bytes < PACKAGE_CEILING, `the package unpacks to ${bytes} bytes, over the ${PACKAGE_CEILING} ceiling`);
+});
+
+test('the packed CLI works from outside the checkout (#38)', () => {
+  if (!npmCli) return 'skip';
+  const { tmp, root } = packOnce();
+  const run = (args) => spawnSync(process.execPath, [join(root, 'bin', 'arkitect.mjs'), ...args],
+    { cwd: tmp, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const ok = (args) => {
+    const r = run(args);
+    eq(r.status, 0, `packed "arkitect ${args.join(' ')}" failed: ${(r.stderr || '').trim().slice(-300)}`);
+    return r.stdout;
+  };
+
+  eq(ok(['version']).trim(), pkg.version, 'packed version');
+  eq(resolve(ok(['where']).trim()), resolve(root), 'the packed CLI resolved a different root');
+  const doctor = ok(['doctor']);
+  for (const line of ['draw.io icon packs', 'draw.io AWS pack', 'draw.io icon catalog', 'excalidraw libraries', 'plugin manifest', 'agent contract']) {
+    const row = doctor.split('\n').find((l) => l.includes(line));
+    assert(row && row.startsWith('ok'), `packed doctor says: ${row?.trim() ?? `nothing about ${line}`}`);
+  }
+  assert(JSON.parse(ok(['drawio', 'icon', 'bedrock'])).matches?.length > 0, 'packed draw.io icon search found nothing');
+  assert(JSON.parse(ok(['excalidraw', 'icon', 'postgres'])).matches?.length > 0, 'packed excalidraw icon search found nothing');
+  for (const engine of ['drawio', 'excalidraw']) {
+    const spec = join(root, 'skills', `arkitect-${engine}`, 'assets', 'templates', 'starter-architecture.spec.json');
+    const out = join(tmp, `smoke.${engine}`);
+    ok([engine, 'build', spec, '--out', out]);
+    ok([engine, 'validate', out]);
+  }
+
+  const t = run(['test']);
+  eq(t.status, 2, 'arkitect test outside a checkout');
+  assert(t.stderr.includes('git checkout'), `arkitect test did not say why: ${t.stderr.trim()}`);
+});
+
+if (packResult?.value) rmSync(packResult.value.tmp, { recursive: true, force: true });
 
 // -------------------------------------------------------------
 

@@ -133,7 +133,16 @@ if (first === 'install') {
   const { install } = await import(pathToFileURL(join(HERE, 'lib', 'install-agent.mjs')).href);
   process.exit(install(ROOT, argv.slice(1)));
 }
-if (first === 'test') run(join(ROOT, 'tests', 'run-tests.mjs'), argv.slice(1), ROOT);
+if (first === 'test') {
+  // The suite ships with the git checkout, not the npm package (#38).
+  const suite = join(ROOT, 'tests', 'run-tests.mjs');
+  if (!existsSync(suite)) {
+    console.error('arkitect test runs the offline suite, which ships with the git checkout, not the npm package.\n'
+      + 'Clone https://github.com/mouadja02/arkitect and run `node tests/run-tests.mjs` there.');
+    process.exit(2);
+  }
+  run(suite, argv.slice(1), ROOT);
+}
 
 const engine = COMMANDS[first];
 if (!engine) {

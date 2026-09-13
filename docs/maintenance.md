@@ -19,7 +19,7 @@ node tests/run-tests.mjs
 
 The bar is **0 failed**, and no test that used to pass may start skipping. On a
 clone with no reference diagrams of your own, the expected shape is
-`171 passed, 0 failed, 3 skipped` — the skips are the tests that need a local
+`173 passed, 0 failed, 3 skipped` — the skips are the tests that need a local
 corpus. A drop in the passing count is a regression even if nothing says FAIL.
 
 ```bash
@@ -124,7 +124,7 @@ reformat, re-indent or "clean up" those files.
 | `skills/*/scripts/` | high — the generators. Full ritual, plus a render you looked at |
 | `skills/*/scripts/lib/` | high — the scene model, the tracer, the stroke generator. Small, surgical changes only |
 | `skills/*/assets/libraries/` | high — third-party bytes under their own licences. See below |
-| `.claude-plugin/`, `package.json` | high — version and name must stay in step (see below) |
+| `.claude-plugin/`, `package.json` | high — version and name must stay in step (see below); `files` is the npm content policy, and the packaging test in `tests/toolkit.mjs` fails if a local cache ships or a bundled asset does not |
 | `LICENSE`, `NOTICE`, `.gitattributes`, `.gitignore` | do not change without a stated reason |
 
 ## Adding an icon library
