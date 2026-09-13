@@ -63,6 +63,18 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **Contact sheets no longer leave a Chrome profile in the skill** (#44).
+  `contact-sheet.mjs --png` pointed Chrome's `--user-data-dir` at
+  `contact-sheets/.shot/` and never removed it, so one run left cookies,
+  history and login data in a directory people zip, copy and sync. The profile
+  and the intermediate HTML now live in a temporary directory removed after
+  every shot, pass or fail. The screenshot is taken there too and replaces
+  `<pack>.png` only if it is a real PNG, so a crash, a timeout or an empty shot
+  keeps the previous sheet and is reported as `FAILED` (exit 1) instead of
+  passing for a fresh one. Without `--png` the HTML is still written beside the
+  PNGs; with it, `--keep-html` keeps a copy. **If you have
+  `skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/`, delete it.**
+  The script warns while it exists and never deletes it for you.
 - **The npm package carries what it should and nothing local** (#38). `files`
   listed all of `skills/`, and npm does not read `.gitignore`, so `npm pack`
   took in whatever had been generated locally: 106 MB packed and 153 MB
