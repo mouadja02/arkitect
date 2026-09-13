@@ -63,6 +63,12 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **A rebuild in the same second no longer overwrites the previous backup** (#35).
+  Both builders stamped backups to the second and copied over whatever was
+  there, so two quick updates left one backup holding the first revision and
+  the original was gone. `backupExisting` now creates each backup exclusively
+  and, when the name is taken, tries `-1`, `-2`, ... in turn. Names stay
+  timestamped siblings, and the build report still gives the path it wrote.
 - **A fragment of a different product's name no longer resolves confidently.**
   `tempo` resolved to Temporal, `cube` to Azure's generic "Cubes" and
   `active directory` to its Connect Health sub-product, all without comment

@@ -5,7 +5,7 @@
 //
 // Format reference: ../../references/excalidraw-format.md
 
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, constants } from 'node:fs';
 import { dirname, join, basename, extname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -513,12 +513,26 @@ export function writeScene(path, scene) {
   return path;
 }
 
-export function backupExisting(path) {
+// A backup is created exclusively and never replaces an earlier one. Two updates
+// inside the same second get `-1`, `-2`, ... instead of the second copy
+// overwriting the first, which is how the original used to be lost (#35).
+// `now` exists so a test can pin the clock.
+const MAX_BACKUPS_PER_SECOND = 1000;
+
+export function backupExisting(path, { now = new Date() } = {}) {
   if (!existsSync(path)) return null;
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
-  const backup = join(dirname(path), `${basename(path, extname(path))}.backup-${stamp}${extname(path)}`);
-  copyFileSync(path, backup);
-  return backup;
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
+  const stem = join(dirname(path), `${basename(path, extname(path))}.backup-${stamp}`);
+  for (let n = 0; n < MAX_BACKUPS_PER_SECOND; n++) {
+    const backup = `${stem}${n ? `-${n}` : ''}${extname(path)}`;
+    try {
+      copyFileSync(path, backup, constants.COPYFILE_EXCL);
+      return backup;
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+  }
+  throw new Error(`no free backup name for ${path}: ${MAX_BACKUPS_PER_SECOND} already exist for ${stamp}`);
 }
 
 // ---------------------------------------------------------------- files (images)

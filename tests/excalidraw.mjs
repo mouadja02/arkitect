@@ -748,6 +748,23 @@ test('an existing file is backed up before it is replaced', () => {
   eq(backups.length, 1, 'exactly one backup');
 });
 
+test('rapid updates in the same second never overwrite an earlier backup (#35)', () => {
+  const dir = join(TMP, 'rapid-backups');
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'rapid.excalidraw');
+  const now = new Date('2026-09-13T10:15:00.000Z');
+  // Someone else's backup already holds the first name for this second.
+  const taken = join(dir, 'rapid.backup-20260913-101500.excalidraw');
+  writeFileSync(taken, 'pre-existing');
+  const versions = ['original', 'first revision', 'second revision'];
+  const backups = versions.map((v) => { writeFileSync(target, v); return core.backupExisting(target, { now }); });
+  eq(new Set(backups).size, versions.length, 'every call wrote its own backup');
+  eq(readFileSync(taken, 'utf8'), 'pre-existing', 'a pre-existing backup was overwritten');
+  versions.forEach((v, i) => eq(readFileSync(backups[i], 'utf8'), v, `backup ${i} lost its version`));
+  assert(backups[0].endsWith('rapid.backup-20260913-101500-1.excalidraw'), `unexpected collision name: ${backups[0]}`);
+  assert(backups[2].endsWith('rapid.backup-20260913-101500-3.excalidraw'), `unexpected collision name: ${backups[2]}`);
+});
+
 function writeSpec(name, spec) {
   const p = join(TMP, name);
   writeFileSync(p, JSON.stringify(spec));
