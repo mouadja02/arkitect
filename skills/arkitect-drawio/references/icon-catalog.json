@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-12T21:01:21.232Z",
+  "generated": "2026-09-13T01:25:35.283Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "3dacd850eb9f8c1b1d4ea841a4b5d941b3fea0be01f4e158a60bfcff1f3beb29"
+    "sha256": "94029e4358b3e67c6b8f98bee03fd310805007cf29866d4fdcb7a54226e7cc17"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -255,7 +255,7 @@
       "file": "file-types.drawio",
       "count": 35,
       "onDemand": 0,
-      "sha256": "b810fd605a8820547417ae593e0738f61e779a165b1c7d5d52de81857ade9293",
+      "sha256": "834463b44a17ea5398ea246e5e9611586c44aecd8bac6ad62ddb9bd80969a075",
       "note": "The Word, Excel and PowerPoint marks are trademarked and not licensed for redistribution, so .docx/.xlsx/.pptx use house sheets in the familiar colours rather than the product logos."
     },
     {
@@ -43228,7 +43228,7 @@
       "mime": "image/svg+xml",
       "width": 78,
       "height": 78,
-      "sha256": "d5f5627bf16395a828dfc5b3b4519768e7f3d2e458481f7c1317e1995eb01092",
+      "sha256": "e510bf037f0ade86da6f1b3eda8d3d4de7602f3e7d6ec38245102175b2a3e46f",
       "bytes": "committed",
       "libraryIndex": 13
     },
@@ -43436,7 +43436,7 @@
       "mime": "image/svg+xml",
       "width": 78,
       "height": 78,
-      "sha256": "7b552af8a40a9f3597aff1338b0be0144e9864a4e0953854410c9589e20a650b",
+      "sha256": "45bfa5fe61554340e32ea444ad1378976871e149643cf187c598d7235019c704",
       "bytes": "committed",
       "libraryIndex": 21
     },

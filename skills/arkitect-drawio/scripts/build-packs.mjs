@@ -290,7 +290,7 @@ async function buildSheetEntries(icons, manifest, cache) {
     const opened = await openSource(key, manifest, cache);
     const path = `icons/${icon.glyph}.svg`;
     const svg = fileSheet(readText(opened, path), {
-      ext: icon.ext, colour: `#${icon.hex}`, style: icon.kind === 'house' ? 'stroke' : 'fill',
+      ext: icon.ext, band: icon.band, colour: `#${icon.hex}`, style: icon.kind === 'house' ? 'stroke' : 'fill',
     });
     out.push({
       slug: icon.ext, title: icon.title, svg,

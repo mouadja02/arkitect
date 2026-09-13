@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. Roughly two
 seconds.
 
-On a fresh clone expect about `175 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect about `176 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -41,6 +41,7 @@ process, so they cannot tread on each other.
 | Library parsing | entry counts and file digests for every pack, SVG and PNG dimension decoding |
 | Library loading | every committed `.drawio` library loads the way Draw.io's `EditorUi.loadLibrary` reads one — a strict XML parse with an `<mxlibrary>` root, then `JSON.parse` of its text — using a loader that shares no code with `readLibrary`; every SVG payload declares each namespace prefix it uses; a mis-escaped library is proven to fail it |
 | Desktop export (opt-in) | one icon from every pack, and the five GCP marks with masks and filters, exported by Draw.io Desktop; every page must carry ink. Runs with `ARKITECT_DRAWIO_SMOKE=1` |
+| File-type bands | band text on a file sheet never renders under 8px: a ten- or eight-letter band and an empty `band` are refused, a short `band` replaces the extension at 9px; every committed file-types entry meets the floor, `.dockerfile` and `.excalidraw` show `DOCKER` and `EXCALI`, and both are still found by their full extension (#14) |
 | Contact sheets | with a fake Chrome that fills its profile with cookies and history: the profile and the page it renders live outside the repository and are removed, and only `<pack>.png` is added; a crash, a timeout, no screenshot, an empty one or a non-PNG is reported and leaves the previous sheet untouched; the HTML stays only without `--png`, with `--keep-html`, or when there is no Chrome; a legacy `.shot/` profile is reported, never deleted (#44) |
 | Duplicate titles | both Compute Optimizer variants retained, disambiguated by index, size and payload hash |
 | AWS pack | built from Amazon's pinned package; every one of the 243 palette ids still present; AgentCore as one official SVG plus five 156px feature rasters matching their pinned digest; the PNG codec round-trips, area-averages and never enlarges; icon cells fit their image instead of stretching square |

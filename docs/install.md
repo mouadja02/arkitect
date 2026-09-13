@@ -115,7 +115,7 @@ node tests/run-tests.mjs
 ```
 
 Offline, deterministic, a couple of seconds. On a fresh clone expect roughly
-`175 passed, 0 failed, 7 skipped` — the skips are the tests that need reference
+`176 passed, 0 failed, 7 skipped` — the skips are the tests that need reference
 diagrams of your own, which a clone does not have. That is the correct result,
 not a problem.
 
