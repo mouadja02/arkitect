@@ -318,6 +318,51 @@
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "note": "OpenMetadata's own monogram, openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg in open-metadata/OpenMetadata at commit 68606d7, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; OpenMetadata is named here only to identify the product."
     },
+    "hatchet-logo": {
+      "type": "local-files",
+      "dir": "local/hatchet-logo",
+      "sha256": "6965478c89c0f2a2b982f61eea93ad4a5a6bcd66bae59caafe31b0838f1e9ee0",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/hatchet-dev/hatchet/blob/315d43a72fd771b049b304b865a81dbab98c466c/LICENSE",
+      "note": "Hatchet's own lockup, assets/hatchet_logo_light.svg in hatchet-dev/hatchet at commit 315d43a, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). Hatchet's own brand page imposes no restriction on third-party use. Hatchet is a trademark of its owner, named here only to identify the product."
+    },
+    "trigger-logo": {
+      "type": "local-files",
+      "dir": "local/trigger-logo",
+      "sha256": "b18f5fd8007de1094b999620fce6bb988d17407e1e56852fb452a4e6a3d7c8b2",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/triggerdotdev/trigger.dev/blob/8b72e6c0616b1570d57f35b5e2a736791ad3c6f0/LICENSE",
+      "note": "Trigger.dev's own lockup, apps/webapp/app/assets/images/logo.svg in triggerdotdev/trigger.dev at commit 8b72e6c, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The repository publishes no square mark. Apache-2.0 grants no trademark rights; Trigger.dev is named here only to identify the product."
+    },
+    "restate-logo": {
+      "type": "local-files",
+      "dir": "local/restate-logo",
+      "sha256": "e191151d08ec6437f75ffb9acccd13f4e342c329925c51b40976a71222fb0a32",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/restatedev/documentation/blob/de0378c9d7e6499cde94ac743f460161900b1e4c/LICENSE",
+      "note": "Restate's own icon mark, static/img/favicon.svg in restatedev/documentation at commit de0378c, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The restate server itself is under the Business Source License, but this artwork is published in the project's own MIT-licensed documentation repository. Restate is a trademark of its owner, named here only to identify the product."
+    },
+    "meltano-logo": {
+      "type": "local-files",
+      "dir": "local/meltano-logo",
+      "sha256": "3cb9dc4fbf4379250adaa46d72e55c33aa3adc5349dccdab5cff6a2330288234",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/meltano/meltano/blob/239771f781336e9797b9f0fefad5ec60aa025852/LICENSE",
+      "note": "Meltano's own icon mark, docs/docs/reference/images/icon.svg in meltano/meltano at commit 239771f, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The former Meltano brand handbook is no longer published, so no logo policy is in force. Meltano is a trademark of its owner, named here only to identify the product."
+    },
+    "sqlmesh-logo": {
+      "type": "local-files",
+      "dir": "local/sqlmesh-logo",
+      "sha256": "cb34ab2ec44295767c9fc8cf3d35658007c543f6cc14dbbfc2b4389bac4fcf8c",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/SQLMesh/sqlmesh/blob/ee57c615ff0dacecbfd69db57757b93fa42e7bca/LICENSE",
+      "note": "SQLMesh's own mesh mark, vscode/extension/assets/logo.svg in SQLMesh/sqlmesh at commit ee57c61, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Tobiko Data publishes no trademark or logo policy. Apache-2.0 grants no trademark rights; SQLMesh is named here only to identify the product."
+    },
     "sysdig-logo": {
       "type": "local-files",
       "dir": "local/sysdig-logo",
@@ -3538,6 +3583,58 @@
             "data load tool"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "hatchet",
+          "title": "Hatchet",
+          "aliases": [
+            "hatchet"
+          ],
+          "source": "hatchet-logo",
+          "file": "hatchet-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/hatchet-dev/hatchet/315d43a72fd771b049b304b865a81dbab98c466c/assets/hatchet_logo_light.svg"
+        },
+        {
+          "slug": "trigger",
+          "title": "Trigger.dev",
+          "aliases": [
+            "trigger.dev",
+            "triggerdotdev"
+          ],
+          "source": "trigger-logo",
+          "file": "trigger-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/triggerdotdev/trigger.dev/8b72e6c0616b1570d57f35b5e2a736791ad3c6f0/apps/webapp/app/assets/images/logo.svg"
+        },
+        {
+          "slug": "restate",
+          "title": "Restate",
+          "aliases": [
+            "restate"
+          ],
+          "source": "restate-logo",
+          "file": "restate-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/restatedev/documentation/de0378c9d7e6499cde94ac743f460161900b1e4c/static/img/favicon.svg"
+        },
+        {
+          "slug": "meltano",
+          "title": "Meltano",
+          "aliases": [
+            "meltano"
+          ],
+          "source": "meltano-logo",
+          "file": "meltano-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/meltano/meltano/239771f781336e9797b9f0fefad5ec60aa025852/docs/docs/reference/images/icon.svg"
+        },
+        {
+          "slug": "sqlmesh",
+          "title": "SQLMesh",
+          "aliases": [
+            "sqlmesh",
+            "sql mesh"
+          ],
+          "source": "sqlmesh-logo",
+          "file": "sqlmesh-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/SQLMesh/sqlmesh/ee57c615ff0dacecbfd69db57757b93fa42e7bca/vscode/extension/assets/logo.svg"
         }
       ],
       "onDemand": [
@@ -3716,6 +3813,98 @@
           "licence": "CC0-1.0",
           "upstreamUrl": "https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/informatica.svg",
           "reason": "removed from Simple Icons 16 at the brand owner request"
+        },
+        {
+          "slug": "inngest",
+          "title": "Inngest",
+          "aliases": [
+            "inngest"
+          ],
+          "source": "vendor",
+          "licence": "none - SSPL-1.0",
+          "licenceUrl": "https://github.com/inngest/inngest/blob/13197c74528b3153f0fdc6dddf158ef64ede5696/LICENSE.md",
+          "reason": "inngest/inngest is under the Server Side Public License 1.0, a non-OSI copyleft licence, the only Inngest logo in the repository sits under it, and inngest/website carries no LICENSE file",
+          "brandUrl": "https://www.inngest.com/"
+        },
+        {
+          "slug": "windmill",
+          "title": "Windmill",
+          "aliases": [
+            "windmill",
+            "windmill.dev"
+          ],
+          "source": "vendor",
+          "licence": "none - AGPL-3.0",
+          "licenceUrl": "https://github.com/windmill-labs/windmill/blob/7b89e3732227e870405bd81641bd43381609996f/LICENSE",
+          "reason": "the Windmill LICENSE states that the files under frontend/ are AGPLv3 licensed and the only Windmill logo in the repository is frontend/static/logo.svg; the project's docs repository is CC-BY-SA-4.0, also copyleft",
+          "brandUrl": "https://www.windmill.dev/"
+        },
+        {
+          "slug": "redpandaconnect",
+          "title": "Redpanda Connect",
+          "aliases": [
+            "redpanda connect",
+            "benthos"
+          ],
+          "source": "vendor",
+          "licence": "none - no permissively licensed logo published",
+          "licenceUrl": "https://github.com/redpanda-data/connect/blob/cf7df53656a062051a5a9edb45b83e0d3c984ed0/licenses/README.md",
+          "reason": "Benthos was acquired by Redpanda in May 2024 and is now Redpanda Connect, licensed Apache-2.0 plus the proprietary Redpanda Community Licence; that repository contains no artwork, Redpanda publishes no logo policy, and the only MIT-licensed mark available is the retired Benthos logo, which is not this product",
+          "brandUrl": "https://www.redpanda.com/connect"
+        },
+        {
+          "slug": "vector",
+          "title": "Vector",
+          "aliases": [
+            "vector",
+            "vector.dev"
+          ],
+          "source": "vendor",
+          "licence": "none - MPL-2.0",
+          "licenceUrl": "https://github.com/vectordotdev/vector/blob/606b0667f5b6ebfaea3d2fe0aaf341a609cde262/LICENSE",
+          "reason": "vectordotdev/vector is under the Mozilla Public License 2.0, a copyleft licence this repository does not redistribute artwork under, and vectordotdev/docs carries no LICENSE file",
+          "brandUrl": "https://vector.dev/"
+        },
+        {
+          "slug": "cribl",
+          "title": "Cribl",
+          "aliases": [
+            "cribl",
+            "cribl stream"
+          ],
+          "source": "vendor",
+          "licence": "none - press kit with no usage terms",
+          "licenceUrl": "https://cribl.io/press-kit/",
+          "reason": "Cribl is proprietary with no public source repository, and its press kit publishes the corporate and product logos with no licence, attribution terms or permission grant",
+          "brandUrl": "https://cribl.io/"
+        },
+        {
+          "slug": "singer",
+          "title": "Singer",
+          "aliases": [
+            "singer spec",
+            "singer tap",
+            "singer target"
+          ],
+          "source": "vendor",
+          "licence": "none - no licensed artwork",
+          "licenceUrl": "https://github.com/singer-io/getting-started",
+          "reason": "the Singer logo is published only on its marketing site, which carries no licence; the spec repository has no LICENSE file and no repository in the singer-io organisation contains an SVG",
+          "brandUrl": "https://www.singer.io/"
+        },
+        {
+          "slug": "openobserve",
+          "title": "OpenObserve",
+          "aliases": [
+            "openobserve",
+            "open observe"
+          ],
+          "source": "vendor",
+          "licence": "none - AGPL-3.0",
+          "licenceUrl": "https://github.com/openobserve/openobserve/blob/d52334f49d62fdf4f04d455cc0e6056e6439255f/LICENSE",
+          "reason": "openobserve/openobserve is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under; the MIT-licensed websitev3 repository that appears to carry the mark still holds the ZincSearch logo from before the product was renamed, so it is not OpenObserve artwork at all",
+          "brandUrl": "https://openobserve.ai/",
+          "upstreamUrl": "https://raw.githubusercontent.com/openobserve/openobserve/d52334f49d62fdf4f04d455cc0e6056e6439255f/web/src/assets/images/common/open_observe_logo.svg"
         }
       ]
     },

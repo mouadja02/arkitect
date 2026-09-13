@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:37:21.244Z",
+  "generated": "2026-09-13T21:37:41.582Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "4455dccdc2a842865057bf576e8b5bdabac81d41856a0897c547252eff890f84"
+    "sha256": "01a037a87ab6aab4844f0c43dcc2dc631dc9147370bb4d0685a78bfaf59fb41a"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -227,6 +227,36 @@
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "archiveSha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929"
     },
+    "hatchet-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/hatchet-dev/hatchet/blob/315d43a72fd771b049b304b865a81dbab98c466c/LICENSE",
+      "archiveSha256": "6965478c89c0f2a2b982f61eea93ad4a5a6bcd66bae59caafe31b0838f1e9ee0"
+    },
+    "trigger-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/triggerdotdev/trigger.dev/blob/8b72e6c0616b1570d57f35b5e2a736791ad3c6f0/LICENSE",
+      "archiveSha256": "b18f5fd8007de1094b999620fce6bb988d17407e1e56852fb452a4e6a3d7c8b2"
+    },
+    "restate-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/restatedev/documentation/blob/de0378c9d7e6499cde94ac743f460161900b1e4c/LICENSE",
+      "archiveSha256": "e191151d08ec6437f75ffb9acccd13f4e342c329925c51b40976a71222fb0a32"
+    },
+    "meltano-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/meltano/meltano/blob/239771f781336e9797b9f0fefad5ec60aa025852/LICENSE",
+      "archiveSha256": "3cb9dc4fbf4379250adaa46d72e55c33aa3adc5349dccdab5cff6a2330288234"
+    },
+    "sqlmesh-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/SQLMesh/sqlmesh/blob/ee57c615ff0dacecbfd69db57757b93fa42e7bca/LICENSE",
+      "archiveSha256": "cb34ab2ec44295767c9fc8cf3d35658007c543f6cc14dbbfc2b4389bac4fcf8c"
+    },
     "sysdig-logo": {
       "terms": "licence",
       "licence": "Apache-2.0",
@@ -337,9 +367,9 @@
       "description": "Brokers, stream processors, schedulers and ingestion",
       "rank": 20,
       "file": "streaming-orchestration.drawio",
-      "count": 18,
-      "onDemand": 15,
-      "sha256": "e38685a6e4b245d7176a16b5570cce03729986208ed299f0bf0a268a3513c1b5"
+      "count": 23,
+      "onDemand": 22,
+      "sha256": "74d6037dbdd7e99320fa797587d185d89af20e3bda9b18f57d6237cb83ae094f"
     },
     {
       "id": "observability",
@@ -446,9 +476,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4956,
-    "committed": 4828,
-    "onDemand": 128
+    "total": 4968,
+    "committed": 4833,
+    "onDemand": 135
   },
   "icons": [
     {
@@ -37635,6 +37665,98 @@
       "libraryIndex": 17
     },
     {
+      "id": "streaming-orchestration/hatchet",
+      "pack": "streaming-orchestration",
+      "title": "Hatchet",
+      "aliases": [
+        "hatchet"
+      ],
+      "source": "hatchet-logo",
+      "upstreamId": "https://raw.githubusercontent.com/hatchet-dev/hatchet/315d43a72fd771b049b304b865a81dbab98c466c/assets/hatchet_logo_light.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 137,
+      "height": 24,
+      "sha256": "7cad7a29c4f2d5fedec138f2cbb4313e2b84f4380b4cbd440a8365a54c4614a3",
+      "bytes": "committed",
+      "libraryIndex": 18
+    },
+    {
+      "id": "streaming-orchestration/trigger",
+      "pack": "streaming-orchestration",
+      "title": "Trigger.dev",
+      "aliases": [
+        "trigger.dev",
+        "triggerdotdev"
+      ],
+      "source": "trigger-logo",
+      "upstreamId": "https://raw.githubusercontent.com/triggerdotdev/trigger.dev/8b72e6c0616b1570d57f35b5e2a736791ad3c6f0/apps/webapp/app/assets/images/logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 751,
+      "height": 131,
+      "sha256": "aa26e22af23cb43b234b5d3887afc4500e76ce5a17f9e90205ae45cb0a5b902f",
+      "bytes": "committed",
+      "libraryIndex": 19
+    },
+    {
+      "id": "streaming-orchestration/restate",
+      "pack": "streaming-orchestration",
+      "title": "Restate",
+      "aliases": [
+        "restate"
+      ],
+      "source": "restate-logo",
+      "upstreamId": "https://raw.githubusercontent.com/restatedev/documentation/de0378c9d7e6499cde94ac743f460161900b1e4c/static/img/favicon.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 34,
+      "height": 31,
+      "sha256": "7b0c0fa32dfe226ead37b414eb778bcfe2f275776cf473f851e0a614d64f879c",
+      "bytes": "committed",
+      "libraryIndex": 20
+    },
+    {
+      "id": "streaming-orchestration/meltano",
+      "pack": "streaming-orchestration",
+      "title": "Meltano",
+      "aliases": [
+        "meltano"
+      ],
+      "source": "meltano-logo",
+      "upstreamId": "https://raw.githubusercontent.com/meltano/meltano/239771f781336e9797b9f0fefad5ec60aa025852/docs/docs/reference/images/icon.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 24,
+      "height": 24,
+      "sha256": "449bd41947bbe527b124b1649e8f600f2ca8df5d8b773db563b4cdd5fa0ab310",
+      "bytes": "committed",
+      "libraryIndex": 21
+    },
+    {
+      "id": "streaming-orchestration/sqlmesh",
+      "pack": "streaming-orchestration",
+      "title": "SQLMesh",
+      "aliases": [
+        "sqlmesh",
+        "sql mesh"
+      ],
+      "source": "sqlmesh-logo",
+      "upstreamId": "https://raw.githubusercontent.com/SQLMesh/sqlmesh/ee57c615ff0dacecbfd69db57757b93fa42e7bca/vscode/extension/assets/logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 100,
+      "height": 100,
+      "sha256": "6c05c7ddb84f499684b4e5ebbdebd75bf6f2f5a11882574899717847fe20a7e5",
+      "bytes": "committed",
+      "libraryIndex": 22
+    },
+    {
       "id": "streaming-orchestration/dbt",
       "pack": "streaming-orchestration",
       "title": "dbt",
@@ -37867,6 +37989,126 @@
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/informatica.svg --name informatica"
+    },
+    {
+      "id": "streaming-orchestration/inngest",
+      "pack": "streaming-orchestration",
+      "title": "Inngest",
+      "aliases": [
+        "inngest"
+      ],
+      "source": "vendor",
+      "upstreamId": "inngest",
+      "brandUrl": "https://www.inngest.com/",
+      "licence": "none - SSPL-1.0",
+      "licenceUrl": "https://github.com/inngest/inngest/blob/13197c74528b3153f0fdc6dddf158ef64ede5696/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "inngest/inngest is under the Server Side Public License 1.0, a non-OSI copyleft licence, the only Inngest logo in the repository sits under it, and inngest/website carries no LICENSE file",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.inngest.com/> --name inngest"
+    },
+    {
+      "id": "streaming-orchestration/windmill",
+      "pack": "streaming-orchestration",
+      "title": "Windmill",
+      "aliases": [
+        "windmill",
+        "windmill.dev"
+      ],
+      "source": "vendor",
+      "upstreamId": "windmill",
+      "brandUrl": "https://www.windmill.dev/",
+      "licence": "none - AGPL-3.0",
+      "licenceUrl": "https://github.com/windmill-labs/windmill/blob/7b89e3732227e870405bd81641bd43381609996f/LICENSE",
+      "bytes": "on-demand",
+      "reason": "the Windmill LICENSE states that the files under frontend/ are AGPLv3 licensed and the only Windmill logo in the repository is frontend/static/logo.svg; the project's docs repository is CC-BY-SA-4.0, also copyleft",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.windmill.dev/> --name windmill"
+    },
+    {
+      "id": "streaming-orchestration/redpandaconnect",
+      "pack": "streaming-orchestration",
+      "title": "Redpanda Connect",
+      "aliases": [
+        "redpanda connect",
+        "benthos"
+      ],
+      "source": "vendor",
+      "upstreamId": "redpandaconnect",
+      "brandUrl": "https://www.redpanda.com/connect",
+      "licence": "none - no permissively licensed logo published",
+      "licenceUrl": "https://github.com/redpanda-data/connect/blob/cf7df53656a062051a5a9edb45b83e0d3c984ed0/licenses/README.md",
+      "bytes": "on-demand",
+      "reason": "Benthos was acquired by Redpanda in May 2024 and is now Redpanda Connect, licensed Apache-2.0 plus the proprietary Redpanda Community Licence; that repository contains no artwork, Redpanda publishes no logo policy, and the only MIT-licensed mark available is the retired Benthos logo, which is not this product",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.redpanda.com/connect> --name redpandaconnect"
+    },
+    {
+      "id": "streaming-orchestration/vector",
+      "pack": "streaming-orchestration",
+      "title": "Vector",
+      "aliases": [
+        "vector",
+        "vector.dev"
+      ],
+      "source": "vendor",
+      "upstreamId": "vector",
+      "brandUrl": "https://vector.dev/",
+      "licence": "none - MPL-2.0",
+      "licenceUrl": "https://github.com/vectordotdev/vector/blob/606b0667f5b6ebfaea3d2fe0aaf341a609cde262/LICENSE",
+      "bytes": "on-demand",
+      "reason": "vectordotdev/vector is under the Mozilla Public License 2.0, a copyleft licence this repository does not redistribute artwork under, and vectordotdev/docs carries no LICENSE file",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://vector.dev/> --name vector"
+    },
+    {
+      "id": "streaming-orchestration/cribl",
+      "pack": "streaming-orchestration",
+      "title": "Cribl",
+      "aliases": [
+        "cribl",
+        "cribl stream"
+      ],
+      "source": "vendor",
+      "upstreamId": "cribl",
+      "brandUrl": "https://cribl.io/",
+      "licence": "none - press kit with no usage terms",
+      "licenceUrl": "https://cribl.io/press-kit/",
+      "bytes": "on-demand",
+      "reason": "Cribl is proprietary with no public source repository, and its press kit publishes the corporate and product logos with no licence, attribution terms or permission grant",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://cribl.io/> --name cribl"
+    },
+    {
+      "id": "streaming-orchestration/singer",
+      "pack": "streaming-orchestration",
+      "title": "Singer",
+      "aliases": [
+        "singer spec",
+        "singer tap",
+        "singer target"
+      ],
+      "source": "vendor",
+      "upstreamId": "singer",
+      "brandUrl": "https://www.singer.io/",
+      "licence": "none - no licensed artwork",
+      "licenceUrl": "https://github.com/singer-io/getting-started",
+      "bytes": "on-demand",
+      "reason": "the Singer logo is published only on its marketing site, which carries no licence; the spec repository has no LICENSE file and no repository in the singer-io organisation contains an SVG",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.singer.io/> --name singer"
+    },
+    {
+      "id": "streaming-orchestration/openobserve",
+      "pack": "streaming-orchestration",
+      "title": "OpenObserve",
+      "aliases": [
+        "openobserve",
+        "open observe"
+      ],
+      "source": "vendor",
+      "upstreamId": "openobserve",
+      "upstreamUrl": "https://raw.githubusercontent.com/openobserve/openobserve/d52334f49d62fdf4f04d455cc0e6056e6439255f/web/src/assets/images/common/open_observe_logo.svg",
+      "brandUrl": "https://openobserve.ai/",
+      "licence": "none - AGPL-3.0",
+      "licenceUrl": "https://github.com/openobserve/openobserve/blob/d52334f49d62fdf4f04d455cc0e6056e6439255f/LICENSE",
+      "bytes": "on-demand",
+      "reason": "openobserve/openobserve is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under; the MIT-licensed websitev3 repository that appears to carry the mark still holds the ZincSearch logo from before the product was renamed, so it is not OpenObserve artwork at all",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/openobserve/openobserve/d52334f49d62fdf4f04d455cc0e6056e6439255f/web/src/assets/images/common/open_observe_logo.svg --name openobserve"
     },
     {
       "id": "observability/grafana",
