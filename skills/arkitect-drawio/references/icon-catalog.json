@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:38:21.018Z",
+  "generated": "2026-09-13T21:38:39.978Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "5038b071500560c4fe3007069afc0890bb21d5fec13998067ecf285e0a842b84"
+    "sha256": "ff2d0eec1ac3920eb65aa84e0680b80fcd8547bb07d553fc314f81dede88a17b"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -226,6 +226,12 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "archiveSha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929"
+    },
+    "flagsmith-logo": {
+      "terms": "licence",
+      "licence": "BSD-3-Clause",
+      "licenceUrl": "https://github.com/Flagsmith/flagsmith/blob/a82c3d6c24b05fbd0be9c10244418a39382983b4/LICENSE.md",
+      "archiveSha256": "7a48e34520c7998ffd84ac34fff166bac17d92abf89d3deeae44c7e41b3d24c0"
     },
     "hamilton-logo": {
       "terms": "licence",
@@ -471,9 +477,9 @@
       "description": "Issue trackers, docs, design, comms and business SaaS",
       "rank": 20,
       "file": "saas-collab.drawio",
-      "count": 30,
-      "onDemand": 7,
-      "sha256": "cb228e6b6d7359b2ebb7a3b128ed6e44c033019e5f7ff7723f0ff215180c22ca"
+      "count": 31,
+      "onDemand": 15,
+      "sha256": "d3cfb2340be0bb1c946499059f2a00397291edf57d670117c2cc2816b092e425"
     },
     {
       "id": "languages-runtimes",
@@ -530,9 +536,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4992,
-    "committed": 4842,
-    "onDemand": 150
+    "total": 5001,
+    "committed": 4843,
+    "onDemand": 158
   },
   "icons": [
     {
@@ -42700,6 +42706,24 @@
       "libraryIndex": 29
     },
     {
+      "id": "saas-collab/flagsmith",
+      "pack": "saas-collab",
+      "title": "Flagsmith",
+      "aliases": [
+        "flagsmith"
+      ],
+      "source": "flagsmith-logo",
+      "upstreamId": "https://raw.githubusercontent.com/Flagsmith/flagsmith/a82c3d6c24b05fbd0be9c10244418a39382983b4/docs/static/img/logo.svg",
+      "licence": "BSD-3-Clause",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 256,
+      "height": 256,
+      "sha256": "56125b842ee807ef8c3d6b46cfaa31286556eee8b7768c79b3719d27640ac995",
+      "bytes": "committed",
+      "libraryIndex": 30
+    },
+    {
       "id": "saas-collab/slack",
       "pack": "saas-collab",
       "title": "Slack",
@@ -42806,6 +42830,143 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://monday.com/> --name monday"
+    },
+    {
+      "id": "saas-collab/slab",
+      "pack": "saas-collab",
+      "title": "Slab",
+      "aliases": [
+        "slab"
+      ],
+      "source": "vendor",
+      "upstreamId": "slab",
+      "brandUrl": "https://slab.com/",
+      "licence": "none - press kit with no licence granted",
+      "licenceUrl": "https://slab.com/terms/",
+      "bytes": "on-demand",
+      "reason": "Slab publishes no trademark or logo policy, distributes its mark only inside a press-kit archive, and its terms of use claim all right, title and interest in Slab-supplied content",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://slab.com/> --name slab"
+    },
+    {
+      "id": "saas-collab/craft",
+      "pack": "saas-collab",
+      "title": "Craft Docs",
+      "aliases": [
+        "craft docs",
+        "craft.do"
+      ],
+      "source": "vendor",
+      "upstreamId": "craft",
+      "brandUrl": "https://www.craft.do/",
+      "licence": "none - written consent required",
+      "licenceUrl": "https://www.craft.do/brand",
+      "bytes": "on-demand",
+      "reason": "Craft's brand-assets page grants no redistribution licence and requires written consent from the Craft team before its graphics may be combined with any other graphics",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.craft.do/> --name craft"
+    },
+    {
+      "id": "saas-collab/height",
+      "pack": "saas-collab",
+      "title": "Height",
+      "aliases": [
+        "height",
+        "height app"
+      ],
+      "source": "vendor",
+      "upstreamId": "height",
+      "brandUrl": "https://height.app/",
+      "licence": "none - product discontinued, no published logo policy",
+      "licenceUrl": "https://height.app/terms",
+      "bytes": "on-demand",
+      "reason": "Height shut down on 24 September 2025, published no logo or trademark policy, and its terms required express advance written permission to copy or distribute its content",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://height.app/> --name height"
+    },
+    {
+      "id": "saas-collab/productboard",
+      "pack": "saas-collab",
+      "title": "Productboard",
+      "aliases": [
+        "productboard",
+        "product board"
+      ],
+      "source": "vendor",
+      "upstreamId": "productboard",
+      "brandUrl": "https://www.productboard.com/",
+      "licence": "none - website terms forbid republication",
+      "licenceUrl": "https://www.productboard.com/website-terms-of-use/",
+      "bytes": "on-demand",
+      "reason": "Productboard publishes no brand or trademark page, and its website terms claim ownership of all its logos while permitting copies for personal and internal use only, not republication",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.productboard.com/> --name productboard"
+    },
+    {
+      "id": "saas-collab/aha",
+      "pack": "saas-collab",
+      "title": "Aha!",
+      "aliases": [
+        "aha",
+        "aha!",
+        "aha io",
+        "aha roadmaps"
+      ],
+      "source": "vendor",
+      "upstreamId": "aha",
+      "brandUrl": "https://www.aha.io/",
+      "licence": "none - trademark reserved, no logo policy",
+      "licenceUrl": "https://www.aha.io/legal/trademark_notice",
+      "bytes": "on-demand",
+      "reason": "Aha! publishes only a trademark notice, with no logo usage grant and no brand or press page publishing the mark under any licence",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.aha.io/> --name aha"
+    },
+    {
+      "id": "saas-collab/launchdarkly",
+      "pack": "saas-collab",
+      "title": "LaunchDarkly",
+      "aliases": [
+        "launchdarkly",
+        "launch darkly"
+      ],
+      "source": "vendor",
+      "upstreamId": "launchdarkly",
+      "brandUrl": "https://launchdarkly.com/",
+      "licence": "none - brand assets archive with no licence granted",
+      "licenceUrl": "https://launchdarkly.com/press-and-analysts/",
+      "bytes": "on-demand",
+      "reason": "LaunchDarkly publishes no logo or trademark policy on its policies index and offers the mark only as an unlicensed brand-assets archive on its press page",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://launchdarkly.com/> --name launchdarkly"
+    },
+    {
+      "id": "saas-collab/statsig",
+      "pack": "saas-collab",
+      "title": "Statsig",
+      "aliases": [
+        "statsig"
+      ],
+      "source": "vendor",
+      "upstreamId": "statsig",
+      "brandUrl": "https://www.statsig.com/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://www.statsig.com/terms",
+      "bytes": "on-demand",
+      "reason": "Statsig publishes no brand, press or trademark page and no logo file beyond a site favicon, and its terms retain all right, title and interest in its intellectual property",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.statsig.com/> --name statsig"
+    },
+    {
+      "id": "saas-collab/unleash",
+      "pack": "saas-collab",
+      "title": "Unleash",
+      "aliases": [
+        "unleash",
+        "getunleash"
+      ],
+      "source": "vendor",
+      "upstreamId": "unleash",
+      "upstreamUrl": "https://raw.githubusercontent.com/Unleash/unleash/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/.github/unleash-logo.svg",
+      "brandUrl": "https://www.getunleash.io/",
+      "licence": "none - AGPL-3.0-or-later",
+      "licenceUrl": "https://github.com/Unleash/unleash/blob/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/LICENSE",
+      "bytes": "on-demand",
+      "reason": "the Unleash logo is committed only inside the Unleash/unleash monorepo, which is AGPL-3.0-or-later, a copyleft licence this repository does not redistribute artwork under, and its brand guidelines state no permission either way",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/Unleash/unleash/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/.github/unleash-logo.svg --name unleash"
     },
     {
       "id": "languages-runtimes/python",

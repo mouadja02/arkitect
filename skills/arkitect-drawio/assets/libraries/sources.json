@@ -318,6 +318,15 @@
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "note": "OpenMetadata's own monogram, openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg in open-metadata/OpenMetadata at commit 68606d7, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; OpenMetadata is named here only to identify the product."
     },
+    "flagsmith-logo": {
+      "type": "local-files",
+      "dir": "local/flagsmith-logo",
+      "sha256": "7a48e34520c7998ffd84ac34fff166bac17d92abf89d3deeae44c7e41b3d24c0",
+      "terms": "licence",
+      "licence": "BSD-3-Clause",
+      "licenceUrl": "https://github.com/Flagsmith/flagsmith/blob/a82c3d6c24b05fbd0be9c10244418a39382983b4/LICENSE.md",
+      "note": "Flagsmith's own square mark, docs/static/img/logo.svg in Flagsmith/flagsmith at commit a82c3d6, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's BSD-3-Clause licence, and no separate logo or trademark policy governs it (#20). Clause 3 of the BSD licence withholds endorsement rights; Flagsmith is named here only to identify the product."
+    },
     "hamilton-logo": {
       "type": "local-files",
       "dir": "local/hamilton-logo",
@@ -6256,6 +6265,16 @@
             "budibase"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "flagsmith",
+          "title": "Flagsmith",
+          "aliases": [
+            "flagsmith"
+          ],
+          "source": "flagsmith-logo",
+          "file": "flagsmith-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/Flagsmith/flagsmith/a82c3d6c24b05fbd0be9c10244418a39382983b4/docs/static/img/logo.svg"
         }
       ],
       "onDemand": [
@@ -6342,6 +6361,111 @@
           "licence": "none - nominative use only",
           "reason": "no permissively licensed mark exists",
           "brandUrl": "https://monday.com/"
+        },
+        {
+          "slug": "slab",
+          "title": "Slab",
+          "aliases": [
+            "slab"
+          ],
+          "source": "vendor",
+          "licence": "none - press kit with no licence granted",
+          "licenceUrl": "https://slab.com/terms/",
+          "reason": "Slab publishes no trademark or logo policy, distributes its mark only inside a press-kit archive, and its terms of use claim all right, title and interest in Slab-supplied content",
+          "brandUrl": "https://slab.com/"
+        },
+        {
+          "slug": "craft",
+          "title": "Craft Docs",
+          "aliases": [
+            "craft docs",
+            "craft.do"
+          ],
+          "source": "vendor",
+          "licence": "none - written consent required",
+          "licenceUrl": "https://www.craft.do/brand",
+          "reason": "Craft's brand-assets page grants no redistribution licence and requires written consent from the Craft team before its graphics may be combined with any other graphics",
+          "brandUrl": "https://www.craft.do/"
+        },
+        {
+          "slug": "height",
+          "title": "Height",
+          "aliases": [
+            "height",
+            "height app"
+          ],
+          "source": "vendor",
+          "licence": "none - product discontinued, no published logo policy",
+          "licenceUrl": "https://height.app/terms",
+          "reason": "Height shut down on 24 September 2025, published no logo or trademark policy, and its terms required express advance written permission to copy or distribute its content",
+          "brandUrl": "https://height.app/"
+        },
+        {
+          "slug": "productboard",
+          "title": "Productboard",
+          "aliases": [
+            "productboard",
+            "product board"
+          ],
+          "source": "vendor",
+          "licence": "none - website terms forbid republication",
+          "licenceUrl": "https://www.productboard.com/website-terms-of-use/",
+          "reason": "Productboard publishes no brand or trademark page, and its website terms claim ownership of all its logos while permitting copies for personal and internal use only, not republication",
+          "brandUrl": "https://www.productboard.com/"
+        },
+        {
+          "slug": "aha",
+          "title": "Aha!",
+          "aliases": [
+            "aha",
+            "aha!",
+            "aha io",
+            "aha roadmaps"
+          ],
+          "source": "vendor",
+          "licence": "none - trademark reserved, no logo policy",
+          "licenceUrl": "https://www.aha.io/legal/trademark_notice",
+          "reason": "Aha! publishes only a trademark notice, with no logo usage grant and no brand or press page publishing the mark under any licence",
+          "brandUrl": "https://www.aha.io/"
+        },
+        {
+          "slug": "launchdarkly",
+          "title": "LaunchDarkly",
+          "aliases": [
+            "launchdarkly",
+            "launch darkly"
+          ],
+          "source": "vendor",
+          "licence": "none - brand assets archive with no licence granted",
+          "licenceUrl": "https://launchdarkly.com/press-and-analysts/",
+          "reason": "LaunchDarkly publishes no logo or trademark policy on its policies index and offers the mark only as an unlicensed brand-assets archive on its press page",
+          "brandUrl": "https://launchdarkly.com/"
+        },
+        {
+          "slug": "statsig",
+          "title": "Statsig",
+          "aliases": [
+            "statsig"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://www.statsig.com/terms",
+          "reason": "Statsig publishes no brand, press or trademark page and no logo file beyond a site favicon, and its terms retain all right, title and interest in its intellectual property",
+          "brandUrl": "https://www.statsig.com/"
+        },
+        {
+          "slug": "unleash",
+          "title": "Unleash",
+          "aliases": [
+            "unleash",
+            "getunleash"
+          ],
+          "source": "vendor",
+          "licence": "none - AGPL-3.0-or-later",
+          "licenceUrl": "https://github.com/Unleash/unleash/blob/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/LICENSE",
+          "reason": "the Unleash logo is committed only inside the Unleash/unleash monorepo, which is AGPL-3.0-or-later, a copyleft licence this repository does not redistribute artwork under, and its brand guidelines state no permission either way",
+          "upstreamUrl": "https://raw.githubusercontent.com/Unleash/unleash/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/.github/unleash-logo.svg",
+          "brandUrl": "https://www.getunleash.io/"
         }
       ]
     },
