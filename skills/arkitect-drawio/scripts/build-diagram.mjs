@@ -50,6 +50,10 @@ const EDGE_KINDS = {
   light: { stroke: T.neutralStroke, dashed: 1, width: 1, meaning: 'weak association' },
 };
 
+// Node kinds the builder draws. Any other kind still draws, as a box, and is
+// named in the build report so a typo cannot silently change the diagram (#48).
+const NODE_KINDS = ['box', 'icon', 'aws4', 'logo', 'note', 'text'];
+
 export const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -244,7 +248,7 @@ export function buildDiagram(spec) {
   const problems = validateSpec(spec);
   if (problems.length) throw new SpecError(problems);
   const catalog = loadCatalog();
-  const report = { used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [] };
+  const report = { used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [] };
   // Packs named by the spec win ties, so a diagram declared as GCP resolves
   // "cloud run" inside GCP rather than wherever the string happens to match.
   const contextPacks = spec.context?.packs ?? null;
@@ -298,8 +302,11 @@ export function buildDiagram(spec) {
   }
 
   const nodeBox = new Map();
-  for (const n of spec.nodes ?? []) {
+  for (const [i, n] of (spec.nodes ?? []).entries()) {
     const parent = n.parent ?? '1';
+    if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
+      report.unknownKinds.push({ field: `nodes[${i}].kind`, value: n.kind, drawnAs: 'box', valid: NODE_KINDS });
+    }
     const w = n.width ?? (n.kind === 'icon' ? T.iconSize : 190);
     const h = n.height ?? (n.kind === 'icon' ? T.iconSize : 60);
     // Shapes bigger than an icon are centred on their grid cell in both axes,
@@ -351,7 +358,10 @@ export function buildDiagram(spec) {
   // `e1` never shares its id with the first unnamed edge (#36).
   const taken = new Set([...boundaries, ...(spec.nodes ?? []), ...(spec.edges ?? [])].map((x) => x.id));
   let edgeSeq = 0;
-  for (const e of spec.edges ?? []) {
+  for (const [i, e] of (spec.edges ?? []).entries()) {
+    if (e.kind != null && !Object.hasOwn(EDGE_KINDS, e.kind)) {
+      report.unknownKinds.push({ field: `edges[${i}].kind`, value: e.kind, drawnAs: 'flow', valid: Object.keys(EDGE_KINDS) });
+    }
     let id = e.id;
     while (id === undefined) {
       const next = `e${++edgeSeq}`;
@@ -446,6 +456,9 @@ function main(argv) {
       ...(spec.context?.packs ? { contextPacks: spec.context.packs } : {}),
     },
     logos: { embedded: report.logos.length, missing: report.missingLogos, opaqueBackground: report.opaqueLogos },
+    // Drawn, but not as the spec said. Treat it like an unresolved icon: fix the
+    // kind and rebuild, or say why it stays (#48).
+    unknownKinds: report.unknownKinds,
   }, null, 2));
 }
 

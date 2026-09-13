@@ -59,6 +59,11 @@ Read `references/style-guide.md` before laying anything out, and
    A spec whose edges or parents name something that does not exist is refused
    before anything is written, with every problem listed (exit 1). Fix the spec;
    never drop the edge to make it build.
+   A node or edge `kind` the builder does not know still builds (a node as a box,
+   an edge as a flow) and is listed under `unknownKinds` in the build report, with
+   the field, the value, what it was drawn as and the valid kinds. Treat a
+   non-empty `unknownKinds` like an unresolved icon: fix the spec and rebuild, or
+   name it in your report.
    Hand-written XML is fine too — copy the exact style strings from the style
    guide — but embedded icons must use the comma-only data URI form
    (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.
