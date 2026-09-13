@@ -1,8 +1,9 @@
 name: draw.io desktop
 
 # Proves the built icon libraries survive the real application: every library
-# loaded the way Draw.io parses one, and one icon from every pack - plus the GCP
-# marks with masks and filters - exported to PNG by Draw.io Desktop (#12, #13).
+# loaded the way Draw.io parses one, and every committed mark - the GCP marks
+# with masks and filters among them - exported to PNG by Draw.io Desktop, with
+# ink measured in each mark's own tile (#12, #13, #33).
 #
 # Desktop is a 120 MB install, so this runs only when something that could break
 # a library changes. The main suite in ci.yml stays offline and dependency-free.

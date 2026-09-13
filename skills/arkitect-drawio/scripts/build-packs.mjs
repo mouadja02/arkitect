@@ -28,6 +28,7 @@ import {
   normalise, pngSize, downscalePng,
 } from './lib/icon-build.mjs';
 import { checkSimpleIcons, checkDrift, removalReport, driftReport } from './lib/upstream.mjs';
+import { svgBytesProblem } from './lib/xml-check.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -379,6 +380,7 @@ async function buildPack(pack, manifest, cache, claimed) {
       throw new Error(`${pack.id}: unknown builder "${pack.builder}"`);
   }
 
+  refuseMalformedSvg(pack.id, entries);
   const file = join(LIB_DIR, `${pack.id}.drawio`);
   const libEntries = entries.map((e) => ({
     data: e.data ?? dataUri(e.svg),
@@ -544,6 +546,28 @@ function writeCatalog(manifest, built, sourceHashes) {
 
 // -------------------------------------------------------------------- verify
 
+// null for a raster; for an SVG, null only when its data URI is base64 and its
+// bytes are a well-formed SVG document a browser will draw.
+export function svgPayloadProblem(uri) {
+  if (!/^data:image\/svg\+xml[;,]/.test(uri)) return null;
+  const m = /^data:image\/svg\+xml;base64,([A-Za-z0-9+/]*={0,2})$/.exec(uri);
+  return m ? svgBytesProblem(Buffer.from(m[1], 'base64')) : 'not a base64 data URI';
+}
+
+// A payload that is not a well-formed SVG document paints nothing in Draw.io,
+// yet it has a title, a size and a digest, so it passes every structural check
+// (#29, #33). The whole pack is refused before a byte is written, naming every
+// bad entry rather than the first.
+export function refuseMalformedSvg(packId, entries) {
+  const bad = entries.flatMap((e) => {
+    const problem = svgPayloadProblem(e.data ?? dataUri(e.svg));
+    return problem ? [`${packId}/${e.slug}: ${problem}`] : [];
+  });
+  if (bad.length) {
+    throw new Error(`${packId}: ${bad.length} malformed SVG payload${bad.length === 1 ? '' : 's'}, nothing written:\n  ${bad.join('\n  ')}`);
+  }
+}
+
 // Rebuilds every pack in memory and compares the result with what is committed.
 // A mismatch means the libraries and the manifest have drifted apart.
 export async function verify() {
@@ -570,6 +594,12 @@ export async function verify() {
     const catIcons = catalog.icons.filter((i) => i.pack === p.id && i.bytes === 'committed');
     const aligned = catIcons.every((i) => entries[i.libraryIndex]?.title === i.title);
     ok(`${p.id}: catalog indices line up with the library`, aligned);
+    const malformed = entries.flatMap((e) => {
+      const problem = e.dataUri ? svgPayloadProblem(e.dataUri) : null;
+      return problem ? [`${e.index} ${e.title}: ${problem}`] : [];
+    });
+    ok(`${p.id}: every SVG payload is well-formed`, malformed.length === 0,
+      malformed.length ? `${malformed.length} malformed - ${malformed.slice(0, 3).join('; ')}` : '');
   }
 
   const ids = catalog.icons.map((i) => i.id);
