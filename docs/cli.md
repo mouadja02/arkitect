@@ -35,6 +35,14 @@ arkitect drawio library --build                       # merged library + icon ca
 arkitect drawio learn --sources <files> --merge       # rebuild the style record
 ```
 
+`build`, `validate` and `analyze` parse their arguments strictly. A flag takes
+its value with it, so options may come before or after the files. An unknown
+flag, a flag with no value, a `--page` that is not a non-negative integer, or a
+spec that is missing or not valid JSON exits `2` with a one-line reason.
+`validate --page N` checks page N only (0-based), and a page the file does not
+have is a failure (exit `1`), never a pass over nothing; `analyze --page N` goes
+with `--cells` or `--images` and exits `1` the same way.
+
 ```powershell
 ./skills/arkitect-drawio/scripts/render-drawio.ps1 `
   -Path docs/arch.drawio -All -OutDir .analysis/renders -Width 2200

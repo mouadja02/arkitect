@@ -11,7 +11,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, relative } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 
@@ -1204,6 +1204,121 @@ test('the validator rejects a broken diagram', () => {
   assert(r.errors.some((e) => e.includes('duplicate cell id')), 'duplicate id not caught');
   assert(r.errors.some((e) => e.includes('missing parent')), 'missing parent not caught');
   assert(r.errors.some((e) => e.includes('does not exist')), 'bad edge target not caught');
+});
+
+// ------------------------------------------------------------- command lines (#37)
+
+const ARGS_STARTER = join(SKILL, 'assets', 'templates', 'starter-architecture.drawio');
+const drawioCli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', ...args], { encoding: 'utf8' });
+const stderrLine = (r) => r.stderr.trim().split('\n')[0];
+const hasStack = (r) => /\n\s+at /.test(r.stderr);
+
+test('validate --page N validates that page and never reads N as a file (#37)', () => {
+  const r = drawioCli('validate', ARGS_STARTER, '--page', '0', '--json');
+  eq(r.status, 0, `--page 0 --json status (stderr: ${stderrLine(r)})`);
+  const body = JSON.parse(r.stdout);
+  assert(body.ok && body.info.pages.length === 1 && body.info.pages[0].index === 0, 'page 0 was the page validated');
+
+  const flagFirst = drawioCli('validate', '--page', '0', ARGS_STARTER, ARGS_STARTER);
+  eq(flagFirst.status, 0, `flag before two files (stderr: ${stderrLine(flagFirst)})`);
+  eq(flagFirst.stdout.split('PASS').length - 1, 2, 'both files validated');
+
+  const unnamed = join(TMP, 'unnamed-page.drawio');
+  writeFileSync(unnamed, '<mxfile><diagram id="p"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>');
+  eq(drawioCli('validate', unnamed, '--page', '0').status, 0, 'a warning alone passes');
+  eq(drawioCli('validate', unnamed, '--strict', '--page', '0').status, 1, '--strict still fails on a warning');
+
+  const range = drawioCli('validate', ARGS_STARTER, '--page', '1');
+  eq(range.status, 1, 'a page the file lacks fails');
+  assert(range.stdout.includes('FAIL') && range.stdout.includes('page 1 is out of range'), 'says which page is missing');
+
+  for (const bad of [['--page'], ['--page', '-1'], ['--page', '1.5'], ['--page', 'abc'], ['--page', ''], ['--page', '1e3'],
+    ['--page', '--json'], ['--page', '0', '--page', '0'], ['--stirct']]) {
+    const u = drawioCli('validate', ARGS_STARTER, ...bad);
+    eq(u.status, 2, `${bad.join(' ')}: usage status`);
+    assert(/non-negative integer|needs a value|more than once|unknown option/.test(u.stderr) && u.stderr.includes('usage:'), `${bad.join(' ')}: said "${stderrLine(u)}"`);
+    assert(!u.stdout.includes('PASS') && !hasStack(u), `${bad.join(' ')}: nothing validated, no stack trace`);
+  }
+  eq(drawioCli('validate').status, 2, 'no file is a usage error');
+  const help = drawioCli('validate', '--help');
+  assert(help.status === 0 && help.stdout.includes('--page'), 'help names --page');
+});
+
+test('validateFile fails a page it cannot check and throws on a malformed index (#37)', () => {
+  const broken = join(TMP, 'broken-one-page.drawio');
+  writeFileSync(broken, '<mxfile><diagram name="b" id="b"><mxGraphModel><root>'
+    + '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<mxCell id="e" edge="1" parent="1" source="1" target="nope"><mxGeometry relative="1" as="geometry"/></mxCell>'
+    + '</root></mxGraphModel></diagram></mxfile>');
+  eq(validator.validateFile(broken).ok, false, 'the broken page fails');
+  eq(validator.validateFile(broken, { pageIndex: 0 }).ok, false, 'page 0 is that page');
+  const missing = validator.validateFile(broken, { pageIndex: 999 });
+  eq(missing.ok, false, 'page 999 of a one-page file must not pass');
+  assert(missing.errors.some((e) => e === 'page 999 is out of range: "broken-one-page.drawio" has 1 page (0-0)'), `errors: ${missing.errors.join('; ')}`);
+  eq(missing.info.pages.length, 0, 'no page is claimed as validated');
+  for (const pageIndex of [-1, 1.5, NaN, Infinity, '0']) {
+    let threw = null;
+    try { validator.validateFile(broken, { pageIndex }); } catch (error) { threw = error; }
+    assert(threw instanceof TypeError && /pageIndex must be a non-negative integer/.test(threw.message), `pageIndex ${String(pageIndex)} was accepted`);
+  }
+  const good = validator.validateFile(ARGS_STARTER, { pageIndex: 0 });
+  assert(good.ok && good.info.pages[0].index === 0, 'a real page still validates');
+});
+
+test('build reads the spec, not the --out value, and refuses a bad command line in one line (#37)', () => {
+  const dir = join(TMP, 'build-args');
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'arch.drawio');
+  const specBytes = readFileSync(SPEC);
+  const flagFirst = drawioCli('build', '--out', out, SPEC);
+  eq(flagFirst.status, 0, `--out before the spec (stderr: ${stderrLine(flagFirst)})`);
+  eq(JSON.parse(flagFirst.stdout).wrote, out, 'reports the output it wrote');
+  assert(validator.validateFile(out).ok, 'the spec was built');
+  assert(readFileSync(SPEC).equals(specBytes), 'the spec was never written to');
+
+  const malformed = join(dir, 'malformed.spec.json');
+  writeFileSync(malformed, '{ "nodes": [ ');
+  const target = join(dir, 'never.drawio');
+  for (const [args, message] of [
+    [[malformed, '--out', target], /is not valid JSON$/],
+    [[join(dir, 'absent.spec.json'), '--out', target], /^no spec file at /],
+    [[SPEC, SPEC, '--out', target], /expected one spec file, got 2/],
+    [['--out', target], /expected a spec file/],
+    [[SPEC], /--out <file.drawio> is required/],
+    [[SPEC, '--out'], /--out needs a value/],
+    [[SPEC, '--out', target, '--verbose'], /unknown option --verbose/],
+  ]) {
+    const r = drawioCli('build', ...args);
+    const shown = args.map((a) => basename(a)).join(' ');
+    eq(r.status, 2, `${shown}: usage status`);
+    assert(message.test(stderrLine(r)), `${shown}: said "${stderrLine(r)}"`);
+    assert(!hasStack(r) && !existsSync(target), `${shown}: no stack trace and nothing written`);
+  }
+  eq(drawioCli('build', malformed, '--out', target).stderr.trim().split('\n').length, 1, 'a malformed spec is one line');
+});
+
+test('analyze --page is checked the same way, and a missing page exits 1 instead of crashing (#37)', () => {
+  const cells = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells');
+  eq(cells.status, 0, `--page 0 --cells (stderr: ${stderrLine(cells)})`);
+  assert(Array.isArray(JSON.parse(cells.stdout)), 'prints the geometry table');
+
+  const range = drawioCli('analyze', ARGS_STARTER, '--page', '3', '--images');
+  eq(range.status, 1, 'a page the file lacks');
+  assert(/page 3 is out of range/.test(range.stderr) && !hasStack(range), `said "${stderrLine(range)}"`);
+
+  for (const [args, message] of [
+    [[ARGS_STARTER, '--page', 'abc', '--cells'], /--page must be a non-negative integer/],
+    [[ARGS_STARTER, '--page', '0'], /--page selects the page for --cells or --images/],
+    [[ARGS_STARTER, ARGS_STARTER, '--cells'], /--cells and --images read one file/],
+    [[ARGS_STARTER, '--labels', 'none'], /unknown option --labels/],
+  ]) {
+    const r = drawioCli('analyze', ...args);
+    eq(r.status, 2, `${args.slice(1).join(' ')}: usage status`);
+    assert(message.test(r.stderr) && !hasStack(r), `${args.slice(1).join(' ')}: said "${stderrLine(r)}"`);
+  }
+  const summary = join(TMP, 'analyze-summary.json');
+  eq(drawioCli('analyze', '--out', summary, ARGS_STARTER).status, 0, '--out before the file');
+  assert(existsSync(summary), 'summary written');
 });
 
 // ------------------------------------------------------------- spec checks (#36)

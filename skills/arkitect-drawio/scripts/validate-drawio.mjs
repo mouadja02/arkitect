@@ -9,7 +9,10 @@
 import { readFileSync } from 'node:fs';
 import {
   readMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs,
+  parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
+
+const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
 
 const MAX_COORD = 20000;      // draw.io stays usable well below this
 const MIN_GAP = 8;            // px of clear space expected between siblings
@@ -44,6 +47,11 @@ const isContainerish = (style) => {
 };
 
 export function validateFile(path, { pageIndex = null } = {}) {
+  // A malformed index is the caller's bug; a page the file lacks is the file's.
+  if (pageIndex !== null && !(Number.isSafeInteger(pageIndex) && pageIndex >= 0)) {
+    const shown = typeof pageIndex === 'string' ? JSON.stringify(pageIndex) : String(pageIndex);
+    throw new TypeError(`pageIndex must be a non-negative integer or null, got ${shown}`);
+  }
   const errors = [];
   const warnings = [];
   const info = {};
@@ -59,6 +67,8 @@ export function validateFile(path, { pageIndex = null } = {}) {
     return { path, ok: false, errors: [`unparseable: ${e.message}`], warnings, info };
   }
   if (!mx.pages.length) errors.push('no <diagram> pages found');
+  // Selecting a page that is not there must fail, never pass having checked nothing.
+  else if (pageIndex !== null && pageIndex >= mx.pages.length) errors.push(pageRangeError(path, pageIndex, mx.pages.length));
 
   const pageIds = new Set();
   const pageNames = new Set();
@@ -210,17 +220,15 @@ export function validateFile(path, { pageIndex = null } = {}) {
 }
 
 function main(argv) {
-  const files = argv.filter((a) => !a.startsWith('--'));
-  const json = argv.includes('--json');
-  const strict = argv.includes('--strict');
-  const pi = argv.indexOf('--page');
-  const pageIndex = pi === -1 ? null : Number(argv[pi + 1]);
-  if (!files.length) { console.error('usage: validate-drawio.mjs <file> [--page N] [--json] [--strict]'); process.exit(2); }
+  const { options, positionals: files } = parseCliOrExit(argv,
+    { values: { '--page': pageIndexArg }, switches: ['--json', '--strict'] }, USAGE);
+  if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  const pageIndex = options.page ?? null;
 
   let bad = 0;
   for (const f of files) {
     const r = validateFile(f, { pageIndex });
-    if (json) { console.log(JSON.stringify(r, null, 2)); }
+    if (options.json) { console.log(JSON.stringify(r, null, 2)); }
     else {
       console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${f}`);
       for (const p of r.info.pages ?? []) {
@@ -231,7 +239,7 @@ function main(argv) {
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);
     }
-    if (!r.ok || (strict && r.warnings.length)) bad++;
+    if (!r.ok || (options.strict && r.warnings.length)) bad++;
   }
   process.exit(bad ? 1 : 0);
 }
