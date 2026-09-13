@@ -2,7 +2,7 @@
 
 **Try the bundled libraries first** — 1,162 marks covering most of what a cloud
 or data architecture needs, with no download. See [excalidraw-libraries.md](excalidraw-libraries.md).
-The [shared packs](shared-icons.md) fill gaps with 4,805 embedded original marks.
+The [shared packs](shared-icons.md) fill gaps with 4,843 embedded original marks.
 This page is for the product neither source has.
 
 If that product is not worth a detour, the honest answer is a **placeholder**:
