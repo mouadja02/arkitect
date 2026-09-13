@@ -138,7 +138,14 @@ Node `kind`: `icon` (the bundled AWS palette), `logo` (a cached product logo),
 `aws4` (a built-in Draw.io shape), `box`, `note`, `text`. Nodes sit on a
 column/row grid and name their boundary as `parent`; boundaries span whole grid
 cells. Edge `kind` is `flow`, `async`, `error`, `success` or `light`, and a
-legend is generated once more than one is used.
+legend is generated once more than one is used; an unknown kind draws as `flow`.
+
+The build refuses a spec that names something that does not exist, before it
+backs up or writes anything, and lists every problem at once (exit `1`, JSON on
+stderr): an edge `from`/`to` that is not a node or boundary id, a `parent` that
+is not a boundary, a boundary nested inside itself, and a missing, repeated or
+reserved id. `0`, `1`, `title`, `legend`, `legend-a0`-style ids and ids ending
+in `-lbl` are reserved for cells the builder writes itself.
 
 Worked example:
 `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json`.
@@ -192,6 +199,12 @@ own boundary.
 **Edges** take `kind`: `flow`, `async`, `branch`, `error`, `success`, `data`,
 `light`. `routing` is `elbow` (default) or `points`; `route` shapes the path —
 `auto`, `straight`, `elbow`. Labels are placed as free text beside the line.
+An edge connects two node ids; a boundary cannot be an endpoint.
+
+The build refuses a spec that names something that does not exist, before it
+backs up or writes anything, and lists every problem at once (exit `1`, JSON on
+stderr): an unknown edge endpoint, a `parent` that is not a boundary, a boundary
+nested inside itself, and a missing or repeated id.
 
 Worked examples: `assets/templates/starter-architecture.spec.json` (small, one
 of every kind) and `assets/templates/aws-data-platform.spec.json` (48 nodes,

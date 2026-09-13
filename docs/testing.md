@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. Roughly two
 seconds.
 
-On a fresh clone expect about `160 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect about `167 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -26,6 +26,7 @@ process, so they cannot tread on each other.
 | area | checks |
 |---|---|
 | Generation | valid native output; unique ids; every edge connected at both ends; no overlaps; learned style tokens applied; a legend only when earned |
+| Spec checks | a spec naming a missing node, parent or boundary, a cycle, or a missing, repeated or reserved id is refused before any backup or write, every problem listed; the CLI exits 1 and leaves the target untouched; nested boundaries still build; Draw.io automatic edge ids skip taken ids and an unknown edge kind draws as a flow (#36) |
 | Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |

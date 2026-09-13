@@ -116,6 +116,10 @@ the generator's defaults; do not undo them by hand:
      than wired to everything, assumptions in a note on the canvas, and
      fractional `col`/`row` values for anything off the main grid.
 
+   A spec whose edges or parents name something that does not exist is refused
+   before anything is written, with every problem listed (exit 1). Edges connect
+   nodes, not boundaries. Fix the spec; never drop the edge to make it build.
+
    Hand-written JSON is fine too — read `references/excalidraw-format.md` first,
    particularly the parts about relative arrow points and two-sided bindings.
 

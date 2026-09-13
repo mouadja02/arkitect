@@ -47,7 +47,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    drawing. See §4.
 4. **Write a spec, then build.** Both engines generate from a small JSON spec,
    not from hand-written XML/JSON. This is what applies the style, keeps the
-   layout collision-free and keeps base64 out of your context.
+   layout collision-free and keeps base64 out of your context. A spec whose
+   edges or parents name something that does not exist is refused before
+   anything is written, every problem listed; fix the spec, never drop the edge.
 5. **Never overwrite blind.** Both builders write a timestamped sibling backup
    before replacing an existing file. Any other edit route means copying the
    file yourself first.

@@ -63,6 +63,17 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **A spec that names something that does not exist is refused, not built**
+  (#36). A typo in an edge endpoint exited 0 in both engines: Excalidraw dropped
+  the connection and the scene still validated, Draw.io wrote a dangling edge.
+  Each builder now exports `validateSpec`, and `buildDiagram` throws a
+  `SpecError` listing every problem - unknown edge endpoints, a `parent` that is
+  not a boundary, boundary cycles, missing or repeated ids and, in Draw.io, ids
+  reserved for cells it writes itself. The CLI exits 1 before the backup or the
+  write, so an existing file is untouched. A Draw.io edge may still end on a
+  boundary; an Excalidraw edge connects nodes only. Draw.io's automatic edge ids
+  skip ids the spec uses, so a node called `e1` no longer duplicates one, and an
+  unknown edge kind with a label draws as `flow` instead of crashing.
 - **A rebuild in the same second no longer overwrites the previous backup** (#35).
   Both builders stamped backups to the second and copied over whatever was
   there, so two quick updates left one backup holding the first revision and

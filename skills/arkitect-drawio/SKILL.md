@@ -56,6 +56,9 @@ Read `references/style-guide.md` before laying anything out, and
    { "context": { "packs": ["gcp", "devops"] },
      "nodes": [{ "id": "q", "kind": "icon", "icon": "kafka", "pack": "streaming-orchestration" }] }
    ```
+   A spec whose edges or parents name something that does not exist is refused
+   before anything is written, with every problem listed (exit 1). Fix the spec;
+   never drop the edge to make it build.
    Hand-written XML is fine too — copy the exact style strings from the style
    guide — but embedded icons must use the comma-only data URI form
    (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.

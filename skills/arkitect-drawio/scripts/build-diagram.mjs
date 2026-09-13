@@ -151,9 +151,98 @@ function resolveIcon(node, catalog, report, contextPacks) {
   return chosen;
 }
 
+// ---------------------------------------------------------------- spec checks
+
+// A spec is checked before anything is built, backed up or written (#36). A typo
+// in an edge endpoint used to produce a successful build with a dangling edge.
+// Every problem is collected, so one run lists them all, each naming its field.
+export class SpecError extends Error {
+  constructor(errors) {
+    super(`invalid spec:\n  ${errors.join('\n  ')}`);
+    this.name = 'SpecError';
+    this.errors = errors;
+  }
+}
+
+// Ids the builder writes cells under itself. Automatic edge ids (`e1`, `e2`, ...)
+// are not listed: they skip any id the spec already uses instead.
+const RESERVED_IDS = /^(?:0|1|title|legend|legend-[abet]\d+)$|-lbl$/;
+
+export function validateSpec(spec) {
+  const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (!isObject(spec)) return ['spec: expected a JSON object'];
+  const errors = [];
+  const show = (v) => JSON.stringify(v);
+  const listOf = (key) => {
+    if (spec[key] === undefined) return [];
+    if (Array.isArray(spec[key])) return spec[key];
+    errors.push(`${key}: expected an array`);
+    return [];
+  };
+  const boundaries = listOf('boundaries');
+  const nodes = listOf('nodes');
+  const edges = listOf('edges');
+
+  // Boundaries, nodes and named edges all become cells, so they share one id space.
+  const declaredBy = new Map();
+  const declare = (field, item, required) => {
+    if (!isObject(item)) { errors.push(`${field}: expected an object`); return; }
+    if (item.id === undefined && !required) return;
+    if (typeof item.id !== 'string' || !item.id) { errors.push(`${field}.id: expected a non-empty string`); return; }
+    if (RESERVED_IDS.test(item.id)) errors.push(`${field}.id: ${show(item.id)} is reserved for a cell the builder generates`);
+    if (declaredBy.has(item.id)) errors.push(`${field}.id: ${show(item.id)} is already used by ${declaredBy.get(item.id)}`);
+    else declaredBy.set(item.id, field);
+  };
+  boundaries.forEach((b, i) => declare(`boundaries[${i}]`, b, true));
+  nodes.forEach((n, i) => declare(`nodes[${i}]`, n, true));
+  edges.forEach((e, i) => declare(`edges[${i}]`, e, false));
+
+  const idsOf = (list) => new Set(list.filter(isObject).map((x) => x.id).filter((id) => typeof id === 'string' && id));
+  const boundaryIds = idsOf(boundaries);
+  const nodeIds = idsOf(nodes);
+
+  // Coordinates are laid out relative to a boundary, so a parent must be one.
+  const checkParent = (field, item) => {
+    if (item.parent === undefined || item.parent === null) return;
+    if (!boundaryIds.has(item.parent)) errors.push(`${field}.parent: ${show(item.parent)} is not a boundary id`);
+  };
+  boundaries.forEach((b, i) => { if (isObject(b)) checkParent(`boundaries[${i}]`, b); });
+  nodes.forEach((n, i) => { if (isObject(n)) checkParent(`nodes[${i}]`, n); });
+
+  const parentOf = new Map(boundaries.filter(isObject).map((b) => [b.id, b.parent]));
+  boundaries.forEach((b, i) => {
+    if (!isObject(b) || !boundaryIds.has(b.id)) return;
+    const chain = [b.id];
+    const seen = new Set(chain);
+    for (let p = parentOf.get(b.id); boundaryIds.has(p); p = parentOf.get(p)) {
+      chain.push(p);
+      if (p === b.id) {
+        errors.push(`boundaries[${i}].parent: boundary ${show(b.id)} is nested inside itself (${chain.join(' -> ')})`);
+        break;
+      }
+      if (seen.has(p)) break;
+      seen.add(p);
+    }
+  });
+
+  // Draw.io can connect an edge to a container, so a boundary is a valid end.
+  edges.forEach((e, i) => {
+    if (!isObject(e)) return;
+    for (const end of ['from', 'to']) {
+      const ref = e[end];
+      if (ref === undefined || ref === null || ref === '') errors.push(`edges[${i}].${end}: missing`);
+      else if (!nodeIds.has(ref) && !boundaryIds.has(ref)) errors.push(`edges[${i}].${end}: ${show(ref)} is not a node or boundary id`);
+    }
+  });
+
+  return errors;
+}
+
 // ---------------------------------------------------------------- build
 
 export function buildDiagram(spec) {
+  const problems = validateSpec(spec);
+  if (problems.length) throw new SpecError(problems);
   const catalog = loadCatalog();
   const report = { used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [] };
   // Packs named by the spec win ties, so a diagram declared as GCP resolves
@@ -256,13 +345,23 @@ export function buildDiagram(spec) {
     if (parent === '1') track(x, y, box.w, box.h);
   }
 
+  // An unknown kind draws as a plain flow. It used to crash on the edge label.
+  const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');
+  // An automatic edge id skips any id the spec already uses, so a node called
+  // `e1` never shares its id with the first unnamed edge (#36).
+  const taken = new Set([...boundaries, ...(spec.nodes ?? []), ...(spec.edges ?? [])].map((x) => x.id));
   let edgeSeq = 0;
   for (const e of spec.edges ?? []) {
-    const id = e.id ?? `e${++edgeSeq}`;
-    push(`<mxCell id="${esc(id)}" style="${STYLE.edge(e.kind ?? 'flow')}" edge="1" parent="1" `
+    let id = e.id;
+    while (id === undefined) {
+      const next = `e${++edgeSeq}`;
+      if (!taken.has(next)) id = next;
+    }
+    const kind = kindOf(e);
+    push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}" edge="1" parent="1" `
       + `source="${esc(e.from)}" target="${esc(e.to)}"><mxGeometry relative="1" as="geometry" /></mxCell>`);
     if (e.label) {
-      const color = EDGE_KINDS[e.kind ?? 'flow']?.stroke === T.flow ? T.text : EDGE_KINDS[e.kind].stroke;
+      const color = EDGE_KINDS[kind].stroke === T.flow ? T.text : EDGE_KINDS[kind].stroke;
       push(`<mxCell id="${esc(id)}-lbl" value="${esc(e.label)}" style="${STYLE.edgeLabel(color)}" vertex="1" connectable="0" parent="${esc(id)}">`
         + `<mxGeometry x="${e.labelPos ?? -0.1}" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry></mxCell>`);
     }
@@ -270,7 +369,7 @@ export function buildDiagram(spec) {
 
   // Legend: the reference corpus documents line semantics explicitly, so any
   // diagram using more than one connector kind gets one.
-  const kinds = [...new Set((spec.edges ?? []).map((e) => e.kind ?? 'flow'))];
+  const kinds = [...new Set((spec.edges ?? []).map(kindOf))];
   if (spec.legend !== false && kinds.length > 1) {
     const lx = spec.legendX ?? pageW + 120;
     const ly = spec.legendY ?? L.originY;
@@ -311,7 +410,16 @@ function main(argv) {
   if (!specPath || !out) { console.error('usage: build-diagram.mjs <spec.json> --out <file.drawio>'); process.exit(2); }
 
   const spec = JSON.parse(readFileSync(specPath, 'utf8'));
-  const { xml, report } = buildDiagram(spec);
+  let built;
+  try {
+    built = buildDiagram(spec);
+  } catch (error) {
+    if (!(error instanceof SpecError)) throw error;
+    // Refused before the backup and the write, so an existing file is untouched.
+    console.error(JSON.stringify({ ok: false, spec: specPath, wrote: null, errors: error.errors }, null, 2));
+    process.exit(1);
+  }
+  const { xml, report } = built;
   const backup = backupExisting(out);
   writeFileSync(out, xml);
 
