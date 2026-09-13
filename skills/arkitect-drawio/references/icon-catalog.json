@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T17:26:06.738Z",
+  "generated": "2026-09-13T18:12:11.707Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "60ab737fb49beb1e3ba2be2197edce1d9e0f34ba8030d5dffb65efbe269e7afe"
+    "sha256": "60b3aa763aa9c48c33020305493de313de36f58ff97cc61ab8578edc1620bb58"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -38,6 +38,12 @@
       "licence": "MIT",
       "licenceUrl": "https://github.com/devicons/devicon/blob/master/LICENSE",
       "archiveSha256": "e611f56ef1eeb17c00940f970d44d8ca086439ae7892b496a46b81a7f9a38d5a"
+    },
+    "asf-logos": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
+      "archiveSha256": "f81b9016971a364c929b5ae96e70226eb4eeccf0e64837af72ac54bdb6becf94"
     },
     "lucide": {
       "package": "lucide-static@1.45.0",
@@ -123,9 +129,9 @@
       "description": "Warehouses, lakehouses, query engines and BI",
       "rank": 20,
       "file": "data-platforms.drawio",
-      "count": 25,
-      "onDemand": 12,
-      "sha256": "c2faaf250463347d58cd79d1bd691140c5ce57ad4b42dce5cc8ce35acf594dad"
+      "count": 27,
+      "onDemand": 10,
+      "sha256": "19ec7487bfdb4cd644efce7732348537bb0bf583e0cb766c9a5d9675025d056e"
     },
     {
       "id": "databases",
@@ -163,9 +169,9 @@
       "description": "Brokers, stream processors, schedulers and ingestion",
       "rank": 20,
       "file": "streaming-orchestration.drawio",
-      "count": 16,
-      "onDemand": 16,
-      "sha256": "bffc14001c90ec126d2cd0b313f726fc1e062f231993fbbb441985fdb61f17b6"
+      "count": 17,
+      "onDemand": 15,
+      "sha256": "42e4626c6682e2dfd1a69ed5ed5fc278d639b187e6aeb0be988bffff1abf3316"
     },
     {
       "id": "observability",
@@ -273,8 +279,8 @@
   "counts": {
     "packs": 18,
     "total": 4862,
-    "committed": 4793,
-    "onDemand": 69
+    "committed": 4796,
+    "onDemand": 66
   },
   "icons": [
     {
@@ -33638,15 +33644,39 @@
       "title": "Apache Iceberg",
       "aliases": [
         "apache iceberg",
-        "apacheiceberg"
+        "apacheiceberg",
+        "iceberg"
       ],
-      "source": "vendor",
-      "upstreamId": "apacheiceberg",
-      "brandUrl": "https://iceberg.apache.org/",
-      "licence": "none - nominative use only",
-      "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://iceberg.apache.org/> --name apacheiceberg"
+      "source": "asf-logos",
+      "upstreamId": "https://www.apache.org/logos/originals/iceberg.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 800,
+      "height": 218,
+      "sha256": "752dc874fb32746404f4de441958993459e8fcbe4f1805517f7d62d30db20759",
+      "bytes": "committed",
+      "libraryIndex": 25
+    },
+    {
+      "id": "data-platforms/apachepinot",
+      "pack": "data-platforms",
+      "title": "Apache Pinot",
+      "aliases": [
+        "apache pinot",
+        "apachepinot",
+        "pinot"
+      ],
+      "source": "asf-logos",
+      "upstreamId": "https://www.apache.org/logos/originals/pinot.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 858,
+      "height": 831,
+      "sha256": "03779a35cd8b487a957f8a670c7ccc16b05cfa9386a378953f52d61ce73e2c8b",
+      "bytes": "committed",
+      "libraryIndex": 26
     },
     {
       "id": "data-platforms/deltalake",
@@ -33795,27 +33825,13 @@
       ],
       "source": "vendor",
       "upstreamId": "apachehudi",
+      "upstreamUrl": "https://www.apache.org/logos/res/hudi/hudi.png",
       "brandUrl": "https://hudi.apache.org/",
-      "licence": "none - nominative use only",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://hudi.apache.org/> --name apachehudi"
-    },
-    {
-      "id": "data-platforms/apachepinot",
-      "pack": "data-platforms",
-      "title": "Apache Pinot",
-      "aliases": [
-        "apache pinot",
-        "apachepinot"
-      ],
-      "source": "vendor",
-      "upstreamId": "apachepinot",
-      "brandUrl": "https://pinot.apache.org/",
-      "licence": "none - nominative use only",
-      "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://pinot.apache.org/> --name apachepinot"
+      "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 5446x3946 raster wrapped in SVG, 246 KB, several times larger than any mark the packs ship",
+      "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/hudi/hudi.png --name apachehudi"
     },
     {
       "id": "databases/postgresql",
@@ -36339,6 +36355,26 @@
       "libraryIndex": 15
     },
     {
+      "id": "streaming-orchestration/apachebeam",
+      "pack": "streaming-orchestration",
+      "title": "Apache Beam",
+      "aliases": [
+        "apache beam",
+        "apachebeam",
+        "beam"
+      ],
+      "source": "asf-logos",
+      "upstreamId": "https://www.apache.org/logos/originals/beam-2.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 46,
+      "height": 53,
+      "sha256": "78f3616302230714700ff88e0fd38c5d192216fc7901653d92adcd2dcaa55e29",
+      "bytes": "committed",
+      "libraryIndex": 16
+    },
+    {
       "id": "streaming-orchestration/dbt",
       "pack": "streaming-orchestration",
       "title": "dbt",
@@ -36352,22 +36388,6 @@
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/dbt.svg --name dbt"
-    },
-    {
-      "id": "streaming-orchestration/apachebeam",
-      "pack": "streaming-orchestration",
-      "title": "Apache Beam",
-      "aliases": [
-        "apache beam",
-        "apachebeam"
-      ],
-      "source": "vendor",
-      "upstreamId": "apachebeam",
-      "brandUrl": "https://beam.apache.org/",
-      "licence": "none - nominative use only",
-      "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://beam.apache.org/> --name apachebeam"
     },
     {
       "id": "streaming-orchestration/redpanda",
@@ -36424,11 +36444,13 @@
       ],
       "source": "vendor",
       "upstreamId": "apachesamza",
+      "upstreamUrl": "https://www.apache.org/logos/res/samza/samza.png",
       "brandUrl": "https://samza.apache.org/",
-      "licence": "none - nominative use only",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://samza.apache.org/> --name apachesamza"
+      "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG sets its wordmark as live text in Myriad Pro, so it draws in whatever font the viewer happens to have",
+      "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/samza/samza.png --name apachesamza"
     },
     {
       "id": "streaming-orchestration/zeromq",
@@ -36455,11 +36477,13 @@
       ],
       "source": "vendor",
       "upstreamId": "apacheactivemq",
+      "upstreamUrl": "https://www.apache.org/logos/res/activemq/activemq-1.png",
       "brandUrl": "https://activemq.apache.org/",
-      "licence": "none - nominative use only",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://activemq.apache.org/> --name apacheactivemq"
+      "reason": "the ASF licenses its graphic logos under Apache-2.0, but both official SVGs set the wordmark as live text, and without its font only \"MQ\" appears",
+      "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/activemq/activemq-1.png --name apacheactivemq"
     },
     {
       "id": "streaming-orchestration/apachezookeeper",
@@ -36471,11 +36495,13 @@
       ],
       "source": "vendor",
       "upstreamId": "apachezookeeper",
+      "upstreamUrl": "https://www.apache.org/logos/res/zookeeper/zookeeper.png",
       "brandUrl": "https://zookeeper.apache.org/",
-      "licence": "none - nominative use only",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://zookeeper.apache.org/> --name apachezookeeper"
+      "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 725 KB illustrated mascot with live text, far larger than any mark the packs ship",
+      "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/zookeeper/zookeeper.png --name apachezookeeper"
     },
     {
       "id": "streaming-orchestration/mage",
@@ -38204,11 +38230,13 @@
       ],
       "source": "vendor",
       "upstreamId": "crossplane",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/crossplane/icon/color/crossplane-icon-color.svg",
       "brandUrl": "https://www.crossplane.io/",
-      "licence": "none - nominative use only",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.crossplane.io/> --name crossplane"
+      "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/crossplane/icon/color/crossplane-icon-color.svg --name crossplane"
     },
     {
       "id": "devops/fluxcd",
@@ -38220,11 +38248,13 @@
       ],
       "source": "vendor",
       "upstreamId": "fluxcd",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flux/icon/color/flux-icon-color.svg",
       "brandUrl": "https://fluxcd.io/",
-      "licence": "none - nominative use only",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://fluxcd.io/> --name fluxcd"
+      "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flux/icon/color/flux-icon-color.svg --name fluxcd"
     },
     {
       "id": "devops/harness",
@@ -38774,11 +38804,13 @@
       ],
       "source": "vendor",
       "upstreamId": "openpolicyagent",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/open-policy-agent/icon/color/opa-icon-color.svg",
       "brandUrl": "https://www.openpolicyagent.org/",
-      "licence": "none - nominative use only",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
-      "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.openpolicyagent.org/> --name openpolicyagent"
+      "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/open-policy-agent/icon/color/opa-icon-color.svg --name openpolicyagent"
     },
     {
       "id": "security-identity/crowdstrike",

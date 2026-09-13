@@ -900,6 +900,59 @@ test('gRPC ships tinted in its manifest colour, the other devicon marks stay ver
   eq(stray.length, 0, `rows carrying a hex nothing painted: ${stray.slice(0, 3).map((i) => i.id).join(', ')}`);
 });
 
+// #11: the ASF licenses its project graphic logos under the Apache License, so
+// the official originals that draw correctly at icon size ship byte-for-byte.
+// The Apache and CNCF marks that do not ship say why, and where to fetch them.
+const ASF_SHIPPED = {
+  'data-platforms/apacheiceberg': 'iceberg.svg',
+  'data-platforms/apachepinot': 'pinot.svg',
+  'streaming-orchestration/apachebeam': 'beam-2.svg',
+};
+
+test('Apache Iceberg, Pinot and Beam ship byte-for-byte from the pinned ASF originals, at their own aspect (#11)', () => {
+  const src = packs.loadManifest().sources['asf-logos'];
+  eq(`${src.type} ${src.terms} ${src.licence}`, 'local-files licence Apache-2.0', 'the asf-logos source');
+  assert(src.licenceUrl === 'https://www.apache.org/foundation/marks/' && /licensed to the public under the Apache License/.test(src.note),
+    'the source records the ASF policy that licenses its graphic logos');
+  const dir = join(LIB_DIR, src.dir);
+  const files = new Map(readdirSync(dir).sort().map((name) => [name, readFileSync(join(dir, name))]));
+  eq([...files.keys()].join(' '), Object.values(ASF_SHIPPED).sort().join(' '), 'exactly the shipped originals are committed');
+  eq(packs.localFilesDigest(files), src.sha256, 'the committed originals match their pin');
+  const cat = finder.loadCatalog();
+  for (const [id, file] of Object.entries(ASF_SHIPPED)) {
+    const icon = cat.icons.find((i) => i.id === id);
+    eq(`${icon?.bytes} ${icon?.source} ${icon?.licence} ${icon?.render}`, 'committed asf-logos Apache-2.0 verbatim', `${id} catalog row`);
+    eq(icon.sha256, createHash('sha256').update(files.get(file)).digest('hex'), `${id} embeds the original byte-for-byte`);
+    eq(icon.upstreamId, `https://www.apache.org/logos/originals/${file}`, `${id} names where its bytes came from`);
+    const entry = core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`))[icon.libraryIndex];
+    const fitted = finder.recommendedSize(icon);
+    eq(`${entry.w}x${entry.h} ${entry.aspect}`, `${fitted.width}x${fitted.height} fixed`, `${id} library cell keeps the artwork's aspect`);
+  }
+  const iceberg = finder.recommendedSize(cat.icons.find((i) => i.id === 'data-platforms/apacheiceberg'));
+  eq(`${iceberg.width}x${iceberg.height}`, '78x21', 'the Iceberg lockup is drawn wide, not squashed into a square');
+});
+
+test('the Apache and CNCF marks that stay on-demand record the licence finding, the reason and a fetch source (#11)', () => {
+  const cat = finder.loadCatalog();
+  const row = (id) => cat.icons.find((i) => i.id === id);
+  for (const id of ['data-platforms/apachehudi', 'streaming-orchestration/apachesamza',
+    'streaming-orchestration/apacheactivemq', 'streaming-orchestration/apachezookeeper']) {
+    const icon = row(id);
+    eq(`${icon.bytes} ${icon.licence}`, 'on-demand Apache-2.0', id);
+    assert(icon.licenceUrl === 'https://www.apache.org/foundation/marks/' && /^the ASF licenses its graphic logos under Apache-2\.0, but /.test(icon.reason),
+      `${id} says why its licensed original does not ship: ${icon.reason}`);
+    assert(icon.upstreamUrl?.startsWith('https://www.apache.org/logos/res/') && icon.fetch.includes(icon.upstreamUrl),
+      `${id} fetches the ASF's own render: ${icon.fetch}`);
+  }
+  for (const id of ['devops/crossplane', 'devops/fluxcd', 'security-identity/openpolicyagent']) {
+    const icon = row(id);
+    eq(icon.bytes, 'on-demand', id);
+    assert(/Linux Foundation/.test(icon.licence) && /link/.test(icon.reason) && icon.licenceUrl === 'https://github.com/cncf/artwork/blob/main/LICENSE.md',
+      `${id} records the Linux Foundation finding: ${icon.licence} / ${icon.reason}`);
+    assert(/^https:\/\/raw\.githubusercontent\.com\/cncf\/artwork\/[0-9a-f]{40}\//.test(icon.upstreamUrl ?? ''), `${id} points at pinned CNCF artwork: ${icon.upstreamUrl}`);
+  }
+});
+
 test('committed libraries still match the manifest they were built from', async () => {
   const checks = await packs.verify();
   const bad = checks.filter((c) => !c.pass);

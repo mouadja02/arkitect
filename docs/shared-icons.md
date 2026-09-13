@@ -1,6 +1,6 @@
 # Shared icon packs in Excalidraw
 
-Excalidraw can use all 4,793 committed marks in the 18 Draw.io packs, alongside
+Excalidraw can use all 4,796 committed marks in the 18 Draw.io packs, alongside
 its 1,162 native library items. The original SVG or PNG is embedded in the scene:
 you can move and resize it and edit its caption and connections. The logo's
 individual paths are not Excalidraw strokes. SVG remains vector artwork.
@@ -38,7 +38,7 @@ Search lists shared candidates with their pack, source, licence, MIME type,
 dimensions and digest. `--resolve` and build reports identify the embedded
 representation and provenance. Searches never print image payloads.
 
-The 69 on-demand entries have no committed artwork and cannot be used through
+The 66 on-demand entries have no committed artwork and cannot be used through
 this path. Unknown, misspelled, ambiguous and on-demand references become the
 usual reported placeholders. No download is attempted. A missing pack file,
 malformed catalog or digest mismatch is an installation/integrity error and

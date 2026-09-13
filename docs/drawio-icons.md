@@ -77,11 +77,21 @@ Vendor artwork is embedded **byte-for-byte**. Microsoft and Google grant permiss
 use their icons in architecture diagrams and forbid altering the icon shape, so there is
 no optimisation pass — and the untouched bytes keep the recorded SHA-256 meaningful.
 
-Sixty-nine products are catalogued with a URL, a licence note and the exact
-`fetch-logo` command, but **no bytes**, because no permissively licensed mark for them
-exists. Seven of those were removed from Simple Icons 16 at the brand owner's request;
-shipping them from an older pin would have made the rest of `ATTRIBUTION.md` dishonest.
-`find-icon` hands back the command; `build-diagram` refuses to draw them.
+Sixty-six products are catalogued with a URL, a licence note and the exact
+`fetch-logo` command, but **no bytes**. For most, no permissively licensed mark exists.
+Seven were removed from Simple Icons 16 at the brand owner's request; shipping them
+from an older pin would have made the rest of `ATTRIBUTION.md` dishonest. Four Apache
+projects have a licensed logo whose official artwork does not draw correctly at icon
+size, and each entry says why. `find-icon` hands back the command; `build-diagram`
+refuses to draw them.
+
+A licence that covers the artwork, or a trademark policy that explicitly allows
+identifying use, is what lets a mark ship; a repository holding the file is not. The
+Apache Software Foundation licenses its project graphic logos under the Apache
+License, so Apache Iceberg, Pinot and Beam ship the official originals byte-for-byte,
+at their own aspect. CNCF artwork is published only under the Linux Foundation
+trademark guidelines, which allow a logo as a link to its project and nothing broader,
+so Crossplane, Flux and Open Policy Agent stay on-demand (#11).
 
 See `assets/libraries/ATTRIBUTION.md` for per-source terms and
 `references/pack-index.md` for the full on-demand list.
@@ -187,7 +197,7 @@ at, from committed files under `assets/libraries/local/` — which took the pack
 ## Third-party product logos
 
 The packs cover most of a real architecture. Everything else — a niche vendor, an
-internal product, one of the sixty-nine marks catalogued without artwork — gets its
+internal product, one of the sixty-six marks catalogued without artwork — gets its
 actual logo, downloaded and embedded.
 
 This is not a nice-to-have: in the five reference diagrams, **77 of 97 embedded images
