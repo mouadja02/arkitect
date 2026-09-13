@@ -6,12 +6,13 @@
 //   node find-icon.mjs --stats
 //   node find-icon.mjs --resolve dbt             what a spec node would draw
 //
-// Three providers, in order of preference:
+// Existing providers keep their preference; shared artwork fills coverage gaps:
 //
 //   bundled   the Excalidraw libraries shipped with this plugin - the primary
 //             source, and native vector geometry rather than pictures
 //   house     an icon built from a real logo by make-icon.mjs
 //   cache     a library pulled from libraries.excalidraw.com at some point
+//   drawio    original committed SVG/PNG artwork shared with the other engine
 //
 // A search never prints element payloads, so scanning for an icon costs a few
 // lines of context rather than a wall of JSON.
@@ -20,10 +21,13 @@ import { nameAliases, normalizeName, bbox, positionals } from './lib/excalidraw-
 import { loadIndex as loadIconIndex, getIcon } from './make-icon.mjs';
 import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
+import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef } from './lib/shared-icons.mjs';
+import { fileURLToPath } from 'node:url';
+import { resolve as resolvePath } from 'node:path';
 
 // Every candidate mark, flattened: bundled items first, then house icons, then
-// anything downloaded from the public catalogue.
-export function catalog() {
+// anything downloaded from the public catalogue, then shared-pack metadata.
+export function catalog({ shared = true } = {}) {
   const out = [];
 
   const bundled = loadBundledIndex();
@@ -71,10 +75,12 @@ export function catalog() {
       });
     }
   }
+  if (shared) out.push(...sharedCatalog());
   return out;
 }
 
 export function score(entry, query) {
+  if (entry.provider === 'drawio') return sharedScore(entry, query);
   const q = normalizeName(query).replace(/-/g, ' ');
   if (!q) return 0;
   const tokens = q.split(' ').filter(Boolean);
@@ -137,7 +143,7 @@ export function match(entry, query) {
 }
 
 // What a spec node naming `query` draws unattended - or null, and why it gets a placeholder.
-export function unattended(query, { entries = catalog() } = {}) {
+function unattendedExisting(query, entries) {
   const judged = [];
   for (const entry of entries) {
     const m = match(entry, query);
@@ -151,9 +157,17 @@ export function unattended(query, { entries = catalog() } = {}) {
   // The same product often sits in several libraries; a runner-up of the same name is not a rival.
   const rival = judged.find((r) => nameKey(r.entry.name) !== nameKey(top.entry.name));
   if (rival && top.strength - rival.strength < CLEAR_MARGIN) {
-    return { entry: null, candidate: top.entry, reason: `"${rival.entry.name}" matches about as well` };
+    return { entry: null, candidate: top.entry, ambiguous: true, reason: `"${rival.entry.name}" matches about as well` };
   }
   return { entry: top.entry, reason: null };
+}
+
+export function unattended(query, { entries = catalog() } = {}) {
+  const existing = unattendedExisting(query, entries.filter((e) => e.provider !== 'drawio'));
+  if (existing.entry || existing.ambiguous) return existing;
+  const shared = entries.filter((e) => e.provider === 'drawio');
+  if (!shared.length) return existing;
+  return sharedUnattended(query, shared);
 }
 
 export function search(query, { limit = 8, entries = catalog() } = {}) {
@@ -167,9 +181,11 @@ export function search(query, { limit = 8, entries = catalog() } = {}) {
 
 // Turn a reference into drawable material for build-diagram.mjs.
 // Returns { source, kind, elements } or { source, kind: 'embedded', entry }.
-export function resolveIcon(ref) {
+export function resolveIcon(ref, { shared = true } = {}) {
   if (!ref) return null;
   const direct = String(ref);
+
+  if (direct.startsWith('drawio:')) return shared ? resolveSharedRef(direct) : null;
 
   if (direct.includes(':')) {
     // A bundled reference resolves without touching the download cache, and an
@@ -202,8 +218,8 @@ export function resolveIcon(ref) {
   // Not an exact reference: fall back to search, but draw the hit only when it is
   // the product by name. Anything less becomes a placeholder the report names -
   // a substring match used to be enough, and drew the wrong product silently (#22).
-  const { entry } = unattended(direct);
-  return entry ? resolveIcon(entry.ref) : null;
+  const { entry } = unattended(direct, { entries: catalog({ shared }) });
+  return entry ? resolveIcon(entry.ref, { shared }) : null;
 }
 
 function main(argv) {
@@ -215,7 +231,9 @@ function main(argv) {
     console.log(JSON.stringify({
       houseIcons: entries.filter((e) => e.provider === 'house').length,
       installedLibraries: libs.length,
-      libraryItems: entries.filter((e) => e.provider !== 'house').length,
+      libraryItems: entries.filter((e) => e.provider !== 'house' && e.provider !== 'drawio').length,
+      sharedIcons: entries.filter((e) => e.provider === 'drawio').length,
+      sharedPacks: new Set(entries.filter((e) => e.provider === 'drawio').map((e) => e.library)).size,
       libraries: libs.map((l) => ({ slug: l.slug, name: l.name, items: l.items })),
     }, null, 2));
     return;
@@ -227,6 +245,7 @@ function main(argv) {
     const box = r.elements ? bbox(r.elements) : null;
     console.log(JSON.stringify({
       ref: r.source, name: r.name, kind: r.kind,
+      ...(r.provenance ? { provenance: r.provenance, representation: 'embedded original artwork; logo paths are not editable' } : {}),
       elements: r.elements?.length ?? 1,
       intrinsic: box ? `${Math.round(box.width)}x${Math.round(box.height)}` : `${r.entry.width}x${r.entry.height}`,
       specNode: { kind: 'icon', icon: r.source, label: r.name, col: 0, row: 0 },
@@ -246,7 +265,7 @@ function main(argv) {
       query,
       matches: [],
       advice: [
-        'No installed library or house icon matches.',
+        'No installed library, house icon or committed shared-pack icon matches.',
         'node browse-libraries.mjs --search "<query>"  - look for a public Excalidraw library',
         'node make-icon.mjs --url <logo url> --name <product> [--trace]  - build the icon from the real logo',
         'Or draw it as a labelled shape and say so. Never reuse a different product\'s mark.',
@@ -267,4 +286,4 @@ function main(argv) {
   }, null, 2));
 }
 
-if (process.argv[1] && process.argv[1].endsWith('find-icon.mjs')) main(process.argv.slice(2));
+if (process.argv[1] && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url)) main(process.argv.slice(2));

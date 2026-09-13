@@ -38,12 +38,13 @@ agent actually looked at before saying it was done.
 - **Two engines, one contract.** Draw.io when it has to look formal; Excalidraw when it
   should look thought-through rather than filed. Same workflow, same spec idea, same
   honesty rules.
-- **5,950 icons bundled.** 4,793 marks in 18 Draw.io packs — AWS, Azure, Google Cloud,
+- **5,955 icons bundled.** 4,793 marks in 18 shared packs — AWS, Azure, Google Cloud,
   data platforms, databases, AI frameworks, ML, streaming, observability, DevOps,
   security, GitHub, SaaS, languages, file types, and agent concepts — plus 1,162 items
   across 36 Excalidraw libraries. All searchable by product name, ranked so a curated
   pack beats a catch-all, and flagged when the match is not clear enough to trust.
-  No download, works offline.
+  No download, works offline. Excalidraw uses the [shared packs](docs/shared-icons.md)
+  as embedded original artwork when its native libraries have no confident match.
 - **Real logos for everything else.** Point it at a product's asset and it fetches,
   transparency-checks and embeds it — or traces an SVG into native Excalidraw geometry so
   the mark takes the hand-drawn stroke and stays editable.
@@ -115,7 +116,7 @@ Then ask for a diagram in plain language:
 |---|---|---|
 | looks like | crisp, formal, vendor icons | hand-drawn, sketchy |
 | reach for it when | a client, a review board or an RFC will see it; the design is AWS-heavy; you need multiple pages or an as-is/to-be comparison | it is system design, a component or block diagram, a flow, or art for a README |
-| icons | 18 packs, 4,793 marks + built-in `mxgraph.aws4.*` + fetched product logos | 1,162 items across 36 libraries + icons traced from real logos |
+| icons | 18 packs, 4,793 marks + built-in `mxgraph.aws4.*` + fetched product logos | 1,162 native items across 36 libraries + 4,793 shared marks embedded as original artwork |
 | edit it in | Draw.io Desktop, the VS Code extension, app.diagrams.net | the Excalidraw container this repo ships, or excalidraw.com |
 | local viewer | Draw.io Desktop (optional) | `docker compose up -d` (optional) |
 

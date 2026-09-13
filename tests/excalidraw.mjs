@@ -343,14 +343,14 @@ test('find-icon resolves an exact name and refuses a weak match', () => {
   eq(finder.resolveIcon('a-product-that-does-not-exist-anywhere'), null, 'no weak substitution');
 });
 
-test('a name that only appears inside a different product falls to a placeholder (#22)', () => {
+test('without shared packs a name inside a different product still gets a placeholder (#22)', () => {
   // Each of these drew the wrong product, silently: a managed service for the
   // open-source project, or an unrelated item that merely contains the word.
   for (const q of ['postgres', 'redis', 'grafana', 'prometheus', 'vault', 'queue', 'nifi', 'ray', '.net', 'llm',
     'memory', 'api management']) {
-    const drawn = finder.resolveIcon(q);
+    const drawn = finder.resolveIcon(q, { shared: false });
     assert(!drawn, `"${q}" drew ${drawn?.name}`);
-    assert(finder.unattended(q).reason, `"${q}" gives no reason for its placeholder`);
+    assert(finder.unattended(q, { entries: finder.catalog({ shared: false }) }).reason, `"${q}" gives no reason for its placeholder`);
   }
   // The product by name still draws, with or without its vendor word.
   for (const [q, name] of [['kafka', 'Kafka'], ['lambda', 'Lambda'], ['data factory', 'Azure Data Factory'],
@@ -361,7 +361,7 @@ test('a name that only appears inside a different product falls to a placeholder
 
 test('icon resolution answer key: never draws a different product unattended (#22)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'excalidraw-icon-queries.json'), 'utf8'));
-  const entries = finder.catalog();
+  const entries = finder.catalog({ shared: false });
   let right = 0; let placeholders = 0; let drawable = 0;
   const wrong = [];
   for (const [q, accept] of key.queries) {
@@ -376,6 +376,165 @@ test('icon resolution answer key: never draws a different product unattended (#2
     + `(${key.queries.length} queries, ${drawable} with a drawable answer)`);
   assert(!wrong.length, `drew a different product: ${wrong.join('; ')}`);
   assert(right / drawable >= key.drawFloor, `drew ${right} of ${drawable} drawable answers, below the ${key.drawFloor * 100}% floor`);
+});
+
+test('shared fallback preserves every existing choice and uses the reviewed product IDs (#17)', () => {
+  const nativeKey = JSON.parse(readFileSync(join(HERE, 'excalidraw-icon-queries.json'), 'utf8'));
+  const sharedKey = JSON.parse(readFileSync(join(HERE, 'icon-queries.json'), 'utf8'));
+  const expected = new Map(sharedKey.queries.filter(([, , context]) => !context).map(([q, accept]) => [q, accept]));
+  const oldEntries = finder.catalog({ shared: false });
+  const entries = finder.catalog();
+  let preserved = 0; let added = 0;
+  for (const [query] of nativeKey.queries) {
+    const before = finder.unattended(query, { entries: oldEntries });
+    const after = finder.unattended(query, { entries });
+    if (before.entry) {
+      eq(after.entry?.ref, before.entry.ref, `existing choice for ${query}`);
+      preserved++;
+    } else if (after.entry) {
+      eq(after.entry.provider, 'drawio', `new provider for ${query}`);
+      const accept = expected.get(query);
+      const ids = Array.isArray(accept) ? accept : [accept];
+      assert(ids.some((id) => id && after.entry.ref === `drawio:${id}`), `${query} drew wrong product ${after.entry.ref}`);
+      added++;
+    }
+  }
+  assert(added >= 100, `expected substantial new coverage, got ${added}`);
+  console.log(`        shared fallback: ${preserved} existing choices preserved, ${added} new correct answers`);
+  for (const [query, id] of [['postgres', 'databases/postgresql'], ['grafana', 'observability/grafana'],
+    ['prometheus', 'observability/prometheus'], ['vault', 'security-identity/vault'], ['redis', 'databases/redis']]) {
+    eq(finder.resolveIcon(query)?.source, `drawio:${id}`, `actual resolver for ${query}`);
+  }
+  for (const query of ['tempo', 'cube', 'microsoft fabric', 'compute optimizer', 'a-product-that-does-not-exist-anywhere']) {
+    eq(finder.resolveIcon(query), null, `unsafe query ${query}`);
+  }
+});
+
+test('all shared IDs resolve to the exact committed SVG or PNG bytes (#17)', () => {
+  const cat = JSON.parse(readFileSync(join(ROOT, 'skills/arkitect-drawio/references/icon-catalog.json'), 'utf8'));
+  const shared = finder.catalog().filter((e) => e.provider === 'drawio');
+  eq(shared.length, cat.icons.filter((i) => i.bytes === 'committed').length, 'all committed icons searchable');
+  const refs = new Set(shared.map((e) => e.ref));
+  const failures = [];
+  for (const icon of cat.icons) {
+    try {
+      const ref = `drawio:${icon.id}`;
+      const result = finder.resolveIcon(ref);
+      if (icon.bytes !== 'committed') {
+        eq(result, null, `${icon.id} has no bytes`);
+        assert(!refs.has(ref), `${icon.id} advertised as drawable`);
+        continue;
+      }
+      assert(refs.has(ref), `${icon.id} not searchable`);
+      eq(result.kind, 'embedded', 'representation');
+      eq(result.source, ref, 'exact ID');
+      eq(core.sha256(result.entry.bytes), icon.sha256, 'original byte hash');
+      eq(result.entry.mime, icon.mime, 'mime');
+      eq(result.entry.width, icon.width, 'width');
+      eq(result.entry.height, icon.height, 'height');
+      eq(result.provenance.source, icon.source, 'source attribution');
+      eq(result.provenance.licence, icon.licence, 'licence attribution');
+    } catch (e) { failures.push(`${icon.id}: ${e.message}`); }
+  }
+  assert(!failures.length, failures.join('\n'));
+  assert(!JSON.stringify(shared).includes('base64'), 'catalog must remain metadata-only');
+});
+
+test('shared refs reject typos, indices and paths without substituting artwork (#17)', () => {
+  for (const ref of ['drawio:', 'drawio:0', 'drawio:databases/0', 'drawio:postgres',
+    'drawio:databases/postgresql:0', 'drawio:databases/PostgreSQL', 'drawio:../databases/postgresql',
+    'drawio:databases/postgresql/extra', 'drawio:brands/not-a-product']) {
+    eq(finder.resolveIcon(ref), null, ref);
+  }
+  const result = builder.buildDiagram({ nodes: [
+    { id: 'x', kind: 'icon', icon: 'drawio:brands/not-a-product', label: 'Missing' },
+    { id: 'y', kind: 'icon', icon: 'drawio:streaming-orchestration/fivetran', label: 'Fivetran', col: 1 },
+  ] });
+  eq(result.report.missingIcons.length, 2, 'unknown and on-demand both reported');
+  eq(Object.keys(result.scene.files).length, 0, 'no substitute file');
+  assert(validator.validateScene(result.scene).ok, 'placeholders remain valid');
+});
+
+test('shared fallback cannot bypass ambiguity in the existing provider set (#17)', () => {
+  const native = ['Postgres service A', 'Postgres service B'].map((name, i) => ({
+    ref: `custom:${i}`, name, provider: 'bundled', aliases: ['postgres'],
+  }));
+  const entries = [...native, ...finder.catalog().filter((e) => e.provider === 'drawio')];
+  const result = finder.unattended('postgres', { entries });
+  eq(result.entry, null, 'ambiguous native result stays unresolved');
+  assert(result.ambiguous, 'reason distinguishes ambiguity from missing coverage');
+});
+
+test('shared example specs build valid scenes and the gallery covers every pack (#17)', () => {
+  for (const name of ['shared-icon-packs', 'shared-icon-gallery']) {
+    const spec = JSON.parse(readFileSync(join(SKILL, 'assets/templates', `${name}.spec.json`), 'utf8'));
+    const built = builder.buildDiagram(spec);
+    const validation = validator.validateScene(built.scene);
+    assert(validation.ok, `${name}: ${validation.errors.join('; ')}`);
+    eq(validation.info.overlaps, 0, `${name}: overlapping nodes`);
+    eq(built.report.missingIcons.length, 0, `${name}: missing icons`);
+    if (name === 'shared-icon-gallery') {
+      eq(new Set(built.report.icons.map((i) => i.provenance.pack)).size, 18, 'gallery pack coverage');
+      eq(built.scene.elements.filter((e) => e.type === 'image').length, spec.nodes.length, 'every gallery icon embedded');
+      const svg = renderer.sceneToSvg(built.scene);
+      for (const file of Object.values(built.scene.files)) assert(svg.includes(file.dataURL), 'SVG keeps gallery payloads');
+      assert(built.report.opaqueIcons.some((s) => s.includes('agentcore-identity')), 'opaque PNG reported');
+    }
+  }
+});
+
+test('shared images deduplicate bytes, preserve aspect and bind connections on both sides (#17)', () => {
+  const cat = JSON.parse(readFileSync(join(ROOT, 'skills/arkitect-drawio/references/icon-catalog.json'), 'utf8'));
+  const raster = cat.icons.find((i) => i.mime === 'image/png' && i.width !== i.height && i.bytes === 'committed');
+  assert(raster, 'non-square raster fixture exists');
+  const ids = ['databases/postgresql', 'databases/postgresql', raster.id];
+  const built = builder.buildDiagram({ nodes: ids.map((id, col) => (
+    { id: `n${col}`, kind: 'icon', icon: `drawio:${id}`, label: `Icon ${col}`, col, size: 100 }
+  )), edges: [{ from: 'n0', to: 'n1' }, { from: 'n1', to: 'n2' }] });
+  assert(validator.validateScene(built.scene).ok, 'scene validates');
+  const images = built.scene.elements.filter((e) => e.type === 'image');
+  eq(images.length, 3, 'independent image elements');
+  eq(Object.keys(built.scene.files).length, 2, 'one file per distinct payload');
+  eq(images[0].fileId, images[1].fileId, 'repeated icon file');
+  const scale = 100 / Math.max(raster.width, raster.height);
+  eq(images[2].width, Math.round(raster.width * scale), 'raster width');
+  eq(images[2].height, Math.round(raster.height * scale), 'raster height');
+  for (const arrow of built.scene.elements.filter((e) => e.type === 'arrow')) {
+    for (const binding of [arrow.startBinding, arrow.endBinding]) {
+      const anchor = images.find((e) => e.id === binding?.elementId);
+      assert(anchor?.boundElements?.some((e) => e.id === arrow.id), 'two-sided image binding');
+    }
+  }
+  const svg = renderer.sceneToSvg(built.scene);
+  for (const file of Object.values(built.scene.files)) {
+    assert(svg.includes(file.dataURL), 'preview embeds original data URL');
+  }
+  assert(built.report.icons.every((i) => i.provenance?.sha256), 'build reports shared provenance');
+});
+
+test('shared catalog corruption stops resolution instead of silently substituting (#17)', () => {
+  // Alter only a child process's in-memory catalog, never the shipped files.
+  const drawioUrl = new URL('../skills/arkitect-drawio/scripts/find-icon.mjs', import.meta.url).href;
+  const finderUrl = new URL('../skills/arkitect-excalidraw/scripts/find-icon.mjs', import.meta.url).href;
+  const source = `import {loadCatalog} from ${JSON.stringify(drawioUrl)};
+    import {resolveIcon} from ${JSON.stringify(finderUrl)};
+    const icon = loadCatalog().icons.find(i => i.id === 'databases/postgresql');
+    icon.sha256 = 'wrong';
+    try { resolveIcon('drawio:databases/postgresql'); process.exit(1); }
+    catch (e) { if (!e.message.includes('catalog/library mismatch')) throw e; }`;
+  execFileSync(process.execPath, ['--input-type=module', '-e', source], { encoding: 'utf8' });
+});
+
+test('Excalidraw CLI emits one metadata-only response when importing the Draw.io resolver (#17)', () => {
+  const search = JSON.parse(node('find-icon.mjs', ['postgres']));
+  eq(search.draws, 'drawio:databases/postgresql', 'CLI fallback');
+  assert(search.matches.some((m) => m.provider === 'drawio'), 'shared search results');
+  assert(!JSON.stringify(search).includes('base64'), 'no payload in CLI search');
+  const resolved = JSON.parse(node('find-icon.mjs', ['--resolve', 'drawio:databases/postgresql']));
+  eq(resolved.provenance.pack, 'databases', 'CLI provenance');
+  const stats = JSON.parse(node('find-icon.mjs', ['--stats']));
+  eq(stats.sharedPacks, 18, 'shared pack count');
+  assert(stats.sharedIcons > 4700, 'shared icon count');
 });
 
 test('removing an icon takes its item and index entry with it', () => {

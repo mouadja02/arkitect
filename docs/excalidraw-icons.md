@@ -2,7 +2,8 @@
 
 **Try the bundled libraries first** — 1,162 marks covering most of what a cloud
 or data architecture needs, with no download. See [excalidraw-libraries.md](excalidraw-libraries.md).
-This page is for the product none of them has.
+The [shared packs](shared-icons.md) fill gaps with 4,793 embedded original marks.
+This page is for the product neither source has.
 
 If that product is not worth a detour, the honest answer is a **placeholder**:
 
@@ -61,8 +62,8 @@ it before shipping.
 ### Embedded (default)
 
 The logo goes in as an `image` element with the bytes embedded in the scene.
-Always faithful, works for PNG, JPEG, WebP and SVG. But it is a bitmap: it will
-not take the hand-drawn stroke and cannot be restyled afterwards.
+Works for PNG, JPEG, WebP and SVG. SVG remains vector artwork, but the image will
+not take the hand-drawn stroke and its paths cannot be restyled in Excalidraw.
 
 Use it when the mark is too complex to trace — a gradient, a photo, a wordmark
 with custom type.

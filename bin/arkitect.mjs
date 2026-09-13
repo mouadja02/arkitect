@@ -36,7 +36,7 @@ const COMMANDS = {
     learn: [DRAWIO, 'build-knowledge.mjs', 'rebuild the style record from your own diagrams'],
   },
   excalidraw: {
-    icon: [EXCALI, 'find-icon.mjs', 'search the 1,162 bundled Excalidraw library items'],
+    icon: [EXCALI, 'find-icon.mjs', 'search native Excalidraw libraries and the shared packs'],
     'make-icon': [EXCALI, 'make-icon.mjs', 'build an icon from a real product logo'],
     libraries: [EXCALI, 'index-libraries.mjs', 'list, inspect and reindex the bundled libraries'],
     browse: [EXCALI, 'browse-libraries.mjs', 'search and install from the public catalogue'],

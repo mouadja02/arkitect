@@ -368,7 +368,8 @@ export function buildDiagram(spec) {
         produced.push(img);
         anchor = img;
         box = elementBox(img);
-        report.icons.push({ node: n.id, ref: resolved.source, kind: 'embedded' });
+        report.icons.push({ node: n.id, ref: resolved.source, kind: 'embedded',
+          ...(resolved.provenance ? { provenance: resolved.provenance } : {}) });
         if (e.transparent === false) report.opaqueIcons.push(`${resolved.source} (${e.transparencyNote})`);
       } else {
         const group = newId();
@@ -751,6 +752,7 @@ function main(argv) {
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
     icons: {
       resolved: report.icons.length,
+      embedded: report.icons.filter((icon) => icon.kind === 'embedded'),
       opaqueBackground: report.opaqueIcons,
       // Items that already draw their own name, so no caption was added.
       selfCaptioned: report.selfCaptioned,
