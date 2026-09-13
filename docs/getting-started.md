@@ -88,7 +88,7 @@ node bin/arkitect.mjs excalidraw icon "postgres"
 node bin/arkitect.mjs drawio icon "bedrock"
 ```
 
-5,967 marks ship with Arkitect: 4,805 across 18 Draw.io packs — AWS, Azure,
+6,005 marks ship with Arkitect: 4,843 across 18 Draw.io packs — AWS, Azure,
 Google Cloud, data platforms, databases, AI frameworks, ML, streaming,
 observability, DevOps, security, GitHub, SaaS, languages, file types and agent
 concepts — and 1,162 items across 36 Excalidraw libraries.

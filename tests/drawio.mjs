@@ -910,9 +910,12 @@ const ASF_SHIPPED = {
   'data-platforms/apacheiceberg': 'iceberg.svg',
   'data-platforms/apachepinot': 'pinot.svg',
   'streaming-orchestration/apachebeam': 'beam-2.svg',
+  // APISIX joined the same source rather than getting its own: the ASF policy
+  // and licence are identical for every project logo in that index (#20).
+  'devops/apacheapisix': 'apisix.svg',
 };
 
-test('Apache Iceberg, Pinot and Beam ship byte-for-byte from the pinned ASF originals, at their own aspect (#11)', () => {
+test('Apache Iceberg, Pinot, Beam and APISIX ship byte-for-byte from the pinned ASF originals, at their own aspect (#11, #20)', () => {
   const src = packs.loadManifest().sources['asf-logos'];
   eq(`${src.type} ${src.terms} ${src.licence}`, 'local-files licence Apache-2.0', 'the asf-logos source');
   assert(src.licenceUrl === 'https://www.apache.org/foundation/marks/' && /licensed to the public under the Apache License/.test(src.note),
@@ -1007,6 +1010,161 @@ test('the #20 projects whose artwork no licence covers stay on-demand, each with
     assert(r.confident, `"${q}" is not confident: ${r.reason}`);
     eq(r.icon.id, id, `"${q}"`);
   }
+});
+
+// #20, third batch: the remaining 123 products a modern data, ML and platform
+// stack uses. [source, file, licence] for each mark whose licence let it ship.
+const STACK_LOGOS = {
+  'ai-frameworks/dspy': ['dspy-logo', 'dspy-logo.svg', 'MIT'],
+  'ai-frameworks/guardrails': ['guardrails-logo', 'guardrails-logo.svg', 'Apache-2.0'],
+  'ai-frameworks/llamacpp': ['llamacpp-logo', 'icon-light.svg', 'CC-BY-NC-4.0 with ggml-org brand-usage grant'],
+  'ai-frameworks/localai': ['localai-logo', 'logo-mark.png', 'MIT'],
+  'ai-frameworks/mem0': ['mem0-logo', 'mem0-logo.svg', 'Apache-2.0'],
+  'ai-frameworks/pydanticai': ['pydanticai-logo', 'pydantic-ai-light.svg', 'MIT'],
+  'ai-frameworks/trl': ['trl-logo', 'trl-logo.png', 'Apache-2.0'],
+  'ai-frameworks/axolotl': ['axolotl-logo', 'axolotl-symbol.svg', 'Apache-2.0'],
+  'ai-frameworks/whylogs': ['whylogs-logo', 'whylogs-logo.png', 'Apache-2.0'],
+  'data-platforms/lightdash': ['lightdash-logo', 'lightdash-logo-icon.svg', 'MIT'],
+  'data-platforms/evidence': ['evidence-logo', 'evidence-logo.svg', 'MIT'],
+  'data-platforms/datahub': ['datahub-logo', 'datahub-logo.svg', 'Apache-2.0'],
+  'data-platforms/openmetadata': ['openmetadata-logo', 'openmetadata-monogram.svg', 'Apache-2.0'],
+  'saas-collab/flagsmith': ['flagsmith-logo', 'flagsmith-logo.svg', 'BSD-3-Clause'],
+  'ml-training/apachehamilton': ['hamilton-logo', 'hamilton-logo.png', 'Apache-2.0'],
+  'ml-training/marimo': ['marimo-logo', 'marimo-logotype.svg', 'Apache-2.0'],
+  'ml-training/statsmodels': ['statsmodels-logo', 'statsmodels-logo.svg', 'BSD-3-Clause'],
+  'languages-runtimes/move': ['move-logo', 'move-logo.svg', 'Apache-2.0'],
+  'languages-runtimes/hatch': ['hatch-logo', 'hatch-logo.svg', 'MIT'],
+  'languages-runtimes/tox': ['tox-logo', 'tox-logo.svg', 'MIT'],
+  'streaming-orchestration/hatchet': ['hatchet-logo', 'hatchet-logo.svg', 'MIT'],
+  'streaming-orchestration/trigger': ['trigger-logo', 'trigger-logo.svg', 'Apache-2.0'],
+  'streaming-orchestration/restate': ['restate-logo', 'restate-logo.svg', 'MIT'],
+  'streaming-orchestration/meltano': ['meltano-logo', 'meltano-logo.svg', 'MIT'],
+  'streaming-orchestration/sqlmesh': ['sqlmesh-logo', 'sqlmesh-logo.svg', 'Apache-2.0'],
+  'security-identity/sysdig': ['sysdig-logo', 'sysdig-logo.png', 'Apache-2.0'],
+  'security-identity/checkov': ['checkov-logo', 'checkov-logo.svg', 'Apache-2.0'],
+  'security-identity/tfsec': ['tfsec-logo', 'tfsec.png', 'MIT'],
+  'security-identity/infisical': ['infisical-logo', 'infisical-logo.svg', 'MIT'],
+  'security-identity/zitadel': ['zitadel-logo', 'zitadel-logo-solo.svg', 'MIT'],
+  'databases/lancedb': ['lancedb-logo', 'lancedb-logo.png', 'Apache-2.0'],
+  'databases/marqo': ['marqo-logo', 'marqo-logo.svg', 'Apache-2.0'],
+  'databases/orientdb': ['orientdb-logo', 'orientdb-logo.svg', 'Apache-2.0'],
+  'devops/okteto': ['okteto-logo', 'okteto.svg', 'Apache-2.0'],
+  'devops/tilt': ['tilt-logo', 'tilt-logo.svg', 'Apache-2.0'],
+  'devops/colima': ['colima-logo', 'colima.png', 'MIT'],
+  'devops/dokku': ['dokku-logo', 'dokku-logo.svg', 'MIT'],
+};
+
+test('the modern-stack marks that ship are pinned to a commit and committed byte-for-byte (#20)', () => {
+  const manifest = packs.loadManifest();
+  const cat = finder.loadCatalog();
+  for (const [id, [key, file, licence]] of Object.entries(STACK_LOGOS)) {
+    const src = manifest.sources[key];
+    eq(`${src?.type} ${src?.terms} ${src?.licence}`, `local-files licence ${licence}`, `${key} source`);
+    assert(/^https:\/\//.test(src.licenceUrl ?? ''), `${key} links its licence`);
+    assert(/\(#20\)/.test(src.note) && src.note.includes('committed'), `${key} records its finding`);
+    const dir = join(LIB_DIR, src.dir);
+    const files = new Map(readdirSync(dir).sort().map((name) => [name, readFileSync(join(dir, name))]));
+    eq([...files.keys()].join(' '), file, `${key} commits exactly its original`);
+    eq(packs.localFilesDigest(files), src.sha256, `${key} matches its pin`);
+    const icon = cat.icons.find((i) => i.id === id);
+    eq(`${icon?.bytes} ${icon?.source} ${icon?.render}`, `committed ${key} verbatim`, `${id} catalog row`);
+    eq(icon.sha256, createHash('sha256').update(files.get(file)).digest('hex'), `${id} embeds the original byte-for-byte`);
+    // Every mark names a pinned upstream: a 40-char commit, or the ASF's own index.
+    assert(/^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[0-9a-f]{40}\//.test(icon.upstreamId)
+      || icon.upstreamId.startsWith('https://www.apache.org/logos/originals/'), `${id} pins its upstream: ${icon.upstreamId}`);
+    const entry = core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`))[icon.libraryIndex];
+    // The cell fits 78px on the longest side and keeps the artwork's own
+    // aspect. Only the long side is asserted here: the catalog stores the
+    // intrinsic size rounded to integers while the cell is computed from the
+    // raw floats, so for artwork with a fractional viewBox — Restate's 34.46
+    // by 30.52 — recommendedSize and the cell disagree by a pixel.
+    eq(`${Math.max(entry.w, entry.h)} ${entry.aspect} ${entry.mime}`,
+      `78 fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
+      `${id} library cell is fitted to 78px and keeps its format`);
+  }
+  // llama.cpp is the one mark a policy rather than a bare licence lets in: the
+  // brand repository grants redistribution notwithstanding CC BY-NC's terms.
+  const brand = manifest.sources['llamacpp-logo'];
+  assert(brand.licenceUrl.endsWith('/BRAND-USAGE.md') && /notwithstanding the NonCommercial term/.test(brand.note),
+    'llama.cpp records the grant that permits it, not just the licence');
+});
+
+test('the modern-stack findings each name what blocked the mark (#20)', () => {
+  const cat = finder.loadCatalog();
+  for (const [id, licence, why] of [
+    ['streaming-orchestration/vector', /MPL-2\.0/, /copyleft/],
+    ['streaming-orchestration/windmill', /AGPL-3\.0/, /AGPLv3/],
+    ['streaming-orchestration/inngest', /SSPL-1\.0/, /non-OSI/],
+    ['saas-collab/unleash', /AGPL-3\.0/, /copyleft/],
+    ['data-platforms/rudderstack', /Elastic License 2\.0/, /non-OSI/],
+    ['security-identity/boundary', /HashiCorp trademark policy/, /hyperlink/],
+    ['observability/cortex', /Linux Foundation/, /LICENSE\.md/],
+    ['observability/telegraf', /InfluxData trademark guidelines/, /written logo licence/],
+    ['observability/logzio', /express written consent/, /a published policy decides before a repository licence/],
+    ['ml-training/triton', /NVIDIA/, /expressly authorized in writing/],
+    ['ai-frameworks/unsloth', /does not cover the artwork directory/, /appears in neither list/],
+    ['ai-frameworks/instructor', /no published logo/, /no logo image of any kind/],
+    // The trap the render pass caught: the permissively licensed file that
+    // looked like OpenObserve's mark is still the ZincSearch logo.
+    ['streaming-orchestration/openobserve', /AGPL-3\.0/, /ZincSearch/],
+  ]) {
+    const icon = cat.icons.find((i) => i.id === id);
+    eq(icon?.bytes, 'on-demand', id);
+    assert(licence.test(icon.licence) && why.test(icon.reason) && /^https:\/\//.test(icon.licenceUrl ?? ''),
+      `${id} records its finding: ${icon.licence} / ${icon.reason}`);
+    assert(icon.brandUrl || icon.upstreamUrl, `${id} says where to get the artwork`);
+  }
+});
+
+test('two of the #20 products needed no new source at all (#20)', () => {
+  const cat = finder.loadCatalog();
+  // AWS renamed QuickSight: the architecture package already shipped the mark
+  // under a name nobody searches for.
+  for (const q of ['quicksight', 'amazon quicksight', 'quick suite']) {
+    const r = finder.resolve(q);
+    assert(r.confident && r.icon.id === 'aws/amazon-quick', `"${q}" -> ${r.confident ? r.icon.id : r.reason}`);
+  }
+  // Aqua Security shipped all along, stranded in the rank-90 catch-all.
+  const aqua = cat.icons.find((i) => i.id === 'security-identity/aqua');
+  eq(`${aqua?.title} ${aqua?.bytes}`, 'Aqua Security committed', 'Aqua Security is promoted out of the catch-all');
+  assert(!cat.icons.some((i) => i.id === 'brands/aqua'), 'the catch-all copy is gone, so the title cannot tie with itself');
+  for (const q of ['aqua', 'aqua security', 'aquasec']) {
+    const r = finder.resolve(q);
+    assert(r.confident && r.icon.id === 'security-identity/aqua', `"${q}" -> ${r.confident ? r.icon.id : r.reason}`);
+  }
+});
+
+test('every product #20 lists has a recorded outcome, and none resolves to nothing (#20)', () => {
+  const cat = finder.loadCatalog();
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const known = new Map();
+  for (const i of cat.icons) {
+    for (const k of [i.id.split('/').pop(), i.title, ...(i.aliases ?? [])]) {
+      if (k && !known.has(norm(k))) known.set(norm(k), i);
+    }
+  }
+  // The issue's ten clusters, verbatim. "bun tooling" is the one phrase that
+  // names no product of its own: bun itself already shipped.
+  const LISTED = `together fireworks baseten runpod lambdalabs litellm dspy arize whylabs galileo instructor
+    guardrails llamacpp localai openwebui agno phidata letta mem0 smolagents pydanticai trl unsloth axolotl
+    hex sigma preset lightdash evidence hightouch census rudderstack segment amplitude datahub openmetadata
+    amundsen atlan collibra alation greatexpectations soda montecarlo datafold dune quicksight mode thoughtspot
+    wiz orca aquasecurity sysdig semgrep checkov tfsec gitleaks vanta drata stepsecurity sigstore cosign spiffe
+    teleport boundary infisical doppler zitadel supertokens stytch flyte metaflow hamilton triton torchserve
+    kserve seldon feast tecton marimo fastai jax flax catboost lightgbm statsmodels dagger earthly garden okteto
+    tilt kustomize argocd werf colima orbstack lima flatcar dokku tyk apisix krakend hatchet inngest trigger
+    restate windmill benthos vector cribl openobserve meltano singer sqlmesh dlt slab craft height productboard
+    aha launchdarkly statsig unleash flagsmith chronosphere lightstep coralogix logzio signoz telegraf cortex
+    mimir lancedb marqo libsql rethinkdb ravendb orientdb janusgraph move hatch tox bun`.split(/\s+/);
+  const missing = LISTED.filter((n) => !known.has(norm(n)));
+  eq(missing.join(' '), '', 'every product the issue names is answered');
+  // Of the products the issue names, these ship their artwork and the rest are
+  // catalogued with the licence or policy that blocked it. Change the numbers
+  // deliberately, when a finding changes — never to make a build pass.
+  const shipped = LISTED.filter((n) => known.get(norm(n)).bytes === 'committed');
+  // 142 products: the issue lists 143 distinct names, but "bun tooling" is a
+  // phrase rather than a product and bun itself already shipped.
+  eq(`${shipped.length} of ${LISTED.length}`, '49 of 142', 'the split between shipped and catalogued');
 });
 
 test('the Apache and CNCF marks that stay on-demand record the licence finding, the reason and a fetch source (#11)', () => {
