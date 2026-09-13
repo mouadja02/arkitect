@@ -120,6 +120,7 @@ reformat, re-indent or "clean up" those files.
 | `docs/`, `README.md` | low — fix freely, keep links resolving |
 | `bin/`, agent adapters in `bin/lib/install-agent.mjs` | low — covered by `tests/toolkit.mjs` |
 | `tests/` | medium — add tests freely; never weaken one to make a change pass |
+| `changelog.d/`, `scripts/` | low — release-note fragments and maintainer tooling; neither ships in the npm package |
 | `skills/*/references/*.md` | medium — evidence rules apply (invariants 8 and 9) |
 | `skills/*/scripts/` | high — the generators. Full ritual, plus a render you looked at |
 | `skills/*/scripts/lib/` | high — the scene model, the tracer, the stroke generator. Small, surgical changes only |
@@ -180,10 +181,32 @@ requests a person reviews.
 4. `node tests/run-tests.mjs toolkit` covers rendering, aliases, idempotency and
    the refusal to clobber.
 
+## Changelog entries
+
+A change records its release note in the same pull request, as a fragment of
+its own: `changelog.d/<issue>-<slug>.md` (or `nopr-<slug>.md`), written under
+`### Added`, `### Changed`, `### Removed` or `### Fixed` exactly as the entry
+should read. Never edit `[Unreleased]` in `CHANGELOG.md` directly. Every open
+pull request used to edit the same lines there, so each merge after the first
+conflicted (#32). [changelog.d/README.md](../changelog.d/README.md) has the
+format.
+
+```bash
+node scripts/changelog.mjs --check
+```
+
+The suite checks every fragment and fails on a conflict marker in any tracked
+text file. The `changelog` workflow fails a pull request that changes `bin/`,
+`skills/` or `docs/` without adding a fragment. A change a reader of the release
+notes would not notice (a test, CI, a typo) carries the `skip-changelog` label
+instead.
+
 ## Version bumps
 
 `package.json` `version` and `.claude-plugin/plugin.json` `version` move
-together, always, and a `CHANGELOG.md` entry lands in the same pull request.
+together, always. The release pull request folds the fragments into
+`CHANGELOG.md` with `node scripts/changelog.mjs --assemble`, which deletes them,
+and renames `[Unreleased]` to the version.
 [SemVer](https://semver.org): a new capability is a minor, a fix is a patch, and
 anything that changes the shape of generated output or removes a command is a
 major.

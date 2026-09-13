@@ -1,0 +1,35 @@
+name: changelog
+
+# Every change records its own changelog.d/ fragment instead of editing the top
+# of CHANGELOG.md, so parallel pull requests stop conflicting there (#32).
+# Label a pull request `skip-changelog` when it needs no entry. The label is read
+# from the event payload; adding or removing it re-runs this check.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  fragment:
+    name: changelog fragment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fragments are well formed
+        run: node scripts/changelog.mjs --check
+
+      - name: A change to bin/, skills/ or docs/ adds a fragment
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/changelog.mjs --require-fragment "$BASE_SHA"

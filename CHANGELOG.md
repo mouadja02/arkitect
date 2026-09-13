@@ -4,6 +4,9 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+Changes not yet released are written as fragments in
+[changelog.d/](changelog.d/README.md) and folded in here when a release is cut.
+
 ## [Unreleased]
 
 ### Added

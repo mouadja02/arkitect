@@ -78,10 +78,13 @@ PNGs. A change that suits the small example can wreck the large one.
 2. **Add a test** for anything you fixed. The suites live in `tests/drawio.mjs`,
    `tests/excalidraw.mjs` and `tests/toolkit.mjs`; they are plain assertions,
    no framework.
-3. **Keep the commit message about the change**, not the files touched.
-4. **Say what you looked at.** If you changed a generator, put the render in the
+3. **Add a changelog fragment**, `changelog.d/<issue>-<slug>.md`, rather than
+   editing `CHANGELOG.md`; see [changelog.d/README.md](changelog.d/README.md).
+   A test, CI or typo fix takes the `skip-changelog` label instead.
+4. **Keep the commit message about the change**, not the files touched.
+5. **Say what you looked at.** If you changed a generator, put the render in the
    PR. "It validates" is not the same as "it reads".
-5. If you changed a manifest or a skill, `claude plugin validate --strict .`.
+6. If you changed a manifest or a skill, `claude plugin validate --strict .`.
 
 Line endings matter here: `.drawio`, `.excalidraw`, `.excalidrawlib`, `.xml`,
 `.svg`, `.png` and `.json` are marked binary or `-text` in `.gitattributes`

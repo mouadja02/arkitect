@@ -160,6 +160,10 @@ LLM graders. See [../evals/README.md](../evals/README.md).
 Node 20 and 22, on every push and pull request. It is the same command you run
 locally, with no sources present — so CI always sees the fresh-clone result.
 
+`.github/workflows/changelog.yml` runs on every pull request. It fails when
+`bin/`, `skills/` or `docs/` change and no `changelog.d/` fragment is added,
+unless the pull request is labelled `skip-changelog` (#32).
+
 `.github/workflows/drawio-desktop.yml` is the one place a real Draw.io runs. When
 a change touches `skills/arkitect-drawio/`, `tests/drawio.mjs` or the workflow
 itself, it installs Draw.io Desktop on Ubuntu — a pinned `.deb`, checked against
