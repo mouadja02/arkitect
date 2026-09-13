@@ -396,6 +396,18 @@ function readTarball(file) {
   return entries;
 }
 
+function packInfo(stdout) {
+  const parsed = JSON.parse(stdout);
+  // npm <= 11 returns an array; npm 12 keys results by package name.
+  const entries = Array.isArray(parsed) ? parsed
+    : parsed && typeof parsed === 'object' ? Object.values(parsed) : [];
+  assert(entries.length === 1, 'npm pack must return exactly one package');
+  const [info] = entries;
+  assert(info && typeof info.filename === 'string'
+    && /^[^/\\\\]+\.tgz$/.test(info.filename), 'npm pack must return a tarball basename');
+  return info;
+}
+
 function packAndExtract() {
   // The real path: on macOS the temp directory is a symlink into /private, and
   // Node resolves the CLI's own location through it.
@@ -415,7 +427,7 @@ function packAndExtract() {
     const r = spawnSync(process.execPath, [npmCli, 'pack', '--json', '--ignore-scripts', '--pack-destination', tmp],
       { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
     if (r.status !== 0) throw new Error(`npm pack exited ${r.status}: ${(r.stderr || r.error?.message || '').trim().slice(-400)}`);
-    const [info] = JSON.parse(r.stdout);
+    const info = packInfo(r.stdout);
     const entries = readTarball(join(tmp, info.filename));
     for (const e of entries) {
       assert(e.path.startsWith('package/') && !e.path.split('/').includes('..'), `unexpected tarball entry ${e.path}`);
@@ -447,6 +459,14 @@ function packOnce() {
 }
 
 test('the npm package ships the bundled assets and nothing local (#38)', () => {
+  const info = { filename: 'arkitect-1.1.0.tgz' };
+  eq(packInfo(JSON.stringify([info])).filename, info.filename, 'npm array output');
+  eq(packInfo(JSON.stringify({ arkitect: info })).filename, info.filename, 'npm 12 keyed output');
+  for (const invalid of [null, [], {}, [info, info], { a: info, b: info }, [{}], [null], [{ filename: '../escape.tgz' }]]) {
+    let rejected = false;
+    try { packInfo(JSON.stringify(invalid)); } catch { rejected = true; }
+    assert(rejected, `accepted malformed or ambiguous npm pack output: ${JSON.stringify(invalid)}`);
+  }
   if (!npmCli) { console.log('      (npm was not found beside node)'); return 'skip'; }
   for (const s of SENTINELS) assert(isLocalOnly(s), `sentinel ${s} is not in a local-only location`);
   const { files, bytes } = packOnce();
