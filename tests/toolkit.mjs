@@ -8,7 +8,7 @@
 // Offline and deterministic, like the others.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, mkdtempSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -397,7 +397,9 @@ function readTarball(file) {
 }
 
 function packAndExtract() {
-  const tmp = mkdtempSync(join(tmpdir(), 'arkitect-pack-'));
+  // The real path: on macOS the temp directory is a symlink into /private, and
+  // Node resolves the CLI's own location through it.
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'arkitect-pack-')));
   const planted = [];
   try {
     for (const rel of SENTINELS) {
@@ -479,7 +481,7 @@ test('the packed CLI works from outside the checkout (#38)', () => {
   };
 
   eq(ok(['version']).trim(), pkg.version, 'packed version');
-  eq(resolve(ok(['where']).trim()), resolve(root), 'the packed CLI resolved a different root');
+  eq(realpathSync(ok(['where']).trim()), realpathSync(root), 'the packed CLI resolved a different root');
   const doctor = ok(['doctor']);
   for (const line of ['draw.io icon packs', 'draw.io AWS pack', 'draw.io icon catalog', 'excalidraw libraries', 'plugin manifest', 'agent contract']) {
     const row = doctor.split('\n').find((l) => l.includes(line));
