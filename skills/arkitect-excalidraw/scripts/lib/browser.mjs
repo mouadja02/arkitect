@@ -6,7 +6,7 @@
 // or fail. A screenshot counts only once it is on disk, non-empty and starts
 // with the PNG signature; Chromium's stderr is not evidence either way.
 
-import { accessSync, constants, statSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { accessSync, constants, statSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, openSync, closeSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
@@ -89,7 +89,28 @@ export function workRootFor(browser, { platform = process.platform, env = proces
   return snap ? join(env.HOME, 'snap', name, 'common') : tmpdir();
 }
 
-const runBrowser = (exe, args, { timeout }) => execFileSync(exe, args, { stdio: 'pipe', timeout });
+// The browser's output goes to a file, never a pipe. A piped child only counts
+// as finished once every process holding the pipe has closed it, and
+// Chromium's helpers can outlive the browser holding it open, so the call would
+// return only when the timeout killed it.
+const runBrowser = (exe, args, { timeout, log }) => {
+  const fd = openSync(log, 'w');
+  try {
+    return execFileSync(exe, args, { stdio: ['ignore', fd, fd], timeout });
+  } finally {
+    closeSync(fd);
+  }
+};
+
+// The last of what the browser printed, for a failure message.
+const said = (log) => {
+  try {
+    const text = readFileSync(log, 'utf8').trim().split('\n').slice(-3).join(' | ').slice(-400);
+    return text ? ` (browser said: ${text})` : '';
+  } catch {
+    return '';
+  }
+};
 
 // Screenshots an SVG document whose root carries its width and height in CSS
 // pixels, `width` pixels wide. Returns the PNG bytes and their dimensions, or
@@ -113,25 +134,27 @@ export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = 
     const svgPath = join(work, 'scene.svg');
     const page = join(work, 'page.html');
     const shot = join(work, 'shot.png');
+    const browserLog = join(work, 'browser.log');
     writeFileSync(svgPath, svg);
     // Chromium puts an 8px body margin round a bare SVG, shifting and clipping it.
     writeFileSync(page, '<!doctype html><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#fff}img{display:block}</style>'
       + `<img src="${pathToFileURL(svgPath).href}" width="${width}" height="${outH}">`);
     const args = [
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
-      '--force-device-scale-factor=1', `--user-data-dir=${join(work, 'profile')}`,
+      '--disable-crash-reporter', '--force-device-scale-factor=1', `--user-data-dir=${join(work, 'profile')}`,
       `--window-size=${width},${outH}`, `--screenshot=${shot}`,
       ...(noSandbox ? ['--no-sandbox'] : []),
       pathToFileURL(page).href,
     ];
     try {
-      runner(browser, args, { timeout });
+      runner(browser, args, { timeout, log: browserLog });
     } catch (error) {
       const timedOut = error.code === 'ETIMEDOUT' || error.signal === 'SIGTERM';
-      throw new Error(timedOut ? `the browser timed out after ${timeout / 1000}s` : `the browser failed: ${String(error.message).split('\n')[0]}`);
+      const reason = timedOut ? `the browser timed out after ${timeout / 1000}s` : `the browser failed: ${String(error.message).split('\n')[0]}`;
+      throw new Error(`${reason}${said(browserLog)}`);
     }
     let bytes;
-    try { bytes = readFileSync(shot); } catch { throw new Error('the browser exited without writing a screenshot'); }
+    try { bytes = readFileSync(shot); } catch { throw new Error(`the browser exited without writing a screenshot${said(browserLog)}`); }
     if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.toString('latin1', 12, 16) !== 'IHDR') {
       throw new Error('the screenshot is empty or not a PNG');
     }

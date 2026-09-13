@@ -1104,6 +1104,14 @@ test('a PNG render proves a real PNG before replacing the previous preview (#39)
     ['without writing a screenshot', () => {}],
     ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '<?xml version="1.0"?><svg/>')],
     ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '')],
+    // What the browser printed reaches the message, so a failure on a host
+    // nobody can log into still says why.
+    ['browser said: no usable sandbox', (exe, args, { log }) => {
+      writeFileSync(log, 'no usable sandbox\n');
+      const e = new Error('crashed');
+      e.status = 1;
+      throw e;
+    }],
   ]) {
     errors.length = 0;
     eq(renderer.run([scenePath, '--out', out], deps(runner)), 1, `"${why}" exits 1`);
