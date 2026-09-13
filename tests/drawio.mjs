@@ -1459,6 +1459,33 @@ test('an unknown edge kind draws as a flow instead of crashing on its label (#36
   assert(!cells.some((c) => c.id === 'legend'), 'the unknown kind earned a legend of its own');
 });
 
+test('an unknown node or edge kind is named in the build report with what it was drawn as (#48)', () => {
+  const spec = {
+    nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }, { id: 'b', kind: 'cylinder', label: 'B', col: 1, row: 0 },
+      { id: 'c', kind: 'constructor', label: 'C', col: 2, row: 0 }, { id: 'd', label: 'D', col: 3, row: 0 }],
+    edges: [{ from: 'a', to: 'b', kind: 'asnyc' }, { from: 'b', to: 'c', kind: 'toString' },
+      { from: 'c', to: 'd', kind: 'async' }, { from: 'a', to: 'd' }],
+  };
+  const { report } = builder.buildDiagram(spec);
+  eq(JSON.stringify(report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
+    ['nodes[1].kind', 'cylinder', 'box'], ['nodes[2].kind', 'constructor', 'box'],
+    ['edges[0].kind', 'asnyc', 'flow'], ['edges[1].kind', 'toString', 'flow'],
+  ]), 'every unknown kind, in spec order, with its fallback');
+  for (const u of report.unknownKinds) {
+    assert(u.valid.includes(u.field.startsWith('nodes') ? 'icon' : 'async') && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
+  }
+  eq(builder.buildDiagram({
+    nodes: [{ id: 'a', kind: 'note', label: 'A', col: 0, row: 0 }, { id: 'd', label: 'D', col: 1, row: 0 }],
+    edges: [{ from: 'a', to: 'd', kind: 'error' }, { from: 'd', to: 'a' }],
+  }).report.unknownKinds.length, 0, 'known and omitted kinds report nothing');
+
+  const specPath = join(TMP, 'unknown-kinds.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-kinds.drawio')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['cylinder', 'constructor', 'asnyc', 'toString']),
+    'the CLI prints them and the build still succeeds');
+});
+
 // ------------------------------------------------------------- logos
 
 // Minimal valid PNG, so the logo tests stay offline and deterministic.

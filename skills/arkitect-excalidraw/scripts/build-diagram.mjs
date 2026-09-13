@@ -79,6 +79,11 @@ export const EDGE_KINDS = {
   light:   { color: PALETTE.grey.stroke,   strokeStyle: 'dotted', width: STROKE_WIDTH.thin, meaning: 'weak association' },
 };
 
+// Node kinds the builder draws. Any other kind still draws, as a plain
+// rectangle, and is named in the build report so a typo cannot silently change
+// the diagram (#48).
+export const NODE_KINDS = ['box', 'round', 'ellipse', 'diamond', 'cylinder', 'actor', 'note', 'text', 'icon', 'placeholder'];
+
 function accentOf(name) {
   if (!name) return { stroke: PALETTE.black.stroke, bg: 'transparent' };
   if (typeof name === 'object') return { stroke: name.stroke ?? PALETTE.black.stroke, bg: name.bg ?? 'transparent' };
@@ -368,7 +373,7 @@ export function buildDiagram(spec) {
   const scene = emptyScene();
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
-  const report = { icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [] };
+  const report = { icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [] };
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
 
@@ -393,7 +398,10 @@ export function buildDiagram(spec) {
 
   // ------------------------------------------------------------ nodes
 
-  for (const n of spec.nodes ?? []) {
+  for (const [i, n] of (spec.nodes ?? []).entries()) {
+    if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
+      report.unknownKinds.push({ field: `nodes[${i}].kind`, value: n.kind, drawnAs: S.rounded ? 'round' : 'box', valid: NODE_KINDS });
+    }
     const look = {
       ...accentOf(n.accent),
       strokeWidth: n.strokeWidth ?? S.strokeWidth,
@@ -699,13 +707,18 @@ export function buildDiagram(spec) {
   // ------------------------------------------------------------ edges
 
   const usedKinds = new Set();
-  for (const e of spec.edges ?? []) {
+  for (const [i, e] of (spec.edges ?? []).entries()) {
     const from = geom.get(e.from);
     const to = geom.get(e.to);
     // validateSpec has already refused an endpoint that is not a node, so a miss
     // here is a builder bug. Skipping the edge would hide it in a valid scene.
     if (!from || !to) throw new Error(`edge ${e.from} -> ${e.to}: a declared node has no geometry`);
-    const kind = EDGE_KINDS[e.kind ?? 'flow'] ? (e.kind ?? 'flow') : 'flow';
+    // Own properties only: `constructor` is Object's, not a connector kind, and
+    // used to draw an arrow with no stroke at all (#48).
+    const kind = Object.hasOwn(EDGE_KINDS, e.kind ?? 'flow') ? (e.kind ?? 'flow') : 'flow';
+    if (kind !== (e.kind ?? 'flow')) {
+      report.unknownKinds.push({ field: `edges[${i}].kind`, value: e.kind, drawnAs: 'flow', valid: Object.keys(EDGE_KINDS) });
+    }
     usedKinds.add(kind);
     const k = EDGE_KINDS[kind];
     const gap = e.gap ?? 8;
@@ -862,6 +875,9 @@ function main(argv) {
         'or open the scene and drop the mark on top of the slot by hand.',
       ],
     } : null,
+    // Drawn, but not as the spec said. Treat it like a placeholder: fix the kind
+    // and rebuild, or say why it stays (#48).
+    unknownKinds: report.unknownKinds,
     notes: report.notes,
   }, null, 2));
 }

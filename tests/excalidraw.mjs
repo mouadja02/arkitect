@@ -656,6 +656,45 @@ test('kind "placeholder" asks for a slot without pretending to search', () => {
   assert(r.scene.elements.some((e) => e.type === 'rectangle' && e.strokeStyle === 'dotted'), 'slot drawn');
 });
 
+test('an unknown node or edge kind is named in the report, and constructor is not a kind (#48)', () => {
+  const spec = {
+    nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }, { id: 'b', kind: 'cilinder', label: 'B', col: 1, row: 0 },
+      { id: 'c', kind: 'constructor', label: 'C', col: 2, row: 0 }],
+    edges: [{ from: 'a', to: 'b', kind: 'asnyc' }, { from: 'b', to: 'c', kind: 'constructor' }, { from: 'a', to: 'c', kind: 'async' }],
+  };
+  const r = builder.buildDiagram(spec);
+  eq(JSON.stringify(r.report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
+    ['nodes[1].kind', 'cilinder', 'round'], ['nodes[2].kind', 'constructor', 'round'],
+    ['edges[0].kind', 'asnyc', 'flow'], ['edges[1].kind', 'constructor', 'flow'],
+  ]), 'every unknown kind, in spec order, with its fallback');
+  for (const u of r.report.unknownKinds) {
+    assert(u.valid.includes(u.field.startsWith('nodes') ? 'cylinder' : 'async') && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
+  }
+  eq(builder.buildDiagram({ ...spec, style: { rounded: false } }).report.unknownKinds[0].drawnAs, 'box', 'the node fallback follows the style');
+
+  // The constructor edge used to look its kind up through the prototype and
+  // draw an arrow with no stroke colour, width or style.
+  const flow = builder.EDGE_KINDS.flow;
+  const arrows = r.scene.elements.filter((e) => e.type === 'arrow' && e.startBinding);
+  eq(arrows.length, 3, 'every edge drawn');
+  for (const [i, a] of arrows.slice(0, 2).entries()) {
+    eq(JSON.stringify([a.strokeColor, a.strokeWidth, a.strokeStyle]), JSON.stringify([flow.color, flow.width, flow.strokeStyle]),
+      `edge ${i} is drawn as a flow`);
+  }
+  assert(!r.scene.elements.some((e) => e.type === 'text' && /undefined/.test(e.text ?? '')), 'the legend names no undefined kind');
+  eq(builder.buildDiagram({
+    nodes: [spec.nodes[0], { id: 'd', kind: 'cylinder', label: 'D', col: 1, row: 0 }],
+    edges: [{ from: 'a', to: 'd', kind: 'data' }, { from: 'd', to: 'a' }],
+  }).report.unknownKinds.length, 0, 'known and omitted kinds report nothing');
+
+  const specPath = join(TMP, 'unknown-kinds.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath,
+    [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-kinds.excalidraw')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['cilinder', 'constructor', 'asnyc', 'constructor']),
+    'the CLI prints them and the build still succeeds');
+});
+
 // ------------------------------------------------------------- bundled libraries
 
 test('the bundled index matches the libraries on disk', () => {
@@ -1186,6 +1225,8 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
       'the committed scene is stale - rebuild it from the spec');
     assert(!rebuilt.report.missingIcons.length,
       `${name} has unresolved icons: ${rebuilt.report.missingIcons.join(', ')}`);
+    assert(!rebuilt.report.unknownKinds.length,
+      `${name} uses kinds the builder does not know: ${rebuilt.report.unknownKinds.map((u) => `${u.field}=${u.value}`).join(', ')}`);
   });
 }
 

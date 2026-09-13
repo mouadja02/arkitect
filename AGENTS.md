@@ -50,6 +50,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    layout collision-free and keeps base64 out of your context. A spec whose
    edges or parents name something that does not exist is refused before
    anything is written, every problem listed; fix the spec, never drop the edge.
+   A `kind` the builder does not know still builds, drawn as a default, and is
+   listed under `unknownKinds` in the report; treat a non-empty list like an
+   unresolved icon: fix the spec, or report it.
 5. **Never overwrite blind.** Both builders write a timestamped sibling backup
    before replacing an existing file. Any other edit route means copying the
    file yourself first.

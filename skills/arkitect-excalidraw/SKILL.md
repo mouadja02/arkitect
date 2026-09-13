@@ -120,6 +120,12 @@ the generator's defaults; do not undo them by hand:
    before anything is written, with every problem listed (exit 1). Edges connect
    nodes, not boundaries. Fix the spec; never drop the edge to make it build.
 
+   A node or edge `kind` the builder does not know still builds (a node as a
+   rectangle, an edge as a flow) and is listed under `unknownKinds` in the build
+   report, with the field, the value, what it was drawn as and the valid kinds.
+   Treat a non-empty `unknownKinds` like an unresolved icon: fix the spec and
+   rebuild, or name it in your report.
+
    Hand-written JSON is fine too — read `references/excalidraw-format.md` first,
    particularly the parts about relative arrow points and two-sided bindings.
 
