@@ -47,6 +47,7 @@
     "skills/arkitect-drawio/assets/logos/README.md",
     "!skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/",
     "!skills/arkitect-drawio/assets/libraries/contact-sheets/*.html",
+    "!skills/arkitect-drawio/assets/libraries/contact-sheets/review/",
     "!skills/arkitect-excalidraw/assets/icons/*",
     "skills/arkitect-excalidraw/assets/icons/README.md",
     "!skills/arkitect-excalidraw/assets/libraries/*",

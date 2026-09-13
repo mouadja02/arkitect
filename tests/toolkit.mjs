@@ -585,7 +585,7 @@ test('the count is quoted only in docs/testing.md, and no doc claims an unmeasur
 const LOCAL_ONLY = [
   /^skills\/arkitect-drawio\/\.cache\//,
   /^skills\/arkitect-drawio\/assets\/logos\/(?!README\.md$)/,
-  /^skills\/arkitect-drawio\/assets\/libraries\/contact-sheets\/(?:\.shot\/|[^/]+\.html$)/,
+  /^skills\/arkitect-drawio\/assets\/libraries\/contact-sheets\/(?:\.shot\/|review\/|[^/]+\.html$)/,
   /^skills\/arkitect-excalidraw\/assets\/icons\/(?!README\.md$)/,
   /^skills\/arkitect-excalidraw\/assets\/libraries\/(?!README\.md$|bundled\/)/,
   /^skills\/arkitect-excalidraw\/assets\/libraries\/bundled\/sheets\/[^/]+\.(?:excalidraw|svg)$/,
@@ -600,6 +600,7 @@ const SENTINELS = [
   'skills/arkitect-drawio/assets/logos/zz-test-sentinel.png',
   'skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/zz-test-sentinel',
   'skills/arkitect-drawio/assets/libraries/contact-sheets/zz-test-sentinel.html',
+  'skills/arkitect-drawio/assets/libraries/contact-sheets/review/zz-test-sentinel.png',
   'skills/arkitect-excalidraw/assets/icons/zz-test-sentinel.excalidrawlib',
   'skills/arkitect-excalidraw/assets/libraries/zz-test-sentinel.excalidrawlib',
   'skills/arkitect-excalidraw/assets/libraries/bundled/sheets/zz-test-sentinel.svg',

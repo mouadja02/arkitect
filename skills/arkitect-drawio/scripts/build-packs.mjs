@@ -182,7 +182,16 @@ async function buildVendorZipPack(pack, manifest, cache) {
       // Microsoft happens to have named alike. Keep both, split by folder.
       const alt = `${slug}-${slugify(group)}`;
       if (!bySlug.has(dedupeKey(alt))) {
-        bySlug.set(dedupeKey(alt), { ...candidate, slug: alt, title: `${title} (${prettyTitle(group)})` });
+        // Both copies can sit in the same folder, where "(Compute)" beside a
+        // plain "Workspaces" tells a reader nothing. Microsoft's file number is
+        // the only thing that tells them apart; the id and the old caption stay (#18).
+        const fileNumber = /^(\d+)-/.exec(basename(path))?.[1];
+        const sameFolder = seen.group === group && fileNumber;
+        bySlug.set(dedupeKey(alt), {
+          ...candidate, slug: alt,
+          title: sameFolder ? `${title} (${fileNumber})` : `${title} (${prettyTitle(group)})`,
+          formerTitles: sameFolder ? [`${title} (${prettyTitle(group)})`] : [],
+        });
       }
     }
   }
@@ -198,6 +207,16 @@ async function buildVendorZipPack(pack, manifest, cache) {
     bySlug.set(dedupeKey(to.slug), { ...c, slug: to.slug, title: to.title ?? c.title });
   }
 
+  // Microsoft's file names sometimes misspell a service ("Promethus") or run
+  // its words together ("VPNClientWindows"). `titles` corrects the caption; the
+  // id stays, and the upstream spelling keeps resolving as an alias (#18).
+  for (const [slug, title] of Object.entries(pack.titles ?? {})) {
+    const c = bySlug.get(dedupeKey(slug));
+    if (!c) throw new Error(`${pack.id}: titles names "${slug}", which the build did not produce`);
+    if (c.title === title) throw new Error(`${pack.id}: titles gives "${slug}" the caption it already has`);
+    bySlug.set(dedupeKey(slug), { ...c, title, formerTitles: [...(c.formerTitles ?? []), c.title] });
+  }
+
   const aliasExtras = pack.aliasExtras ?? {};
   const legacyTitles = pack.legacyTitles ?? {};
   const abbreviations = pack.abbreviations ?? {};
@@ -209,7 +228,7 @@ async function buildVendorZipPack(pack, manifest, cache) {
     if (/^Cloud /.test(c.title)) extra.push(c.title.replace(/^Cloud /, ''));
     if (/^(Amazon|AWS) /.test(c.title)) extra.push(c.title.replace(/^(Amazon|AWS) /, ''));
     // A caption from an older palette keeps resolving, so a spec written against it still draws.
-    extra.push(...legacyAliases(c.slug), ...(abbreviations[c.slug] ?? []));
+    extra.push(...legacyAliases(c.slug), ...(abbreviations[c.slug] ?? []), ...(c.formerTitles ?? []));
     const given = aliasSet(c.title, c.slug, ...extra);
     const aliases = withPlurals(given);
     entries.push({

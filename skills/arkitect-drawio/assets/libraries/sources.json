@@ -588,7 +588,23 @@
           "titleFrom": "azure-filename"
         }
       ],
+      "titles": {
+        "azure-a": "Azure",
+        "azureattestation": "Azure Attestation",
+        "defender-programable-board": "Defender Programmable Board",
+        "entra-privleged-identity-management": "Entra Privileged Identity Management",
+        "extendedsecurityupdates": "Extended Security Updates",
+        "machinesazurearc": "Machines Azure Arc",
+        "promethus": "Azure Monitor Managed Service for Prometheus",
+        "vpnclientwindows": "VPN Client Windows",
+        "web-application-firewall-policies-waf": "Web Application Firewall Policies (WAF)",
+        "windows10-core-services": "Windows 10 Core Services"
+      },
       "aliasExtras": {
+        "promethus": [
+          "azure managed prometheus",
+          "azure monitor prometheus"
+        ],
         "storage-accounts": [
           "blob storage",
           "azure blob",
