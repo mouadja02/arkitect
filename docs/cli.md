@@ -8,12 +8,14 @@ node bin/arkitect.mjs                      # every command, one screen
 node bin/arkitect.mjs doctor               # what is installed, what is optional
 node bin/arkitect.mjs where                # the install path, for scripting
 node bin/arkitect.mjs install --all        # write agent adapters into this project
-node bin/arkitect.mjs test                 # the offline suite
+node bin/arkitect.mjs test                 # the offline suite (git checkout only)
 ```
 
 `npm link` from the repository root puts `arkitect` on your `PATH` (no
 dependencies are installed). The rest of this page writes `arkitect` for
-brevity.
+brevity. The npm package carries the CLI, the skills and their bundled assets,
+but not the test suite: outside a checkout `arkitect test` exits `2` and says
+where to find it.
 
 ## Draw.io
 
