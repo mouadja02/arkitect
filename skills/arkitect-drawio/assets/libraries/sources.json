@@ -49,6 +49,15 @@
       "urlTemplate": "https://cdn.jsdelivr.net/npm/devicon@2.17.0/icons/{name}/{name}-{variant}.svg",
       "dataUrl": "https://cdn.jsdelivr.net/npm/devicon@2.17.0/devicon.json"
     },
+    "asf-logos": {
+      "type": "local-files",
+      "dir": "local/asf-logos",
+      "sha256": "f81b9016971a364c929b5ae96e70226eb4eeccf0e64837af72ac54bdb6becf94",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://www.apache.org/foundation/marks/",
+      "note": "Official Apache project graphic logos from https://www.apache.org/logos/originals/, committed byte-for-byte on 2026-09-13. The ASF trademark policy: unlike its word trademarks, \"our graphic logos are licensed to the public under the Apache License\". The licence covers the artwork; Apache, Iceberg, Pinot and Beam remain trademarks of The Apache Software Foundation, used here only to identify the projects."
+    },
     "lucide": {
       "type": "npm",
       "package": "lucide-static",
@@ -1046,9 +1055,7 @@
             "elementary"
           ],
           "source": "simple-icons@16.30.0"
-        }
-      ],
-      "onDemand": [
+        },
         {
           "slug": "apacheiceberg",
           "title": "Apache Iceberg",
@@ -1056,11 +1063,23 @@
             "apache iceberg",
             "apacheiceberg"
           ],
-          "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
-          "brandUrl": "https://iceberg.apache.org/"
+          "source": "asf-logos",
+          "file": "iceberg.svg",
+          "upstreamUrl": "https://www.apache.org/logos/originals/iceberg.svg"
         },
+        {
+          "slug": "apachepinot",
+          "title": "Apache Pinot",
+          "aliases": [
+            "apache pinot",
+            "apachepinot"
+          ],
+          "source": "asf-logos",
+          "file": "pinot.svg",
+          "upstreamUrl": "https://www.apache.org/logos/originals/pinot.svg"
+        }
+      ],
+      "onDemand": [
         {
           "slug": "deltalake",
           "title": "Delta Lake",
@@ -1170,21 +1189,11 @@
             "apachehudi"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "Apache-2.0",
+          "licenceUrl": "https://www.apache.org/foundation/marks/",
+          "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 5446x3946 raster wrapped in SVG, 246 KB, several times larger than any mark the packs ship",
+          "upstreamUrl": "https://www.apache.org/logos/res/hudi/hudi.png",
           "brandUrl": "https://hudi.apache.org/"
-        },
-        {
-          "slug": "apachepinot",
-          "title": "Apache Pinot",
-          "aliases": [
-            "apache pinot",
-            "apachepinot"
-          ],
-          "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
-          "brandUrl": "https://pinot.apache.org/"
         }
       ]
     },
@@ -2537,6 +2546,17 @@
             "talend"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "apachebeam",
+          "title": "Apache Beam",
+          "aliases": [
+            "apache beam",
+            "apachebeam"
+          ],
+          "source": "asf-logos",
+          "file": "beam-2.svg",
+          "upstreamUrl": "https://www.apache.org/logos/originals/beam-2.svg"
         }
       ],
       "onDemand": [
@@ -2551,18 +2571,6 @@
           "licence": "CC0-1.0",
           "upstreamUrl": "https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/dbt.svg",
           "reason": "removed from Simple Icons 16 at the brand owner request"
-        },
-        {
-          "slug": "apachebeam",
-          "title": "Apache Beam",
-          "aliases": [
-            "apache beam",
-            "apachebeam"
-          ],
-          "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
-          "brandUrl": "https://beam.apache.org/"
         },
         {
           "slug": "redpanda",
@@ -2605,8 +2613,10 @@
             "apachesamza"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "Apache-2.0",
+          "licenceUrl": "https://www.apache.org/foundation/marks/",
+          "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG sets its wordmark as live text in Myriad Pro, so it draws in whatever font the viewer happens to have",
+          "upstreamUrl": "https://www.apache.org/logos/res/samza/samza.png",
           "brandUrl": "https://samza.apache.org/"
         },
         {
@@ -2628,8 +2638,10 @@
             "apacheactivemq"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "Apache-2.0",
+          "licenceUrl": "https://www.apache.org/foundation/marks/",
+          "reason": "the ASF licenses its graphic logos under Apache-2.0, but both official SVGs set the wordmark as live text, and without its font only \"MQ\" appears",
+          "upstreamUrl": "https://www.apache.org/logos/res/activemq/activemq-1.png",
           "brandUrl": "https://activemq.apache.org/"
         },
         {
@@ -2640,8 +2652,10 @@
             "apachezookeeper"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "Apache-2.0",
+          "licenceUrl": "https://www.apache.org/foundation/marks/",
+          "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 725 KB illustrated mascot with live text, far larger than any mark the packs ship",
+          "upstreamUrl": "https://www.apache.org/logos/res/zookeeper/zookeeper.png",
           "brandUrl": "https://zookeeper.apache.org/"
         },
         {
@@ -3546,8 +3560,10 @@
             "crossplane"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+          "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/crossplane/icon/color/crossplane-icon-color.svg",
           "brandUrl": "https://www.crossplane.io/"
         },
         {
@@ -3558,8 +3574,10 @@
             "fluxcd"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+          "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flux/icon/color/flux-icon-color.svg",
           "brandUrl": "https://fluxcd.io/"
         },
         {
@@ -3854,8 +3872,10 @@
             "openpolicyagent"
           ],
           "source": "vendor",
-          "licence": "none - nominative use only",
-          "reason": "no permissively licensed mark exists",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
+          "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/open-policy-agent/icon/color/opa-icon-color.svg",
           "brandUrl": "https://www.openpolicyagent.org/"
         },
         {

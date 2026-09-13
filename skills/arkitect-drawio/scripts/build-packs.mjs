@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { readLibrary, titleAliases } from './lib/drawio-core.mjs';
 import {
-  sha256, download, readZip, readTgz, sizedSvg, tintUnpaintedMark, paintMark, conceptTile,
+  sha256, download, readZip, readTgz, viewBoxOf, sizedSvg, tintUnpaintedMark, paintMark, conceptTile,
   fileSheet, dataUri, writeLibrary, prettyTitle, slugify, aliasSet, withPlurals, withShortName,
   normalise, pngSize, downscalePng,
 } from './lib/icon-build.mjs';
@@ -235,6 +235,23 @@ async function buildVendorZipPack(pack, manifest, cache) {
 async function buildBrandEntries(icons, manifest, cache) {
   const out = [];
   for (const icon of icons) {
+    if (icon.file) {
+      // Official artwork committed byte-for-byte in a local-files source whose
+      // licence covers it (#11). A wordmark or lockup keeps its own aspect: the
+      // cell fits 78px on its longest side, the way a raster's does.
+      const opened = await openSource(icon.source, manifest, cache);
+      const svg = readText(opened, icon.file);
+      const [, , width, height] = viewBoxOf(svg);
+      const scale = ICON_SIZE / Math.max(width, height);
+      out.push({
+        slug: icon.slug, title: icon.title, svg,
+        aliases: withShortName(icon.aliases, icon.title),
+        source: icon.source, upstreamId: icon.upstreamUrl ?? icon.file, render: 'verbatim',
+        width: Math.round(width), height: Math.round(height),
+        w: Math.round(width * scale), h: Math.round(height * scale), aspect: 'fixed',
+      });
+      continue;
+    }
     if (icon.deviconName) {
       const opened = await openSource('devicon', manifest, cache);
       const path = `icons/${icon.deviconName}/${icon.deviconName}-${icon.deviconVariant}.svg`;
@@ -456,6 +473,7 @@ function onDemandEntries(pack, manifest) {
       ...(o.upstreamUrl ? { upstreamUrl: o.upstreamUrl } : {}),
       ...(o.brandUrl ? { brandUrl: o.brandUrl } : {}),
       licence: o.licence,
+      ...(o.licenceUrl ? { licenceUrl: o.licenceUrl } : {}),
       bytes: 'on-demand',
       reason: o.reason,
       fetch: cmd,

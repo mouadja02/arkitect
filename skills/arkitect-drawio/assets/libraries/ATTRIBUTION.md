@@ -26,6 +26,7 @@ Two kinds of terms appear below, and the difference matters:
 | simple-icons@16.30.0 | licence | [CC0-1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md) | 3467 |
 | simple-icons@15.22.0 | licence | CC0-1.0 | - |
 | devicon@2.17.0 | licence | [MIT](https://github.com/devicons/devicon/blob/master/LICENSE) | 8 |
+| asf-logos | licence | [Apache-2.0](https://www.apache.org/foundation/marks/) | 3 |
 | lucide-static@1.45.0 | licence | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE) | 89 |
 | @primer/octicons@19.36.0 | licence | [MIT](https://github.com/primer/octicons/blob/main/LICENSE) | 31 |
 | [azure-v24](https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip) | permission | [Microsoft Azure architecture icon terms](https://learn.microsoft.com/en-us/azure/architecture/icons/) | 638 |
@@ -60,6 +61,12 @@ On-demand only. These marks were removed in 16.x at the brand owners request, so
 ### devicon@2.17.0
 
 **Licence:** MIT - <https://github.com/devicons/devicon/blob/master/LICENSE>
+
+### asf-logos
+
+**Licence:** Apache-2.0 - <https://www.apache.org/foundation/marks/>
+
+Official Apache project graphic logos from https://www.apache.org/logos/originals/, committed byte-for-byte on 2026-09-13. The ASF trademark policy: unlike its word trademarks, "our graphic logos are licensed to the public under the Apache License". The licence covers the artwork; Apache, Iceberg, Pinot and Beam remain trademarks of The Apache Software Foundation, used here only to identify the projects.
 
 ### lucide-static@1.45.0
 
@@ -101,7 +108,7 @@ Google now publishes per-service marks only as a legacy archive. On a title coll
 
 ## What is deliberately not here
 
-69 products are catalogued with a URL and a fetch command but no bytes,
+66 products are catalogued with a URL and a fetch command but no bytes,
 because no permissively licensed mark for them exists, or because the brand owner asked
 for it to be removed from the source we would otherwise use. Shipping them anyway would
 contradict the reason the rest of this file can be written honestly.

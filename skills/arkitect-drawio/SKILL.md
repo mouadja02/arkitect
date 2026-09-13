@@ -36,8 +36,9 @@ Read `references/style-guide.md` before laying anything out, and
    pick an id deliberately, narrow with `--pack`, or ask. Do not take the first row
    because it was first.
 
-   Sixty-nine products are catalogued without artwork, because their marks carry no
-   redistribution licence. Those come back as `bytes: "on-demand"` with the exact
+   Sixty-six products are catalogued without artwork, because their marks carry no
+   redistribution licence or their licensed artwork does not draw at icon size. Those
+   come back as `bytes: "on-demand"` with the exact
    `fetch-logo` command to run. Run it, then use the cached logo.
 
    If nothing matches, fall back to a built-in `mxgraph.aws4.*` shape, then to the MCP
@@ -224,7 +225,7 @@ node scripts/contact-sheet.mjs --all --png   # regenerate the review sheets
 ## Third-party product logos
 
 The packs cover most things. Everything else — a niche vendor, an internal product,
-one of the sixty-nine on-demand marks — gets its real logo, downloaded and embedded.
+one of the sixty-six on-demand marks — gets its real logo, downloaded and embedded.
 In the reference corpus 77 of 97 embedded images are exactly this. A generic box where
 a recognisable logo belongs is a regression, not a safe default.
 
