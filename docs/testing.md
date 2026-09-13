@@ -53,6 +53,7 @@ process, so they cannot tread on each other.
 | Validator | rejects duplicate ids, missing parents, broken edge endpoints; `--page 0` through the dispatcher validates that page, before or after the files, and `--strict` still fails on a warning; a page the file lacks fails, in the CLI and the API, without claiming a page was checked; a missing, negative, fractional, exponent, empty or non-numeric page value, a repeated `--page` and an unknown flag exit 2 with no stack trace; the API throws on a malformed index (#37) |
 | Command lines | `build --out <file> <spec>` builds the spec and never writes to it; a malformed, missing or second spec, a missing `--out` or value, or an unknown flag exits 2 in one line with nothing written; `analyze --page` is checked the same way, a page the file lacks exits 1, and `--page` without `--cells`/`--images` or `--cells` over two files is refused (#37) |
 | The record | carries no diagram content, no page names, no modification times |
+| Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50) |
 
 ### Excalidraw
 
@@ -79,7 +80,7 @@ artwork audit (#18/#33).
 | Rendering | the SVG covers the whole scene and is stable across runs |
 | Shipped knowledge | the record claims no evidence it lacks; the style guide says out loud which rules are defaults |
 | Docker | the compose file pins the official image and publishes container port 80 |
-| Templates | both committed examples are valid and still match their specs |
+| Templates | both committed examples are valid and match what their specs build, compared element by element through a projection that keeps type, geometry, points, stroke, fill, font, text, bindings by position and embedded file hashes and drops ids, seeds, nonces, timestamps and index keys; the failure names the first differing element and field; the projection is proven blind to reissued ids and to see a caption moved 4px and a changed embedded file (#50) |
 
 ## The icon-store tests write to the real store
 

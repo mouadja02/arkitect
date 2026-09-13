@@ -1282,6 +1282,100 @@ test('scripts avoid hard-coded absolute paths', () => {
   }
 });
 
+// A committed example and a rebuild of its spec are compared through a
+// projection (#50). Excalidraw draws fresh ids, seeds, nonces and timestamps on
+// every build, so those are dropped; everything that shows is kept: type,
+// geometry, points, stroke, fill, font, text, bindings and containers resolved to
+// element positions, groups by first appearance, and embedded files by hash.
+const VOLATILE_FIELDS = new Set(['id', 'seed', 'versionNonce', 'updated', 'index']);
+const roundDeep = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100
+  : Array.isArray(v) ? v.map(roundDeep)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, roundDeep(v[k])])) : v);
+const payloadHash = (f) => `${f.mimeType}:${createHash('sha256').update(String(f.dataURL)).digest('hex').slice(0, 16)}`;
+
+function projectScene(scene) {
+  const elements = scene.elements ?? [];
+  const position = new Map(elements.map((e, i) => [e.id, `@${i}`]));
+  const groups = new Map();
+  const group = (g) => { if (!groups.has(g)) groups.set(g, `g${groups.size}`); return groups.get(g); };
+  const ref = (id) => (id == null ? id : position.get(id) ?? 'dangling');
+  const file = (id) => (scene.files?.[id] ? payloadHash(scene.files[id]) : 'missing');
+  return {
+    type: scene.type,
+    version: scene.version,
+    appState: roundDeep(scene.appState ?? {}),
+    files: Object.values(scene.files ?? {}).map(payloadHash).sort(),
+    elements: elements.map((e) => Object.fromEntries(Object.keys(e).sort().filter((k) => !VOLATILE_FIELDS.has(k)).map((k) => {
+      const v = e[k];
+      if (k === 'containerId' || k === 'frameId') return [k, ref(v)];
+      if (k === 'groupIds') return [k, v.map(group)];
+      if (k === 'boundElements') return [k, v && v.map((b) => ({ type: b.type, id: ref(b.id) }))];
+      if (k === 'startBinding' || k === 'endBinding') return [k, v && { ...roundDeep(v), elementId: ref(v.elementId) }];
+      if (k === 'fileId') return [k, file(v)];
+      return [k, roundDeep(v)];
+    }))),
+  };
+}
+
+// The first thing that differs, named precisely enough to act on, or null.
+function firstDifference(committed, rebuilt) {
+  for (const key of ['type', 'version', 'appState', 'files']) {
+    if (JSON.stringify(committed[key]) !== JSON.stringify(rebuilt[key])) {
+      return `${key}: ${JSON.stringify(committed[key]).slice(0, 80)} in the committed scene, ${JSON.stringify(rebuilt[key]).slice(0, 80)} rebuilt`;
+    }
+  }
+  const count = Math.max(committed.elements.length, rebuilt.elements.length);
+  for (let i = 0; i < count; i++) {
+    const a = committed.elements[i];
+    const b = rebuilt.elements[i];
+    if (JSON.stringify(a) === JSON.stringify(b)) continue;
+    if (!a || !b) return `element ${i}: only in the ${a ? 'committed scene' : 'rebuild'}`;
+    const key = [...new Set([...Object.keys(a), ...Object.keys(b)])].find((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+    const label = a.text ? ` "${String(a.text).slice(0, 30)}"` : '';
+    return `element ${i} (${a.type}${label}): ${key} ${JSON.stringify(a[key])?.slice(0, 80)} in the committed scene, ${JSON.stringify(b[key])?.slice(0, 80)} rebuilt`;
+  }
+  return null;
+}
+
+test('the example freshness check sees a moved caption or a changed mark, not new ids (#50)', () => {
+  const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.excalidraw'), 'utf8'));
+  const base = projectScene(scene);
+  const copy = () => JSON.parse(JSON.stringify(scene));
+
+  // Every random field redrawn and every id renamed consistently: nothing shows.
+  const reissued = copy();
+  const renamed = (id) => `renamed-${id}`;
+  for (const e of reissued.elements) {
+    e.id = renamed(e.id);
+    e.seed += 1;
+    e.versionNonce += 1;
+    e.updated += 1000;
+    if (e.index) e.index = `${e.index}0`;
+    e.groupIds = (e.groupIds ?? []).map(renamed);
+    if (e.containerId) e.containerId = renamed(e.containerId);
+    if (e.frameId) e.frameId = renamed(e.frameId);
+    if (e.boundElements) e.boundElements = e.boundElements.map((bound) => ({ ...bound, id: renamed(bound.id) }));
+    for (const end of ['startBinding', 'endBinding']) if (e[end]) e[end] = { ...e[end], elementId: renamed(e[end].elementId) };
+  }
+  eq(firstDifference(base, projectScene(reissued)), null, 'new ids, seeds, nonces, timestamps and index keys are not drift');
+
+  // One caption four pixels lower: the element count is unchanged, and it is drift.
+  const moved = copy();
+  const caption = moved.elements.findIndex((e) => e.type === 'text');
+  moved.elements[caption].y += 4;
+  const found = firstDifference(base, projectScene(moved));
+  assert(found?.startsWith(`element ${caption} (text`) && found.includes(': y '), `a moved caption was not named: ${found}`);
+
+  // A different embedded mark behind the same element.
+  const withFiles = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'shared-icon-packs.spec.json'), 'utf8'))).scene;
+  const swapped = JSON.parse(JSON.stringify(withFiles));
+  const [fileId] = Object.keys(swapped.files);
+  assert(fileId, 'the shared-pack example embeds files');
+  swapped.files[fileId].dataURL = swapped.files[fileId].dataURL.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A'));
+  const swap = firstDifference(projectScene(withFiles), projectScene(swapped));
+  assert(swap?.startsWith('files'), `a changed embedded file was not named: ${swap}`);
+});
+
 // Both shipped examples are read by the agent before it writes a spec, so a
 // stale one teaches the wrong thing. The PNG matters as much as the JSON here:
 // it is the thing that actually gets looked at.
@@ -1296,8 +1390,10 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
     assert(r.ok, `${name} scene errors: ${r.errors.join('; ')}`);
     const spec = JSON.parse(readFileSync(specPath, 'utf8'));
     const rebuilt = builder.buildDiagram(spec);
-    eq(rebuilt.scene.elements.length, JSON.parse(readFileSync(scenePath, 'utf8')).elements.length,
-      'the committed scene is stale - rebuild it from the spec');
+    const drift = firstDifference(projectScene(JSON.parse(readFileSync(scenePath, 'utf8'))), projectScene(rebuilt.scene));
+    assert(!drift, `the committed ${name}.excalidraw is stale at ${drift}. Rebuild it (node bin/arkitect.mjs excalidraw build `
+      + `skills/arkitect-excalidraw/assets/templates/${name}.spec.json --out <tmp>), copy it over, and re-render ${name}.png `
+      + 'in the same pull request.');
     assert(!rebuilt.report.missingIcons.length,
       `${name} has unresolved icons: ${rebuilt.report.missingIcons.join(', ')}`);
     assert(!rebuilt.report.unknownKinds.length,
