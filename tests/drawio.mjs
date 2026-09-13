@@ -1016,6 +1016,36 @@ test('every generated pack renders as a parseable SVG', () => {
   }
 });
 
+test('a file-type band never renders under 8px, and a long extension takes a shorter band (#14)', () => {
+  const glyph = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 2h20v20H2z"/></svg>';
+  const fontOf = (svg) => Number(/<text[^>]*font-size="([\d.]+)"/.exec(svg)[1]);
+  const textOf = (svg) => /<text[^>]*>([^<]*)<\/text>/.exec(svg)[1];
+  const refusal = (options) => {
+    try { iconBuild.fileSheet(glyph, { colour: '#2496ED', ...options }); } catch (error) { return error.message; }
+    return null;
+  };
+
+  eq(fontOf(iconBuild.fileSheet(glyph, { ext: 'py', colour: '#3776AB' })), 9, 'a short extension keeps 9px');
+  const seven = iconBuild.fileSheet(glyph, { ext: 'parquet', colour: '#50ABF1' });
+  assert(textOf(seven) === 'PARQUET' && fontOf(seven) >= iconBuild.MIN_BAND_FONT, 'seven capitals still fit at 8px or more');
+  assert(/"DOCKERFILE" would render at 5\.65px, under 8px/.test(refusal({ ext: 'dockerfile' }) ?? ''), 'a ten-letter band is refused');
+  assert(/under 8px/.test(refusal({ ext: 'py', band: 'abcdefgh' }) ?? ''), 'an eight-letter band is refused too');
+  for (const band of ['', '  ']) assert(/"band" is empty/.test(refusal({ ext: 'py', band }) ?? ''), `band ${JSON.stringify(band)} accepted`);
+  const docker = iconBuild.fileSheet(glyph, { ext: 'dockerfile', band: 'docker', colour: '#2496ED' });
+  assert(textOf(docker) === 'DOCKER' && fontOf(docker) === 9, 'the band label replaces the extension at full size');
+
+  const entries = core.readLibrary(join(LIB_DIR, 'file-types.drawio'));
+  const svgOf = (e) => core.parseDataUri(e.dataUri).bytes.toString('utf8');
+  for (const e of entries) assert(fontOf(svgOf(e)) >= iconBuild.MIN_BAND_FONT, `${e.title}: band at ${fontOf(svgOf(e))}px`);
+  eq(textOf(svgOf(entries.find((e) => e.title === 'Docker file (.dockerfile)'))), 'DOCKER', 'committed dockerfile band');
+  eq(textOf(svgOf(entries.find((e) => e.title === 'Excalidraw file (.excalidraw)'))), 'EXCALI', 'committed excalidraw band');
+  for (const [query, title] of [['dockerfile', 'Docker file (.dockerfile)'], ['dot excalidraw', 'Excalidraw file (.excalidraw)'],
+    ['excalidraw file', 'Excalidraw file (.excalidraw)']]) {
+    const top = finder.search(query)[0];
+    assert(top?.pack === 'file-types' && top.title === title, `${query} now finds ${top?.pack}/${top?.title}`);
+  }
+});
+
 // ------------------------------------------------------------- contact sheets
 
 const sheets = await import(`file://${join(SCRIPTS, 'contact-sheet.mjs').replace(/\\/g, '/')}`);

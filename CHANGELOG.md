@@ -63,6 +63,16 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **Long file-type extensions are readable on their band** (#14). `fileSheet()`
+  shrank the band text until it fit, so `DOCKERFILE` and `EXCALIDRAW` rendered at
+  5.65px, a grey smear at diagram zoom. A file-type entry in `sources.json` can
+  now set a shorter `band`: `.dockerfile` shows `DOCKER` and `.excalidraw` shows
+  `EXCALI`, both at the full 9px. The slug, title, caption and aliases keep the
+  full extension, so lookup is unchanged. The builder refuses band text that
+  would render under 8px, so a future long extension fails the build instead of
+  shipping unreadable; `PARQUET` and `GRAPHQL` fit at 8.06px and keep their full
+  names. The file-types library, the catalog and the file-types contact sheet
+  are rebuilt; no other pack's bytes change.
 - **Draw.io `validate`, `build` and `analyze` no longer read a flag's value as a
   file** (#37). `validate x.drawio --page 0` validated the diagram, then crashed
   opening a file named `0`; `build --out arch.drawio spec.json` read

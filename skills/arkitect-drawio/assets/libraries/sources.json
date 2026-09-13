@@ -5347,6 +5347,7 @@
         },
         {
           "ext": "dockerfile",
+          "band": "docker",
           "kind": "brand-glyph",
           "glyph": "docker",
           "source": "simple-icons@16.30.0",
@@ -5411,6 +5412,7 @@
         },
         {
           "ext": "excalidraw",
+          "band": "excali",
           "kind": "brand-glyph",
           "glyph": "excalidraw",
           "source": "simple-icons@16.30.0",
