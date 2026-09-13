@@ -441,6 +441,15 @@
         "amazon-bedrock-agentcore-observability": "AgentCoreObservability",
         "amazon-bedrock-agentcore-runtime": "AgentCoreRuntime"
       },
+      "aliasExtras": {
+        "amazon-quick": [
+          "quicksight",
+          "amazon quicksight",
+          "quick sight",
+          "quick suite",
+          "amazon quick suite"
+        ]
+      },
       "abbreviations": {
         "amazon-simple-storage-service": [
           "s3",
@@ -3922,6 +3931,17 @@
           "hex": "1904DA",
           "aliases": [
             "trivy"
+          ],
+          "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "aqua",
+          "title": "Aqua Security",
+          "hex": "1904DA",
+          "aliases": [
+            "aqua",
+            "aqua security",
+            "aquasec"
           ],
           "source": "simple-icons@16.30.0"
         },
