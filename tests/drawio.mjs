@@ -1170,6 +1170,68 @@ test('the committed Draw.io starter is exactly what its spec builds (#50)', () =
     + 'copy it over, and re-render starter-architecture.png in the same pull request.');
 });
 
+// An edge attached to the bottom of an icon ran through the caption hanging
+// there (#45). Vertical edges now attach below the caption, and the validator
+// warns when a route crosses one.
+test('vertical edges attach below icon captions, and the validator names a crossing (#45)', () => {
+  const spec = {
+    context: { packs: ['aws'] },
+    nodes: [
+      { id: 'top', kind: 'icon', icon: 'lambda', label: 'Top function', col: 0, row: 0 },
+      { id: 'bottom', kind: 'icon', icon: 'simple storage service', label: 'Bottom bucket', col: 0, row: 1 },
+      { id: 'side', kind: 'icon', icon: 'opensearch', label: 'Side index', col: 1, row: 0 },
+      { id: 'upper', kind: 'icon', icon: 'eventbridge', label: 'Upper bus', col: 2, row: 0 },
+      { id: 'lower', kind: 'box', label: 'Lower box', col: 2, row: 1 },
+      { id: 'b1', kind: 'box', label: 'Box one', col: 3, row: 0 },
+      { id: 'b2', kind: 'box', label: 'Box two', col: 3, row: 1 },
+    ],
+    edges: [
+      { id: 'down', from: 'top', to: 'bottom' },
+      { id: 'up', from: 'lower', to: 'upper' },
+      { id: 'across', from: 'top', to: 'side' },
+      { id: 'diagonal', from: 'bottom', to: 'side' },
+      { id: 'boxes', from: 'b1', to: 'b2' },
+    ],
+  };
+  const { xml } = builder.buildDiagram(spec);
+  const out = join(TMP, 'captions.drawio');
+  writeFileSync(out, xml);
+  const cells = core.extractCells(core.readMxfile(out).pages[0].xml);
+  const style = (id) => core.parseStyle(cells.find((c) => c.id === id).style);
+  const at = (s, end) => JSON.stringify([s[`${end}X`], s[`${end}Y`], s[`${end}Dx`], s[`${end}Dy`], s[`${end}Perimeter`]]);
+  eq(at(style('down'), 'exit'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge leaving an icon downward starts below its caption');
+  eq(style('down').entryY, undefined, 'and enters the node below from the top as before');
+  eq(at(style('up'), 'entry'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge entering an icon from below ends below its caption');
+  eq(style('up').exitY, undefined, 'a box has no caption to avoid');
+  for (const id of ['across', 'diagonal', 'boxes']) {
+    assert(style(id).exitY === undefined && style(id).entryY === undefined, `${id} is left to the router`);
+  }
+  const r = validator.validateFile(out);
+  assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'no route crosses a caption');
+  eq(r.info.pages[0].captionCrossings, 0, 'no crossing counted');
+
+  // The same diagram attached the old way: exactly the two vertical edges cross.
+  const old = join(TMP, 'captions-old.drawio');
+  writeFileSync(old, xml.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;"]*;/g, ''));
+  const before = validator.validateFile(old);
+  eq(JSON.stringify(before.warnings.filter((w) => w.includes('caption')).sort()), JSON.stringify([
+    'page 0: edge "down" runs through the caption of "top"',
+    'page 0: edge "up" runs through the caption of "upper"',
+  ]), 'the validator names each crossing edge and the icon whose caption it crosses');
+  eq(before.info.pages[0].captionCrossings, 2, 'and counts them');
+
+  // A caption on three lines gets room for three lines.
+  const tall = builder.buildDiagram({ ...spec, nodes: spec.nodes.map((n) => (n.id === 'top' ? { ...n, label: 'Top\nfunction\nwith notes' } : n)) }).xml;
+  assert(/id="down" style="[^"]*exitDy=49;/.test(tall), 'a three-line caption pushes the attachment to 49px');
+});
+
+test('the committed Draw.io starter has no edge through a caption (#45)', () => {
+  const r = validator.validateFile(join(SKILL, 'assets', 'templates', 'starter-architecture.drawio'));
+  assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'caption crossings in the worked example');
+});
+
 test('a generated diagram is valid, connected and portable', () => {
   const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
   const { xml, report } = builder.buildDiagram(spec);

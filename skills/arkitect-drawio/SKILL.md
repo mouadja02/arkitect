@@ -81,8 +81,10 @@ Read `references/style-guide.md` before laying anything out, and
    ```
    Add `--page N` (0-based) to check one page; a page the file does not have fails.
    Errors (duplicate ids, missing parents, broken edge endpoints, unreadable embedded
-   images) must be fixed. Warnings about overlaps and tight labels are judgement calls —
-   check them against the render.
+   images) must be fixed. Warnings about overlaps, tight labels and edges running
+   through an icon's caption are judgement calls — check them against the render.
+   The builder already attaches a vertical edge below an icon's caption; a crossing
+   usually means a diagonal route or a hand edit.
 
 7. **Render and actually look at it.**
    ```bash
