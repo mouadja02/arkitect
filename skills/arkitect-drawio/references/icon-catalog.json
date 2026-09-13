@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:36:05.870Z",
+  "generated": "2026-09-13T21:36:28.953Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "d79844922f84b66211f7dab7b636f254c91f330e59d7b605a9d35e2b8701dfec"
+    "sha256": "b7c2c631a1149530d814d80d2f78eebf893326f0f965735e4bd8bf189cdb5026"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -148,6 +148,60 @@
       "licence": "Google Cloud icon terms",
       "licenceUrl": "https://cloud.google.com/icons",
       "archiveSha256": "a6d9d7921758042538b462f03cf64614c2cebd96743b3ed63580a769fc7de3e9"
+    },
+    "dspy-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/stanfordnlp/dspy/blob/ecba33763316d2a4c6c756046a1118ecbff033e7/LICENSE",
+      "archiveSha256": "d6cf61f4372f94669968b9f81e8ab18073045d47802bf457f3b08fbd84a139d9"
+    },
+    "guardrails-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/guardrails-ai/guardrails/blob/06d0ff2c5f9bcb493d976b76f885e37e41ce845d/LICENSE",
+      "archiveSha256": "ed8dfbd868733cfd615d4805096b29a1e3577b5121f14fb1f6464a4475686127"
+    },
+    "llamacpp-logo": {
+      "terms": "licence",
+      "licence": "CC-BY-NC-4.0 with ggml-org brand-usage grant",
+      "licenceUrl": "https://github.com/ggml-org/llama.brand/blob/0708f2327336589bd4d3eba15a95199c318cd771/BRAND-USAGE.md",
+      "archiveSha256": "b038097610590286b72a2f3e2c67646ffb1f81afca03ed677ebb777f3d0c0ccc"
+    },
+    "localai-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/mudler/LocalAI/blob/35819d9e0de06f90fb3ff3e6616f0b7da13ffa67/LICENSE",
+      "archiveSha256": "790df53ca1350c04dc642057b70c0d21b7b25a8494d4c4bc68a220a89125e168"
+    },
+    "mem0-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/mem0ai/mem0/blob/c7ee362aff94a369af70f13f2b4f853f6793ff4c/LICENSE",
+      "archiveSha256": "a401b448a95906a0a2ecc9fa622d661a1c04e3f31ee52eb9739169d8dc37e0f2"
+    },
+    "pydanticai-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/pydantic/pydantic-ai/blob/5cbacfc8f86d653baa0ca2e31970cbf4f0fcec95/LICENSE",
+      "archiveSha256": "604b912c5cfdb9ad4088bb0f2e34d85d9db981dece080f56da6f319261e2e080"
+    },
+    "trl-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/huggingface/trl/blob/a8bc1816152facaf5441983195c40ffae27f2081/LICENSE",
+      "archiveSha256": "c5f302f56debd3df38b36a9d8411db7d560a27926ecc4356ae822967dfbffe0b"
+    },
+    "axolotl-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/axolotl-ai-cloud/axolotl/blob/169df0bd5bb35968fe5f6e3d23fc465c51faf116/LICENSE",
+      "archiveSha256": "332ea01b83b80ad1ffb41cace311dd328c75ab182865a7ea532d535f2cec02f0"
+    },
+    "whylogs-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/whylabs/whylogs/blob/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/LICENSE",
+      "archiveSha256": "32580672d5c4587babc1f43bbf79b3f21ea27ae4df49310d64d2371a3c36bf03"
     }
   },
   "packs": [
@@ -209,9 +263,9 @@
       "description": "LLM orchestration, agent frameworks, model providers and tooling",
       "rank": 20,
       "file": "ai-frameworks.drawio",
-      "count": 34,
-      "onDemand": 13,
-      "sha256": "261963b371ab1f5a124abd14014d8daeede24bc27e6289a9714fe630f07c656a"
+      "count": 43,
+      "onDemand": 28,
+      "sha256": "64f7803b0ad99bf07d7c0548ec793b9657c3b05e9cf968df66c81ca4eb8a45d1"
     },
     {
       "id": "ml-training",
@@ -338,9 +392,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4893,
-    "committed": 4810,
-    "onDemand": 83
+    "total": 4917,
+    "committed": 4819,
+    "onDemand": 98
   },
   "icons": [
     {
@@ -35370,6 +35424,175 @@
       "libraryIndex": 33
     },
     {
+      "id": "ai-frameworks/dspy",
+      "pack": "ai-frameworks",
+      "title": "DSPy",
+      "aliases": [
+        "dspy"
+      ],
+      "source": "dspy-logo",
+      "upstreamId": "https://raw.githubusercontent.com/stanfordnlp/dspy/ecba33763316d2a4c6c756046a1118ecbff033e7/docs/docs/static/dspy-logo.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 2000,
+      "height": 2000,
+      "sha256": "edb6461ee5472332085cbe038be19bfd5001bb8b581a7bd419a3477a8d1df017",
+      "bytes": "committed",
+      "libraryIndex": 34
+    },
+    {
+      "id": "ai-frameworks/guardrails",
+      "pack": "ai-frameworks",
+      "title": "Guardrails AI",
+      "aliases": [
+        "guardrails",
+        "guardrails ai"
+      ],
+      "source": "guardrails-logo",
+      "upstreamId": "https://raw.githubusercontent.com/guardrails-ai/guardrails/06d0ff2c5f9bcb493d976b76f885e37e41ce845d/docs/assets/logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 68,
+      "height": 68,
+      "sha256": "ed8a02018d79b892cbfbd34a6b3c9fbd600286fc5faee1e5e79241b6217d4359",
+      "bytes": "committed",
+      "libraryIndex": 35
+    },
+    {
+      "id": "ai-frameworks/llamacpp",
+      "pack": "ai-frameworks",
+      "title": "llama.cpp",
+      "aliases": [
+        "llama.cpp",
+        "llamacpp",
+        "llama cpp"
+      ],
+      "source": "llamacpp-logo",
+      "upstreamId": "https://raw.githubusercontent.com/ggml-org/llama.brand/0708f2327336589bd4d3eba15a95199c318cd771/icon/icon-light.svg",
+      "licence": "CC-BY-NC-4.0 with ggml-org brand-usage grant",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 600,
+      "height": 600,
+      "sha256": "ce48c0f8e98aa4099b6f04a65b76bc32bc00c8fa39d58f15da9b73905f1918f1",
+      "bytes": "committed",
+      "libraryIndex": 36
+    },
+    {
+      "id": "ai-frameworks/localai",
+      "pack": "ai-frameworks",
+      "title": "LocalAI",
+      "aliases": [
+        "localai",
+        "local ai"
+      ],
+      "source": "localai-logo",
+      "upstreamId": "https://raw.githubusercontent.com/mudler/LocalAI/35819d9e0de06f90fb3ff3e6616f0b7da13ffa67/website/static/img/logo-mark.png",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 240,
+      "height": 163,
+      "sha256": "ad78f1dc3c085c96813cb758ee3ee4f1cffd66fcac24fb6bba7d215c73bb07f8",
+      "bytes": "committed",
+      "libraryIndex": 37
+    },
+    {
+      "id": "ai-frameworks/mem0",
+      "pack": "ai-frameworks",
+      "title": "Mem0",
+      "aliases": [
+        "mem0",
+        "mem zero"
+      ],
+      "source": "mem0-logo",
+      "upstreamId": "https://raw.githubusercontent.com/mem0ai/mem0/c7ee362aff94a369af70f13f2b4f853f6793ff4c/docs/logo/favicon.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 100,
+      "height": 100,
+      "sha256": "ff408961ad175d801b802a1f24c9d8223b1fdaa4e1db95f074286b1be881d2a7",
+      "bytes": "committed",
+      "libraryIndex": 38
+    },
+    {
+      "id": "ai-frameworks/pydanticai",
+      "pack": "ai-frameworks",
+      "title": "Pydantic AI",
+      "aliases": [
+        "pydantic ai",
+        "pydanticai"
+      ],
+      "source": "pydanticai-logo",
+      "upstreamId": "https://raw.githubusercontent.com/pydantic/pydantic-ai/5cbacfc8f86d653baa0ca2e31970cbf4f0fcec95/docs/img/pydantic-ai-light.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 741,
+      "height": 120,
+      "sha256": "69cabcfffd162a229b512129a854dbd4afc80165b2175e2790b068494932d41e",
+      "bytes": "committed",
+      "libraryIndex": 39
+    },
+    {
+      "id": "ai-frameworks/trl",
+      "pack": "ai-frameworks",
+      "title": "TRL",
+      "aliases": [
+        "trl",
+        "transformer reinforcement learning"
+      ],
+      "source": "trl-logo",
+      "upstreamId": "https://raw.githubusercontent.com/huggingface/trl/a8bc1816152facaf5441983195c40ffae27f2081/assets/logo-dark.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 1328,
+      "height": 512,
+      "sha256": "ac72e1dc6b93dac4cdae7d10f36a8d274c10a29918d19b5887d764cd3972e1ba",
+      "bytes": "committed",
+      "libraryIndex": 40
+    },
+    {
+      "id": "ai-frameworks/axolotl",
+      "pack": "ai-frameworks",
+      "title": "Axolotl",
+      "aliases": [
+        "axolotl"
+      ],
+      "source": "axolotl-logo",
+      "upstreamId": "https://raw.githubusercontent.com/axolotl-ai-cloud/axolotl/169df0bd5bb35968fe5f6e3d23fc465c51faf116/image/axolotl_symbol_digital_black.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 284,
+      "height": 284,
+      "sha256": "a92595dd83d75b34a7a2bcd1d4809578b84da73b80579f355b8eaa382f5c51c4",
+      "bytes": "committed",
+      "libraryIndex": 41
+    },
+    {
+      "id": "ai-frameworks/whylogs",
+      "pack": "ai-frameworks",
+      "title": "whylogs",
+      "aliases": [
+        "whylogs"
+      ],
+      "source": "whylogs-logo",
+      "upstreamId": "https://raw.githubusercontent.com/whylabs/whylogs/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/python/docs/_static/images/logo.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 523,
+      "height": 246,
+      "sha256": "734878e51314406266e23fe34681572479095511416c6500e68e7fb01ce2b6d1",
+      "bytes": "committed",
+      "libraryIndex": 42
+    },
+    {
       "id": "ai-frameworks/openai",
       "pack": "ai-frameworks",
       "title": "OpenAI",
@@ -35564,6 +35787,262 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://x.ai/> --name xai"
+    },
+    {
+      "id": "ai-frameworks/together",
+      "pack": "ai-frameworks",
+      "title": "Together AI",
+      "aliases": [
+        "together",
+        "together ai"
+      ],
+      "source": "vendor",
+      "upstreamId": "together",
+      "brandUrl": "https://www.together.ai/",
+      "licence": "none - brand kit with no licence granted",
+      "licenceUrl": "https://www.together.ai/brand",
+      "bytes": "on-demand",
+      "reason": "Together AI publishes its logo only as a marketing brand-kit download that grants no redistribution licence, and no logo file exists in any of its repositories",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.together.ai/> --name together"
+    },
+    {
+      "id": "ai-frameworks/fireworks",
+      "pack": "ai-frameworks",
+      "title": "Fireworks AI",
+      "aliases": [
+        "fireworks",
+        "fireworks ai"
+      ],
+      "source": "vendor",
+      "upstreamId": "fireworks",
+      "brandUrl": "https://fireworks.ai/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://fireworks.ai/terms-of-service",
+      "bytes": "on-demand",
+      "reason": "Fireworks AI publishes no brand or press page and no logo file in any repository of its fw-ai organisation, so no artwork carrying a redistribution licence exists",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://fireworks.ai/> --name fireworks"
+    },
+    {
+      "id": "ai-frameworks/baseten",
+      "pack": "ai-frameworks",
+      "title": "Baseten",
+      "aliases": [
+        "baseten"
+      ],
+      "source": "vendor",
+      "upstreamId": "baseten",
+      "brandUrl": "https://www.baseten.co/",
+      "licence": "none - media kit with no licence granted",
+      "licenceUrl": "https://www.baseten.co/brand/",
+      "bytes": "on-demand",
+      "reason": "Baseten's brand page offers a media-kit download without granting any redistribution licence and directs external requests to its press address",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.baseten.co/> --name baseten"
+    },
+    {
+      "id": "ai-frameworks/runpod",
+      "pack": "ai-frameworks",
+      "title": "Runpod",
+      "aliases": [
+        "runpod",
+        "run pod"
+      ],
+      "source": "vendor",
+      "upstreamId": "runpod",
+      "brandUrl": "https://www.runpod.io/",
+      "licence": "none - permission required",
+      "licenceUrl": "https://www.runpod.io/legal/terms-of-service",
+      "bytes": "on-demand",
+      "reason": "Runpod's terms of service state that its stylizations, graphics, logos, service marks and trade names \"may not be used without permission in connection with your, or any third-party's, products or services\"",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.runpod.io/> --name runpod"
+    },
+    {
+      "id": "ai-frameworks/lambdalabs",
+      "pack": "ai-frameworks",
+      "title": "Lambda Labs",
+      "aliases": [
+        "lambda labs",
+        "lambdalabs",
+        "lambda gpu cloud",
+        "lambda ai"
+      ],
+      "source": "vendor",
+      "upstreamId": "lambdalabs",
+      "brandUrl": "https://lambda.ai/",
+      "licence": "none - Lambda brand use policy",
+      "licenceUrl": "https://lambda.ai/lambda-brand-use-policy",
+      "bytes": "on-demand",
+      "reason": "the Lambda brand use policy states that no reproduction, distribution or modification is permitted without prior written authorization, and restricts brand-element use to partners under an executed agreement",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://lambda.ai/> --name lambdalabs"
+    },
+    {
+      "id": "ai-frameworks/litellm",
+      "pack": "ai-frameworks",
+      "title": "LiteLLM",
+      "aliases": [
+        "litellm",
+        "lite llm"
+      ],
+      "source": "vendor",
+      "upstreamId": "litellm",
+      "brandUrl": "https://www.litellm.ai/",
+      "licence": "none - raster mark built on third-party emoji artwork",
+      "licenceUrl": "https://github.com/BerriAI/litellm/blob/30f33a949b8a2bb890a2baee18e2ab7ab015a4f7/LICENSE",
+      "bytes": "on-demand",
+      "reason": "LiteLLM publishes its mark only as a small opaque JPEG inside the MIT-licensed part of BerriAI/litellm, and that mark is composed on a third-party emoji glyph BerriAI did not author, so the MIT grant does not clearly reach the artwork",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.litellm.ai/> --name litellm"
+    },
+    {
+      "id": "ai-frameworks/arize",
+      "pack": "ai-frameworks",
+      "title": "Arize AI",
+      "aliases": [
+        "arize",
+        "arize ai",
+        "arize phoenix"
+      ],
+      "source": "vendor",
+      "upstreamId": "arize",
+      "brandUrl": "https://arize.com/",
+      "licence": "none - Elastic License 2.0",
+      "licenceUrl": "https://github.com/Arize-ai/phoenix/blob/e12748298b366605cc0e2aa60e659f473efbff99/LICENSE",
+      "bytes": "on-demand",
+      "reason": "Arize-ai/phoenix is under the Elastic License 2.0, which is not an open-source licence, the separate phoenix-assets repository holding the logo carries no LICENSE at all, and the corporate Arize mark is published only on its marketing site",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://arize.com/> --name arize"
+    },
+    {
+      "id": "ai-frameworks/whylabs",
+      "pack": "ai-frameworks",
+      "title": "WhyLabs",
+      "aliases": [
+        "whylabs"
+      ],
+      "source": "vendor",
+      "upstreamId": "whylabs",
+      "brandUrl": "https://whylabs.ai/",
+      "licence": "none - no logo in a licensed repository",
+      "licenceUrl": "https://whylabs.ai/",
+      "bytes": "on-demand",
+      "reason": "WhyLabs publishes no brand or trademark policy and no company logo file in a licensed repository; only its whylogs project mark is licensed, and that ships as ai-frameworks/whylogs",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://whylabs.ai/> --name whylabs"
+    },
+    {
+      "id": "ai-frameworks/galileo",
+      "pack": "ai-frameworks",
+      "title": "Galileo",
+      "aliases": [
+        "galileo",
+        "galileo ai",
+        "rungalileo"
+      ],
+      "source": "vendor",
+      "upstreamId": "galileo",
+      "brandUrl": "https://galileo.ai/",
+      "licence": "none - artwork repository has no LICENSE",
+      "licenceUrl": "https://github.com/rungalileo/docs-official/tree/d9aaabb409eaaa61e57a6ab1a3dcce2020f9b4f1",
+      "bytes": "on-demand",
+      "reason": "Galileo's logo files live in rungalileo/docs-official, a repository with no LICENSE file, and no Galileo logo appears in its Apache-2.0 client libraries",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://galileo.ai/> --name galileo"
+    },
+    {
+      "id": "ai-frameworks/instructor",
+      "pack": "ai-frameworks",
+      "title": "Instructor",
+      "aliases": [
+        "instructor"
+      ],
+      "source": "vendor",
+      "upstreamId": "instructor",
+      "brandUrl": "https://python.useinstructor.com/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/567-labs/instructor/blob/e12f8b49203b0c1f253d27c1e709d0a09b9fc5a8/LICENSE",
+      "bytes": "on-demand",
+      "reason": "567-labs/instructor contains no logo image of any kind, configures no documentation logo, and the project site renders its name as text, so there is no mark to fetch",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://python.useinstructor.com/> --name instructor"
+    },
+    {
+      "id": "ai-frameworks/openwebui",
+      "pack": "ai-frameworks",
+      "title": "Open WebUI",
+      "aliases": [
+        "open webui",
+        "openwebui"
+      ],
+      "source": "vendor",
+      "upstreamId": "openwebui",
+      "brandUrl": "https://openwebui.com/",
+      "licence": "none - Open WebUI License branding clause",
+      "licenceUrl": "https://github.com/open-webui/open-webui/blob/0a7c15832fb30b1903753e83f81dc7d27e5b0944/LICENSE",
+      "bytes": "on-demand",
+      "reason": "clause 4 of the Open WebUI License prohibits altering, removing, obscuring or replacing any Open WebUI branding including the logo, except below a user threshold or with written permission, and the repository's BRANDING.md repeats that the logo is governed by that licence",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://openwebui.com/> --name openwebui"
+    },
+    {
+      "id": "ai-frameworks/agno",
+      "pack": "ai-frameworks",
+      "title": "Agno",
+      "aliases": [
+        "agno",
+        "phidata",
+        "phi data"
+      ],
+      "source": "vendor",
+      "upstreamId": "agno",
+      "brandUrl": "https://agno.com/",
+      "licence": "none - no logo in a licensed repository",
+      "licenceUrl": "https://github.com/agno-agi/agno",
+      "bytes": "on-demand",
+      "reason": "Agno's logo is served only from the company's public asset bucket and from agno-agi/docs, which carries no LICENSE file, so no copyright licence permits redistribution; the entry also answers to Phidata, the project's former name",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://agno.com/> --name agno"
+    },
+    {
+      "id": "ai-frameworks/letta",
+      "pack": "ai-frameworks",
+      "title": "Letta",
+      "aliases": [
+        "letta",
+        "memgpt"
+      ],
+      "source": "vendor",
+      "upstreamId": "letta",
+      "brandUrl": "https://www.letta.com/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/letta-ai/letta/blob/5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a/LICENSE",
+      "bytes": "on-demand",
+      "reason": "neither letta-ai/letta nor letta-ai/letta-code contains any logo artwork, and letta.com publishes no brand or press page, so no officially licensed mark exists",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.letta.com/> --name letta"
+    },
+    {
+      "id": "ai-frameworks/smolagents",
+      "pack": "ai-frameworks",
+      "title": "smolagents",
+      "aliases": [
+        "smolagents",
+        "smol agents"
+      ],
+      "source": "vendor",
+      "upstreamId": "smolagents",
+      "brandUrl": "https://huggingface.co/docs/smolagents",
+      "licence": "none - CC-BY-NC-SA-4.0 artwork",
+      "licenceUrl": "https://github.com/huggingface/smolagents/blob/30bb1161095dbae2271e6bc3cc4c219cc3897a57/LICENSE",
+      "bytes": "on-demand",
+      "reason": "the Apache-2.0 huggingface/smolagents repository contains no logo file, and the only smolagents artwork is a mascot illustration published in a CC BY-NC-SA 4.0 dataset",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://huggingface.co/docs/smolagents> --name smolagents"
+    },
+    {
+      "id": "ai-frameworks/unsloth",
+      "pack": "ai-frameworks",
+      "title": "Unsloth",
+      "aliases": [
+        "unsloth"
+      ],
+      "source": "vendor",
+      "upstreamId": "unsloth",
+      "brandUrl": "https://unsloth.ai/",
+      "licence": "none - licence text does not cover the artwork directory",
+      "licenceUrl": "https://github.com/unslothai/unsloth/blob/7bdace6155acbdc404e2c4e9a480b914fee4629f/LICENSE",
+      "bytes": "on-demand",
+      "reason": "unslothai/unsloth's LICENSE enumerates which directories are Apache-2.0 and which are AGPLv3 and images/ appears in neither list, so which licence covers the mark is unsettled; the only square variant is in an AGPLv3 tree designated an Appropriate Legal Notice",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://unsloth.ai/> --name unsloth"
     },
     {
       "id": "ml-training/pytorch",

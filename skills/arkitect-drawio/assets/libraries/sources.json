@@ -200,6 +200,87 @@
       "licence": "Google Cloud icon terms",
       "licenceUrl": "https://cloud.google.com/icons",
       "note": "Google now publishes per-service marks only as a legacy archive. On a title collision the 19 current core-product icons win."
+    },
+    "dspy-logo": {
+      "type": "local-files",
+      "dir": "local/dspy-logo",
+      "sha256": "d6cf61f4372f94669968b9f81e8ab18073045d47802bf457f3b08fbd84a139d9",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/stanfordnlp/dspy/blob/ecba33763316d2a4c6c756046a1118ecbff033e7/LICENSE",
+      "note": "DSPy's own logo, docs/docs/static/dspy-logo.svg in stanfordnlp/dspy at commit ecba337, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). DSPy is a trademark of its owner, named here only to identify the product."
+    },
+    "guardrails-logo": {
+      "type": "local-files",
+      "dir": "local/guardrails-logo",
+      "sha256": "ed8dfbd868733cfd615d4805096b29a1e3577b5121f14fb1f6464a4475686127",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/guardrails-ai/guardrails/blob/06d0ff2c5f9bcb493d976b76f885e37e41ce845d/LICENSE",
+      "note": "Guardrails AI's own icon mark, docs/assets/logo.svg in guardrails-ai/guardrails at commit 06d0ff2, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Guardrails AI is named here only to identify the product."
+    },
+    "llamacpp-logo": {
+      "type": "local-files",
+      "dir": "local/llamacpp-logo",
+      "sha256": "b038097610590286b72a2f3e2c67646ffb1f81afca03ed677ebb777f3d0c0ccc",
+      "terms": "licence",
+      "licence": "CC-BY-NC-4.0 with ggml-org brand-usage grant",
+      "licenceUrl": "https://github.com/ggml-org/llama.brand/blob/0708f2327336589bd4d3eba15a95199c318cd771/BRAND-USAGE.md",
+      "note": "llama.cpp's own icon mark, icon/icon-light.svg in ggml-org/llama.brand at commit 0708f23, committed byte-for-byte on 2026-09-14. The repository licenses its marks CC BY-NC 4.0 and its BRAND-USAGE.md then grants everyone, notwithstanding the NonCommercial term, permission to reproduce and redistribute them \"including commercially and including as part of software distributions, packages, and operating systems, for the purpose of identifying or referring to Llama.app and Llama.cpp\", expressly covering rescaling and format conversion (#20). Attribution is satisfied by naming github.com/ggml-org/llama.brand as the source, which this note and ATTRIBUTION.md do. The grant does not cover redrawing the mark or combining it with other marks, so it ships verbatim."
+    },
+    "localai-logo": {
+      "type": "local-files",
+      "dir": "local/localai-logo",
+      "sha256": "790df53ca1350c04dc642057b70c0d21b7b25a8494d4c4bc68a220a89125e168",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/mudler/LocalAI/blob/35819d9e0de06f90fb3ff3e6616f0b7da13ffa67/LICENSE",
+      "note": "LocalAI's own mark, website/static/img/logo-mark.png in mudler/LocalAI at commit 35819d9, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). LocalAI is a trademark of its owner, named here only to identify the product."
+    },
+    "mem0-logo": {
+      "type": "local-files",
+      "dir": "local/mem0-logo",
+      "sha256": "a401b448a95906a0a2ecc9fa622d661a1c04e3f31ee52eb9739169d8dc37e0f2",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/mem0ai/mem0/blob/c7ee362aff94a369af70f13f2b4f853f6793ff4c/LICENSE",
+      "note": "Mem0's own square mark, docs/logo/favicon.svg in mem0ai/mem0 at commit c7ee362, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The wordmark files beside it are published only as light-on-transparent and dark-on-transparent pairs, so the square mark is the one that draws on any canvas. Apache-2.0 grants no trademark rights; Mem0 is named here only to identify the product."
+    },
+    "pydanticai-logo": {
+      "type": "local-files",
+      "dir": "local/pydanticai-logo",
+      "sha256": "604b912c5cfdb9ad4088bb0f2e34d85d9db981dece080f56da6f319261e2e080",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/pydantic/pydantic-ai/blob/5cbacfc8f86d653baa0ca2e31970cbf4f0fcec95/LICENSE",
+      "note": "Pydantic AI's own lockup, docs/img/pydantic-ai-light.svg in pydantic/pydantic-ai at commit 5cbacfc, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The lockup ships rather than the bare pyramid, which is the same artwork already shipping as ai-frameworks/pydantic. Pydantic AI is a trademark of its owner, named here only to identify the product."
+    },
+    "trl-logo": {
+      "type": "local-files",
+      "dir": "local/trl-logo",
+      "sha256": "c5f302f56debd3df38b36a9d8411db7d560a27926ecc4356ae822967dfbffe0b",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/huggingface/trl/blob/a8bc1816152facaf5441983195c40ffae27f2081/LICENSE",
+      "note": "TRL's own wordmark, assets/logo-dark.png in huggingface/trl at commit a8bc181, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The mark carries no Hugging Face house logo, so the Hugging Face terms of service clause reserving that mark does not reach it. Apache-2.0 grants no trademark rights; TRL is named here only to identify the product."
+    },
+    "axolotl-logo": {
+      "type": "local-files",
+      "dir": "local/axolotl-logo",
+      "sha256": "332ea01b83b80ad1ffb41cace311dd328c75ab182865a7ea532d535f2cec02f0",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/axolotl-ai-cloud/axolotl/blob/169df0bd5bb35968fe5f6e3d23fc465c51faf116/LICENSE",
+      "note": "Axolotl's own symbol mark, image/axolotl_symbol_digital_black.svg in axolotl-ai-cloud/axolotl at commit 169df0b, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Axolotl is named here only to identify the product."
+    },
+    "whylogs-logo": {
+      "type": "local-files",
+      "dir": "local/whylogs-logo",
+      "sha256": "32580672d5c4587babc1f43bbf79b3f21ea27ae4df49310d64d2371a3c36bf03",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/whylabs/whylogs/blob/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/LICENSE",
+      "note": "WhyLabs's own mark for its whylogs library, python/docs/_static/images/logo.png in whylabs/whylogs at commit 976bc4c, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). This is the whylogs project mark, not the WhyLabs company mark, which stays on-demand. Apache-2.0 grants no trademark rights; whylogs is named here only to identify the product."
     }
   },
   "packs": [
@@ -2019,6 +2100,103 @@
             "openaigym"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "dspy",
+          "title": "DSPy",
+          "aliases": [
+            "dspy"
+          ],
+          "source": "dspy-logo",
+          "file": "dspy-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/stanfordnlp/dspy/ecba33763316d2a4c6c756046a1118ecbff033e7/docs/docs/static/dspy-logo.svg"
+        },
+        {
+          "slug": "guardrails",
+          "title": "Guardrails AI",
+          "aliases": [
+            "guardrails",
+            "guardrails ai"
+          ],
+          "source": "guardrails-logo",
+          "file": "guardrails-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/guardrails-ai/guardrails/06d0ff2c5f9bcb493d976b76f885e37e41ce845d/docs/assets/logo.svg"
+        },
+        {
+          "slug": "llamacpp",
+          "title": "llama.cpp",
+          "aliases": [
+            "llama.cpp",
+            "llamacpp",
+            "llama cpp"
+          ],
+          "source": "llamacpp-logo",
+          "file": "icon-light.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/ggml-org/llama.brand/0708f2327336589bd4d3eba15a95199c318cd771/icon/icon-light.svg"
+        },
+        {
+          "slug": "localai",
+          "title": "LocalAI",
+          "aliases": [
+            "localai",
+            "local ai"
+          ],
+          "source": "localai-logo",
+          "file": "logo-mark.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/mudler/LocalAI/35819d9e0de06f90fb3ff3e6616f0b7da13ffa67/website/static/img/logo-mark.png"
+        },
+        {
+          "slug": "mem0",
+          "title": "Mem0",
+          "aliases": [
+            "mem0",
+            "mem zero"
+          ],
+          "source": "mem0-logo",
+          "file": "mem0-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/mem0ai/mem0/c7ee362aff94a369af70f13f2b4f853f6793ff4c/docs/logo/favicon.svg"
+        },
+        {
+          "slug": "pydanticai",
+          "title": "Pydantic AI",
+          "aliases": [
+            "pydantic ai",
+            "pydanticai"
+          ],
+          "source": "pydanticai-logo",
+          "file": "pydantic-ai-light.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/pydantic/pydantic-ai/5cbacfc8f86d653baa0ca2e31970cbf4f0fcec95/docs/img/pydantic-ai-light.svg"
+        },
+        {
+          "slug": "trl",
+          "title": "TRL",
+          "aliases": [
+            "trl",
+            "transformer reinforcement learning"
+          ],
+          "source": "trl-logo",
+          "file": "trl-logo.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/huggingface/trl/a8bc1816152facaf5441983195c40ffae27f2081/assets/logo-dark.png"
+        },
+        {
+          "slug": "axolotl",
+          "title": "Axolotl",
+          "aliases": [
+            "axolotl"
+          ],
+          "source": "axolotl-logo",
+          "file": "axolotl-symbol.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/axolotl-ai-cloud/axolotl/169df0bd5bb35968fe5f6e3d23fc465c51faf116/image/axolotl_symbol_digital_black.svg"
+        },
+        {
+          "slug": "whylogs",
+          "title": "whylogs",
+          "aliases": [
+            "whylogs"
+          ],
+          "source": "whylogs-logo",
+          "file": "whylogs-logo.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/whylabs/whylogs/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/python/docs/_static/images/logo.png"
         }
       ],
       "onDemand": [
@@ -2166,6 +2344,202 @@
           "licence": "none - nominative use only",
           "reason": "no permissively licensed mark exists",
           "brandUrl": "https://x.ai/"
+        },
+        {
+          "slug": "together",
+          "title": "Together AI",
+          "aliases": [
+            "together",
+            "together ai"
+          ],
+          "source": "vendor",
+          "licence": "none - brand kit with no licence granted",
+          "licenceUrl": "https://www.together.ai/brand",
+          "reason": "Together AI publishes its logo only as a marketing brand-kit download that grants no redistribution licence, and no logo file exists in any of its repositories",
+          "brandUrl": "https://www.together.ai/"
+        },
+        {
+          "slug": "fireworks",
+          "title": "Fireworks AI",
+          "aliases": [
+            "fireworks",
+            "fireworks ai"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://fireworks.ai/terms-of-service",
+          "reason": "Fireworks AI publishes no brand or press page and no logo file in any repository of its fw-ai organisation, so no artwork carrying a redistribution licence exists",
+          "brandUrl": "https://fireworks.ai/"
+        },
+        {
+          "slug": "baseten",
+          "title": "Baseten",
+          "aliases": [
+            "baseten"
+          ],
+          "source": "vendor",
+          "licence": "none - media kit with no licence granted",
+          "licenceUrl": "https://www.baseten.co/brand/",
+          "reason": "Baseten's brand page offers a media-kit download without granting any redistribution licence and directs external requests to its press address",
+          "brandUrl": "https://www.baseten.co/"
+        },
+        {
+          "slug": "runpod",
+          "title": "Runpod",
+          "aliases": [
+            "runpod",
+            "run pod"
+          ],
+          "source": "vendor",
+          "licence": "none - permission required",
+          "licenceUrl": "https://www.runpod.io/legal/terms-of-service",
+          "reason": "Runpod's terms of service state that its stylizations, graphics, logos, service marks and trade names \"may not be used without permission in connection with your, or any third-party's, products or services\"",
+          "brandUrl": "https://www.runpod.io/"
+        },
+        {
+          "slug": "lambdalabs",
+          "title": "Lambda Labs",
+          "aliases": [
+            "lambda labs",
+            "lambdalabs",
+            "lambda gpu cloud",
+            "lambda ai"
+          ],
+          "source": "vendor",
+          "licence": "none - Lambda brand use policy",
+          "licenceUrl": "https://lambda.ai/lambda-brand-use-policy",
+          "reason": "the Lambda brand use policy states that no reproduction, distribution or modification is permitted without prior written authorization, and restricts brand-element use to partners under an executed agreement",
+          "brandUrl": "https://lambda.ai/"
+        },
+        {
+          "slug": "litellm",
+          "title": "LiteLLM",
+          "aliases": [
+            "litellm",
+            "lite llm"
+          ],
+          "source": "vendor",
+          "licence": "none - raster mark built on third-party emoji artwork",
+          "licenceUrl": "https://github.com/BerriAI/litellm/blob/30f33a949b8a2bb890a2baee18e2ab7ab015a4f7/LICENSE",
+          "reason": "LiteLLM publishes its mark only as a small opaque JPEG inside the MIT-licensed part of BerriAI/litellm, and that mark is composed on a third-party emoji glyph BerriAI did not author, so the MIT grant does not clearly reach the artwork",
+          "brandUrl": "https://www.litellm.ai/"
+        },
+        {
+          "slug": "arize",
+          "title": "Arize AI",
+          "aliases": [
+            "arize",
+            "arize ai",
+            "arize phoenix"
+          ],
+          "source": "vendor",
+          "licence": "none - Elastic License 2.0",
+          "licenceUrl": "https://github.com/Arize-ai/phoenix/blob/e12748298b366605cc0e2aa60e659f473efbff99/LICENSE",
+          "reason": "Arize-ai/phoenix is under the Elastic License 2.0, which is not an open-source licence, the separate phoenix-assets repository holding the logo carries no LICENSE at all, and the corporate Arize mark is published only on its marketing site",
+          "brandUrl": "https://arize.com/"
+        },
+        {
+          "slug": "whylabs",
+          "title": "WhyLabs",
+          "aliases": [
+            "whylabs"
+          ],
+          "source": "vendor",
+          "licence": "none - no logo in a licensed repository",
+          "licenceUrl": "https://whylabs.ai/",
+          "reason": "WhyLabs publishes no brand or trademark policy and no company logo file in a licensed repository; only its whylogs project mark is licensed, and that ships as ai-frameworks/whylogs",
+          "brandUrl": "https://whylabs.ai/"
+        },
+        {
+          "slug": "galileo",
+          "title": "Galileo",
+          "aliases": [
+            "galileo",
+            "galileo ai",
+            "rungalileo"
+          ],
+          "source": "vendor",
+          "licence": "none - artwork repository has no LICENSE",
+          "licenceUrl": "https://github.com/rungalileo/docs-official/tree/d9aaabb409eaaa61e57a6ab1a3dcce2020f9b4f1",
+          "reason": "Galileo's logo files live in rungalileo/docs-official, a repository with no LICENSE file, and no Galileo logo appears in its Apache-2.0 client libraries",
+          "brandUrl": "https://galileo.ai/"
+        },
+        {
+          "slug": "instructor",
+          "title": "Instructor",
+          "aliases": [
+            "instructor"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://github.com/567-labs/instructor/blob/e12f8b49203b0c1f253d27c1e709d0a09b9fc5a8/LICENSE",
+          "reason": "567-labs/instructor contains no logo image of any kind, configures no documentation logo, and the project site renders its name as text, so there is no mark to fetch",
+          "brandUrl": "https://python.useinstructor.com/"
+        },
+        {
+          "slug": "openwebui",
+          "title": "Open WebUI",
+          "aliases": [
+            "open webui",
+            "openwebui"
+          ],
+          "source": "vendor",
+          "licence": "none - Open WebUI License branding clause",
+          "licenceUrl": "https://github.com/open-webui/open-webui/blob/0a7c15832fb30b1903753e83f81dc7d27e5b0944/LICENSE",
+          "reason": "clause 4 of the Open WebUI License prohibits altering, removing, obscuring or replacing any Open WebUI branding including the logo, except below a user threshold or with written permission, and the repository's BRANDING.md repeats that the logo is governed by that licence",
+          "brandUrl": "https://openwebui.com/"
+        },
+        {
+          "slug": "agno",
+          "title": "Agno",
+          "aliases": [
+            "agno",
+            "phidata",
+            "phi data"
+          ],
+          "source": "vendor",
+          "licence": "none - no logo in a licensed repository",
+          "licenceUrl": "https://github.com/agno-agi/agno",
+          "reason": "Agno's logo is served only from the company's public asset bucket and from agno-agi/docs, which carries no LICENSE file, so no copyright licence permits redistribution; the entry also answers to Phidata, the project's former name",
+          "brandUrl": "https://agno.com/"
+        },
+        {
+          "slug": "letta",
+          "title": "Letta",
+          "aliases": [
+            "letta",
+            "memgpt"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://github.com/letta-ai/letta/blob/5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a/LICENSE",
+          "reason": "neither letta-ai/letta nor letta-ai/letta-code contains any logo artwork, and letta.com publishes no brand or press page, so no officially licensed mark exists",
+          "brandUrl": "https://www.letta.com/"
+        },
+        {
+          "slug": "smolagents",
+          "title": "smolagents",
+          "aliases": [
+            "smolagents",
+            "smol agents"
+          ],
+          "source": "vendor",
+          "licence": "none - CC-BY-NC-SA-4.0 artwork",
+          "licenceUrl": "https://github.com/huggingface/smolagents/blob/30bb1161095dbae2271e6bc3cc4c219cc3897a57/LICENSE",
+          "reason": "the Apache-2.0 huggingface/smolagents repository contains no logo file, and the only smolagents artwork is a mascot illustration published in a CC BY-NC-SA 4.0 dataset",
+          "brandUrl": "https://huggingface.co/docs/smolagents"
+        },
+        {
+          "slug": "unsloth",
+          "title": "Unsloth",
+          "aliases": [
+            "unsloth"
+          ],
+          "source": "vendor",
+          "licence": "none - licence text does not cover the artwork directory",
+          "licenceUrl": "https://github.com/unslothai/unsloth/blob/7bdace6155acbdc404e2c4e9a480b914fee4629f/LICENSE",
+          "reason": "unslothai/unsloth's LICENSE enumerates which directories are Apache-2.0 and which are AGPLv3 and images/ appears in neither list, so which licence covers the mark is unsettled; the only square variant is in an AGPLv3 tree designated an Appropriate Legal Notice",
+          "brandUrl": "https://unsloth.ai/"
         }
       ]
     },
