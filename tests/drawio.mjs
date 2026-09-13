@@ -1100,6 +1100,23 @@ test('updating an existing file writes a timestamped backup first', () => {
   eq(readFileSync(backup, 'utf8'), before, 'backup was clobbered by the update');
 });
 
+test('rapid updates in the same second never overwrite an earlier backup (#35)', () => {
+  const dir = join(TMP, 'rapid-backups');
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'rapid.drawio');
+  const now = new Date('2026-09-13T10:15:00.000Z');
+  // Someone else's backup already holds the first name for this second.
+  const taken = join(dir, 'rapid.backup-20260913-101500.drawio');
+  writeFileSync(taken, 'pre-existing');
+  const versions = ['original', 'first revision', 'second revision'];
+  const backups = versions.map((v) => { writeFileSync(target, v); return builder.backupExisting(target, { now }); });
+  eq(new Set(backups).size, versions.length, 'every call wrote its own backup');
+  eq(readFileSync(taken, 'utf8'), 'pre-existing', 'a pre-existing backup was overwritten');
+  versions.forEach((v, i) => eq(readFileSync(backups[i], 'utf8'), v, `backup ${i} lost its version`));
+  assert(backups[0].endsWith('rapid.backup-20260913-101500-1.drawio'), `unexpected collision name: ${backups[0]}`);
+  assert(backups[2].endsWith('rapid.backup-20260913-101500-3.drawio'), `unexpected collision name: ${backups[2]}`);
+});
+
 test('the validator rejects a broken diagram', () => {
   const bad = join(TMP, 'broken.drawio');
   writeFileSync(bad, '<mxfile><diagram name="b" id="b"><mxGraphModel><root>'
