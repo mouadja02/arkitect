@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:37:41.582Z",
+  "generated": "2026-09-13T21:38:01.522Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "01a037a87ab6aab4844f0c43dcc2dc631dc9147370bb4d0685a78bfaf59fb41a"
+    "sha256": "f88b6e86633db2185c6299d962d940b9410805175d40c150b37740a3cc321c0e"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -227,6 +227,42 @@
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "archiveSha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929"
     },
+    "hamilton-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/apache/hamilton/blob/d55da91947da4a8036e35c8ed452e95b01028a09/LICENSE",
+      "archiveSha256": "9d302f4f70c28f4e8b0e1a552a4e53a07efa41433d6d7b68301066391c523cbf"
+    },
+    "marimo-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/marimo-team/marimo/blob/1793fe560831387febc83979461baf2be71a93d8/LICENSE",
+      "archiveSha256": "70abcd3d04d3d5638328bcd4266c0a31a4696b705fd6ce17b36d7cf4c6e5066b"
+    },
+    "statsmodels-logo": {
+      "terms": "licence",
+      "licence": "BSD-3-Clause",
+      "licenceUrl": "https://github.com/statsmodels/statsmodels/blob/77ecdfa3e93ea16ec2179e696753af885759fb01/LICENSE.txt",
+      "archiveSha256": "ef026fda42e56e667474b0f7f9bfcb0926a208587fe3d315282fd0fc24526102"
+    },
+    "move-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/move-language/move/blob/c453c90994cba0af30314fe4134acee57fb20d0c/LICENSE",
+      "archiveSha256": "b410477f54d526bb3632458dcdeaf97799fc42bee5ebbfc5a32efe238933ab6e"
+    },
+    "hatch-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/pypa/hatch/blob/d5f7bfe813dd4d81520def23b43f5d46aad1899c/LICENSE.txt",
+      "archiveSha256": "6141e7debb090500721d4e6df530ed2d103ef6e2b533d730b1fd71acd6f9aeb5"
+    },
+    "tox-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/tox-dev/tox/blob/2a060366248bfbb5044a6acbb93f4e41c5cca04e/LICENSE",
+      "archiveSha256": "934e3a0115feec047c10d228a07a594d410426c6539e8c2cb9f74d0d14af91c7"
+    },
     "hatchet-logo": {
       "terms": "licence",
       "licence": "MIT",
@@ -357,9 +393,9 @@
       "description": "Training frameworks, experiment tracking and the numeric stack",
       "rank": 20,
       "file": "ml-training.drawio",
-      "count": 32,
-      "onDemand": 10,
-      "sha256": "6e3bb0fcc2645fd776337b66f702723709a7cff9a387d912dcb3e584b87027ef"
+      "count": 35,
+      "onDemand": 14,
+      "sha256": "c78990fb309b3acfb0cbd5b6ee3b2a3d759419800d984462d7f41b3189032305"
     },
     {
       "id": "streaming-orchestration",
@@ -427,9 +463,9 @@
       "description": "Programming languages, frameworks, package managers and developer tooling",
       "rank": 20,
       "file": "languages-runtimes.drawio",
-      "count": 81,
+      "count": 84,
       "onDemand": 1,
-      "sha256": "ede41c27c642005d51d84dc52610abbecf2c1305e2cd43816e86946f25f7ff33"
+      "sha256": "bf74e76ead46c1d1d09a553338ce5eb65976c9a641c6d5534c7ecdbd1a244f78"
     },
     {
       "id": "agents",
@@ -476,9 +512,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4968,
-    "committed": 4833,
-    "onDemand": 135
+    "total": 4978,
+    "committed": 4839,
+    "onDemand": 139
   },
   "icons": [
     {
@@ -37142,6 +37178,62 @@
       "libraryIndex": 31
     },
     {
+      "id": "ml-training/apachehamilton",
+      "pack": "ml-training",
+      "title": "Apache Hamilton",
+      "aliases": [
+        "hamilton",
+        "apache hamilton"
+      ],
+      "source": "hamilton-logo",
+      "upstreamId": "https://raw.githubusercontent.com/apache/hamilton/d55da91947da4a8036e35c8ed452e95b01028a09/docs/_static/hamilton-incubator-logo.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 156,
+      "height": 156,
+      "sha256": "799d6f1bce2fb8db1a27dd1088e9ab250fef1c185721f1e6688a1824dff8e01d",
+      "bytes": "committed",
+      "libraryIndex": 32
+    },
+    {
+      "id": "ml-training/marimo",
+      "pack": "ml-training",
+      "title": "marimo",
+      "aliases": [
+        "marimo"
+      ],
+      "source": "marimo-logo",
+      "upstreamId": "https://raw.githubusercontent.com/marimo-team/marimo/1793fe560831387febc83979461baf2be71a93d8/docs/_static/marimo-logotype-thick.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 139,
+      "height": 111,
+      "sha256": "2f4bc98385e362c726c3376e567febbbcc693159d6257dda52730054d715764d",
+      "bytes": "committed",
+      "libraryIndex": 33
+    },
+    {
+      "id": "ml-training/statsmodels",
+      "pack": "ml-training",
+      "title": "statsmodels",
+      "aliases": [
+        "statsmodels",
+        "stats models"
+      ],
+      "source": "statsmodels-logo",
+      "upstreamId": "https://raw.githubusercontent.com/statsmodels/statsmodels/77ecdfa3e93ea16ec2179e696753af885759fb01/docs/source/images/statsmodels-logo-v2-no-text.svg",
+      "licence": "BSD-3-Clause",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 282,
+      "height": 276,
+      "sha256": "89346bbb28f163284280a5084bb554d3486c02ca7c7605334de1531ab357cd73",
+      "bytes": "committed",
+      "libraryIndex": 34
+    },
+    {
       "id": "ml-training/xgboost",
       "pack": "ml-training",
       "title": "XGBoost",
@@ -37297,12 +37389,80 @@
       "source": "vendor",
       "upstreamId": "seldon",
       "upstreamUrl": "https://raw.githubusercontent.com/SeldonIO/seldon-core/402619eb9064b2ced678539fa3c0a1a0bd8f723a/docs-gb/images/logo.svg",
-      "brandUrl": "https://www.seldon.io/",
+      "brandUrl": "https://seldon.io/",
       "licence": "none - Business Source License 1.1",
       "licenceUrl": "https://github.com/SeldonIO/seldon-core/blob/402619eb9064b2ced678539fa3c0a1a0bd8f723a/LICENSE",
       "bytes": "on-demand",
       "reason": "Seldon Core v2's repository, logo included, is under the Business Source License 1.1, which is not an open-source licence and grants no redistribution of the artwork for this use",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/SeldonIO/seldon-core/402619eb9064b2ced678539fa3c0a1a0bd8f723a/docs-gb/images/logo.svg --name seldon"
+    },
+    {
+      "id": "ml-training/triton",
+      "pack": "ml-training",
+      "title": "NVIDIA Triton Inference Server",
+      "aliases": [
+        "triton inference server",
+        "nvidia triton",
+        "nvidia triton inference server"
+      ],
+      "source": "vendor",
+      "upstreamId": "triton",
+      "brandUrl": "https://developer.nvidia.com/triton-inference-server",
+      "licence": "none - NVIDIA logo and brand usage policy",
+      "licenceUrl": "https://www.nvidia.com/en-us/about-nvidia/legal-info/logo-brand-usage/",
+      "bytes": "on-demand",
+      "reason": "NVIDIA's logo and brand usage policy states that its brand assets may not be used in any manner not expressly authorized in writing by NVIDIA, and the only mark in the Triton repository is the NVIDIA corporate logo rather than a Triton-specific one",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://developer.nvidia.com/triton-inference-server> --name triton"
+    },
+    {
+      "id": "ml-training/torchserve",
+      "pack": "ml-training",
+      "title": "TorchServe",
+      "aliases": [
+        "torchserve",
+        "torch serve"
+      ],
+      "source": "vendor",
+      "upstreamId": "torchserve",
+      "brandUrl": "https://pytorch.org/serve/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
+      "bytes": "on-demand",
+      "reason": "the PyTorch Foundation publishes its artwork only under the Linux Foundation trademark usage guidelines and its brand guidelines require checking in before logo use, while pytorch/serve publishes no TorchServe-specific logo and is now archived",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://pytorch.org/serve/> --name torchserve"
+    },
+    {
+      "id": "ml-training/tecton",
+      "pack": "ml-training",
+      "title": "Tecton",
+      "aliases": [
+        "tecton"
+      ],
+      "source": "vendor",
+      "upstreamId": "tecton",
+      "brandUrl": "https://www.tecton.ai/",
+      "licence": "none - all rights reserved",
+      "licenceUrl": "https://www.tecton.ai/terms-of-use/",
+      "bytes": "on-demand",
+      "reason": "Tecton's terms of use reserve all rights in its trademarks, logos, images and artwork and prohibit any reproduction or redistribution; Tecton was acquired by Databricks and its home page now redirects there",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.tecton.ai/> --name tecton"
+    },
+    {
+      "id": "ml-training/fastai",
+      "pack": "ml-training",
+      "title": "fastai",
+      "aliases": [
+        "fastai",
+        "fast ai"
+      ],
+      "source": "vendor",
+      "upstreamId": "fastai",
+      "brandUrl": "https://www.fast.ai/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/fastai/fastai/blob/9d9f51f0e241a0d4348b88eb7588eb5c7c23b969/LICENSE",
+      "bytes": "on-demand",
+      "reason": "fastai publishes no logo: its repository holds only a favicon raster, and both the docs site and fast.ai render the project name as plain text",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.fast.ai/> --name fastai"
     },
     {
       "id": "streaming-orchestration/apachekafka",
@@ -43943,6 +44103,64 @@
       "sha256": "1bc125e2248458631f7cc63da68ff708b3197d12e5d5f753d57f0ce205cecf15",
       "bytes": "committed",
       "libraryIndex": 80
+    },
+    {
+      "id": "languages-runtimes/move",
+      "pack": "languages-runtimes",
+      "title": "Move",
+      "aliases": [
+        "move",
+        "move language",
+        "move lang"
+      ],
+      "source": "move-logo",
+      "upstreamId": "https://raw.githubusercontent.com/move-language/move/c453c90994cba0af30314fe4134acee57fb20d0c/assets/color/SVG/Move_Logo_Design_Digital_Final_-03.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 259,
+      "height": 166,
+      "sha256": "0ea7fe39ab66aa1707fc04d1e4debb13ee688be5ab5a0042d0162a3c5ee4d746",
+      "bytes": "committed",
+      "libraryIndex": 81
+    },
+    {
+      "id": "languages-runtimes/hatch",
+      "pack": "languages-runtimes",
+      "title": "Hatch",
+      "aliases": [
+        "hatch",
+        "pypa hatch",
+        "hatchling"
+      ],
+      "source": "hatch-logo",
+      "upstreamId": "https://raw.githubusercontent.com/pypa/hatch/d5f7bfe813dd4d81520def23b43f5d46aad1899c/docs/assets/images/logo.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "1f8be4e5358198b47fa58f5e365e19f5ea4993c82417611a755b109692859a13",
+      "bytes": "committed",
+      "libraryIndex": 82
+    },
+    {
+      "id": "languages-runtimes/tox",
+      "pack": "languages-runtimes",
+      "title": "tox",
+      "aliases": [
+        "tox"
+      ],
+      "source": "tox-logo",
+      "upstreamId": "https://raw.githubusercontent.com/tox-dev/tox/2a060366248bfbb5044a6acbb93f4e41c5cca04e/docs/_static/img/tox.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 130,
+      "height": 70,
+      "sha256": "948b07e74696e242e8daf06bb2503005156e08ff77a0aa80020fc83040ac9e96",
+      "bytes": "committed",
+      "libraryIndex": 83
     },
     {
       "id": "languages-runtimes/micronaut",
