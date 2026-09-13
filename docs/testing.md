@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `209 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `214 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -53,6 +53,7 @@ process, so they cannot tread on each other.
 | Desktop export (opt-in) | every committed mark — 400 to a page, fitted to 78px with no caption or border, the five GCP marks with masks and filters among them — exported by Draw.io Desktop; a mark with under 1% ink in its own tile fails, every such mark is listed, and the ten sparsest are printed (#33). Runs with `ARKITECT_DRAWIO_SMOKE=1` |
 | File-type bands | band text on a file sheet never renders under 8px: a ten- or eight-letter band and an empty `band` are refused, a short `band` replaces the extension at 9px; every committed file-types entry meets the floor, `.dockerfile` and `.excalidraw` show `DOCKER` and `EXCALI`, and both are still found by their full extension (#14) |
 | Contact sheets | with a fake Chrome that fills its profile with cookies and history: the profile and the page it renders live outside the repository and are removed, and only `<pack>.png` is added; a crash, a timeout, no screenshot, an empty one or a non-PNG is reported and leaves the previous sheet untouched; the HTML stays only without `--png`, with `--keep-html`, or when there is no Chrome; a legacy `.shot/` profile is reported, never deleted (#44) |
+| Review record | a record row counts only at the payload hash it was reviewed at: a changed mark is stale, a recorded mismatch or an unknown verdict stays open, a row for an id that no longer ships is orphaned, and an entry with no row is unchecked; review pages put every entry on exactly one page of 54, with its id, hash and state, write only under `contact-sheets/review/`, refuse a page that does not exist before rendering, and fall back to HTML without Chrome; every shipped Azure mark is reviewed at the artwork that ships; the two Azure pairs sharing a name and a folder are captioned by Microsoft's file number and keep their old caption as an alias; ten captions Microsoft's file names misspell or run together are corrected, with the ids unchanged and the upstream spelling still an alias (#18) |
 | Duplicate titles | both Compute Optimizer variants retained, disambiguated by index, size and payload hash |
 | AWS pack | built from Amazon's pinned package; every one of the 243 palette ids still present; AgentCore as one official SVG plus five 156px feature rasters matching their pinned digest; the PNG codec round-trips, area-averages and never enlarges; icon cells fit their image instead of stretching square |
 | Catalog | no base64 payloads, required fields present |

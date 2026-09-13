@@ -178,6 +178,38 @@ it rendered; without `--png` that HTML is the output. Older versions left the pr
 (cookies, history, login data) in `contact-sheets/.shot/` — if you have that
 directory, delete it.
 
+A sheet shows what shipped, not who looked or what they concluded. For that there is a
+review record, `assets/libraries/reviews/<pack>.json`: one row per shipped id, with the
+sha256 of the payload that was looked at, a verdict (`ok` or `mismatch`), the reviewer,
+the date and an optional note. A row counts only while the artwork still has that hash,
+so a rebuild that changes a mark re-opens exactly that entry, and an entry with no row
+is `unchecked` rather than implied by a sheet someone glanced at.
+
+```bash
+node $S/contact-sheet.mjs --pack azure --review           # status, and every page
+node $S/contact-sheet.mjs --pack azure --review --page 3  # one page
+```
+
+Review pages show 54 marks at 120px, each captioned with its title, id, upstream file,
+library index, short hash and review state, with unchecked and stale tiles highlighted.
+They are written to the gitignored `contact-sheets/review/`. The suite fails if any
+shipped Azure mark is unchecked, stale, recorded as a mismatch or carries an unknown
+verdict, or if the record names an id that no longer ships (#18).
+
+Two Azure pairs share a name *and* a folder — Microsoft ships two different `Workspaces`
+marks in `compute` and two `Load Balancer Hub` marks in `networking`. The second of each
+is captioned with Microsoft's file number, `Workspaces (00400)` and
+`Load Balancer Hub (029029174)`, because a folder suffix would tell them apart from
+nothing. Their ids are unchanged, and the old captions still resolve.
+
+Ten Azure captions are corrected from Microsoft's file names, which misspell a service
+(`Promethus`, `Entra Privleged Identity Management`, `Defender Programable Board`), drop a
+capital (`Azure a`, the Azure logo) or run the words together (`AzureAttestation`,
+`ExtendedSecurityUpdates`, `MachinesAzureArc`, `VPNClientWindows`, `Windows10 Core
+Services`, `Web Application Firewall Policies(WAF)`). The corrections live in the azure
+pack's `titles` map in `sources.json`; ids are unchanged and the upstream spelling stays
+a search alias.
+
 ## Coverage, honestly
 
 Across the five reference diagrams, only 20 of 97 embedded image placements — 9 distinct

@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T18:12:11.707Z",
+  "generated": "2026-09-13T19:06:33.253Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "60b3aa763aa9c48c33020305493de313de36f58ff97cc61ab8578edc1620bb58"
+    "sha256": "e5cf4cd5f27c650b420381d7256c2921e7a5914ebbaaf019f23c64b028c0a4d5"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -110,7 +110,7 @@
       "file": "azure.drawio",
       "count": 638,
       "onDemand": 0,
-      "sha256": "c7bf9ef3ec82b6cb34f3cdf56dec6d2daaee3fc59b60cdc61042f02cdae8fb50"
+      "sha256": "4c4c31f02e9f8f46a8fa82b3c27d16e55d2851a7671c704d362f9841f6289b27"
     },
     {
       "id": "gcp",
@@ -11781,19 +11781,19 @@
     {
       "id": "azure/azure-a",
       "pack": "azure",
-      "title": "Azure a",
+      "title": "Azure",
       "aliases": [
+        "azure",
         "azure a",
         "azurea",
-        "a",
+        "azures",
         "azure as",
-        "azureas",
-        "as"
+        "azureas"
       ],
       "generatedAliases": [
+        "azures",
         "azure as",
-        "azureas",
-        "as"
+        "azureas"
       ],
       "source": "azure-v24",
       "upstreamId": "Azure_Public_Service_Icons/Icons/other/10018-icon-service-Azure-A.svg",
@@ -14511,13 +14511,19 @@
     {
       "id": "azure/azureattestation",
       "pack": "azure",
-      "title": "AzureAttestation",
+      "title": "Azure Attestation",
       "aliases": [
+        "azure attestation",
         "azureattestation",
-        "azureattestations"
+        "attestation",
+        "azure attestations",
+        "azureattestations",
+        "attestations"
       ],
       "generatedAliases": [
-        "azureattestations"
+        "azure attestations",
+        "azureattestations",
+        "attestations"
       ],
       "source": "azure-v24",
       "upstreamId": "Azure_Public_Service_Icons/Icons/other/10422-icon-service-AzureAttestation.svg",
@@ -16961,14 +16967,20 @@
     {
       "id": "azure/defender-programable-board",
       "pack": "azure",
-      "title": "Defender Programable Board",
+      "title": "Defender Programmable Board",
       "aliases": [
+        "defender programmable board",
+        "defenderprogrammableboard",
         "defender programable board",
         "defenderprogramableboard",
+        "defender programmable boards",
+        "defenderprogrammableboards",
         "defender programable boards",
         "defenderprogramableboards"
       ],
       "generatedAliases": [
+        "defender programmable boards",
+        "defenderprogrammableboards",
         "defender programable boards",
         "defenderprogramableboards"
       ],
@@ -18364,14 +18376,20 @@
     {
       "id": "azure/entra-privleged-identity-management",
       "pack": "azure",
-      "title": "Entra Privleged Identity Management",
+      "title": "Entra Privileged Identity Management",
       "aliases": [
+        "entra privileged identity management",
+        "entraprivilegedidentitymanagement",
         "entra privleged identity management",
         "entraprivlegedidentitymanagement",
+        "entra privileged identity managements",
+        "entraprivilegedidentitymanagements",
         "entra privleged identity managements",
         "entraprivlegedidentitymanagements"
       ],
       "generatedAliases": [
+        "entra privileged identity managements",
+        "entraprivilegedidentitymanagements",
         "entra privleged identity managements",
         "entraprivlegedidentitymanagements"
       ],
@@ -18678,12 +18696,15 @@
     {
       "id": "azure/extendedsecurityupdates",
       "pack": "azure",
-      "title": "ExtendedSecurityUpdates",
+      "title": "Extended Security Updates",
       "aliases": [
+        "extended security updates",
         "extendedsecurityupdates",
+        "extended security update",
         "extendedsecurityupdate"
       ],
       "generatedAliases": [
+        "extended security update",
         "extendedsecurityupdate"
       ],
       "source": "azure-v24",
@@ -20720,8 +20741,10 @@
     {
       "id": "azure/load-balancer-hub-networking",
       "pack": "azure",
-      "title": "Load Balancer Hub (Networking)",
+      "title": "Load Balancer Hub (029029174)",
       "aliases": [
+        "load balancer hub 029029174",
+        "loadbalancerhub029029174",
         "load balancer hub networking",
         "loadbalancerhubnetworking",
         "load balancer hub networkings",
@@ -21127,12 +21150,15 @@
     {
       "id": "azure/machinesazurearc",
       "pack": "azure",
-      "title": "MachinesAzureArc",
+      "title": "Machines Azure Arc",
       "aliases": [
+        "machines azure arc",
         "machinesazurearc",
+        "machines azure arcs",
         "machinesazurearcs"
       ],
       "generatedAliases": [
+        "machines azure arcs",
         "machinesazurearcs"
       ],
       "source": "azure-v24",
@@ -22961,13 +22987,37 @@
     {
       "id": "azure/promethus",
       "pack": "azure",
-      "title": "Promethus",
+      "title": "Azure Monitor Managed Service for Prometheus",
       "aliases": [
+        "azure monitor managed service for prometheus",
+        "azuremonitormanagedserviceforprometheus",
         "promethus",
-        "promethu"
+        "azure managed prometheus",
+        "azuremanagedprometheus",
+        "azure monitor prometheus",
+        "azuremonitorprometheus",
+        "monitor managed service for prometheus",
+        "monitormanagedserviceforprometheus",
+        "azure monitor managed service for prometheu",
+        "azuremonitormanagedserviceforprometheu",
+        "promethu",
+        "azure managed prometheu",
+        "azuremanagedprometheu",
+        "azure monitor prometheu",
+        "azuremonitorprometheu",
+        "monitor managed service for prometheu",
+        "monitormanagedserviceforprometheu"
       ],
       "generatedAliases": [
-        "promethu"
+        "azure monitor managed service for prometheu",
+        "azuremonitormanagedserviceforprometheu",
+        "promethu",
+        "azure managed prometheu",
+        "azuremanagedprometheu",
+        "azure monitor prometheu",
+        "azuremonitorprometheu",
+        "monitor managed service for prometheu",
+        "monitormanagedserviceforprometheu"
       ],
       "source": "azure-v24",
       "upstreamId": "Azure_Public_Service_Icons/Icons/other/033112809-icon-service-promethus.svg",
@@ -26294,12 +26344,15 @@
     {
       "id": "azure/vpnclientwindows",
       "pack": "azure",
-      "title": "VPNClientWindows",
+      "title": "VPN Client Windows",
       "aliases": [
+        "vpn client windows",
         "vpnclientwindows",
+        "vpn client window",
         "vpnclientwindow"
       ],
       "generatedAliases": [
+        "vpn client window",
         "vpnclientwindow"
       ],
       "source": "azure-v24",
@@ -26388,7 +26441,7 @@
     {
       "id": "azure/web-application-firewall-policies-waf",
       "pack": "azure",
-      "title": "Web Application Firewall Policies(WAF)",
+      "title": "Web Application Firewall Policies (WAF)",
       "aliases": [
         "web application firewall policies waf",
         "webapplicationfirewallpolicieswaf",
@@ -26561,16 +26614,19 @@
     {
       "id": "azure/windows10-core-services",
       "pack": "azure",
-      "title": "Windows10 Core Services",
+      "title": "Windows 10 Core Services",
       "aliases": [
-        "windows10 core services",
+        "windows 10 core services",
         "windows10coreservices",
-        "windows10 core service",
-        "windows10coreservice"
+        "windows10 core services",
+        "windows 10 core service",
+        "windows10coreservice",
+        "windows10 core service"
       ],
       "generatedAliases": [
-        "windows10 core service",
-        "windows10coreservice"
+        "windows 10 core service",
+        "windows10coreservice",
+        "windows10 core service"
       ],
       "source": "azure-v24",
       "upstreamId": "Azure_Public_Service_Icons/Icons/iot/10203-icon-service-Windows10-Core-Services.svg",
@@ -26727,8 +26783,10 @@
     {
       "id": "azure/workspaces-compute",
       "pack": "azure",
-      "title": "Workspaces (Compute)",
+      "title": "Workspaces (00400)",
       "aliases": [
+        "workspaces 00400",
+        "workspaces00400",
         "workspaces compute",
         "workspacescompute",
         "workspaces computes",

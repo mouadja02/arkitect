@@ -1457,6 +1457,110 @@ test('the sheet HTML stays only when it is the output or --keep-html asks for it
   assert(existsSync(join(sheetDir, '.shot')), 'and never deleted');
 });
 
+test('a review record pins each verdict to the artwork it saw, and an unseen entry stays unchecked (#18)', () => {
+  const recordDir = join(TMP, 'reviews');
+  mkdirSync(recordDir, { recursive: true });
+  const fresh = sheets.reviewStatus('file-types', { recordDir });
+  assert(fresh.rows.length > 4 && fresh.unchecked.length === fresh.rows.length && fresh.ok.length === 0,
+    'with no record, every entry is unchecked');
+
+  const [a, b, c, d] = fresh.rows;
+  writeFileSync(join(recordDir, 'file-types.json'), JSON.stringify({ entries: {
+    [a.id]: { sha256: a.sha256, verdict: 'ok' },
+    [b.id]: { sha256: '0'.repeat(64), verdict: 'ok' },
+    [c.id]: { sha256: c.sha256, verdict: 'mismatch', note: 'wears another mark' },
+    [d.id]: { sha256: d.sha256, verdict: 'looks fine' },
+    'file-types/gone': { sha256: a.sha256, verdict: 'ok' },
+  } }));
+  const s = sheets.reviewStatus('file-types', { recordDir });
+  eq(s.ok.join(), a.id, 'a row at the current hash counts');
+  eq(s.stale.join(), b.id, 'a row for artwork that has changed since is stale, not ok');
+  eq(s.mismatch.join(), c.id, 'a recorded mismatch stays visible');
+  eq(s.unknown.join(), d.id, 'a verdict outside ok/mismatch is not taken as a pass');
+  eq(s.orphaned.join(), 'file-types/gone', 'a row for an id that no longer ships is orphaned');
+  eq(s.unchecked.length, s.rows.length - 4, 'everything else is unchecked');
+});
+
+test('review pages cover every entry, 54 to a page, and write only under review/ (#18)', () => {
+  const sheetDir = join(TMP, 'contact-sheets-review');
+  const recordDir = join(TMP, 'reviews-none');
+  const calls = [];
+  const pages = [];
+  const shoot = (shot) => { pages.push(readFileSync(calls.at(-1).html, 'utf8')); writeFileSync(shot, PNG_BYTES); };
+  const out = sheets.buildReview('azure', { sheetDir, recordDir, chrome: 'chrome', runner: fakeChrome(calls, shoot) });
+
+  eq(out.pageCount, Math.ceil(out.status.rows.length / 54), 'pages of 54');
+  eq(out.pages.map((p) => p.page).join(), Array.from({ length: out.pageCount }, (_, i) => i + 1).join(), 'every page is rendered');
+  eq(pages.map((h) => h.split('<figure').length - 1).reduce((x, y) => x + y, 0), out.status.rows.length, 'every entry is on a page once');
+  eq(out.pages.at(-1).last, out.status.rows.at(-1).index, 'the last page ends on the last entry');
+  const first = out.status.rows[0];
+  assert(pages[0].includes(first.id) && pages[0].includes(first.sha256.slice(0, 12)) && pages[0].includes('unchecked'),
+    'a tile names its id, its hash and its review state');
+  eq(readdirSync(sheetDir).join(), 'review', 'nothing is written beside the committed sheets');
+  eq(readdirSync(join(sheetDir, 'review')).length, out.pageCount, 'one PNG per page');
+  assert(calls.every((c) => !existsSync(dirname(c.profile))), 'every scratch profile is removed');
+
+  const one = sheets.buildReview('azure', { page: 2, sheetDir, recordDir, chrome: 'chrome', runner: fakeChrome([], (shot) => writeFileSync(shot, PNG_BYTES)) });
+  eq(one.pages.map((p) => `${p.page}:${p.first}`).join(), '2:54', '--page renders just that page');
+  for (const page of [0, out.pageCount + 1, 1.5, Number.NaN]) {
+    let error = null;
+    try { sheets.buildReview('azure', { page, sheetDir, recordDir, chrome: 'chrome', runner: () => { throw new Error('Chrome must not run'); } }); } catch (e) { error = e; }
+    assert(error && /there is no page/.test(error.message), `page ${page} is refused before anything renders`);
+  }
+
+  const htmlOnly = sheets.buildReview('azure', { page: 1, sheetDir: join(TMP, 'contact-sheets-review-html'), recordDir, chrome: null });
+  assert(htmlOnly.pages[0].htmlPath && existsSync(htmlOnly.pages[0].htmlPath) && !htmlOnly.pages[0].pngPath, 'no Chrome falls back to the HTML page');
+});
+
+test('two Azure marks sharing a name and a folder are told apart by file number, and keep their old caption (#18)', () => {
+  const cat = JSON.parse(readFileSync(join(SKILL, 'references', 'icon-catalog.json'), 'utf8'));
+  const row = (id) => cat.icons.find((i) => i.id === id);
+  for (const [id, title, formerly, other] of [
+    ['azure/workspaces-compute', 'Workspaces (00400)', 'workspaces compute', 'azure/workspaces'],
+    ['azure/load-balancer-hub-networking', 'Load Balancer Hub (029029174)', 'load balancer hub networking', 'azure/load-balancer-hub'],
+  ]) {
+    const r = row(id);
+    eq(r?.title, title, `${id} is captioned by Microsoft's file number`);
+    assert(r.aliases.includes(formerly), `${id} still answers to "${formerly}"`);
+    assert(row(other) && row(other).sha256 !== r.sha256, `${other} is a different mark`);
+    eq(dirname(r.upstreamId), dirname(row(other).upstreamId), `${id} and ${other} come from the same folder`);
+  }
+  eq(row('azure/multifactor-authentication-security')?.title, 'Multifactor Authentication (Security)',
+    'a pair from different folders keeps its folder as the suffix');
+});
+
+test('Azure captions Microsoft misspelled or ran together are corrected, and the upstream spelling still resolves (#18)', () => {
+  const cat = JSON.parse(readFileSync(join(SKILL, 'references', 'icon-catalog.json'), 'utf8'));
+  const squash = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  for (const [id, title, upstream] of [
+    ['azure/promethus', 'Azure Monitor Managed Service for Prometheus', 'Promethus'],
+    ['azure/entra-privleged-identity-management', 'Entra Privileged Identity Management', 'Entra Privleged Identity Management'],
+    ['azure/defender-programable-board', 'Defender Programmable Board', 'Defender Programable Board'],
+    ['azure/azure-a', 'Azure', 'Azure a'],
+    ['azure/azureattestation', 'Azure Attestation', 'AzureAttestation'],
+    ['azure/extendedsecurityupdates', 'Extended Security Updates', 'ExtendedSecurityUpdates'],
+    ['azure/machinesazurearc', 'Machines Azure Arc', 'MachinesAzureArc'],
+    ['azure/vpnclientwindows', 'VPN Client Windows', 'VPNClientWindows'],
+    ['azure/windows10-core-services', 'Windows 10 Core Services', 'Windows10 Core Services'],
+    ['azure/web-application-firewall-policies-waf', 'Web Application Firewall Policies (WAF)', 'Web Application Firewall Policies(WAF)'],
+  ]) {
+    const r = cat.icons.find((i) => i.id === id);
+    eq(r?.title, title, `${id} keeps its id and reads "${title}"`);
+    assert(r.aliases.some((a) => squash(a) === squash(upstream)), `${id} still answers to Microsoft's "${upstream}"`);
+  }
+});
+
+test('every shipped Azure mark has been reviewed at the artwork that ships (#18)', () => {
+  const s = sheets.reviewStatus('azure');
+  const open = [
+    ...s.unchecked.map((id) => `${id}: unchecked`), ...s.stale.map((id) => `${id}: artwork changed since review`),
+    ...s.mismatch.map((id) => `${id}: recorded mismatch`), ...s.unknown.map((id) => `${id}: unknown verdict`),
+    ...s.orphaned.map((id) => `${id}: record row for an id that no longer ships`),
+  ];
+  assert(s.rows.length > 0 && s.ok.length === s.rows.length && open.length === 0,
+    `${open.length} open (contact-sheet.mjs --pack azure --review):\n        ${open.slice(0, 20).join('\n        ')}`);
+});
+
 // ------------------------------------------------------------- generation
 
 const SPEC = join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json');

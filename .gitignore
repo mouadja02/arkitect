@@ -53,3 +53,6 @@ skills/arkitect-excalidraw/assets/libraries/bundled/sheets/*.svg
 # re-embeds every icon as a data URI and is regenerable in seconds.
 skills/arkitect-drawio/assets/libraries/contact-sheets/*.html
 skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/
+# Review pages are what a reviewer looked at; the record in libraries/reviews/
+# is what they concluded, and the pages regenerate from it exactly (#18).
+skills/arkitect-drawio/assets/libraries/contact-sheets/review/
