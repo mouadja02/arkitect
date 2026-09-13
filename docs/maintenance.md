@@ -83,7 +83,9 @@ editor stay forbidden on user content.
 
 **7. Backups before overwrites.** Both builders write a timestamped sibling
 backup before replacing an existing file. Do not remove that, and do not add a
-write path that skips it.
+write path that skips it. Retention (#49) deletes only the builder's own
+exact-name backups of the file it just wrote, only after that write succeeded,
+and always keeps the newest and the oldest; do not widen what it may delete.
 
 **8. Style rules carry evidence.** A rule in `references/style-guide.md` states
 its count and confidence. A rule marked `default` is one the corpus does not
