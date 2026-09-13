@@ -765,6 +765,91 @@ test('rapid updates in the same second never overwrite an earlier backup (#35)',
   assert(backups[2].endsWith('rapid.backup-20260913-101500-3.excalidraw'), `unexpected collision name: ${backups[2]}`);
 });
 
+// ------------------------------------------------------------- spec checks (#36)
+
+test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {
+  const dir = join(TMP, 'spec-refused');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'bad.spec.json');
+  writeFileSync(specPath, JSON.stringify({
+    nodes: [{ id: 'api', label: 'API', kind: 'box', col: 0, row: 0 }],
+    edges: [{ from: 'api', to: 'missing' }],
+  }));
+  const out = join(dir, 'bad.excalidraw');
+  writeFileSync(out, 'original');
+  let status = 0; let stderr = '';
+  try {
+    execFileSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', 'build', specPath, '--out', out],
+      { encoding: 'utf8', stdio: 'pipe' });
+  } catch (e) { status = e.status; stderr = e.stderr; }
+  eq(status, 1, 'exit status');
+  const body = JSON.parse(stderr);
+  eq(body.ok, false, 'reported as not ok');
+  assert(body.errors.some((e) => e.startsWith('edges[0].to: "missing"')), `errors: ${body.errors.join('; ')}`);
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target was changed');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'a refused build wrote a backup');
+});
+
+test('spec checks list every broken reference, id clash and cycle in one run (#36)', () => {
+  const spec = {
+    boundaries: [
+      { id: 'outer', parent: 'inner' },
+      { id: 'inner', parent: 'outer' },
+      { id: 'vpc' },
+    ],
+    nodes: [
+      { id: 'a', col: 0, row: 0, parent: 'nowhere' },
+      { id: 'vpc', col: 1, row: 0 },
+      { label: 'no id', col: 2, row: 0 },
+    ],
+    edges: [
+      { from: 'a', to: 'ghost' },
+      { from: 'a', to: 'outer' },
+      { to: 'a' },
+    ],
+  };
+  const errors = builder.validateSpec(spec);
+  for (const expected of [
+    'nodes[0].parent: "nowhere" is not a boundary id',
+    'nodes[1].id: "vpc" is already used by boundaries[2]',
+    'nodes[2].id: expected a non-empty string',
+    'boundaries[0].parent: boundary "outer" is nested inside itself',
+    'boundaries[1].parent: boundary "inner" is nested inside itself',
+    'edges[0].to: "ghost" is not a node id',
+    'edges[1].to: "outer" is a boundary; Excalidraw connects nodes only',
+    'edges[2].from: missing',
+  ]) {
+    assert(errors.some((e) => e.startsWith(expected)), `missing "${expected}" in:\n        ${errors.join('\n        ')}`);
+  }
+  let thrown = null;
+  try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram did not refuse the spec');
+  eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
+});
+
+test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
+  const spec = {
+    boundaries: [
+      { id: 'outer', label: 'Outer' },
+      { id: 'inner', label: 'Inner', parent: 'outer' },
+    ],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A', col: 0, row: 0, parent: 'outer' },
+      { id: 'b', kind: 'box', label: 'B', col: 1, row: 0, parent: 'inner' },
+      { id: 'c', kind: 'box', label: 'C', col: 2, row: 0, parent: 'inner' },
+    ],
+    edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c', kind: 'async' }],
+  };
+  eq(builder.validateSpec(spec).length, 0, 'a valid nested spec was refused');
+  const r = builder.buildDiagram(spec);
+  const v = validator.validateScene(r.scene);
+  assert(v.ok, `errors: ${v.errors.join('; ')}`);
+  const arrows = r.scene.elements.filter((e) => e.type === 'arrow' && !(e.groupIds ?? []).length);
+  eq(arrows.length, 2, 'every requested connection was drawn');
+  for (const a of arrows) assert(a.startBinding && a.endBinding, `arrow ${a.id} is not bound at both ends`);
+  eq(r.report.notes.length, 0, 'nothing was skipped');
+});
+
 function writeSpec(name, spec) {
   const p = join(TMP, name);
   writeFileSync(p, JSON.stringify(spec));

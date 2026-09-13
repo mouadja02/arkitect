@@ -273,9 +273,93 @@ function actor(x, y, w, h, look) {
   return { elements: [head, spine, arms, legs], labelHost: null, group };
 }
 
+// ---------------------------------------------------------------- spec checks
+
+// A spec is checked before anything is built, backed up or written (#36). A typo
+// in an edge endpoint used to drop the connection and still produce a scene that
+// validated. Every problem is collected, so one run lists them all, each naming
+// its field.
+export class SpecError extends Error {
+  constructor(errors) {
+    super(`invalid spec:\n  ${errors.join('\n  ')}`);
+    this.name = 'SpecError';
+    this.errors = errors;
+  }
+}
+
+export function validateSpec(spec) {
+  const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (!isObject(spec)) return ['spec: expected a JSON object'];
+  const errors = [];
+  const show = (v) => JSON.stringify(v);
+  const listOf = (key) => {
+    if (spec[key] === undefined) return [];
+    if (Array.isArray(spec[key])) return spec[key];
+    errors.push(`${key}: expected an array`);
+    return [];
+  };
+  const boundaries = listOf('boundaries');
+  const nodes = listOf('nodes');
+  const edges = listOf('edges');
+
+  // One id space: an edge or a parent naming an id must mean exactly one thing.
+  const declaredBy = new Map();
+  const declare = (field, item) => {
+    if (!isObject(item)) { errors.push(`${field}: expected an object`); return; }
+    if (typeof item.id !== 'string' || !item.id) { errors.push(`${field}.id: expected a non-empty string`); return; }
+    if (declaredBy.has(item.id)) errors.push(`${field}.id: ${show(item.id)} is already used by ${declaredBy.get(item.id)}`);
+    else declaredBy.set(item.id, field);
+  };
+  boundaries.forEach((b, i) => declare(`boundaries[${i}]`, b));
+  nodes.forEach((n, i) => declare(`nodes[${i}]`, n));
+
+  const idsOf = (list) => new Set(list.filter(isObject).map((x) => x.id).filter((id) => typeof id === 'string' && id));
+  const boundaryIds = idsOf(boundaries);
+  const nodeIds = idsOf(nodes);
+
+  // A boundary is sized from its children, so a parent must be a boundary.
+  const checkParent = (field, item) => {
+    if (item.parent === undefined || item.parent === null) return;
+    if (!boundaryIds.has(item.parent)) errors.push(`${field}.parent: ${show(item.parent)} is not a boundary id`);
+  };
+  boundaries.forEach((b, i) => { if (isObject(b)) checkParent(`boundaries[${i}]`, b); });
+  nodes.forEach((n, i) => { if (isObject(n)) checkParent(`nodes[${i}]`, n); });
+
+  const parentOf = new Map(boundaries.filter(isObject).map((b) => [b.id, b.parent]));
+  boundaries.forEach((b, i) => {
+    if (!isObject(b) || !boundaryIds.has(b.id)) return;
+    const chain = [b.id];
+    const seen = new Set(chain);
+    for (let p = parentOf.get(b.id); boundaryIds.has(p); p = parentOf.get(p)) {
+      chain.push(p);
+      if (p === b.id) {
+        errors.push(`boundaries[${i}].parent: boundary ${show(b.id)} is nested inside itself (${chain.join(' -> ')})`);
+        break;
+      }
+      if (seen.has(p)) break;
+      seen.add(p);
+    }
+  });
+
+  // Arrows bind to a node's shape; a boundary is not something an arrow can end on.
+  edges.forEach((e, i) => {
+    if (!isObject(e)) { errors.push(`edges[${i}]: expected an object`); return; }
+    for (const end of ['from', 'to']) {
+      const ref = e[end];
+      if (ref === undefined || ref === null || ref === '') errors.push(`edges[${i}].${end}: missing`);
+      else if (boundaryIds.has(ref) && !nodeIds.has(ref)) errors.push(`edges[${i}].${end}: ${show(ref)} is a boundary; Excalidraw connects nodes only`);
+      else if (!nodeIds.has(ref)) errors.push(`edges[${i}].${end}: ${show(ref)} is not a node id`);
+    }
+  });
+
+  return errors;
+}
+
 // ---------------------------------------------------------------- build
 
 export function buildDiagram(spec) {
+  const problems = validateSpec(spec);
+  if (problems.length) throw new SpecError(problems);
   const S = { ...STYLE, ...(spec.style ?? {}) };
   const L = {
     originX: S.originX, originY: S.originY, colPitch: S.colPitch, rowPitch: S.rowPitch, cell: S.cell,
@@ -618,10 +702,9 @@ export function buildDiagram(spec) {
   for (const e of spec.edges ?? []) {
     const from = geom.get(e.from);
     const to = geom.get(e.to);
-    if (!from || !to) {
-      report.notes.push(`edge ${e.from} -> ${e.to} skipped: unknown node id`);
-      continue;
-    }
+    // validateSpec has already refused an endpoint that is not a node, so a miss
+    // here is a builder bug. Skipping the edge would hide it in a valid scene.
+    if (!from || !to) throw new Error(`edge ${e.from} -> ${e.to}: a declared node has no geometry`);
     const kind = EDGE_KINDS[e.kind ?? 'flow'] ? (e.kind ?? 'flow') : 'flow';
     usedKinds.add(kind);
     const k = EDGE_KINDS[kind];
@@ -739,7 +822,16 @@ function main(argv) {
   }
 
   const spec = JSON.parse(readFileSync(specPath, 'utf8'));
-  const { scene, report } = buildDiagram(spec);
+  let built;
+  try {
+    built = buildDiagram(spec);
+  } catch (error) {
+    if (!(error instanceof SpecError)) throw error;
+    // Refused before the backup and the write, so an existing file is untouched.
+    console.error(JSON.stringify({ ok: false, spec: specPath, wrote: null, errors: error.errors }, null, 2));
+    process.exit(1);
+  }
+  const { scene, report } = built;
   const backup = backupExisting(out);
   writeScene(out, scene);
 

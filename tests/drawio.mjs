@@ -1132,6 +1132,114 @@ test('the validator rejects a broken diagram', () => {
   assert(r.errors.some((e) => e.includes('does not exist')), 'bad edge target not caught');
 });
 
+// ------------------------------------------------------------- spec checks (#36)
+
+test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {
+  const dir = join(TMP, 'spec-refused');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'bad.spec.json');
+  writeFileSync(specPath, JSON.stringify({
+    nodes: [{ id: 'api', label: 'API', kind: 'box', col: 0, row: 0 }],
+    edges: [{ from: 'api', to: 'missing' }],
+  }));
+  const out = join(dir, 'bad.drawio');
+  writeFileSync(out, 'original');
+  const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', specPath, '--out', out], { encoding: 'utf8' });
+  eq(r.status, 1, 'exit status');
+  const body = JSON.parse(r.stderr);
+  eq(body.ok, false, 'reported as not ok');
+  assert(body.errors.some((e) => e.startsWith('edges[0].to: "missing"')), `errors: ${body.errors.join('; ')}`);
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target was changed');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'a refused build wrote a backup');
+});
+
+test('spec checks list every broken reference, id clash and cycle in one run (#36)', () => {
+  const spec = {
+    title: 'Title',
+    boundaries: [
+      { id: 'outer', parent: 'inner', col: 0, row: 0 },
+      { id: 'inner', parent: 'outer', col: 0, row: 0 },
+      { id: 'shared', col: 2, row: 0 },
+    ],
+    nodes: [
+      { id: 'a', col: 0, row: 0, parent: 'nowhere' },
+      { id: 'shared', col: 1, row: 0 },
+      { id: 'title', col: 2, row: 0 },
+      { id: 'b-lbl', col: 3, row: 0 },
+      { label: 'no id', col: 4, row: 0 },
+      { id: 'c', col: 5, row: 0, parent: 'a' },
+    ],
+    edges: [
+      { from: 'a', to: 'ghost' },
+      { from: 'a' },
+      { id: 'a', from: 'a', to: 'shared' },
+    ],
+  };
+  const errors = builder.validateSpec(spec);
+  for (const expected of [
+    'nodes[0].parent: "nowhere" is not a boundary id',
+    'nodes[1].id: "shared" is already used by boundaries[2]',
+    'nodes[2].id: "title" is reserved',
+    'nodes[3].id: "b-lbl" is reserved',
+    'nodes[4].id: expected a non-empty string',
+    'nodes[5].parent: "a" is not a boundary id',
+    'boundaries[0].parent: boundary "outer" is nested inside itself',
+    'boundaries[1].parent: boundary "inner" is nested inside itself',
+    'edges[0].to: "ghost" is not a node or boundary id',
+    'edges[1].to: missing',
+    'edges[2].id: "a" is already used by nodes[0]',
+  ]) {
+    assert(errors.some((e) => e.startsWith(expected)), `missing "${expected}" in:\n        ${errors.join('\n        ')}`);
+  }
+  let thrown = null;
+  try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram did not refuse the spec');
+  eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
+});
+
+test('nested boundaries build, an edge may end on a boundary, and automatic edge ids skip taken ones (#36)', () => {
+  const spec = {
+    boundaries: [
+      { id: 'outer', label: 'Outer', col: 0, row: 0, cols: 3 },
+      { id: 'inner', label: 'Inner', parent: 'outer', col: 1, row: 0, cols: 2 },
+    ],
+    nodes: [
+      { id: 'a', label: 'A', col: 0, row: 0, parent: 'outer' },
+      { id: 'e1', label: 'Named like an edge', col: 1, row: 0, parent: 'inner' },
+      { id: 'c', label: 'C', col: 2, row: 0, parent: 'inner' },
+    ],
+    edges: [
+      { from: 'a', to: 'e1', label: 'first' },
+      { from: 'e1', to: 'c' },
+      { from: 'a', to: 'inner', kind: 'async' },
+    ],
+  };
+  eq(builder.validateSpec(spec).length, 0, 'a valid nested spec was refused');
+  const out = join(TMP, 'nested-boundaries.drawio');
+  writeFileSync(out, builder.buildDiagram(spec).xml);
+  const r = validator.validateFile(out);
+  assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+  const cells = core.extractCells(core.readMxfile(out).pages[0].xml);
+  eq(new Set(cells.map((c) => c.id)).size, cells.length, 'cell ids are unique');
+  const edges = cells.filter((c) => c.edge && !c.id.startsWith('legend'));
+  eq(edges.length, 3, 'every requested edge was drawn');
+  assert(edges.some((c) => c.source === 'a' && c.target === 'inner'), 'the edge to a boundary was drawn');
+});
+
+test('an unknown edge kind draws as a flow instead of crashing on its label (#36)', () => {
+  const { xml } = builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A', col: 0, row: 0 }, { id: 'b', label: 'B', col: 1, row: 0 }],
+    edges: [{ from: 'a', to: 'b', kind: 'asnyc', label: 'typo' }, { from: 'b', to: 'a', kind: 'flow' }],
+  });
+  const out = join(TMP, 'unknown-kind.drawio');
+  writeFileSync(out, xml);
+  const cells = core.extractCells(core.readMxfile(out).pages[0].xml);
+  const edges = cells.filter((c) => c.edge);
+  eq(edges.length, 2, 'both edges drawn');
+  eq(edges[0].style, edges[1].style, 'the unknown kind is not drawn as a flow');
+  assert(!cells.some((c) => c.id === 'legend'), 'the unknown kind earned a legend of its own');
+});
+
 // ------------------------------------------------------------- logos
 
 // Minimal valid PNG, so the logo tests stay offline and deterministic.
