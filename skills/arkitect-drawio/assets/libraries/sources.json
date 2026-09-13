@@ -52,11 +52,11 @@
     "asf-logos": {
       "type": "local-files",
       "dir": "local/asf-logos",
-      "sha256": "f81b9016971a364c929b5ae96e70226eb4eeccf0e64837af72ac54bdb6becf94",
+      "sha256": "69482c0e40f5da6523de2d75ad2829ff350be34a350f10f9f8ece20c24e91649",
       "terms": "licence",
       "licence": "Apache-2.0",
       "licenceUrl": "https://www.apache.org/foundation/marks/",
-      "note": "Official Apache project graphic logos from https://www.apache.org/logos/originals/, committed byte-for-byte on 2026-09-13. The ASF trademark policy: unlike its word trademarks, \"our graphic logos are licensed to the public under the Apache License\". The licence covers the artwork; Apache, Iceberg, Pinot and Beam remain trademarks of The Apache Software Foundation, used here only to identify the projects."
+      "note": "Official Apache project graphic logos from https://www.apache.org/logos/originals/, committed byte-for-byte on 2026-09-13, with apisix.svg added on 2026-09-14 (#20). The ASF trademark policy: unlike its word trademarks, \"our graphic logos are licensed to the public under the Apache License\". The licence covers the artwork; Apache, Iceberg, Pinot, Beam and APISIX remain trademarks of The Apache Software Foundation, used here only to identify the projects."
     },
     "jax-logo": {
       "type": "local-files",
@@ -111,6 +111,42 @@
       "licence": "MIT",
       "licenceUrl": "https://github.com/SigNoz/signoz/blob/c8e9e362f7ec90578a828d0c39c8db6408abc035/LICENSE",
       "note": "SigNoz's own brand logo, frontend/src/assets/Logos/signoz-brand-logo.svg in SigNoz/signoz at commit c8e9e36, committed byte-for-byte on 2026-09-13. The repository's LICENSE puts everything outside ee/ and cmd/enterprise/ under the MIT Expat licence, this file included, and no separate logo or trademark policy governs it (#20). SigNoz is a trademark of SigNoz, Inc., named here only to identify the project."
+    },
+    "okteto-logo": {
+      "type": "local-files",
+      "dir": "local/okteto-logo",
+      "sha256": "54cf1e1b4e3bc5318dc9843611734d75eb277ba2e84aaf47183d40d96c358341",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/okteto/docs/blob/cae5d201695e377a8c79c8cb73a397d047bf83a3/LICENSE",
+      "note": "Okteto's own icon mark, static/img/logos/okteto.svg in okteto/docs at commit cae5d20, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Okteto is named here only to identify the product."
+    },
+    "tilt-logo": {
+      "type": "local-files",
+      "dir": "local/tilt-logo",
+      "sha256": "e33483e7ff64c57dd48eb119010e288fb908eb8277ae79d9528de54715e6b15c",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/tilt-dev/tilt/blob/1bcaf4181b42f0fc220b9f00473a8dbeb58474a1/LICENSE",
+      "note": "Tilt's own icon mark, web/src/assets/svg/logo.svg in tilt-dev/tilt at commit 1bcaf41, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence; Docker, Inc. maintains Tilt but its trademark guidelines enumerate the marks they cover and Tilt is not among them (#20). Apache-2.0 grants no trademark rights; Tilt is named here only to identify the product."
+    },
+    "colima-logo": {
+      "type": "local-files",
+      "dir": "local/colima-logo",
+      "sha256": "13cdb6cde76c8d9db78371a817c9cf15db34e35dd7603e112862de09ed4e4f12",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/abiosoft/colima/blob/c3a5f9184d83a197184f897a9f07eb3c01b3bc88/LICENSE",
+      "note": "Colima's own logo, colima.png at the root of abiosoft/colima at commit c3a5f91, committed byte-for-byte on 2026-09-14. The project publishes it only as a raster, so the raster ships (#20). The repository's MIT licence covers the file and no separate logo or trademark policy governs it."
+    },
+    "dokku-logo": {
+      "type": "local-files",
+      "dir": "local/dokku-logo",
+      "sha256": "ef3adadd59397cb92098c8b3e14fd2bf2ca5f289e17ab2a8b40f85f5b5d3bdb6",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/dokku/dokku/blob/aa39920cc78726ef51252d5ac6c543c40a27983d/LICENSE",
+      "note": "Dokku's own logo, docs/assets/dokku-logo.svg in dokku/dokku at commit aa39920, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20)."
     },
     "lucide": {
       "type": "npm",
@@ -3761,6 +3797,58 @@
           "deviconName": "argocd",
           "deviconVariant": "original",
           "hex": "ef7b4d"
+        },
+        {
+          "slug": "apacheapisix",
+          "title": "Apache APISIX",
+          "aliases": [
+            "apisix",
+            "apache apisix"
+          ],
+          "source": "asf-logos",
+          "file": "apisix.svg",
+          "upstreamUrl": "https://www.apache.org/logos/originals/apisix.svg"
+        },
+        {
+          "slug": "okteto",
+          "title": "Okteto",
+          "aliases": [
+            "okteto"
+          ],
+          "source": "okteto-logo",
+          "file": "okteto.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/okteto/docs/cae5d201695e377a8c79c8cb73a397d047bf83a3/static/img/logos/okteto.svg"
+        },
+        {
+          "slug": "tilt",
+          "title": "Tilt",
+          "aliases": [
+            "tilt",
+            "tilt.dev"
+          ],
+          "source": "tilt-logo",
+          "file": "tilt-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/tilt-dev/tilt/1bcaf4181b42f0fc220b9f00473a8dbeb58474a1/web/src/assets/svg/logo.svg"
+        },
+        {
+          "slug": "colima",
+          "title": "Colima",
+          "aliases": [
+            "colima"
+          ],
+          "source": "colima-logo",
+          "file": "colima.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/abiosoft/colima/c3a5f9184d83a197184f897a9f07eb3c01b3bc88/colima.png"
+        },
+        {
+          "slug": "dokku",
+          "title": "Dokku",
+          "aliases": [
+            "dokku"
+          ],
+          "source": "dokku-logo",
+          "file": "dokku-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/dokku/dokku/aa39920cc78726ef51252d5ac6c543c40a27983d/docs/assets/dokku-logo.svg"
         }
       ],
       "onDemand": [
@@ -3860,6 +3948,110 @@
           "licenceUrl": "https://dagger.io/legal_pages/trademark-guidelines/",
           "reason": "Dagger's trademark guidelines require written permission to use the logo and forbid modifying or recombining it; no licence covers the artwork",
           "brandUrl": "https://dagger.io/brand/"
+        },
+        {
+          "slug": "earthly",
+          "title": "Earthly",
+          "aliases": [
+            "earthly"
+          ],
+          "source": "vendor",
+          "licence": "none - MPL-2.0 and retained trademark",
+          "licenceUrl": "https://github.com/earthly/earthly/blob/6e641c15d3b4d7dd396363b61d2381faa2658f3d/LICENSE",
+          "reason": "earthly/earthly is MPL-2.0, a copyleft licence this repository does not redistribute artwork under, and Earthly Technologies asked forks to change the project's name and logo because it retains trademark rights",
+          "brandUrl": "https://earthly.dev/"
+        },
+        {
+          "slug": "garden",
+          "title": "Garden",
+          "aliases": [
+            "garden",
+            "garden.io"
+          ],
+          "source": "vendor",
+          "licence": "none - MPL-2.0",
+          "licenceUrl": "https://github.com/garden-io/garden/blob/4e7128de8dfb5f38f76a5d005a65a78110be7553/LICENSE.md",
+          "reason": "garden-io/garden is MPL-2.0, a copyleft licence this repository does not redistribute artwork under, and no logo file is published in any Garden repository",
+          "brandUrl": "https://garden.io/"
+        },
+        {
+          "slug": "werf",
+          "title": "werf",
+          "aliases": [
+            "werf"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
+          "reason": "werf is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/werf/icon/color/werf-icon-color.svg",
+          "brandUrl": "https://werf.io/"
+        },
+        {
+          "slug": "orbstack",
+          "title": "OrbStack",
+          "aliases": [
+            "orbstack",
+            "orb stack"
+          ],
+          "source": "vendor",
+          "licence": "none - proprietary, logo published only on the marketing site",
+          "licenceUrl": "https://docs.orbstack.dev/legal/terms",
+          "reason": "OrbStack is proprietary software owned by Orbital Labs and publishes its logo only as a raster on its marketing site under terms that grant no redistribution",
+          "brandUrl": "https://orbstack.dev/"
+        },
+        {
+          "slug": "lima",
+          "title": "Lima",
+          "aliases": [
+            "lima",
+            "lima vm"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
+          "reason": "Lima is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/lima/horizontal/color/lima-horizontal-color.svg",
+          "brandUrl": "https://lima-vm.io/"
+        },
+        {
+          "slug": "flatcar",
+          "title": "Flatcar Container Linux",
+          "aliases": [
+            "flatcar",
+            "flatcar container linux",
+            "flatcar linux"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
+          "reason": "Flatcar Container Linux is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flatcar/icon/color/flatcar-icon-color.svg",
+          "brandUrl": "https://www.flatcar.org/"
+        },
+        {
+          "slug": "tyk",
+          "title": "Tyk",
+          "aliases": [
+            "tyk"
+          ],
+          "source": "vendor",
+          "licence": "none - MPL-2.0",
+          "licenceUrl": "https://github.com/TykTechnologies/tyk/blob/ea4d7f5d5f848c4b6c3f37d657ce04dec4a2a5a6/LICENSE.md",
+          "reason": "TykTechnologies/tyk is MPL-2.0 outside its commercially licensed ee/ folder, a copyleft licence this repository does not redistribute artwork under, and the Tyk logo itself appears only in unlicensed documentation repositories and on tyk.io",
+          "brandUrl": "https://tyk.io/"
+        },
+        {
+          "slug": "krakend",
+          "title": "KrakenD",
+          "aliases": [
+            "krakend"
+          ],
+          "source": "vendor",
+          "licence": "none - site terms reserve all rights",
+          "licenceUrl": "https://www.krakend.io/terms/",
+          "reason": "the only official KrakenD logo lives in a repository with no LICENSE file, and krakend.io's terms prohibit reproducing or distributing the site's graphics without express authorisation",
+          "brandUrl": "https://www.krakend.io/"
         }
       ]
     },
