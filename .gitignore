@@ -56,3 +56,5 @@ skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/
 # Review pages are what a reviewer looked at; the record in libraries/reviews/
 # is what they concluded, and the pages regenerate from it exactly (#18).
 skills/arkitect-drawio/assets/libraries/contact-sheets/review/
+
+*PLAN*.md
