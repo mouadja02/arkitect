@@ -3,6 +3,7 @@
 // callers decide what is safe to emit.
 
 import { readFileSync, statSync } from 'node:fs';
+import { basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import { inflateRawSync } from 'node:zlib';
 
@@ -14,6 +15,74 @@ export function fileMeta(path) {
   const buf = readFileSync(path);
   const st = statSync(path);
   return { path, bytes: st.size, mtime: st.mtime.toISOString(), sha256: sha256(buf) };
+}
+
+// ---------------------------------------------------------------- cli args
+
+// A mistake on the command line rather than in a file. The CLIs print it with
+// their usage line and exit 2.
+export class UsageError extends Error {}
+
+// Strict argument parsing shared by the Draw.io CLIs. A flag's value is taken
+// with its flag, so `--page 0` is never read as a file named "0" and options may
+// come before or after the files. An unknown flag, a missing value or a repeated
+// value flag is refused rather than ignored. `values` maps each value flag to a
+// converter that may throw a UsageError, or to null to keep the string.
+export function parseCli(argv, { values = {}, switches = [] } = {}) {
+  const options = {};
+  const positionals = [];
+  const key = (flag) => flag.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--help' || arg === '-h') return { help: true, options, positionals };
+    if (switches.includes(arg)) { options[key(arg)] = true; continue; }
+    if (Object.hasOwn(values, arg)) {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--')) throw new UsageError(`${arg} needs a value`);
+      if (Object.hasOwn(options, key(arg))) throw new UsageError(`${arg} given more than once`);
+      options[key(arg)] = values[arg] ? values[arg](value, arg) : value;
+      continue;
+    }
+    if (arg.startsWith('-') && arg.length > 1) throw new UsageError(`unknown option ${arg}`);
+    positionals.push(arg);
+  }
+  return { help: false, options, positionals };
+}
+
+// A 0-based page number as typed: digits only, so "-1", "1.5", "1e3", "" and
+// "abc" are refused instead of becoming NaN or a page that is never checked.
+export function pageIndexArg(value, flag = '--page') {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n)) {
+    throw new UsageError(`${flag} must be a non-negative integer, got "${value}"`);
+  }
+  return n;
+}
+
+export function pageRangeError(path, index, count) {
+  const name = basename(path);
+  return count
+    ? `page ${index} is out of range: "${name}" has ${count} page${count === 1 ? '' : 's'} (0-${count - 1})`
+    : `page ${index} is out of range: "${name}" has no pages`;
+}
+
+// One line, then the usage line when there is one, then exit 2.
+export function exitUsage(message, usage) {
+  console.error(usage ? `${message}\n${usage}` : message);
+  process.exit(2);
+}
+
+// parseCli for a script's main(): --help prints the usage, a UsageError exits 2.
+export function parseCliOrExit(argv, spec, usage) {
+  let parsed;
+  try {
+    parsed = parseCli(argv, spec);
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    exitUsage(error.message, usage);
+  }
+  if (parsed.help) { console.log(usage); process.exit(0); }
+  return parsed;
 }
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };

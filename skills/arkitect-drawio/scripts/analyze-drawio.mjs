@@ -2,7 +2,7 @@
 // Summarize .drawio files into compact JSON without ever emitting page XML or
 // raw labels. Handles compressed and uncompressed pages.
 //
-//   node analyze-drawio.mjs <file...> [--out summary.json] [--labels none|redacted]
+//   node analyze-drawio.mjs <file...> [--out summary.json]
 //   node analyze-drawio.mjs <file> --page 0 --cells       (per-cell geometry table)
 //   node analyze-drawio.mjs <file> --page 0 --images      (embedded image inventory)
 
@@ -10,7 +10,11 @@ import { writeFileSync } from 'node:fs';
 import {
   fileMeta, readMxfile, extractCells, graphModelAttrs, parseStyle,
   styleShape, styleSignature, parseDataUri,
+  parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
+
+const USAGE = 'usage: analyze-drawio.mjs <file...> [--out out.json]\n'
+  + '       analyze-drawio.mjs <file> [--page N] (--cells | --images)';
 
 const COLOR_KEYS = ['fillColor', 'strokeColor', 'fontColor', 'gradientColor', 'labelBackgroundColor', 'swimlaneFillColor'];
 
@@ -244,24 +248,21 @@ function analyzeFile(path) {
 }
 
 function main(argv) {
-  const files = [];
-  const opts = { out: null, page: null, cells: false, images: false };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '--out') opts.out = argv[++i];
-    else if (a === '--page') opts.page = Number(argv[++i]);
-    else if (a === '--cells') opts.cells = true;
-    else if (a === '--images') opts.images = true;
-    else files.push(a);
-  }
-  if (!files.length) {
-    console.error('usage: analyze-drawio.mjs <file...> [--out out.json] [--page N] [--cells] [--images]');
-    process.exit(2);
-  }
+  const { options: opts, positionals: files } = parseCliOrExit(argv,
+    { values: { '--out': null, '--page': pageIndexArg }, switches: ['--cells', '--images'] }, USAGE);
+  if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  const perPage = opts.cells || opts.images;
+  if (opts.page !== undefined && !perPage) exitUsage('--page selects the page for --cells or --images', USAGE);
+  if (perPage && files.length > 1) exitUsage('--cells and --images read one file', USAGE);
 
-  if (opts.cells || opts.images) {
+  if (perPage) {
     const mx = readMxfile(files[0]);
-    const page = mx.pages[opts.page ?? 0];
+    const index = opts.page ?? 0;
+    if (index >= mx.pages.length) {
+      console.error(pageRangeError(files[0], index, mx.pages.length));
+      process.exit(1);
+    }
+    const page = mx.pages[index];
     const cells = extractCells(page.xml);
     if (opts.images) {
       const seen = new Map();

@@ -63,6 +63,19 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Fixed
 
+- **Draw.io `validate`, `build` and `analyze` no longer read a flag's value as a
+  file** (#37). `validate x.drawio --page 0` validated the diagram, then crashed
+  opening a file named `0`; `build --out arch.drawio spec.json` read
+  `arch.drawio` as the spec; and `validateFile(file, { pageIndex: 999 })`
+  returned `ok: true` having checked nothing. The three CLIs now share one strict
+  parser in `drawio-core.mjs`: a flag takes its value with it, and an unknown
+  flag, a missing value, a repeated flag, a malformed `--page`, a second spec,
+  or a spec that is missing or not valid JSON exits 2 with a one-line reason
+  instead of a stack trace. A page the file does not have fails validation
+  (exit 1) and `analyze` exits 1 instead of crashing; the API throws a
+  `TypeError` for a negative, fractional or non-numeric `pageIndex`. The
+  never-implemented `--force` (build) and `--labels` (analyze) are gone from the
+  scripts' header comments.
 - **Contact sheets no longer leave a Chrome profile in the skill** (#44).
   `contact-sheet.mjs --png` pointed Chrome's `--user-data-dir` at
   `contact-sheets/.shot/` and never removed it, so one run left cookies,

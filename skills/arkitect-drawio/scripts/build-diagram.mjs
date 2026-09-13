@@ -4,7 +4,6 @@
 // icons from the bundled libraries so the result is portable.
 //
 //   node build-diagram.mjs spec.json --out diagram.drawio
-//   node build-diagram.mjs spec.json --out diagram.drawio --force
 //
 // An existing target is never overwritten silently: a timestamped sibling
 // backup is written first (see backupExisting).
@@ -18,6 +17,7 @@ import { readFileSync, writeFileSync, existsSync, copyFileSync, constants } from
 import { dirname, join, basename, extname } from 'node:path';
 import { resolve, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
+import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
 
 // ---------------------------------------------------------------- tokens
 
@@ -403,13 +403,26 @@ export function buildDiagram(spec) {
   return { xml, report };
 }
 
-function main(argv) {
-  const specPath = argv.find((a) => !a.startsWith('--'));
-  const outIdx = argv.indexOf('--out');
-  const out = outIdx === -1 ? null : argv[outIdx + 1];
-  if (!specPath || !out) { console.error('usage: build-diagram.mjs <spec.json> --out <file.drawio>'); process.exit(2); }
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio>';
 
-  const spec = JSON.parse(readFileSync(specPath, 'utf8'));
+function main(argv) {
+  const { options, positionals } = parseCliOrExit(argv, { values: { '--out': null } }, USAGE);
+  if (positionals.length !== 1) {
+    exitUsage(positionals.length ? `expected one spec file, got ${positionals.length}` : 'expected a spec file', USAGE);
+  }
+  if (!options.out) exitUsage('--out <file.drawio> is required', USAGE);
+  const [specPath] = positionals;
+  const { out } = options;
+
+  // One line, not a stack trace: the message never quotes the spec's content.
+  let spec;
+  try {
+    spec = JSON.parse(readFileSync(specPath, 'utf8'));
+  } catch (error) {
+    exitUsage(error.code === 'ENOENT' ? `no spec file at ${specPath}`
+      : error instanceof SyntaxError ? `${specPath} is not valid JSON`
+        : `cannot read spec ${specPath}: ${error.code ?? error.message}`);
+  }
   let built;
   try {
     built = buildDiagram(spec);

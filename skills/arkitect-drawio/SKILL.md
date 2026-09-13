@@ -71,6 +71,7 @@ Read `references/style-guide.md` before laying anything out, and
    ```bash
    node scripts/validate-drawio.mjs "path/to/diagram.drawio"
    ```
+   Add `--page N` (0-based) to check one page; a page the file does not have fails.
    Errors (duplicate ids, missing parents, broken edge endpoints, unreadable embedded
    images) must be fixed. Warnings about overlaps and tight labels are judgement calls —
    check them against the render.
