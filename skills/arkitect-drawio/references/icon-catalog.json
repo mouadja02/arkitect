@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:36:28.953Z",
+  "generated": "2026-09-13T21:37:03.323Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "b7c2c631a1149530d814d80d2f78eebf893326f0f965735e4bd8bf189cdb5026"
+    "sha256": "3f9d51e0651733c5639ff1ca971a35892d62d125c7c23f7af7ee67548760ac17"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -202,6 +202,30 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://github.com/whylabs/whylogs/blob/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/LICENSE",
       "archiveSha256": "32580672d5c4587babc1f43bbf79b3f21ea27ae4df49310d64d2371a3c36bf03"
+    },
+    "lightdash-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/lightdash/lightdash/blob/eb5547ebd435edd90464921378d1003ad8b24cd6/LICENSE",
+      "archiveSha256": "0ca027cee851ea50dca11e876cc8866807ea0bd5127862e95f59c903745b5ba1"
+    },
+    "evidence-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/evidence-dev/evidence/blob/40b0a095a59735a0c66f5bfd921352cda7191918/LICENSE",
+      "archiveSha256": "c26a8dc97cd4a2050c21a5ea0336b2ebe2905567f8164a597d6711c2a9efc98e"
+    },
+    "datahub-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/datahub-project/datahub/blob/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/LICENSE",
+      "archiveSha256": "9b63fb86f4985754665398061579b4bba23894860ad53e290832503eee943682"
+    },
+    "openmetadata-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
+      "archiveSha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929"
     }
   },
   "packs": [
@@ -243,9 +267,9 @@
       "description": "Warehouses, lakehouses, query engines and BI",
       "rank": 20,
       "file": "data-platforms.drawio",
-      "count": 27,
-      "onDemand": 10,
-      "sha256": "19ec7487bfdb4cd644efce7732348537bb0bf583e0cb766c9a5d9675025d056e"
+      "count": 31,
+      "onDemand": 29,
+      "sha256": "5940605b3133e90ca31dae434a5106ede53a1a7bac7389aabdd1bc32d1a01e62"
     },
     {
       "id": "databases",
@@ -392,9 +416,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4917,
-    "committed": 4819,
-    "onDemand": 98
+    "total": 4940,
+    "committed": 4823,
+    "onDemand": 117
   },
   "icons": [
     {
@@ -33875,6 +33899,82 @@
       "libraryIndex": 26
     },
     {
+      "id": "data-platforms/lightdash",
+      "pack": "data-platforms",
+      "title": "Lightdash",
+      "aliases": [
+        "lightdash"
+      ],
+      "source": "lightdash-logo",
+      "upstreamId": "https://raw.githubusercontent.com/lightdash/lightdash/eb5547ebd435edd90464921378d1003ad8b24cd6/packages/frontend/src/svgs/logo-icon.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 36,
+      "height": 36,
+      "sha256": "0ba44b62a6b73588eab41ee570e183eb5b01811ba63e143d5a22d73b42439340",
+      "bytes": "committed",
+      "libraryIndex": 27
+    },
+    {
+      "id": "data-platforms/evidence",
+      "pack": "data-platforms",
+      "title": "Evidence",
+      "aliases": [
+        "evidence",
+        "evidence.dev"
+      ],
+      "source": "evidence-logo",
+      "upstreamId": "https://raw.githubusercontent.com/evidence-dev/evidence/40b0a095a59735a0c66f5bfd921352cda7191918/docs/favicon.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 1080,
+      "height": 1080,
+      "sha256": "141643450050564f3fe9b53a8811e95f602675d77b16e2890867762068ec423b",
+      "bytes": "committed",
+      "libraryIndex": 28
+    },
+    {
+      "id": "data-platforms/datahub",
+      "pack": "data-platforms",
+      "title": "DataHub",
+      "aliases": [
+        "datahub",
+        "data hub",
+        "acryl datahub"
+      ],
+      "source": "datahub-logo",
+      "upstreamId": "https://raw.githubusercontent.com/datahub-project/datahub/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/datahub-web-react/src/images/datahublogo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 108,
+      "height": 108,
+      "sha256": "458c76b3acf7bc697f4971640528458e69099574cd4cd5e0cf317fe8ff167a1f",
+      "bytes": "committed",
+      "libraryIndex": 29
+    },
+    {
+      "id": "data-platforms/openmetadata",
+      "pack": "data-platforms",
+      "title": "OpenMetadata",
+      "aliases": [
+        "openmetadata",
+        "open metadata"
+      ],
+      "source": "openmetadata-logo",
+      "upstreamId": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/68606d705a225f14dd87847f2be733da5fef38db/openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 53,
+      "height": 64,
+      "sha256": "95f4d5b1bdb190c4373567ebc5bc39215b5ec5958081b061c3fb73c55a366357",
+      "bytes": "committed",
+      "libraryIndex": 30
+    },
+    {
       "id": "data-platforms/deltalake",
       "pack": "data-platforms",
       "title": "Delta Lake",
@@ -34028,6 +34128,329 @@
       "bytes": "on-demand",
       "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 5446x3946 raster wrapped in SVG, 246 KB, several times larger than any mark the packs ship",
       "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/hudi/hudi.png --name apachehudi"
+    },
+    {
+      "id": "data-platforms/hex",
+      "pack": "data-platforms",
+      "title": "Hex",
+      "aliases": [
+        "hex",
+        "hex tech",
+        "hex notebooks"
+      ],
+      "source": "vendor",
+      "upstreamId": "hex",
+      "brandUrl": "https://hex.tech/",
+      "licence": "none - prior written permission required",
+      "licenceUrl": "https://learn.hex.tech/docs/legal/hex-website-terms-of-use",
+      "bytes": "on-demand",
+      "reason": "Hex's website terms state that the company name, logo and all related logos are trademarks of Hex Technologies and \"You must not use such marks without the prior written permission of the Company\"",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://hex.tech/> --name hex"
+    },
+    {
+      "id": "data-platforms/sigma",
+      "pack": "data-platforms",
+      "title": "Sigma Computing",
+      "aliases": [
+        "sigma",
+        "sigma computing"
+      ],
+      "source": "vendor",
+      "upstreamId": "sigma",
+      "brandUrl": "https://www.sigmacomputing.com/",
+      "licence": "none - no published logo policy",
+      "licenceUrl": "https://www.sigmacomputing.com/legal",
+      "bytes": "on-demand",
+      "reason": "Sigma lists its registered marks on its legal page but publishes no trademark usage or brand guidelines, leaving the logo available only as unlicensed marketing-site artwork",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.sigmacomputing.com/> --name sigma"
+    },
+    {
+      "id": "data-platforms/preset",
+      "pack": "data-platforms",
+      "title": "Preset",
+      "aliases": [
+        "preset",
+        "preset.io"
+      ],
+      "source": "vendor",
+      "upstreamId": "preset",
+      "brandUrl": "https://preset.io/",
+      "licence": "none - no published logo policy",
+      "licenceUrl": "https://preset.io/terms-of-service",
+      "bytes": "on-demand",
+      "reason": "Preset publishes no trademark policy, brand page or media kit for its own mark, and its terms attribute only the Apache Superset marks to the Apache Software Foundation",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://preset.io/> --name preset"
+    },
+    {
+      "id": "data-platforms/hightouch",
+      "pack": "data-platforms",
+      "title": "Hightouch",
+      "aliases": [
+        "hightouch"
+      ],
+      "source": "vendor",
+      "upstreamId": "hightouch",
+      "brandUrl": "https://hightouch.com/",
+      "licence": "none - press kit with no licence granted",
+      "licenceUrl": "https://hightouch.com/press",
+      "bytes": "on-demand",
+      "reason": "Hightouch distributes its logo only as a brand-assets archive from its press page, with no publicly stated permission to redistribute the mark",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://hightouch.com/> --name hightouch"
+    },
+    {
+      "id": "data-platforms/census",
+      "pack": "data-platforms",
+      "title": "Census",
+      "aliases": [
+        "census",
+        "getcensus"
+      ],
+      "source": "vendor",
+      "upstreamId": "census",
+      "brandUrl": "https://www.getcensus.com/",
+      "licence": "none - product folded into Fivetran, no published logo policy",
+      "licenceUrl": "https://www.fivetran.com/press/fivetran-signs-agreement-to-acquire-census-delivering-the-first-end-to-end-data-movement-platform-for-the-ai-era",
+      "bytes": "on-demand",
+      "reason": "Fivetran acquired Census in May 2025 and folded it into Fivetran Activations, its domains now redirect to fivetran.com, and neither company published a logo usage policy for the Census mark",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.getcensus.com/> --name census"
+    },
+    {
+      "id": "data-platforms/rudderstack",
+      "pack": "data-platforms",
+      "title": "RudderStack",
+      "aliases": [
+        "rudderstack",
+        "rudder stack"
+      ],
+      "source": "vendor",
+      "upstreamId": "rudderstack",
+      "brandUrl": "https://www.rudderstack.com/",
+      "licence": "none - Elastic License 2.0",
+      "licenceUrl": "https://github.com/rudderlabs/rudder-server/blob/14659bfe744940288c8afdd7c85243486319d92e/LICENSE",
+      "bytes": "on-demand",
+      "reason": "RudderStack's logo files ship only inside rudder-server, which is under the Elastic License 2.0, a non-OSI source-available licence that subjects any use of the licensor's trademarks to applicable law",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.rudderstack.com/> --name rudderstack"
+    },
+    {
+      "id": "data-platforms/segment",
+      "pack": "data-platforms",
+      "title": "Twilio Segment",
+      "aliases": [
+        "segment",
+        "twilio segment"
+      ],
+      "source": "vendor",
+      "upstreamId": "segment",
+      "brandUrl": "https://segment.com/",
+      "licence": "none - Twilio trademark usage guidelines",
+      "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
+      "bytes": "on-demand",
+      "reason": "Twilio's trademark usage guidelines list Segment among Twilio's marks and state that most uses require express written permission and that the corporate logo may not be used without it",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://segment.com/> --name segment"
+    },
+    {
+      "id": "data-platforms/amplitude",
+      "pack": "data-platforms",
+      "title": "Amplitude",
+      "aliases": [
+        "amplitude"
+      ],
+      "source": "vendor",
+      "upstreamId": "amplitude",
+      "brandUrl": "https://amplitude.com/",
+      "licence": "none - brand portal grants no redistribution",
+      "licenceUrl": "https://brand.amplitude.com/",
+      "bytes": "on-demand",
+      "reason": "Amplitude's brand portal publishes its logos behind a request form without granting any redistribution licence, and its terms reserve all rights in the registered mark",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://amplitude.com/> --name amplitude"
+    },
+    {
+      "id": "data-platforms/amundsen",
+      "pack": "data-platforms",
+      "title": "Amundsen",
+      "aliases": [
+        "amundsen"
+      ],
+      "source": "vendor",
+      "upstreamId": "amundsen",
+      "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/amundsen/icon/color/amundsen-icon-color.svg",
+      "brandUrl": "https://www.amundsen.io/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "LF AI & Data publishes the Amundsen artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/amundsen/icon/color/amundsen-icon-color.svg --name amundsen"
+    },
+    {
+      "id": "data-platforms/atlan",
+      "pack": "data-platforms",
+      "title": "Atlan",
+      "aliases": [
+        "atlan"
+      ],
+      "source": "vendor",
+      "upstreamId": "atlan",
+      "brandUrl": "https://atlan.com/",
+      "licence": "none - Atlan brand guidelines",
+      "licenceUrl": "https://atlan.com/brand/logo/",
+      "bytes": "on-demand",
+      "reason": "Atlan's brand hub publishes the logotype with presentation rules only and grants no licence to redistribute it, while its customer agreement reserves all trademark rights",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://atlan.com/> --name atlan"
+    },
+    {
+      "id": "data-platforms/collibra",
+      "pack": "data-platforms",
+      "title": "Collibra",
+      "aliases": [
+        "collibra"
+      ],
+      "source": "vendor",
+      "upstreamId": "collibra",
+      "brandUrl": "https://www.collibra.com/",
+      "licence": "none - Collibra website terms of use",
+      "licenceUrl": "https://www.collibra.com/legal/documents/collibra-website-terms-of-use",
+      "bytes": "on-demand",
+      "reason": "Collibra's website terms state that nothing on the site \"will be deemed to confer on any person any license or right\" with respect to its images, logos or names",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.collibra.com/> --name collibra"
+    },
+    {
+      "id": "data-platforms/alation",
+      "pack": "data-platforms",
+      "title": "Alation",
+      "aliases": [
+        "alation"
+      ],
+      "source": "vendor",
+      "upstreamId": "alation",
+      "brandUrl": "https://www.alation.com/",
+      "licence": "none - Alation website terms and conditions",
+      "licenceUrl": "https://www.alation.com/legal/website-tc/",
+      "bytes": "on-demand",
+      "reason": "Alation's website terms state that nothing in them grants \"by implication, estoppel, or otherwise, any license or right to use any of Alation Trademarks displayed on the Sites, without our prior written permission in each instance\"",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.alation.com/> --name alation"
+    },
+    {
+      "id": "data-platforms/greatexpectations",
+      "pack": "data-platforms",
+      "title": "Great Expectations",
+      "aliases": [
+        "great expectations",
+        "greatexpectations",
+        "gx",
+        "gx core"
+      ],
+      "source": "vendor",
+      "upstreamId": "greatexpectations",
+      "upstreamUrl": "https://raw.githubusercontent.com/great-expectations/great_expectations/3798c021bbfb0b13ff384b2238f643d04bdea5f2/docs/docusaurus/static/img/gx-mark.svg",
+      "brandUrl": "https://greatexpectations.io/",
+      "licence": "none - Great Expectations community terms of use",
+      "licenceUrl": "https://greatexpectations.io/community-terms-of-use/",
+      "bytes": "on-demand",
+      "reason": "the GX mark sits in an Apache-2.0 repository, but Great Expectations Labs's community terms of use separately state that \"You may not use any of the Company's trademarks, logos, or other proprietary graphics without express written permission\"",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/great-expectations/great_expectations/3798c021bbfb0b13ff384b2238f643d04bdea5f2/docs/docusaurus/static/img/gx-mark.svg --name greatexpectations"
+    },
+    {
+      "id": "data-platforms/soda",
+      "pack": "data-platforms",
+      "title": "Soda",
+      "aliases": [
+        "soda",
+        "soda core",
+        "soda data"
+      ],
+      "source": "vendor",
+      "upstreamId": "soda",
+      "brandUrl": "https://www.soda.io/",
+      "licence": "none - Elastic License 2.0 and no published logo file",
+      "licenceUrl": "https://soda.io/terms-and-conditions",
+      "bytes": "on-demand",
+      "reason": "Soda publishes no logo file in any repository, its soda-core engine is under the non-OSI Elastic License 2.0 and holds no image assets, and its terms reserve exclusive ownership of the visual elements on its site",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.soda.io/> --name soda"
+    },
+    {
+      "id": "data-platforms/montecarlo",
+      "pack": "data-platforms",
+      "title": "Monte Carlo",
+      "aliases": [
+        "monte carlo",
+        "montecarlo",
+        "monte carlo data"
+      ],
+      "source": "vendor",
+      "upstreamId": "montecarlo",
+      "brandUrl": "https://montecarlo.ai/",
+      "licence": "none - Monte Carlo terms and conditions",
+      "licenceUrl": "https://montecarlo.ai/terms-and-conditions/",
+      "bytes": "on-demand",
+      "reason": "Monte Carlo Data publishes no trademark policy, its terms forbid either party using the other's marks or logos \"without the prior written consent\", and the logo exists only as a marketing-site theme asset",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://montecarlo.ai/> --name montecarlo"
+    },
+    {
+      "id": "data-platforms/datafold",
+      "pack": "data-platforms",
+      "title": "Datafold",
+      "aliases": [
+        "datafold"
+      ],
+      "source": "vendor",
+      "upstreamId": "datafold",
+      "brandUrl": "https://www.datafold.com/",
+      "licence": "none - nominative use only",
+      "licenceUrl": "https://www.datafold.com/msa/",
+      "bytes": "on-demand",
+      "reason": "Datafold publishes no trademark or brand policy, its master service agreement grants no right to use its marks, and the logo exists only as an unlicensed marketing-site asset",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.datafold.com/> --name datafold"
+    },
+    {
+      "id": "data-platforms/dune",
+      "pack": "data-platforms",
+      "title": "Dune",
+      "aliases": [
+        "dune",
+        "dune analytics"
+      ],
+      "source": "vendor",
+      "upstreamId": "dune",
+      "brandUrl": "https://dune.com/",
+      "licence": "none - Dune terms of service",
+      "licenceUrl": "https://dune.com/terms",
+      "bytes": "on-demand",
+      "reason": "Dune's terms of service state that it \"retains all rights to all elements of the Service\" including its trademarks, and its brand hub distributes the icon as a file-sharing download with no licence attached",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://dune.com/> --name dune"
+    },
+    {
+      "id": "data-platforms/mode",
+      "pack": "data-platforms",
+      "title": "Mode Analytics",
+      "aliases": [
+        "mode",
+        "mode analytics"
+      ],
+      "source": "vendor",
+      "upstreamId": "mode",
+      "brandUrl": "https://mode.com/",
+      "licence": "none - ThoughtSpot terms of service",
+      "licenceUrl": "https://mode.com/legal/tos/",
+      "bytes": "on-demand",
+      "reason": "Mode's terms of service, now issued by ThoughtSpot, state that its logos \"may not be copied, imitated, or used, in whole or in part, without the prior written permission of ThoughtSpot\", and mode.com publishes no downloadable asset",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://mode.com/> --name mode"
+    },
+    {
+      "id": "data-platforms/thoughtspot",
+      "pack": "data-platforms",
+      "title": "ThoughtSpot",
+      "aliases": [
+        "thoughtspot",
+        "thought spot"
+      ],
+      "source": "vendor",
+      "upstreamId": "thoughtspot",
+      "brandUrl": "https://www.thoughtspot.com/",
+      "licence": "none - ThoughtSpot trademark and copyright guidelines",
+      "licenceUrl": "https://www.thoughtspot.com/legal/trademarks",
+      "bytes": "on-demand",
+      "reason": "ThoughtSpot's trademark guidelines permit third-party use of its trademarks \"in word form only (but not logos, taglines, or icons)\" and state that its logos may only be used under express written permission",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.thoughtspot.com/> --name thoughtspot"
     },
     {
       "id": "databases/postgresql",

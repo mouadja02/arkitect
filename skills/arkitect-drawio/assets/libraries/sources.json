@@ -281,6 +281,42 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://github.com/whylabs/whylogs/blob/976bc4c15ca1d4a0199360b8d7708b63e4adaa6d/LICENSE",
       "note": "WhyLabs's own mark for its whylogs library, python/docs/_static/images/logo.png in whylabs/whylogs at commit 976bc4c, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). This is the whylogs project mark, not the WhyLabs company mark, which stays on-demand. Apache-2.0 grants no trademark rights; whylogs is named here only to identify the product."
+    },
+    "lightdash-logo": {
+      "type": "local-files",
+      "dir": "local/lightdash-logo",
+      "sha256": "0ca027cee851ea50dca11e876cc8866807ea0bd5127862e95f59c903745b5ba1",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/lightdash/lightdash/blob/eb5547ebd435edd90464921378d1003ad8b24cd6/LICENSE",
+      "note": "Lightdash's own icon mark, packages/frontend/src/svgs/logo-icon.svg in lightdash/lightdash at commit eb5547e, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The LICENSE puts everything outside packages/backend/src/ee under the MIT licence, this file included. Lightdash is a trademark of its owner, named here only to identify the product."
+    },
+    "evidence-logo": {
+      "type": "local-files",
+      "dir": "local/evidence-logo",
+      "sha256": "c26a8dc97cd4a2050c21a5ea0336b2ebe2905567f8164a597d6711c2a9efc98e",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/evidence-dev/evidence/blob/40b0a095a59735a0c66f5bfd921352cda7191918/LICENSE",
+      "note": "Evidence's own round mark, docs/favicon.svg in evidence-dev/evidence at commit 40b0a09, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The file is the project's round logo rather than a generic favicon, byte-identical to the mark in its own media kit, and the same MIT repository also ships its wordmark. Evidence is a trademark of its owner, named here only to identify the product."
+    },
+    "datahub-logo": {
+      "type": "local-files",
+      "dir": "local/datahub-logo",
+      "sha256": "9b63fb86f4985754665398061579b4bba23894860ad53e290832503eee943682",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/datahub-project/datahub/blob/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/LICENSE",
+      "note": "DataHub's own icon mark, datahub-web-react/src/images/datahublogo.svg in datahub-project/datahub at commit 6ece48b, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; DataHub is named here only to identify the product."
+    },
+    "openmetadata-logo": {
+      "type": "local-files",
+      "dir": "local/openmetadata-logo",
+      "sha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
+      "note": "OpenMetadata's own monogram, openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg in open-metadata/OpenMetadata at commit 68606d7, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; OpenMetadata is named here only to identify the product."
     }
   },
   "packs": [
@@ -1273,6 +1309,50 @@
           "source": "asf-logos",
           "file": "pinot.svg",
           "upstreamUrl": "https://www.apache.org/logos/originals/pinot.svg"
+        },
+        {
+          "slug": "lightdash",
+          "title": "Lightdash",
+          "aliases": [
+            "lightdash"
+          ],
+          "source": "lightdash-logo",
+          "file": "lightdash-logo-icon.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/lightdash/lightdash/eb5547ebd435edd90464921378d1003ad8b24cd6/packages/frontend/src/svgs/logo-icon.svg"
+        },
+        {
+          "slug": "evidence",
+          "title": "Evidence",
+          "aliases": [
+            "evidence",
+            "evidence.dev"
+          ],
+          "source": "evidence-logo",
+          "file": "evidence-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/evidence-dev/evidence/40b0a095a59735a0c66f5bfd921352cda7191918/docs/favicon.svg"
+        },
+        {
+          "slug": "datahub",
+          "title": "DataHub",
+          "aliases": [
+            "datahub",
+            "data hub",
+            "acryl datahub"
+          ],
+          "source": "datahub-logo",
+          "file": "datahub-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/datahub-project/datahub/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/datahub-web-react/src/images/datahublogo.svg"
+        },
+        {
+          "slug": "openmetadata",
+          "title": "OpenMetadata",
+          "aliases": [
+            "openmetadata",
+            "open metadata"
+          ],
+          "source": "openmetadata-logo",
+          "file": "openmetadata-monogram.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/open-metadata/OpenMetadata/68606d705a225f14dd87847f2be733da5fef38db/openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg"
         }
       ],
       "onDemand": [
@@ -1390,6 +1470,253 @@
           "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 5446x3946 raster wrapped in SVG, 246 KB, several times larger than any mark the packs ship",
           "upstreamUrl": "https://www.apache.org/logos/res/hudi/hudi.png",
           "brandUrl": "https://hudi.apache.org/"
+        },
+        {
+          "slug": "hex",
+          "title": "Hex",
+          "aliases": [
+            "hex",
+            "hex tech",
+            "hex notebooks"
+          ],
+          "source": "vendor",
+          "licence": "none - prior written permission required",
+          "licenceUrl": "https://learn.hex.tech/docs/legal/hex-website-terms-of-use",
+          "reason": "Hex's website terms state that the company name, logo and all related logos are trademarks of Hex Technologies and \"You must not use such marks without the prior written permission of the Company\"",
+          "brandUrl": "https://hex.tech/"
+        },
+        {
+          "slug": "sigma",
+          "title": "Sigma Computing",
+          "aliases": [
+            "sigma",
+            "sigma computing"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo policy",
+          "licenceUrl": "https://www.sigmacomputing.com/legal",
+          "reason": "Sigma lists its registered marks on its legal page but publishes no trademark usage or brand guidelines, leaving the logo available only as unlicensed marketing-site artwork",
+          "brandUrl": "https://www.sigmacomputing.com/"
+        },
+        {
+          "slug": "preset",
+          "title": "Preset",
+          "aliases": [
+            "preset",
+            "preset.io"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo policy",
+          "licenceUrl": "https://preset.io/terms-of-service",
+          "reason": "Preset publishes no trademark policy, brand page or media kit for its own mark, and its terms attribute only the Apache Superset marks to the Apache Software Foundation",
+          "brandUrl": "https://preset.io/"
+        },
+        {
+          "slug": "hightouch",
+          "title": "Hightouch",
+          "aliases": [
+            "hightouch"
+          ],
+          "source": "vendor",
+          "licence": "none - press kit with no licence granted",
+          "licenceUrl": "https://hightouch.com/press",
+          "reason": "Hightouch distributes its logo only as a brand-assets archive from its press page, with no publicly stated permission to redistribute the mark",
+          "brandUrl": "https://hightouch.com/"
+        },
+        {
+          "slug": "census",
+          "title": "Census",
+          "aliases": [
+            "census",
+            "getcensus"
+          ],
+          "source": "vendor",
+          "licence": "none - product folded into Fivetran, no published logo policy",
+          "licenceUrl": "https://www.fivetran.com/press/fivetran-signs-agreement-to-acquire-census-delivering-the-first-end-to-end-data-movement-platform-for-the-ai-era",
+          "reason": "Fivetran acquired Census in May 2025 and folded it into Fivetran Activations, its domains now redirect to fivetran.com, and neither company published a logo usage policy for the Census mark",
+          "brandUrl": "https://www.getcensus.com/"
+        },
+        {
+          "slug": "rudderstack",
+          "title": "RudderStack",
+          "aliases": [
+            "rudderstack",
+            "rudder stack"
+          ],
+          "source": "vendor",
+          "licence": "none - Elastic License 2.0",
+          "licenceUrl": "https://github.com/rudderlabs/rudder-server/blob/14659bfe744940288c8afdd7c85243486319d92e/LICENSE",
+          "reason": "RudderStack's logo files ship only inside rudder-server, which is under the Elastic License 2.0, a non-OSI source-available licence that subjects any use of the licensor's trademarks to applicable law",
+          "brandUrl": "https://www.rudderstack.com/"
+        },
+        {
+          "slug": "segment",
+          "title": "Twilio Segment",
+          "aliases": [
+            "segment",
+            "twilio segment"
+          ],
+          "source": "vendor",
+          "licence": "none - Twilio trademark usage guidelines",
+          "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
+          "reason": "Twilio's trademark usage guidelines list Segment among Twilio's marks and state that most uses require express written permission and that the corporate logo may not be used without it",
+          "brandUrl": "https://segment.com/"
+        },
+        {
+          "slug": "amplitude",
+          "title": "Amplitude",
+          "aliases": [
+            "amplitude"
+          ],
+          "source": "vendor",
+          "licence": "none - brand portal grants no redistribution",
+          "licenceUrl": "https://brand.amplitude.com/",
+          "reason": "Amplitude's brand portal publishes its logos behind a request form without granting any redistribution licence, and its terms reserve all rights in the registered mark",
+          "brandUrl": "https://amplitude.com/"
+        },
+        {
+          "slug": "amundsen",
+          "title": "Amundsen",
+          "aliases": [
+            "amundsen"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
+          "reason": "LF AI & Data publishes the Amundsen artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+          "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/amundsen/icon/color/amundsen-icon-color.svg",
+          "brandUrl": "https://www.amundsen.io/"
+        },
+        {
+          "slug": "atlan",
+          "title": "Atlan",
+          "aliases": [
+            "atlan"
+          ],
+          "source": "vendor",
+          "licence": "none - Atlan brand guidelines",
+          "licenceUrl": "https://atlan.com/brand/logo/",
+          "reason": "Atlan's brand hub publishes the logotype with presentation rules only and grants no licence to redistribute it, while its customer agreement reserves all trademark rights",
+          "brandUrl": "https://atlan.com/"
+        },
+        {
+          "slug": "collibra",
+          "title": "Collibra",
+          "aliases": [
+            "collibra"
+          ],
+          "source": "vendor",
+          "licence": "none - Collibra website terms of use",
+          "licenceUrl": "https://www.collibra.com/legal/documents/collibra-website-terms-of-use",
+          "reason": "Collibra's website terms state that nothing on the site \"will be deemed to confer on any person any license or right\" with respect to its images, logos or names",
+          "brandUrl": "https://www.collibra.com/"
+        },
+        {
+          "slug": "alation",
+          "title": "Alation",
+          "aliases": [
+            "alation"
+          ],
+          "source": "vendor",
+          "licence": "none - Alation website terms and conditions",
+          "licenceUrl": "https://www.alation.com/legal/website-tc/",
+          "reason": "Alation's website terms state that nothing in them grants \"by implication, estoppel, or otherwise, any license or right to use any of Alation Trademarks displayed on the Sites, without our prior written permission in each instance\"",
+          "brandUrl": "https://www.alation.com/"
+        },
+        {
+          "slug": "greatexpectations",
+          "title": "Great Expectations",
+          "aliases": [
+            "great expectations",
+            "greatexpectations",
+            "gx",
+            "gx core"
+          ],
+          "source": "vendor",
+          "licence": "none - Great Expectations community terms of use",
+          "licenceUrl": "https://greatexpectations.io/community-terms-of-use/",
+          "reason": "the GX mark sits in an Apache-2.0 repository, but Great Expectations Labs's community terms of use separately state that \"You may not use any of the Company's trademarks, logos, or other proprietary graphics without express written permission\"",
+          "upstreamUrl": "https://raw.githubusercontent.com/great-expectations/great_expectations/3798c021bbfb0b13ff384b2238f643d04bdea5f2/docs/docusaurus/static/img/gx-mark.svg",
+          "brandUrl": "https://greatexpectations.io/"
+        },
+        {
+          "slug": "soda",
+          "title": "Soda",
+          "aliases": [
+            "soda",
+            "soda core",
+            "soda data"
+          ],
+          "source": "vendor",
+          "licence": "none - Elastic License 2.0 and no published logo file",
+          "licenceUrl": "https://soda.io/terms-and-conditions",
+          "reason": "Soda publishes no logo file in any repository, its soda-core engine is under the non-OSI Elastic License 2.0 and holds no image assets, and its terms reserve exclusive ownership of the visual elements on its site",
+          "brandUrl": "https://www.soda.io/"
+        },
+        {
+          "slug": "montecarlo",
+          "title": "Monte Carlo",
+          "aliases": [
+            "monte carlo",
+            "montecarlo",
+            "monte carlo data"
+          ],
+          "source": "vendor",
+          "licence": "none - Monte Carlo terms and conditions",
+          "licenceUrl": "https://montecarlo.ai/terms-and-conditions/",
+          "reason": "Monte Carlo Data publishes no trademark policy, its terms forbid either party using the other's marks or logos \"without the prior written consent\", and the logo exists only as a marketing-site theme asset",
+          "brandUrl": "https://montecarlo.ai/"
+        },
+        {
+          "slug": "datafold",
+          "title": "Datafold",
+          "aliases": [
+            "datafold"
+          ],
+          "source": "vendor",
+          "licence": "none - nominative use only",
+          "licenceUrl": "https://www.datafold.com/msa/",
+          "reason": "Datafold publishes no trademark or brand policy, its master service agreement grants no right to use its marks, and the logo exists only as an unlicensed marketing-site asset",
+          "brandUrl": "https://www.datafold.com/"
+        },
+        {
+          "slug": "dune",
+          "title": "Dune",
+          "aliases": [
+            "dune",
+            "dune analytics"
+          ],
+          "source": "vendor",
+          "licence": "none - Dune terms of service",
+          "licenceUrl": "https://dune.com/terms",
+          "reason": "Dune's terms of service state that it \"retains all rights to all elements of the Service\" including its trademarks, and its brand hub distributes the icon as a file-sharing download with no licence attached",
+          "brandUrl": "https://dune.com/"
+        },
+        {
+          "slug": "mode",
+          "title": "Mode Analytics",
+          "aliases": [
+            "mode",
+            "mode analytics"
+          ],
+          "source": "vendor",
+          "licence": "none - ThoughtSpot terms of service",
+          "licenceUrl": "https://mode.com/legal/tos/",
+          "reason": "Mode's terms of service, now issued by ThoughtSpot, state that its logos \"may not be copied, imitated, or used, in whole or in part, without the prior written permission of ThoughtSpot\", and mode.com publishes no downloadable asset",
+          "brandUrl": "https://mode.com/"
+        },
+        {
+          "slug": "thoughtspot",
+          "title": "ThoughtSpot",
+          "aliases": [
+            "thoughtspot",
+            "thought spot"
+          ],
+          "source": "vendor",
+          "licence": "none - ThoughtSpot trademark and copyright guidelines",
+          "licenceUrl": "https://www.thoughtspot.com/legal/trademarks",
+          "reason": "ThoughtSpot's trademark guidelines permit third-party use of its trademarks \"in word form only (but not logos, taglines, or icons)\" and state that its logos may only be used under express written permission",
+          "brandUrl": "https://www.thoughtspot.com/"
         }
       ]
     },
