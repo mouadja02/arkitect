@@ -6,13 +6,14 @@
 // or fail. A screenshot counts only once it is on disk, non-empty and starts
 // with the PNG signature; Chromium's stderr is not evidence either way.
 
-import { accessSync, constants, statSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, openSync, closeSync } from 'node:fs';
+import { accessSync, constants, statSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { completePng } from './browser-process.mjs';
 
-export const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+export { PNG_SIGNATURE } from './browser-process.mjs';
 const TIMEOUT = 120000;
 // Chromium refuses windows past 16384px, and a PNG that large is not readable anyway.
 const MAX_VIEWPORT = 16000;
@@ -89,30 +90,17 @@ export function workRootFor(browser, { platform = process.platform, env = proces
   return snap ? join(env.HOME, 'snap', name, 'common') : tmpdir();
 }
 
-// Chromium leaves helper processes running after the browser exits. On Linux
-// and macOS CI they held an inherited stdout pipe open until the timeout, and
-// then kept writing into the profile while it was being deleted. So the
-// browser's output goes to a file, never a pipe, and on POSIX the browser leads
-// its own process group, which is ended as soon as the browser returns.
-const runBrowser = (exe, args, { timeout, log }) => {
-  const fd = openSync(log, 'w');
-  const group = process.platform !== 'win32';
-  try {
-    const r = spawnSync(exe, args, { stdio: ['ignore', fd, fd], timeout, detached: group, killSignal: 'SIGKILL', windowsHide: true });
-    if (group && r.pid) {
-      try { process.kill(-r.pid, 'SIGKILL'); } catch { /* the whole group has already exited */ }
-    }
-    if (r.error) throw r.error;
-    if (r.status !== 0) {
-      const error = new Error(`exited with ${r.status ?? r.signal}`);
-      error.status = r.status;
-      error.signal = r.signal;
-      throw error;
-    }
-    return r;
-  } finally {
-    closeSync(fd);
-  }
+// A complete screenshot ends the job even when Chromium itself stays alive.
+// The supervisor owns its process tree and shuts it down before cleanup.
+export const runBrowser = (exe, args, options) => {
+  const worker = fileURLToPath(new URL('./browser-process.mjs', import.meta.url));
+  const result = spawnSync(process.execPath, [worker, exe, JSON.stringify(args), JSON.stringify(options)], {
+    encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(`browser supervisor exited with ${result.status ?? result.signal}: ${result.stderr}`);
+  const report = JSON.parse(result.stdout);
+  if (report.error) throw Object.assign(new Error(report.error), report);
 };
 
 const removeWork = (dir) => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
@@ -166,7 +154,7 @@ export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = 
       pathToFileURL(page).href,
     ];
     try {
-      runner(browser, args, { timeout, log: browserLog });
+      runner(browser, args, { timeout, log: browserLog, screenshot: shot });
     } catch (error) {
       const timedOut = error.code === 'ETIMEDOUT' || error.signal === 'SIGTERM';
       const reason = timedOut ? `the browser timed out after ${timeout / 1000}s` : `the browser failed: ${String(error.message).split('\n')[0]}`;
@@ -174,8 +162,8 @@ export function rasteriseSvg(svg, { browser, width, noSandbox = false, runner = 
     }
     let bytes;
     try { bytes = readFileSync(shot); } catch { throw new Error(`the browser exited without writing a screenshot${said(browserLog)}`); }
-    if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.toString('latin1', 12, 16) !== 'IHDR') {
-      throw new Error('the screenshot is empty or not a PNG');
+    if (!completePng(bytes)) {
+      throw new Error('the screenshot is empty or not a PNG, or is incomplete');
     }
     return { bytes, width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
   } finally {

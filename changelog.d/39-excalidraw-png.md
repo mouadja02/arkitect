@@ -8,6 +8,8 @@
   throwaway profile that is removed afterwards; nothing is downloaded. Ubuntu's
   snap-packaged Chromium, which cannot see the host's `/tmp`, is staged in its
   own `~/snap/chromium/common` instead.
+  A complete PNG ends the render even if Chromium's background services stay
+  alive; its process tree is stopped before the temporary profile is removed.
 
 ### Fixed
 
@@ -18,5 +20,5 @@
   other extension or a directory exits 2; `--scale`, `--padding`, `--width`,
   `--style` and `--background` are checked before anything is drawn. A PNG
   replaces the previous preview only once it is a real PNG, so a crashed,
-  timed-out or empty screenshot, or a missing browser, exits 1 and leaves the
+  timed-out, incomplete or empty screenshot, or a missing browser, exits 1 and leaves the
   old file as it was. The report states the format written.

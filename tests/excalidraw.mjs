@@ -82,8 +82,7 @@ const haveSources = sourceList.length > 0 && sourceList.every((p) => existsSync(
 
 // A real PNG, built here rather than committed, so transparency detection is
 // tested against actual IHDR bytes.
-function makePng({ alpha }) {
-  const w = 4; const h = 4;
+function makePng({ alpha, w = 4, h = 4 }) {
   const colorType = alpha ? 6 : 2;
   const channels = alpha ? 4 : 3;
   const raw = Buffer.alloc(h * (1 + w * channels));
@@ -1145,15 +1144,7 @@ test('a PNG render proves a real PNG before replacing the previous preview (#39)
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const out = join(dir, 'preview.png');
-  const fakePng = (w, h) => {
-    const b = Buffer.alloc(33);
-    browserLib.PNG_SIGNATURE.copy(b, 0);
-    b.writeUInt32BE(13, 8);
-    b.write('IHDR', 12, 'latin1');
-    b.writeUInt32BE(w, 16);
-    b.writeUInt32BE(h, 20);
-    return b;
-  };
+  const fakePng = (w, h) => makePng({ alpha: false, w, h });
   const shotOf = (args) => args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
   const lines = []; const errors = [];
   let seen = null;
@@ -1188,6 +1179,7 @@ test('a PNG render proves a real PNG before replacing the previous preview (#39)
     ['without writing a screenshot', () => {}],
     ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '<?xml version="1.0"?><svg/>')],
     ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '')],
+    ['incomplete', (exe, args) => writeFileSync(shotOf(args), fakePng(800, 311).subarray(0, 33))],
     // What the browser printed reaches the message, so a failure on a host
     // nobody can log into still says why.
     ['browser said: no usable sandbox', (exe, args, { log }) => {
@@ -1260,10 +1252,7 @@ test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH
   browserLib.rasteriseSvg(svg, { browser: '/snap/bin/chromium', width: 300, workRoot: root, runner: (exe, args) => {
     seenArgs = args;
     const shot = args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
-    const png = Buffer.alloc(33);
-    browserLib.PNG_SIGNATURE.copy(png, 0);
-    png.write('IHDR', 12, 'latin1');
-    writeFileSync(shot, png);
+    writeFileSync(shot, makePng({ alpha: false }));
   } });
   const profile = seenArgs.find((a) => a.startsWith('--user-data-dir=')).slice('--user-data-dir='.length);
   assert(profile.startsWith(root), `the profile is inside the work root: ${profile}`);
@@ -1282,15 +1271,52 @@ test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH
     browser: '/snap/bin/chromium', width: 300, workRoot: root,
     runner: (exe, args) => {
       const shot = args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
-      const png = Buffer.alloc(33);
-      browserLib.PNG_SIGNATURE.copy(png, 0);
-      png.write('IHDR', 12, 'latin1');
-      writeFileSync(shot, png);
+      writeFileSync(shot, makePng({ alpha: false }));
     },
     remove: () => { const e = new Error("ENOTEMPTY: directory not empty, rmdir 'profile/Default'"); e.code = 'ENOTEMPTY'; throw e; },
   });
   assert(kept.bytes.subarray(0, 8).equals(browserLib.PNG_SIGNATURE), 'the PNG is returned even when its work directory will not delete');
   rmSync(root, { recursive: true, force: true });
+});
+
+test('browser supervision finishes a complete screenshot without waiting for browser shutdown (#39)', () => {
+  const dir = join(TMP, 'browser-process');
+  mkdirSync(dir, { recursive: true });
+  const png = join(dir, 'input.png');
+  const screenshot = join(dir, 'shot.png');
+  const log = join(dir, 'browser.log');
+  const pidFile = join(dir, 'browser.pid');
+  const fixture = join(dir, 'browser.mjs');
+  writeFileSync(png, makePng({ alpha: false }));
+  writeFileSync(fixture, `
+    import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+    const [mode, input, shot, pidFile] = process.argv.slice(2);
+    writeFileSync(pidFile, String(process.pid));
+    const bytes = readFileSync(input);
+    if (mode === 'crash') process.exit(7);
+    if (mode === 'exit') { writeFileSync(shot, bytes); process.exit(0); }
+    if (mode === 'complete') writeFileSync(shot, bytes);
+    if (mode === 'partial' || mode === 'chunks') writeFileSync(shot, bytes.subarray(0, 33));
+    if (mode === 'chunks') setTimeout(() => appendFileSync(shot, bytes.subarray(33)), 400);
+    setInterval(() => {}, 1000);
+  `);
+  for (const mode of ['complete', 'chunks', 'exit', 'partial', 'missing', 'crash']) {
+    rmSync(screenshot, { force: true });
+    let error;
+    try {
+      browserLib.runBrowser(process.execPath, [fixture, mode, png, screenshot, pidFile], { timeout: 2000, log, screenshot });
+    } catch (e) { error = e; }
+    if (mode === 'partial' || mode === 'missing') eq(error?.code, 'ETIMEDOUT', `${mode} cannot finish a render`);
+    else if (mode === 'crash') eq(error?.status, 7, 'a crash still fails');
+    else {
+      assert(!error, `${mode} completes without a timeout: ${error?.message}`);
+      assert(readFileSync(screenshot).equals(readFileSync(png)), `${mode} keeps all PNG bytes`);
+    }
+    const pid = Number(readFileSync(pidFile, 'utf8'));
+    let alive = false;
+    try { process.kill(pid, 0); alive = true; } catch { /* exited */ }
+    assert(!alive, `${mode} leaves no browser process running`);
+  }
 });
 
 // Runs wherever a Chromium-based browser is installed, which includes every CI
