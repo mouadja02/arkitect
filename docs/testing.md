@@ -53,7 +53,8 @@ process, so they cannot tread on each other.
 | Validator | rejects duplicate ids, missing parents, broken edge endpoints; `--page 0` through the dispatcher validates that page, before or after the files, and `--strict` still fails on a warning; a page the file lacks fails, in the CLI and the API, without claiming a page was checked; a missing, negative, fractional, exponent, empty or non-numeric page value, a repeated `--page` and an unknown flag exit 2 with no stack trace; the API throws on a malformed index (#37) |
 | Command lines | `build --out <file> <spec>` builds the spec and never writes to it; a malformed, missing or second spec, a missing `--out` or value, or an unknown flag exits 2 in one line with nothing written; `analyze --page` is checked the same way, a page the file lacks exits 1, and `--page` without `--cells`/`--images` or `--cells` over two files is refused (#37) |
 | The record | carries no diagram content, no page names, no modification times |
-| Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50) |
+| Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50); no edge in it runs through a caption (#45) |
+| Caption routing | an edge leaving an icon downward, or entering one from below, in the same column, attaches below the caption (34px, more for a caption on several lines); horizontal, diagonal and box-to-box edges are left to the router; the validator estimates each route from its ports and warns, naming the edge and the icon, when it crosses a caption, and names exactly the two crossings when those attachments are stripped (#45) |
 
 ### Excalidraw
 

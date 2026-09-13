@@ -41,6 +41,9 @@ export const T = {
 
 // Icon captions render below the cell; boundaries must leave room for them.
 const CAPTION_ROOM = 34;
+// Height of one caption line at the body font size, for captions that wrap onto
+// several lines (#45).
+const CAPTION_LINE = 15;
 
 const EDGE_KINDS = {
   flow: { stroke: T.flow, dashed: 0, width: 2, meaning: 'primary data or control flow' },
@@ -302,6 +305,8 @@ export function buildDiagram(spec) {
   }
 
   const nodeBox = new Map();
+  // Where each node landed on the page, and whether a caption hangs below it.
+  const placed = new Map();
   for (const [i, n] of (spec.nodes ?? []).entries()) {
     const parent = n.parent ?? '1';
     if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
@@ -347,6 +352,11 @@ export function buildDiagram(spec) {
     } else style = STYLE.box;
 
     const box = nodeBox.get(n.id) ?? { w, h };
+    placed.set(n.id, {
+      x: x + origin.x, y: y + origin.y, w: box.w, h: box.h,
+      caption: Boolean(n.label) && style.includes('verticalLabelPosition=bottom'),
+      lines: String(n.label ?? '').split('\n').length,
+    });
     push(`<mxCell id="${esc(n.id)}" value="${esc(n.label ?? '')}" style="${style}" vertex="1" parent="${esc(parent)}">`
       + `<mxGeometry x="${Math.round(x)}" y="${Math.round(y)}" width="${box.w}" height="${box.h}" as="geometry" /></mxCell>`);
     if (parent === '1') track(x, y, box.w, box.h);
@@ -354,6 +364,25 @@ export function buildDiagram(spec) {
 
   // An unknown kind draws as a plain flow. It used to crash on the edge label.
   const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');
+
+  // A caption hangs below its icon, so an edge that leaves an icon downward, or
+  // enters one from below, ran straight through it (#45). Such an edge is
+  // attached below the caption instead: still connected, and it still moves
+  // with the icon in the editor. Only nodes sharing a column are affected;
+  // horizontal and diagonal routes stay with Draw.io's router.
+  const attachment = (from, to) => {
+    const a = placed.get(from);
+    const b = placed.get(to);
+    if (!a || !b) return '';
+    const dx = (b.x + b.w / 2) - (a.x + a.w / 2);
+    const dy = (b.y + b.h / 2) - (a.y + a.h / 2);
+    if (Math.abs(dx) > Math.min(a.w, b.w) / 2 || Math.abs(dy) <= Math.abs(dx)) return '';
+    const belowCaption = (end, node) => `${end}X=0.5;${end}Y=1;${end}Dx=0;`
+      + `${end}Dy=${Math.max(CAPTION_ROOM, node.lines * CAPTION_LINE + 4)};${end}Perimeter=0;`;
+    if (dy > 0 && a.caption) return belowCaption('exit', a);
+    if (dy < 0 && b.caption) return belowCaption('entry', b);
+    return '';
+  };
   // An automatic edge id skips any id the spec already uses, so a node called
   // `e1` never shares its id with the first unnamed edge (#36).
   const taken = new Set([...boundaries, ...(spec.nodes ?? []), ...(spec.edges ?? [])].map((x) => x.id));
@@ -368,7 +397,7 @@ export function buildDiagram(spec) {
       if (!taken.has(next)) id = next;
     }
     const kind = kindOf(e);
-    push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}" edge="1" parent="1" `
+    push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}${attachment(e.from, e.to)}" edge="1" parent="1" `
       + `source="${esc(e.from)}" target="${esc(e.to)}"><mxGeometry relative="1" as="geometry" /></mxCell>`);
     if (e.label) {
       const color = EDGE_KINDS[kind].stroke === T.flow ? T.text : EDGE_KINDS[kind].stroke;
