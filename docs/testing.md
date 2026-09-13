@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `201 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `205 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -48,8 +48,9 @@ process, so they cannot tread on each other.
 | area | checks |
 |---|---|
 | Library parsing | entry counts and file digests for every pack, SVG and PNG dimension decoding |
-| Library loading | every committed `.drawio` library loads the way Draw.io's `EditorUi.loadLibrary` reads one — a strict XML parse with an `<mxlibrary>` root, then `JSON.parse` of its text — using a loader that shares no code with `readLibrary`; every SVG payload declares each namespace prefix it uses; a mis-escaped library is proven to fail it |
-| Desktop export (opt-in) | one icon from every pack, and the five GCP marks with masks and filters, exported by Draw.io Desktop; every page must carry ink. Runs with `ARKITECT_DRAWIO_SMOKE=1` |
+| Library loading | every committed `.drawio` library loads the way Draw.io's `EditorUi.loadLibrary` reads one — a strict XML parse with an `<mxlibrary>` root, then `JSON.parse` of its text — using a loader that shares no code with `readLibrary`; every SVG payload is parsed as XML by a strict, dependency-free checker, so a mismatched or unclosed tag, a raw `&`, an undefined entity, a namespace prefix used out of scope, bytes that are not UTF-8, or a root that is not `<svg>` in the SVG namespace fails it; one run lists every broken entry by pack, index and catalog id, not only the first; `build-packs` refuses to write a pack holding one, naming each, and `--verify` parses every committed payload; the checker refuses the four malformed inputs the Excalidraw tracer accepts and accepts comments, CDATA, references, a DOCTYPE entity and scoped namespaces; a mis-escaped library is proven to fail the loader (#33) |
+| Tile ink | ink is measured inside each mark's own tile of an export page: on a synthetic page, one blank tile beside a drawn one is found although the page as a whole carries ink (#33) |
+| Desktop export (opt-in) | every committed mark — 400 to a page, fitted to 78px with no caption or border, the five GCP marks with masks and filters among them — exported by Draw.io Desktop; a mark with under 1% ink in its own tile fails, every such mark is listed, and the ten sparsest are printed (#33). Runs with `ARKITECT_DRAWIO_SMOKE=1` |
 | File-type bands | band text on a file sheet never renders under 8px: a ten- or eight-letter band and an empty `band` are refused, a short `band` replaces the extension at 9px; every committed file-types entry meets the floor, `.dockerfile` and `.excalidraw` show `DOCKER` and `EXCALI`, and both are still found by their full extension (#14) |
 | Contact sheets | with a fake Chrome that fills its profile with cookies and history: the profile and the page it renders live outside the repository and are removed, and only `<pack>.png` is added; a crash, a timeout, no screenshot, an empty one or a non-PNG is reported and leaves the previous sheet untouched; the HTML stays only without `--png`, with `--keep-html`, or when there is no Chrome; a legacy `.shot/` profile is reported, never deleted (#44) |
 | Duplicate titles | both Compute Optimizer variants retained, disambiguated by index, size and payload hash |

@@ -421,10 +421,9 @@ if (smokeEnabled) test('installed Desktop exports distinct synthetic pages as re
   assert(!pages[0].equals(pages[1]), 'both exports selected the same page');
 });
 
-// Share of pixels that carry ink - opaque and not near-white. Enough PNG to read
-// what Desktop exports (8-bit, non-interlaced grey/RGB/RGBA), written out
-// longhand because the toolkit takes no dependencies.
-function pngInk(buf) {
+// A PNG as Desktop exports it - 8-bit, non-interlaced grey/RGB/RGBA - decoded to
+// pixels, written out longhand because the toolkit takes no dependencies.
+function decodePng(buf) {
   let offset = 8;
   let ihdr = null;
   const idat = [];
@@ -443,8 +442,8 @@ function pngInk(buf) {
   }
   const raw = inflateSync(Buffer.concat(idat));
   const stride = ihdr.width * channels;
+  const pixels = Buffer.alloc(ihdr.height * stride);
   let previous = Buffer.alloc(stride);
-  let ink = 0;
   for (let y = 0; y < ihdr.height; y++) {
     const start = y * (stride + 1);
     const filter = raw[start];
@@ -464,75 +463,150 @@ function pngInk(buf) {
       }
       line[x] = (line[x] + predictor) & 0xff;
     }
-    for (let x = 0; x < stride; x += channels) {
-      const alpha = channels === 4 ? line[x + 3] : channels === 2 ? line[x + 1] : 255;
-      const darkest = channels >= 3 ? Math.min(line[x], line[x + 1], line[x + 2]) : line[x];
-      if (alpha > 32 && darkest < 235) ink++;
-    }
+    line.copy(pixels, y * stride);
     previous = line;
   }
-  return ink / (ihdr.width * ihdr.height);
+  return { width: ihdr.width, height: ihdr.height, channels, pixels };
+}
+
+// Share of pixels that carry ink - opaque and not near-white - in a box of a
+// PNG, the whole image unless a box is given.
+function pngInk(png, box = {}) {
+  const image = Buffer.isBuffer(png) ? decodePng(png) : png;
+  const { x = 0, y = 0, width = image.width, height = image.height } = box;
+  const { channels, pixels } = image;
+  let ink = 0;
+  for (let row = y; row < y + height; row++) {
+    for (let col = x; col < x + width; col++) {
+      const at = (row * image.width + col) * channels;
+      const alpha = channels === 4 ? pixels[at + 3] : channels === 2 ? pixels[at + 1] : 255;
+      const darkest = channels >= 3 ? Math.min(pixels[at], pixels[at + 1], pixels[at + 2]) : pixels[at];
+      if (alpha > 32 && darkest < 235) ink++;
+    }
+  }
+  return ink / (width * height);
+}
+
+function pngBytes(width, height, pixel) {
+  const chunk = (type, data) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'latin1');
+    return Buffer.concat([head, data, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 6;
+  const rows = [];
+  for (let y = 0; y < height; y++) {
+    rows.push(Buffer.from([0]));
+    for (let x = 0; x < width; x++) rows.push(Buffer.from(pixel(x, y)));
+  }
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
 }
 
 test('the PNG ink reader tells a drawn page from a blank one', () => {
-  const png = (width, height, pixel) => {
-    const chunk = (type, data) => {
-      const head = Buffer.alloc(8);
-      head.writeUInt32BE(data.length, 0);
-      head.write(type, 4, 'latin1');
-      return Buffer.concat([head, data, Buffer.alloc(4)]);
-    };
-    const ihdr = Buffer.alloc(13);
-    ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 6;
-    const rows = [];
-    for (let y = 0; y < height; y++) {
-      rows.push(Buffer.from([0]));
-      for (let x = 0; x < width; x++) rows.push(Buffer.from(pixel(x, y)));
-    }
-    return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr),
-      chunk('IDAT', deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
-  };
-  eq(pngInk(png(10, 10, () => [255, 255, 255, 255])), 0, 'white page');
-  eq(pngInk(png(10, 10, () => [0, 0, 0, 0])), 0, 'transparent page');
-  eq(pngInk(png(10, 10, (x) => (x < 3 ? [30, 90, 200, 255] : [255, 255, 255, 255]))), 0.3, 'three columns of ink');
+  eq(pngInk(pngBytes(10, 10, () => [255, 255, 255, 255])), 0, 'white page');
+  eq(pngInk(pngBytes(10, 10, () => [0, 0, 0, 0])), 0, 'transparent page');
+  eq(pngInk(pngBytes(10, 10, (x) => (x < 3 ? [30, 90, 200, 255] : [255, 255, 255, 255]))), 0.3, 'three columns of ink');
 });
 
-// The whole point of #12: bytes this repository built, embedded the way
-// find-icon embeds them, exported by the real application. The five GCP legacy
-// marks with luminance masks and filters ride along, because an export that
-// silently drops a mask is exactly what #13 feared.
+// #33: the export covers every committed mark, not the first of each pack.
+// Marks sit in 100px cells, 400 to a page, fitted to 78px with no caption or
+// border, and two invisible corner cells pin each page's bounds so every mark
+// lands on known pixels. Ink is measured inside each mark's own box: a share
+// taken over the whole page cannot see one blank mark among 399 drawn ones, and
+// a caption's text would pass for artwork.
+const TILE_GRID = { perRow: 20, perPage: 400, cell: 100, icon: 78 };
+
+function tilePages(icons, { perRow, perPage, cell, icon: size } = TILE_GRID) {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const corner = (id, x, y) => `<mxCell id="${id}" value="" style="fillColor=none;strokeColor=none;" vertex="1" parent="1">`
+    + `<mxGeometry x="${x}" y="${y}" width="1" height="1" as="geometry"/></mxCell>`;
+  const pages = [];
+  for (let start = 0; start < icons.length; start += perPage) {
+    const n = pages.length;
+    const chunk = icons.slice(start, start + perPage);
+    const rows = Math.ceil(chunk.length / perRow);
+    const tiles = chunk.map((icon, i) => {
+      const { width, height } = finder.recommendedSize(icon, size);
+      return {
+        icon, width, height,
+        x: (i % perRow) * cell + Math.round((cell - width) / 2),
+        y: Math.floor(i / perRow) * cell + Math.round((cell - height) / 2),
+      };
+    });
+    const cells = tiles.map((t, i) => `<mxCell id="i${i}" value="" style="${esc(finder.styleFor(t.icon))}" vertex="1" parent="1">`
+      + `<mxGeometry x="${t.x}" y="${t.y}" width="${t.width}" height="${t.height}" as="geometry"/></mxCell>`).join('')
+      + corner('top-left', 0, 0) + corner('bottom-right', perRow * cell - 1, rows * cell - 1);
+    pages.push({
+      tiles, width: perRow * cell, height: rows * cell,
+      xml: `<diagram id="p${n}" name="p${n}"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells}</root></mxGraphModel></diagram>`,
+    });
+  }
+  return pages;
+}
+
+test('ink is measured in each mark\'s own tile, so one blank mark among drawn ones is found (#33)', () => {
+  const icons = finder.loadCatalog().icons.filter((i) => i.bytes === 'committed').slice(0, 3);
+  const pages = tilePages(icons, { perRow: 2, perPage: 2, cell: 100, icon: 78 });
+  eq(pages.length, 2, 'three marks at two a page');
+  eq(pages.map((p) => `${p.width}x${p.height}`).join(' '), '200x100 200x100', 'page bounds follow the rows used');
+  assert(pages.every((p) => p.xml.includes('id="top-left"') && p.xml.includes('id="bottom-right"')), 'corner cells pin every page');
+  const [drawn, blank] = pages[0].tiles;
+  assert(drawn.x >= 0 && drawn.x + drawn.width <= blank.x && blank.x + blank.width <= 200
+    && [drawn, blank].every((t) => t.y >= 0 && t.y + t.height <= 100), 'tiles stay apart and inside their page');
+  const inside = (t, x, y) => x >= t.x && x < t.x + t.width && y >= t.y && y < t.y + t.height;
+  const png = decodePng(pngBytes(200, 100, (x, y) => (inside(drawn, x, y) ? [20, 20, 20, 255] : [255, 255, 255, 255])));
+  assert(pngInk(png) > 0.01, 'the page as a whole carries ink');
+  eq(pngInk(png, drawn), 1, 'the drawn tile is all ink');
+  eq(pngInk(png, blank), 0, 'the blank tile is found');
+});
+
+// The five GCP legacy marks with luminance masks and filters are named, because
+// an export that silently drops a mask is exactly what #13 feared.
 const MASKED_GCP = ['Cloud Healthcare API', 'My Cloud', 'OS Inventory Management', 'Pub/Sub', 'Security Health Advisor'];
 
-if (smokeEnabled) test('one icon from every pack, and the masked GCP marks, survive a real Desktop export (#12, #13)', () => {
+if (smokeEnabled) test('every committed mark, the masked GCP marks among them, exports with ink in its own tile (#12, #13, #33)', () => {
   const exe = desktopOrSkip();
   if (!exe) return 'skip';
-  const cat = finder.loadCatalog();
-  const icons = [
-    ...cat.packs.map((p) => cat.icons.find((i) => i.pack === p.id && i.bytes === 'committed')),
-    ...MASKED_GCP.map((title) => cat.icons.find((i) => i.pack === 'gcp' && i.title === title)),
-  ];
-  icons.forEach((icon, n) => assert(icon, `no catalog entry for smoke icon #${n}`));
-  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  const pages = icons.map((icon, n) => `<diagram id="p${n}" name="p${n}"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>`
-    + `<mxCell id="icon" value="" style="${esc(finder.styleFor(icon))}" vertex="1" parent="1">`
-    + '<mxGeometry x="0" y="0" width="78" height="78" as="geometry"/></mxCell></root></mxGraphModel></diagram>');
-  const file = join(TMP, 'every-pack.drawio');
-  writeFileSync(file, `<mxfile>${pages.join('')}</mxfile>`);
-  const outDir = join(TMP, 'every-pack');
+  const icons = finder.loadCatalog().icons.filter((i) => i.bytes === 'committed');
+  for (const title of MASKED_GCP) assert(icons.some((i) => i.pack === 'gcp' && i.title === title), `no committed GCP mark "${title}"`);
+  const pages = tilePages(icons);
+  const file = join(TMP, 'every-mark.drawio');
+  writeFileSync(file, `<mxfile>${pages.map((p) => p.xml).join('')}</mxfile>`);
+  const outDir = join(TMP, 'every-mark');
   const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'render', file, '--all',
-    '--width', '200', '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags], { encoding: 'utf8', timeout: 600000 });
+    '--width', String(TILE_GRID.perRow * TILE_GRID.cell), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
+  { encoding: 'utf8', timeout: 1200000 });
   eq(result.status, 0, `Desktop export: ${result.stdout} ${result.stderr}`);
+  const problems = [];
+  const measured = [];
   const digests = new Set();
-  icons.forEach((icon, n) => {
-    const png = readFileSync(join(outDir, `every-pack.p${n}.png`));
-    eq(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `${icon.id}: PNG signature`);
-    const ink = pngInk(png);
-    // A 78px mark scaled to 200px covers far more than 1% of its own crop; an
-    // image the exporter could not paint covers none of it.
-    assert(ink > 0.01, `${icon.id} exported blank (${(ink * 100).toFixed(2)}% ink)`);
-    digests.add(createHash('sha256').update(png).digest('hex'));
+  pages.forEach((page, n) => {
+    const bytes = readFileSync(join(outDir, `every-mark.p${n}.png`));
+    digests.add(createHash('sha256').update(bytes).digest('hex'));
+    const png = decodePng(bytes);
+    // Desktop can round a page edge by a pixel. Every mark sits at least 11px
+    // inside its cell, so that much drift still measures the right artwork.
+    if (Math.abs(png.width - page.width) > 2 || Math.abs(png.height - page.height) > 2) {
+      problems.push(`page ${n}: exported at ${png.width}x${png.height}, laid out at ${page.width}x${page.height}, so its tiles cannot be located`);
+      return;
+    }
+    for (const tile of page.tiles) {
+      const box = { x: tile.x, y: tile.y, width: Math.min(tile.width, png.width - tile.x), height: Math.min(tile.height, png.height - tile.y) };
+      const ink = pngInk(png, box);
+      measured.push({ id: tile.icon.id, ink });
+      // The sparsest committed mark covers about 5% of its box; a mark the
+      // exporter could not paint covers none of it.
+      if (ink < 0.01) problems.push(`${tile.icon.pack} / ${tile.icon.libraryIndex} / ${tile.icon.id} / ${(ink * 100).toFixed(2)}% ink in its tile`);
+    }
   });
-  eq(digests.size, icons.length, 'every page exported its own icon');
+  eq(digests.size, pages.length, 'every page exported its own marks');
+  const sparsest = [...measured].sort((a, b) => a.ink - b.ink).slice(0, 10);
+  console.log(`        ${measured.length} of ${icons.length} marks measured; sparsest: `
+    + sparsest.map((m) => `${m.id} ${(m.ink * 100).toFixed(1)}%`).join(', '));
+  assert(problems.length === 0, reportProblems(problems));
 });
 
 // ------------------------------------------------------------- packs
@@ -559,6 +633,18 @@ const iconBuild = await import(`file://${join(SCRIPTS, 'lib', 'icon-build.mjs').
 const XML_TEXT_ENTITIES = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 const XML_CHAR = /^[\t\n\r\x20-퟿-�\u{10000}-\u{10FFFF}]*$/u;
 
+const xmlCheck = await import(`file://${join(SCRIPTS, 'lib', 'xml-check.mjs').replace(/\\/g, '/')}`);
+
+// Every problem counted, the first twenty shown, so one run names every broken
+// mark instead of one per run (#33).
+function reportProblems(problems, shown = 20) {
+  return `${problems.length} problem${problems.length === 1 ? '' : 's'}:\n        ${problems.slice(0, shown).join('\n        ')}`
+    + (problems.length > shown ? `\n        ... and ${problems.length - shown} more` : '');
+}
+
+// A fault in the library itself throws: Draw.io would not open it. A fault in
+// an entry is collected, every one of them, because Draw.io still lists the
+// other entries and paints nothing for that one (#33).
 function loadLikeDrawio(text) {
   if (!XML_CHAR.test(text)) throw new Error('a character XML does not allow');
   const m = /^﻿?(?:<\?xml[^?]*\?>)?\s*<mxlibrary((?:\s+[A-Za-z_:][\w.:-]*\s*=\s*(?:"[^"<]*"|'[^'<]*'))*)\s*>([^<]*)<\/mxlibrary>\s*$/.exec(text);
@@ -575,48 +661,58 @@ function loadLikeDrawio(text) {
   });
   const entries = JSON.parse(decoded);
   if (!Array.isArray(entries)) throw new Error('the library JSON is not an array');
-  return entries.map((e, i) => {
-    const where = `entry ${i}${typeof e?.title === 'string' ? ` (${e.title})` : ''}`;
-    if (!e || typeof e !== 'object' || Array.isArray(e)) throw new Error(`${where}: not an object`);
-    if (typeof e.title !== 'string' || !e.title) throw new Error(`${where}: no title`);
-    if (!(Number.isFinite(e.w) && e.w > 0 && Number.isFinite(e.h) && e.h > 0)) throw new Error(`${where}: no usable size`);
-    const uri = typeof e.data === 'string' && /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(e.data);
-    if (!uri || uri[2].length % 4 !== 0) throw new Error(`${where}: not a base64 image data URI`);
-    const bytes = Buffer.from(uri[2], 'base64');
-    if (uri[1] === 'image/svg+xml') {
-      const text = bytes.toString('utf8');
-      if (!/^﻿?\s*(?:<\?xml[\s\S]*?\?>\s*)?(?:<!--[\s\S]*?-->\s*)*(?:<!DOCTYPE[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>]/.test(text)) {
-        throw new Error(`${where}: payload is not an SVG document`);
-      }
-      // A namespace prefix used without its xmlns declaration - an attribute like
-      // xlink:href, or a prefixed element - makes the image invalid XML, and the
-      // browser inside Draw.io refuses to paint any of it.
-      const used = [...text.matchAll(/\s([A-Za-z_][\w.-]*):[A-Za-z_][\w.-]*\s*=/g), ...text.matchAll(/<\/?([A-Za-z_][\w.-]*):[A-Za-z_][\w.-]*[\s/>]/g)]
-        .map((hit) => hit[1]).filter((prefix) => prefix !== 'xmlns' && prefix !== 'xml');
-      for (const prefix of new Set(used)) {
-        if (!new RegExp(`\\sxmlns:${prefix}\\s*=`).test(text)) throw new Error(`${where}: SVG uses the "${prefix}:" prefix without declaring it`);
-      }
+  const problems = [];
+  const loaded = entries.map((e, index) => {
+    try {
+      return loadEntryLikeDrawio(e);
+    } catch (error) {
+      problems.push({ index, title: typeof e?.title === 'string' ? e.title : null, reason: error.message });
+      return null;
     }
-    if (uri[1] === 'image/png' && bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
-      throw new Error(`${where}: payload is not a PNG`);
-    }
-    return { title: e.title, mime: uri[1], sha256: createHash('sha256').update(bytes).digest('hex') };
   });
+  return { entries: loaded, problems };
 }
 
-test('every committed library loads the way Draw.io reads one (#12)', () => {
+function loadEntryLikeDrawio(e) {
+  if (!e || typeof e !== 'object' || Array.isArray(e)) throw new Error('not an object');
+  if (typeof e.title !== 'string' || !e.title) throw new Error('no title');
+  if (!(Number.isFinite(e.w) && e.w > 0 && Number.isFinite(e.h) && e.h > 0)) throw new Error('no usable size');
+  const uri = typeof e.data === 'string' && /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(e.data);
+  if (!uri || uri[2].length % 4 !== 0) throw new Error('not a base64 image data URI');
+  const bytes = Buffer.from(uri[2], 'base64');
+  // The browser inside Draw.io parses an SVG payload as XML and paints nothing
+  // when it is not well-formed: a mismatched or unclosed tag, a raw "&", an
+  // undefined entity, a namespace prefix used out of scope (#29, #33).
+  if (uri[1] === 'image/svg+xml') {
+    const problem = xmlCheck.svgBytesProblem(bytes);
+    if (problem) throw new Error(`SVG payload is not well-formed: ${problem}`);
+  }
+  if (uri[1] === 'image/png' && bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+    throw new Error('payload is not a PNG');
+  }
+  return { title: e.title, mime: uri[1], sha256: createHash('sha256').update(bytes).digest('hex') };
+}
+
+test('every committed library loads the way Draw.io reads one, every broken entry named (#12, #33)', () => {
   const cat = finder.loadCatalog();
+  const problems = [];
   for (const p of cat.packs) {
     const file = join(LIB_DIR, p.file);
     let loaded;
-    try { loaded = loadLikeDrawio(readFileSync(file, 'utf8')); } catch (e) { throw new Error(`${p.file}: ${e.message}`); }
-    eq(loaded.length, p.count, `${p.id}: entries Draw.io would list`);
+    try { loaded = loadLikeDrawio(readFileSync(file, 'utf8')); } catch (e) { problems.push(`${p.id}: Draw.io would not open the library: ${e.message}`); continue; }
+    const committed = new Map(cat.icons.filter((i) => i.pack === p.id && i.bytes === 'committed').map((i) => [i.libraryIndex, i]));
+    for (const bad of loaded.problems) problems.push(`${p.id} / ${bad.index} / ${committed.get(bad.index)?.id ?? 'no catalog entry'} / ${bad.reason}`);
+    if (loaded.entries.length !== p.count) problems.push(`${p.id}: Draw.io would list ${loaded.entries.length} entries, the catalog says ${p.count}`);
     const lenient = core.readLibrary(file);
-    loaded.forEach((entry, i) => eq(entry.title, lenient[i].title, `${p.id}[${i}]: title agrees with readLibrary`));
-    for (const icon of cat.icons.filter((i) => i.pack === p.id && i.bytes === 'committed')) {
-      eq(loaded[icon.libraryIndex].sha256, icon.sha256, `${icon.id}: payload Draw.io would show matches the catalog`);
+    loaded.entries.forEach((entry, i) => {
+      if (entry && entry.title !== lenient[i]?.title) problems.push(`${p.id} / ${i}: title ${JSON.stringify(entry.title)} disagrees with readLibrary`);
+    });
+    for (const icon of committed.values()) {
+      const entry = loaded.entries[icon.libraryIndex];
+      if (entry && entry.sha256 !== icon.sha256) problems.push(`${p.id} / ${icon.libraryIndex} / ${icon.id} / the payload Draw.io would show does not match the catalog`);
     }
   }
+  assert(problems.length === 0, reportProblems(problems));
 });
 
 test('the Draw.io-strict loader round-trips awkward titles and rejects a mis-escaped library', () => {
@@ -625,11 +721,13 @@ test('the Draw.io-strict loader round-trips awkward titles and rejects a mis-esc
     'rocket \u{1F680}', 'line separator', 'tab\tand\\backslash'];
   const file = join(TMP, 'awkward.drawio');
   iconBuild.writeLibrary(file, titles.map((title) => ({ data: svg, title })));
-  eq(loadLikeDrawio(readFileSync(file, 'utf8')).map((e) => e.title).join('|'), titles.join('|'), 'titles survive writeLibrary exactly');
+  eq(loadLikeDrawio(readFileSync(file, 'utf8')).entries.map((e) => e.title).join('|'), titles.join('|'), 'titles survive writeLibrary exactly');
 
   const escapeText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const good = `<mxlibrary>${escapeText(JSON.stringify([{ data: svg, w: 78, h: 78, title: 'ok' }]))}</mxlibrary>`;
-  eq(loadLikeDrawio(good).length, 1, 'a well-formed library loads');
+  const loaded = loadLikeDrawio(good);
+  eq(loaded.entries.length, 1, 'a well-formed library loads');
+  eq(loaded.problems.length, 0, 'a well-formed library has no broken entry');
   const broken = {
     'a raw ampersand': good.replace('"ok"', '"A & B"'),
     'a raw angle bracket': good.replace('"ok"', '"<b>"'),
@@ -642,19 +740,107 @@ test('the Draw.io-strict loader round-trips awkward titles and rejects a mis-esc
     'JSON that is not an array': '<mxlibrary>{}</mxlibrary>',
     'an SVG using a namespace prefix it never declares': good.replace(svg, `data:image/svg+xml;base64,${Buffer.from(
       '<svg xmlns="http://www.w3.org/2000/svg"><use xlink:href="#a"/></svg>').toString('base64')}`),
+    'an SVG with an unclosed element': good.replace(svg, `data:image/svg+xml;base64,${Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg"><g></svg>').toString('base64')}`),
   };
   for (const [what, text] of Object.entries(broken)) {
-    let threw = false;
-    try { loadLikeDrawio(text); } catch { threw = true; }
-    assert(threw, `a library with ${what} loaded`);
+    let rejected = false;
+    try { rejected = loadLikeDrawio(text).problems.length > 0; } catch { rejected = true; }
+    assert(rejected, `a library with ${what} loaded`);
   }
+});
+
+// The shared strict check (#33). Its negative inputs are the four the Excalidraw
+// tracer accepts without complaint, plus the faults a browser also refuses; its
+// positive ones are XML the packs never use but a browser draws.
+test('an SVG payload must be well-formed XML with an <svg> root in the SVG namespace (#33)', () => {
+  const NS = 'xmlns="http://www.w3.org/2000/svg"';
+  const path = '<path d="M0 0 L10 0 L10 10Z"/>';
+  const refused = {
+    'an unclosed group': `<svg ${NS}><g>${path}</svg>`,
+    'a raw ampersand': `<svg ${NS}><path id="A&B" d="M0 0 L10 0 L10 10Z"/></svg>`,
+    'an undefined entity': `<svg ${NS}><path id="&nbsp;" d="M0 0 L10 0 L10 10Z"/></svg>`,
+    'an unclosed root': `<svg ${NS}>${path}`,
+    'a prefix declared only on a sibling': `<svg ${NS}><g xmlns:xlink="http://www.w3.org/1999/xlink"/><use xlink:href="#a"/></svg>`,
+    'a repeated attribute': `<svg ${NS} width="1" width="2"/>`,
+    'an unquoted attribute': `<svg ${NS} width=1/>`,
+    'a "<" in an attribute': `<svg ${NS} id="a<b"/>`,
+    '"--" inside a comment': `<svg ${NS}><!-- a -- b --></svg>`,
+    'a second root': `<svg ${NS}/><svg ${NS}/>`,
+    'an XML declaration after a comment': `<!-- c --><?xml version="1.0"?><svg ${NS}/>`,
+    'a reference to a character XML forbids': `<svg ${NS}><text>&#0;</text></svg>`,
+    'a control character': `<svg ${NS}></svg>`,
+    'no SVG namespace': '<svg/>',
+    'a root that is not <svg>': '<html xmlns="http://www.w3.org/1999/xhtml"/>',
+    'a parameter entity': `<!DOCTYPE svg [<!ENTITY % p "x">]><svg ${NS}/>`,
+    'nothing at all': '',
+  };
+  for (const [what, svg] of Object.entries(refused)) assert(xmlCheck.svgProblem(svg), `accepted ${what}`);
+  const notUtf8 = Buffer.concat([Buffer.from(`<svg ${NS}><title>`), Buffer.from([0xC3, 0x28]), Buffer.from('</title></svg>')]);
+  assert(xmlCheck.svgBytesProblem(notUtf8), 'accepted bytes that are not UTF-8');
+
+  const accepted = {
+    'a declaration, comments, CDATA and every reference form': `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<!-- lead --><svg ${NS}><!----><style><![CDATA[ a > b && c ]]></style><text>&lt;&amp;&#x41;&#66;&quot;&apos;&gt;</text></svg>\n<!-- trail -->`,
+    'a prefix declared on an ancestor': `<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink"><g><use xlink:href="#a"/></g></svg>`,
+    'a prefix declared on the element using it': `<svg ${NS}><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#a"/></svg>`,
+    'a prefixed SVG root': '<s:svg xmlns:s="http://www.w3.org/2000/svg"><s:g/></s:svg>',
+    'the implicit xml prefix': `<svg ${NS} xml:space="preserve"/>`,
+    'a DOCTYPE declaring an entity': `<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [\n<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">\n]><svg ${NS} xmlns:x="&ns_flows;"/>`,
+    'a processing instruction': `<svg ${NS}><?foo bar?></svg>`,
+    'a byte-order mark and CRLF': `﻿<svg ${NS}>\r\n</svg>`,
+  };
+  for (const [what, svg] of Object.entries(accepted)) {
+    const problem = xmlCheck.svgProblem(svg);
+    assert(!problem, `refused ${what}: ${problem}`);
+  }
+  eq(xmlCheck.svgProblem(`<svg ${NS}><g>${path}</svg>`), 'line 1, column 74: </svg> closes <g>', 'a problem says where and why');
+});
+
+test('one load names every broken entry in a library, not only the first (#33)', () => {
+  const NS = 'xmlns="http://www.w3.org/2000/svg"';
+  const uri = (svg) => `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  const file = join(TMP, 'two-broken.drawio');
+  iconBuild.writeLibrary(file, [
+    { data: uri(`<svg ${NS}/>`), title: 'fine' },
+    { data: uri(`<svg ${NS}><g></svg>`), title: 'unclosed' },
+    { data: uri(`<svg ${NS}><path id="A&B"/></svg>`), title: 'ampersand' },
+  ]);
+  const { entries, problems } = loadLikeDrawio(readFileSync(file, 'utf8'));
+  eq(entries.length, 3, 'every entry is still listed');
+  eq(problems.map((p) => `${p.index}:${p.title}`).join(' '), '1:unclosed 2:ampersand', 'both broken entries are reported');
+  assert(/closes <g>/.test(problems[0].reason) && /raw "&"/.test(problems[1].reason), `reasons: ${problems.map((p) => p.reason).join('; ')}`);
+  const report = reportProblems(Array.from({ length: 25 }, (_, i) => `p${i}`));
+  assert(report.startsWith('25 problems:') && report.includes('p19') && !report.includes('p20') && report.endsWith('... and 5 more'),
+    `the report caps what it shows, not what it counts: ${report}`);
+});
+
+test('build-packs refuses to write a pack holding a malformed SVG, naming every bad entry (#33)', () => {
+  const svg = (inner) => `<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+  packs.refuseMalformedSvg('test-pack', [
+    { slug: 'fine', title: 'Fine', svg: svg('<g/>') },
+    { slug: 'raster', title: 'Raster', data: 'data:image/png;base64,iVBORw0KGgo=' },
+  ]);
+  let error;
+  try {
+    packs.refuseMalformedSvg('test-pack', [
+      { slug: 'fine', title: 'Fine', svg: svg('<g/>') },
+      { slug: 'unclosed', title: 'Unclosed', svg: svg('<g>') },
+      { slug: 'entity', title: 'Entity', data: `data:image/svg+xml;base64,${Buffer.from(svg('<path id="&nbsp;"/>')).toString('base64')}` },
+      { slug: 'plain-uri', title: 'Plain URI', data: `data:image/svg+xml,${svg('')}` },
+    ]);
+  } catch (e) { error = e; }
+  assert(error, 'a pack with malformed payloads was accepted');
+  assert(/3 malformed SVG payloads/.test(error.message) && ['unclosed', 'entity', 'plain-uri'].every((s) => error.message.includes(`test-pack/${s}:`))
+    && !error.message.includes('test-pack/fine'), error.message);
 });
 
 test('committed libraries still match the manifest they were built from', async () => {
   const checks = await packs.verify();
   const bad = checks.filter((c) => !c.pass);
-  assert(bad.length === 0, `failing checks: ${bad.map((c) => c.name).join(', ')}`);
+  assert(bad.length === 0, `failing checks: ${bad.map((c) => `${c.name} [${c.detail}]`).join(', ')}`);
   assert(checks.length >= 50, `expected at least 50 checks, got ${checks.length}`);
+  const wellFormed = checks.filter((c) => c.name.endsWith('every SVG payload is well-formed'));
+  eq(wellFormed.length, finder.loadCatalog().packs.length, '--verify parses the payloads of every pack (#33)');
 });
 
 // ------------------------------------------------------------- upstream watch
