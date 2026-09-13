@@ -8,6 +8,12 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 
 ### Added
 
+- **Shared icon packs in Excalidraw** (#17). All 4,793 committed Draw.io marks
+  can be selected with `drawio:<pack>/<slug>` or used as conservative name
+  fallbacks. Existing successful native resolutions keep their artwork.
+  Original SVG/PNG bytes travel inside the scene with provenance, deduplicated
+  files and bound arrows; on-demand entries stay placeholders. No tracing or
+  new artwork is involved.
 - **An accuracy measure for icon resolution** (#15). `tests/icon-queries.json`
   is a 362-query answer key; the suite fails on any confident wrong answer or if
   precision at rank 1 drops below 92%, and prints the numbers on every run.

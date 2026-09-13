@@ -56,9 +56,19 @@ the generator's defaults; do not undo them by hand:
    that only names the component is resolved for you, but only to the product
    by name — an exact match, a leading Azure/AWS/Google word aside, or a prefix
    like `dynamo` for DynamoDB. A name that merely appears inside a different
-   product's (`postgres` inside "Azure Database for Postgres") becomes a
-   placeholder instead. The search says which up front: `"draws": "<ref>"`, or
+   product's (`postgres` inside "Azure Database for Postgres") never selects
+   that product. Shared packs may supply the correct mark; otherwise it gets a
+   placeholder. The search says which up front: `"draws": "<ref>"`, or
    `"placeholder": "<why>"`.
+
+   Shared packs fill coverage gaps with 4,793 original SVG/PNG marks from the
+   sibling Draw.io skill. Existing successful resolutions keep their artwork;
+   use `"icon": "drawio:databases/postgresql"` to choose a shared mark exactly.
+   Search and build reports identify these as **embedded**, with source and
+   licence metadata. They keep captions and arrow bindings editable, but the
+   logo paths are not Excalidraw strokes. No tracing, recolouring or download
+   occurs. On-demand entries stay placeholders; integrity failures stop the
+   build. See `../../docs/shared-icons.md` for source terms and examples.
 
    239 of those items carry no name and cannot be found by searching. When a
    search comes up short, check whether the product is sitting in one of those
@@ -286,9 +296,9 @@ Then reference it in a spec by name:
   only honest for flat vector marks — the tracer reports gradients, clip paths,
   masks and `<text>` rather than losing them silently. If `skipped` comes back
   non-empty, look at the result before shipping it.
-- Default (embedded) puts the logo in as an `image` element. Always faithful,
-  works for PNG and JPEG, but it is a bitmap: it will not take the stroke and
-  cannot be restyled.
+- Default (embedded) puts the logo in as an `image` element. Works for SVG,
+  PNG and JPEG. SVG remains vector artwork, but its paths are not editable
+  Excalidraw strokes and cannot be restyled in the app.
 
 **Customising.** `--size` (longest side, aspect preserved), `--label`,
 `--monochrome` (flatten to one colour), `--outline` (no fills — good for a

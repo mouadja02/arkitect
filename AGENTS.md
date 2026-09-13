@@ -20,7 +20,7 @@ to it, and every command is Node 20+ with **no dependencies to install**.
 |---|---|---|
 | looks like | crisp, formal, vendor icons | hand-drawn, sketchy |
 | best for | solution architecture for a client or a review board, AWS-heavy designs, multi-page decks, as-is/to-be comparisons | system design, whiteboard-style architecture, component and block diagrams, flows and decision paths, anything for a README |
-| icons | 18 packs, 4,793 marks — 311 AWS Architecture Icons, Azure, Google Cloud and curated product packs — + built-in `mxgraph.aws4.*` + real product logos fetched from the web | 1,162 items across 36 bundled libraries — AWS, Azure, GCP, Snowflake, data platform, DevOps, IT logos — plus icons traced from real logos |
+| icons | 18 packs, 4,793 marks — 311 AWS Architecture Icons, Azure, Google Cloud and curated product packs — + built-in `mxgraph.aws4.*` + real product logos fetched from the web | 1,162 native items across 36 bundled libraries plus the 4,793 shared marks as embedded original artwork |
 | edit later in | Draw.io Desktop, VS Code extension, app.diagrams.net | the Excalidraw container this repo ships, or excalidraw.com |
 
 If the person did not say which, ask once in a single line, or infer: "solution
@@ -76,7 +76,7 @@ node bin/arkitect.mjs drawio validate docs/arch.drawio
 node bin/arkitect.mjs drawio analyze docs/arch.drawio --page 0 --cells
 
 # Excalidraw
-node bin/arkitect.mjs excalidraw icon "postgres"                # search 1,162 bundled items
+node bin/arkitect.mjs excalidraw icon "postgres"                # native libraries + shared packs
 node bin/arkitect.mjs excalidraw libraries --unnamed
 node bin/arkitect.mjs excalidraw build spec.json --out docs/arch.excalidraw
 node bin/arkitect.mjs excalidraw validate docs/arch.excalidraw
@@ -120,7 +120,12 @@ labelled "Snowflake" is a regression, not a safe default.
 **Excalidraw:** the 36 bundled libraries first (`excalidraw icon`). 239 items
 carry no name; find those by reading the numbered contact sheets in
 `skills/arkitect-excalidraw/assets/libraries/bundled/sheets/` and referencing
-`<slug>:<n>`. If nothing matches, use an honest **placeholder** — a dotted slot
+`<slug>:<n>`. Shared packs fill gaps using original embedded SVG/PNG artwork;
+select an exact mark with `drawio:<pack>/<slug>`. Existing successful native
+choices keep their precedence. The image, caption and connections stay editable,
+but the logo's paths are not native strokes. No tracing or download is involved;
+on-demand marks remain unavailable. See `docs/shared-icons.md` for terms.
+If nothing matches, use an honest **placeholder** — a dotted slot
 with a `?`, named in the build report — and say so. Only build an icon from a
 logo (`excalidraw make-icon --url … --trace`) when asked.
 

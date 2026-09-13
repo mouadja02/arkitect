@@ -41,7 +41,7 @@ arkitect drawio learn --sources <files> --merge       # rebuild the style record
 ## Excalidraw
 
 ```bash
-arkitect excalidraw icon "postgres"                   # search 1,162 bundled items
+arkitect excalidraw icon "postgres"                   # native libraries + shared packs
 arkitect excalidraw icon --resolve gcp-icons:37       # what a spec node would draw
 arkitect excalidraw icon --stats
 arkitect excalidraw libraries                         # one line per bundled library
@@ -171,13 +171,18 @@ Fragments matching the pattern catalog: `assets/templates/patterns.json`.
 | `diamond` | a decision |
 | `cylinder` | a datastore, one closed silhouette plus a lid |
 | `actor` | a person or external role |
-| `icon` | a bundled library item or one you built, captioned underneath |
+| `icon` | a native library item, embedded shared mark, or one you built, captioned underneath |
 | `placeholder` | an obviously empty slot for a mark you will drop in by hand |
 | `note` | a sticky note for assumptions |
 | `text` | bare text |
 
 Also `accent` (a swatch name or hex), `label`, `sublabel`, `width`, `height`,
 `size`, `fontSize`, `strokeStyle`, `fillStyle`.
+
+Shared artwork uses `"icon": "drawio:databases/postgresql"`, or resolves by name
+when existing libraries have no confident choice. `excalidraw icon --stats`
+lists shared counts, and `--resolve <ref>` reports the representation and source.
+See [shared-icons.md](shared-icons.md) for the matching and source policy.
 
 **Boundaries** are `kind: "scope"` (a dashed rectangle, nestable via `parent`)
 or `kind: "frame"` (a real Excalidraw frame, top level only). Both are sized

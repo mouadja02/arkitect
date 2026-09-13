@@ -1,7 +1,8 @@
 # Icon libraries
 
-Two tiers: the libraries bundled with the plugin, and the public catalogue you
-can pull more from.
+Native libraries are bundled with the plugin, and the public catalogue can
+supply more. The [shared packs](shared-icons.md) also provide 4,793 original
+SVG/PNG marks as embedded images, filling gaps without a download.
 
 ## The bundled set — the primary source
 

@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. Roughly two
 seconds.
 
-On a fresh clone expect about `150 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect about `158 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -50,6 +50,16 @@ process, so they cannot tread on each other.
 | The record | carries no diagram content, no page names, no modification times |
 
 ### Excalidraw
+
+Shared-pack checks (#17) resolve every committed canonical ID and verify its
+original payload hash, MIME type, dimensions and provenance. The native query
+answer key still runs against the previous provider set; a second check keeps
+every successful choice and verifies new fallbacks against the reviewed shared
+product IDs. Tests also cover ambiguity, on-demand and malformed refs,
+deduplication, bindings, integrity failures, metadata-only CLI output and both
+shared-icon example specs. Local PNG review of the export gallery exercises
+every pack plus complex SVG and non-square PNG cases; it is not an exhaustive
+artwork audit (#18/#33).
 
 | area | checks |
 |---|---|

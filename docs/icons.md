@@ -3,25 +3,30 @@
 A diagram of grey boxes labelled "Snowflake" and "Kafka" is not a diagram of
 your system, it is a wireframe of one. Arkitect treats icon resolution as the
 step that decides whether the output is worth having — which is why it ships
-5,950 marks and refuses to fake the rest.
+5,955 marks and refuses to fake the rest.
 
 ```bash
 node bin/arkitect.mjs drawio icon "bedrock"        # 4,793 marks in 18 packs
 node bin/arkitect.mjs drawio icon --list-packs     # what each pack holds
-node bin/arkitect.mjs excalidraw icon "postgres"   # 1,162 items, 36 libraries
+node bin/arkitect.mjs excalidraw icon "postgres"   # native libraries + shared packs
 ```
 
 ## What ships
 
 | | Draw.io | Excalidraw |
 |---|---|---|
-| bundled | 4,793 marks across 18 packs | 1,162 items across 36 libraries |
+| bundled | 4,793 marks across 18 packs | 1,162 native items across 36 libraries plus 4,793 shared marks |
 | coverage | AWS (311), Azure (638), Google Cloud (249), plus curated packs for data platforms, databases, AI frameworks, ML, streaming, observability, DevOps, security, GitHub, SaaS, languages and file types; agent and architecture concepts as tiles; 3,092 more brands as a catch-all | AWS (249), Azure (86), GCP (83), Google products (139), Snowflake (54), data platform (33), DevOps (29), IT logos (38), plus system-design components, forms, network topology, sticky notes |
 | also available | Draw.io's built-in `mxgraph.aws4.*` shapes, and MCP `search_shapes` | the public catalogue at libraries.excalidraw.com |
-| for anything else | fetch the real logo and embed it — including the 69 marks catalogued without bytes | trace the real logo into native geometry, or use a placeholder |
+| for anything else | fetch the real logo and embed it — including the 69 marks catalogued without bytes | shared original artwork first; then a user-requested logo, or a placeholder |
 | detail | [drawio-icons.md](drawio-icons.md) · [pack index](../skills/arkitect-drawio/references/pack-index.md) | [excalidraw-libraries.md](excalidraw-libraries.md) · [excalidraw-icons.md](excalidraw-icons.md) |
 
 ## The rule
+
+Excalidraw preserves existing successful icon choices and fills coverage gaps
+from the shared packs. Use `drawio:<pack>/<slug>` for exact artwork. Shared logos
+are embedded original SVG/PNG images; labels and connections remain editable,
+but logo paths are not Excalidraw strokes. See [shared-icons.md](shared-icons.md).
 
 **Never substitute one product's mark for another.** Not a similar service, not
 the same vendor's other product, not a generic cloud glyph standing in for a

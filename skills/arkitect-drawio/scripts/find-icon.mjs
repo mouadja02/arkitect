@@ -18,7 +18,7 @@
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve as resolvePath } from 'node:path';
 import { readLibrary, normalizeTitle } from './lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -294,4 +294,4 @@ function main(argv) {
   }, null, 2));
 }
 
-if (process.argv[1] && process.argv[1].endsWith('find-icon.mjs')) main(process.argv.slice(2));
+if (process.argv[1] && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url)) main(process.argv.slice(2));
