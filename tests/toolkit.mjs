@@ -102,6 +102,53 @@ test('doctor reports the bundled assets as present', () => {
   }
 });
 
+// doctor asks the renderer where Draw.io Desktop is, so the two can never
+// disagree (#46). A stub stands in for the app; doctor only looks, never runs it.
+const renderDrawio = await import(pathToFileURL(join(ROOT, 'skills', 'arkitect-drawio', 'scripts', 'render-drawio.mjs')).href);
+
+test('doctor finds Draw.io Desktop where render does, and says how (#46)', () => {
+  const windows = process.platform === 'win32';
+  const drawioRow = (out) => out.split('\n').find((l) => l.includes('draw.io desktop')) ?? '';
+  // The machine's own PATH and DRAWIO_EXE are dropped, so only a stub can be found.
+  const base = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^path$/i.test(k) && k !== 'DRAWIO_EXE'));
+  const doctorWith = (env) => cli(['doctor'], { env: { ...base, ...env } });
+  const stub = (dir, name) => {
+    const p = join(TMP, dir, name);
+    mkdirSync(dirname(p), { recursive: true });
+    writeFileSync(p, '#!/bin/sh\nexit 0\n');
+    if (!windows) execFileSync('chmod', ['755', p]);
+    return p;
+  };
+  const empty = join(TMP, 'drawio-empty');
+  mkdirSync(empty, { recursive: true });
+
+  const pinned = stub('drawio-pinned', windows ? 'draw.io.exe' : 'drawio');
+  let row = drawioRow(doctorWith({ PATH: empty, DRAWIO_EXE: pinned }));
+  assert(row.startsWith('ok') && row.includes(`${pinned} (DRAWIO_EXE)`), `a DRAWIO_EXE stub: ${row}`);
+
+  const missing = join(TMP, 'drawio-pinned', 'not-there');
+  row = drawioRow(doctorWith({ PATH: empty, DRAWIO_EXE: missing }));
+  assert(row.startsWith('warn') && row.includes(`DRAWIO_EXE ${missing} is not executable`), `an unusable DRAWIO_EXE: ${row}`);
+
+  const listed = stub('drawio-on-path', windows ? 'drawio.exe' : 'drawio');
+  row = drawioRow(doctorWith({ PATH: dirname(listed) }));
+  assert(row.startsWith('ok') && row.includes(`${listed} (PATH)`), `a drawio on PATH: ${row}`);
+
+  // Nothing anywhere: every path the renderer tried is listed. Checkable only
+  // where Desktop is not installed, which includes every CI runner.
+  const bare = renderDrawio.locateDrawio(undefined, { env: { PATH: empty } });
+  if (bare.path) {
+    console.log(`      (Draw.io Desktop is installed at ${bare.path}; the not-found listing is checked where it is not)`);
+    return;
+  }
+  const out = doctorWith({ PATH: empty });
+  assert(drawioRow(out).startsWith('warn') && drawioRow(out).includes('not found'), `nothing installed: ${drawioRow(out)}`);
+  assert(out.includes('tried drawio in 1 PATH directory'), `doctor does not summarise the PATH search:\n${out}`);
+  const installs = bare.tried.filter((p) => !bare.onPath.includes(p));
+  assert(installs.length >= 5, `expected every install location to be tried, got ${installs.join(', ')}`);
+  for (const p of installs) assert(out.includes(`tried ${p}`), `doctor does not list ${p}:\n${out}`);
+});
+
 test('both engines dispatch through to a real search', () => {
   const drawio = JSON.parse(cli(['drawio', 'icon', 'bedrock']));
   assert(drawio.matches?.length > 0, 'no draw.io icon match for "bedrock"');
