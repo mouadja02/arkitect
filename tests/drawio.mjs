@@ -1244,6 +1244,74 @@ test('rapid updates in the same second never overwrite an earlier backup (#35)',
   assert(backups[2].endsWith('rapid.backup-20260913-101500-3.drawio'), `unexpected collision name: ${backups[2]}`);
 });
 
+test('retention keeps the oldest backup and the newest five, and touches nothing else (#49)', () => {
+  const dir = join(TMP, 'retention');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'arch.drawio');
+  // Not backups of this target: a hand-named copy, another diagram's, the other
+  // engine's extension, a lookalike stem, a counter the builder never writes.
+  const foreign = ['arch.backup-old.drawio', 'other.backup-20260913-101500.drawio', 'arch.backup-20260913-101500.excalidraw',
+    'arch.v2.backup-20260913-101500.drawio', 'arch.backup-20260913-101500-0.drawio'];
+  for (const f of foreign) writeFileSync(join(dir, f), 'not ours');
+  const now = new Date('2026-09-13T10:15:00.000Z');
+  const made = [];
+  for (let i = 0; i < 12; i++) {
+    writeFileSync(target, `version ${i}`);
+    made.push(builder.backupExisting(target, { now }));
+    builder.pruneBackups(target);
+  }
+  eq(new Set(made).size, made.length, 'a counter freed by pruning is never reused, so the newest backup is never pruned');
+  const ours = () => readdirSync(dir).filter((f) => f !== 'arch.drawio' && !foreign.includes(f)).sort();
+  eq(JSON.stringify(ours()), JSON.stringify([made[0], ...made.slice(7)].map((p) => basename(p)).sort()),
+    'the oldest and the newest five, with -10 and -11 counted as newer than -2');
+  eq(readFileSync(made[0], 'utf8'), 'version 0', 'the oldest backup still holds the first version');
+  for (const f of foreign) eq(readFileSync(join(dir, f), 'utf8'), 'not ours', `${f} was touched`);
+
+  builder.backupExisting(target, { now: new Date('2026-09-13T10:15:01.000Z') });
+  eq(JSON.stringify(builder.pruneBackups(target).map((p) => basename(p))), JSON.stringify([basename(made[7])]),
+    'a later second is newer than every counter of an earlier one');
+  eq(JSON.stringify(builder.pruneBackups(target, { keep: 1 }).map((p) => basename(p))),
+    JSON.stringify(made.slice(8).map((p) => basename(p))), 'keep 1 leaves the oldest and the newest');
+  builder.backupExisting(target, { now });
+  eq(builder.pruneBackups(target, { keep: 0 }).length, 0, 'keep 0 deletes nothing');
+  for (const bad of [-1, 1.5, NaN, '5']) {
+    let threw = false;
+    try { builder.pruneBackups(target, { keep: bad }); } catch { threw = true; }
+    assert(threw, `keep ${JSON.stringify(bad)} was accepted`);
+  }
+  eq(builder.pruneBackups(join(dir, 'no-such-dir', 'arch.drawio')).length, 0, 'a missing directory prunes nothing');
+});
+
+test('build prunes old backups only after writing, and --keep-backups sets how many (#49)', () => {
+  const dir = join(TMP, 'retention-cli');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'arch.drawio');
+  const specPath = join(dir, 'spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }] }));
+  const build = (...extra) => spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', out, ...extra], { encoding: 'utf8' });
+  const backupsOf = () => readdirSync(dir).filter((f) => f.startsWith('arch.backup-'));
+  let report;
+  for (let i = 0; i < 8; i++) {
+    const r = build();
+    eq(r.status, 0, `build ${i}: ${r.stderr}`);
+    report = JSON.parse(r.stdout);
+  }
+  eq(backupsOf().length, 6, 'seven rebuilds leave the oldest backup and the newest five');
+  eq(report.pruned.length, 1, 'the last build reports the backup it pruned');
+  assert(!existsSync(report.pruned[0]) && existsSync(report.backup), 'the pruned backup is gone and the new one stays');
+  const two = JSON.parse(build('--keep-backups', '2').stdout);
+  eq(two.pruned.length, 4, '--keep-backups 2 reports the four it removed');
+  eq(backupsOf().length, 3, 'and leaves the oldest and the newest two');
+  eq(JSON.parse(build('--keep-backups', '0').stdout).pruned.length, 0, '--keep-backups 0 removes nothing');
+  eq(backupsOf().length, 4, 'and keeps the new backup');
+  for (const bad of [['--keep-backups', '-1'], ['--keep-backups', 'two'], ['--keep-backups', '1.5'], ['--keep-backups']]) {
+    eq(build(...bad).status, 2, `${bad.join(' ')} exits 2`);
+  }
+  eq(backupsOf().length, 4, 'a refused flag writes no backup and deletes none');
+});
+
 test('the validator rejects a broken diagram', () => {
   const bad = join(TMP, 'broken.drawio');
   writeFileSync(bad, '<mxfile><diagram name="b" id="b"><mxGraphModel><root>'

@@ -69,7 +69,10 @@ Read `references/style-guide.md` before laying anything out, and
    (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.
 
 5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling backup
-   before replacing an existing file. If you edit XML by any other route, call
+   before replacing an existing file. Once the new file is written it keeps the
+   oldest backup and the newest five of that file, deletes the rest and lists them
+   under `pruned` (`--keep-backups N`; `0` keeps all). Suggest `*.backup-*` for the
+   user's `.gitignore`. If you edit XML by any other route, call
    `backupExisting()` or copy the file yourself first.
 
 6. **Validate.**

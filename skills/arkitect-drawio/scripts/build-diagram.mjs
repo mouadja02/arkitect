@@ -6,14 +6,16 @@
 //   node build-diagram.mjs spec.json --out diagram.drawio
 //
 // An existing target is never overwritten silently: a timestamped sibling
-// backup is written first (see backupExisting).
+// backup is written first (see backupExisting), and once the new file is
+// written the oldest and the newest five backups of it are kept (see
+// pruneBackups; --keep-backups N, 0 keeps all).
 //
 // Placement is on a column/row grid using the observed pitch, which keeps
 // generated output collision-free and readable. See the style guide's note on
 // grid snapping - the reference diagrams are placed free-hand, so this is a
 // deliberate normalisation, not an observed convention.
 
-import { readFileSync, writeFileSync, existsSync, copyFileSync, constants } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, readdirSync, statSync, unlinkSync, constants } from 'node:fs';
 import { dirname, join, basename, extname } from 'node:path';
 import { resolve, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
@@ -95,16 +97,27 @@ const STYLE = {
 
 // A backup is created exclusively and never replaces an earlier one. Two updates
 // inside the same second get `-1`, `-2`, ... instead of the second copy
-// overwriting the first, which is how the original used to be lost (#35).
+// overwriting the first, which is how the original used to be lost (#35). The
+// counter continues from the highest one already used that second instead of
+// filling a gap: retention deletes old backups (#49), and a reused low counter
+// would make the newest copy sort among the oldest and be pruned at once.
 // `now` exists so a test can pin the clock.
 const MAX_BACKUPS_PER_SECOND = 1000;
+const quoteRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export function backupExisting(path, { now = new Date() } = {}) {
   if (!existsSync(path)) return null;
   const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
-  const stem = join(dirname(path), `${basename(path, extname(path))}.backup-${stamp}`);
-  for (let n = 0; n < MAX_BACKUPS_PER_SECOND; n++) {
-    const backup = `${stem}${n ? `-${n}` : ''}${extname(path)}`;
+  const ext = extname(path);
+  const name = `${basename(path, ext)}.backup-${stamp}`;
+  const sameSecond = new RegExp(`^${quoteRe(name)}(?:-([1-9]\\d*))?${quoteRe(ext)}$`);
+  let first = 0;
+  for (const entry of readdirSync(dirname(path))) {
+    const m = sameSecond.exec(entry);
+    if (m) first = Math.max(first, Number(m[1] ?? 0) + 1);
+  }
+  for (let n = first; n < MAX_BACKUPS_PER_SECOND; n++) {
+    const backup = join(dirname(path), `${name}${n ? `-${n}` : ''}${ext}`);
     try {
       copyFileSync(path, backup, constants.COPYFILE_EXCL);
       return backup;
@@ -113,6 +126,41 @@ export function backupExisting(path, { now = new Date() } = {}) {
     }
   }
   throw new Error(`no free backup name for ${path}: ${MAX_BACKUPS_PER_SECOND} already exist for ${stamp}`);
+}
+
+// Retention (#49). Every rebuild leaves a backup, so a build-look-fix loop used
+// to leave ten or twenty beside the user's diagram. After a successful write
+// the builder keeps the newest `keep` backups of that target plus the oldest -
+// usually the person's own version from before an agent started - and deletes
+// the rest. Only names backupExisting writes for this exact target count
+// (`<stem>.backup-YYYYMMDD-HHMMSS[-n]<ext>`); nothing else is ever touched.
+// `keep: 0` keeps everything. Returns the deleted paths.
+export const DEFAULT_KEEP_BACKUPS = 5;
+
+export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
+  if (!Number.isSafeInteger(keep) || keep < 0) throw new TypeError(`keep must be a non-negative whole number, got ${keep}`);
+  const dir = dirname(path);
+  if (keep === 0 || !existsSync(dir)) return [];
+  const ext = extname(path);
+  const own = new RegExp(`^${quoteRe(basename(path, ext))}\\.backup-(\\d{8}-\\d{6})(?:-([1-9]\\d*))?${quoteRe(ext)}$`);
+  const backups = readdirSync(dir)
+    .map((name) => { const m = own.exec(name); return m && { name, stamp: m[1], n: Number(m[2] ?? 0) }; })
+    .filter(Boolean)
+    // By name, not mtime: the stamp is UTC and the collision counter counts up,
+    // so `-10` is newer than `-2` although it sorts before it as text.
+    .sort((a, b) => (a.stamp < b.stamp ? -1 : a.stamp > b.stamp ? 1 : a.n - b.n));
+  const pruned = [];
+  for (const { name } of backups.slice(1, Math.max(1, backups.length - keep))) {
+    const doomed = join(dir, name);
+    try {
+      if (!statSync(doomed).isFile()) continue;
+      unlinkSync(doomed);
+      pruned.push(doomed);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+  return pruned;
 }
 
 // Resolution never guesses. `spec.context.packs` biases the search toward the
@@ -413,16 +461,20 @@ export function buildDiagram(spec) {
   return { xml, report };
 }
 
-const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio>';
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N]';
 
 function main(argv) {
-  const { options, positionals } = parseCliOrExit(argv, { values: { '--out': null } }, USAGE);
+  const { options, positionals } = parseCliOrExit(argv, { values: { '--out': null, '--keep-backups': null } }, USAGE);
   if (positionals.length !== 1) {
     exitUsage(positionals.length ? `expected one spec file, got ${positionals.length}` : 'expected a spec file', USAGE);
   }
   if (!options.out) exitUsage('--out <file.drawio> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
+  const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
+  if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
+    exitUsage(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}`, USAGE);
+  }
 
   // One line, not a stack trace: the message never quotes the spec's content.
   let spec;
@@ -445,9 +497,11 @@ function main(argv) {
   const { xml, report } = built;
   const backup = backupExisting(out);
   writeFileSync(out, xml);
+  // Only once the new file is written: a failed write keeps every backup (#49).
+  const pruned = pruneBackups(out, { keep: Number(keep) });
 
   console.log(JSON.stringify({
-    wrote: out, bytes: Buffer.byteLength(xml), backup,
+    wrote: out, bytes: Buffer.byteLength(xml), backup, pruned,
     icons: {
       resolved: report.used.length,
       missing: report.missing,
