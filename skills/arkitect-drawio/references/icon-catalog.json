@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:38:01.522Z",
+  "generated": "2026-09-13T21:38:21.018Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "f88b6e86633db2185c6299d962d940b9410805175d40c150b37740a3cc321c0e"
+    "sha256": "5038b071500560c4fe3007069afc0890bb21d5fec13998067ecf285e0a842b84"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -322,6 +322,24 @@
       "licence": "MIT",
       "licenceUrl": "https://github.com/zitadel/typescript/blob/a970096d80472ccccaae4790eff065e3a3194810/LICENSE",
       "archiveSha256": "15a966758054968073f59888db71a2e377221c8b4c6ad92d143ad97a4918c429"
+    },
+    "lancedb-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/lancedb/lancedb/blob/b8f0048b5a0f4bd9f9d735cb60fc444db3f5a42d/LICENSE",
+      "archiveSha256": "6805e40447c11bf74862cd0b833bfd26da3dfc1e5fc0ead2b30917a3aad8bf81"
+    },
+    "marqo-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/marqo-ai/marqo/blob/37a728385a25c4572a8f47b5327e6a7c946d94a9/LICENSE",
+      "archiveSha256": "d27844640166b672f00e338f5c22e5f5238a98fe2e0679ce252f6fc50ed33b53"
+    },
+    "orientdb-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/orientechnologies/orientdb/blob/62069bb64297b53f2bf9aa78e672e9e31dc8eb7b/license.txt",
+      "archiveSha256": "f9f9e495a60cebec77bd5952f7570af4f0dc080c9c65675e75e98f3132140792"
     }
   },
   "packs": [
@@ -373,9 +391,9 @@
       "description": "Relational, document, key-value, graph and vector stores",
       "rank": 20,
       "file": "databases.drawio",
-      "count": 37,
-      "onDemand": 1,
-      "sha256": "27abbae3e67f1518d877653779cf2b80c95bacb18b214be2626a52ba6223c4cf"
+      "count": 40,
+      "onDemand": 5,
+      "sha256": "bf7971e9b3706d19e1f37f1ee1b0f5ada4e5c29384a85793603684922f822275"
     },
     {
       "id": "ai-frameworks",
@@ -414,7 +432,7 @@
       "rank": 20,
       "file": "observability.drawio",
       "count": 27,
-      "onDemand": 4,
+      "onDemand": 11,
       "sha256": "e59f62412762bdce21024e826ef7b57a3633a1ddb01bad33c46f7a0566a0fc0b"
     },
     {
@@ -512,9 +530,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4978,
-    "committed": 4839,
-    "onDemand": 139
+    "total": 4992,
+    "committed": 4842,
+    "onDemand": 150
   },
   "icons": [
     {
@@ -35268,6 +35286,62 @@
       "libraryIndex": 36
     },
     {
+      "id": "databases/lancedb",
+      "pack": "databases",
+      "title": "LanceDB",
+      "aliases": [
+        "lancedb",
+        "lance db"
+      ],
+      "source": "lancedb-logo",
+      "upstreamId": "https://raw.githubusercontent.com/lancedb/lancedb/b8f0048b5a0f4bd9f9d735cb60fc444db3f5a42d/docs/src/assets/logo.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 385,
+      "height": 385,
+      "sha256": "8108ce5e0533ebac83a5ad95ff25ba8e0bee4a8a3f2a6404d132c58c48510448",
+      "bytes": "committed",
+      "libraryIndex": 37
+    },
+    {
+      "id": "databases/marqo",
+      "pack": "databases",
+      "title": "Marqo",
+      "aliases": [
+        "marqo"
+      ],
+      "source": "marqo-logo",
+      "upstreamId": "https://raw.githubusercontent.com/marqo-ai/marqo/37a728385a25c4572a8f47b5327e6a7c946d94a9/assets/logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 715,
+      "height": 706,
+      "sha256": "3a9b0b35a4487bacbd8df8ebb8e87695d585f06ef401acccd19787cb3eb61ddf",
+      "bytes": "committed",
+      "libraryIndex": 38
+    },
+    {
+      "id": "databases/orientdb",
+      "pack": "databases",
+      "title": "OrientDB",
+      "aliases": [
+        "orientdb",
+        "orient db"
+      ],
+      "source": "orientdb-logo",
+      "upstreamId": "https://raw.githubusercontent.com/orientechnologies/orientdb/62069bb64297b53f2bf9aa78e672e9e31dc8eb7b/OrientDB_logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 4608,
+      "height": 3846,
+      "sha256": "e268a07382d626f45514ce11eddb0e1129ef399b006b5509a55bc8f4b8e9d396",
+      "bytes": "committed",
+      "libraryIndex": 39
+    },
+    {
       "id": "databases/questdb",
       "pack": "databases",
       "title": "QuestDB",
@@ -35281,6 +35355,77 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://questdb.com/> --name questdb"
+    },
+    {
+      "id": "databases/libsql",
+      "pack": "databases",
+      "title": "libSQL",
+      "aliases": [
+        "libsql",
+        "lib sql"
+      ],
+      "source": "vendor",
+      "upstreamId": "libsql",
+      "brandUrl": "https://github.com/tursodatabase/libsql",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/tursodatabase/libsql/blob/d6c75af6353bb1c34985399608e37cd272a35aa1/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "libSQL publishes no logo of its own: the MIT-licensed repository contains no logo file, libsql.org redirects to turso.tech, and the only marks in its documentation repository are Turso's",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://github.com/tursodatabase/libsql> --name libsql"
+    },
+    {
+      "id": "databases/rethinkdb",
+      "pack": "databases",
+      "title": "RethinkDB",
+      "aliases": [
+        "rethinkdb",
+        "rethink db"
+      ],
+      "source": "vendor",
+      "upstreamId": "rethinkdb",
+      "upstreamUrl": "https://raw.githubusercontent.com/rethinkdb/www/1be3fee3b171bbdba45e013001f9780b555c67bd/assets/images/logo.png",
+      "brandUrl": "https://rethinkdb.com/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
+      "bytes": "on-demand",
+      "reason": "RethinkDB is on the Linux Foundation trademark list, the CNCF having bought the copyright and contributed the project to the Foundation in 2017, and the Foundation's trademark usage guidelines require written permission to place its logos in third-party materials",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/rethinkdb/www/1be3fee3b171bbdba45e013001f9780b555c67bd/assets/images/logo.png --name rethinkdb"
+    },
+    {
+      "id": "databases/ravendb",
+      "pack": "databases",
+      "title": "RavenDB",
+      "aliases": [
+        "ravendb",
+        "raven db"
+      ],
+      "source": "vendor",
+      "upstreamId": "ravendb",
+      "upstreamUrl": "https://raw.githubusercontent.com/ravendb/ravendb/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/src/Raven.Studio/wwwroot/Content/img/ravendb_logo.svg",
+      "brandUrl": "https://ravendb.net/",
+      "licence": "none - AGPL-3.0 and proprietary EULA",
+      "licenceUrl": "https://github.com/ravendb/ravendb/blob/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/LICENSE.txt",
+      "bytes": "on-demand",
+      "reason": "the RavenDB repository ships under an end user licence agreement that licenses the server under AGPLv3 and expressly prohibits reproduction or redistribution it does not authorise, so the logo files inside it are not permissively licensed",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/ravendb/ravendb/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/src/Raven.Studio/wwwroot/Content/img/ravendb_logo.svg --name ravendb"
+    },
+    {
+      "id": "databases/janusgraph",
+      "pack": "databases",
+      "title": "JanusGraph",
+      "aliases": [
+        "janusgraph",
+        "janus graph"
+      ],
+      "source": "vendor",
+      "upstreamId": "janusgraph",
+      "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/janusgraph/icon/color/janusgraph-icon-color.svg",
+      "brandUrl": "https://janusgraph.org/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "JanusGraph's official artwork lives in lfai/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and JanusGraph is a registered Linux Foundation trademark; the code repository being Apache-2.0 does not change the artwork terms",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/janusgraph/icon/color/janusgraph-icon-color.svg --name janusgraph"
     },
     {
       "id": "ai-frameworks/langchain",
@@ -38850,6 +38995,123 @@
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
       "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://grafana.com/oss/loki/> --name grafanaloki"
+    },
+    {
+      "id": "observability/chronosphere",
+      "pack": "observability",
+      "title": "Chronosphere",
+      "aliases": [
+        "chronosphere"
+      ],
+      "source": "vendor",
+      "upstreamId": "chronosphere",
+      "brandUrl": "https://chronosphere.io/",
+      "licence": "none - media kit with no licence stated",
+      "licenceUrl": "https://chronosphere.io/",
+      "bytes": "on-demand",
+      "reason": "Chronosphere publishes its logo only through a hosted media kit that states no licence or usage terms, publishes no trademark policy, and keeps no logo file in its GitHub organisation",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://chronosphere.io/> --name chronosphere"
+    },
+    {
+      "id": "observability/lightstep",
+      "pack": "observability",
+      "title": "ServiceNow Cloud Observability",
+      "aliases": [
+        "lightstep",
+        "servicenow cloud observability"
+      ],
+      "source": "vendor",
+      "upstreamId": "lightstep",
+      "brandUrl": "https://docs.lightstep.com/",
+      "licence": "none - brand retired, no logo licence",
+      "licenceUrl": "https://docs.lightstep.com/changelog/eol-notice",
+      "bytes": "on-demand",
+      "reason": "the Lightstep brand was retired when ServiceNow renamed the product in August 2023, ServiceNow's own notice ends support on 1 March 2026, and no ServiceNow logo licence permits redistribution",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://docs.lightstep.com/> --name lightstep"
+    },
+    {
+      "id": "observability/coralogix",
+      "pack": "observability",
+      "title": "Coralogix",
+      "aliases": [
+        "coralogix"
+      ],
+      "source": "vendor",
+      "upstreamId": "coralogix",
+      "brandUrl": "https://coralogix.com/",
+      "licence": "none - nominative use only",
+      "licenceUrl": "https://land.coralogix.com/brand/",
+      "bytes": "on-demand",
+      "reason": "Coralogix's brand page permits the logo only to link back to its own site or to illustrate posts about Coralogix products, which is nominative use and licenses no redistribution of the file",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://coralogix.com/> --name coralogix"
+    },
+    {
+      "id": "observability/logzio",
+      "pack": "observability",
+      "title": "Logz.io",
+      "aliases": [
+        "logz.io",
+        "logzio"
+      ],
+      "source": "vendor",
+      "upstreamId": "logzio",
+      "brandUrl": "https://logz.io/",
+      "licence": "none - express written consent required",
+      "licenceUrl": "https://logz.io/about-us/terms-of-use/",
+      "bytes": "on-demand",
+      "reason": "an official Logz.io wordmark does sit in an Apache-2.0 documentation repository, but Logz.io's terms of use separately forbid use or display of its name, trademark or logo without express written consent, and a published policy decides before a repository licence",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://logz.io/> --name logzio"
+    },
+    {
+      "id": "observability/telegraf",
+      "pack": "observability",
+      "title": "Telegraf",
+      "aliases": [
+        "telegraf"
+      ],
+      "source": "vendor",
+      "upstreamId": "telegraf",
+      "brandUrl": "https://www.influxdata.com/time-series-platform/telegraf/",
+      "licence": "none - InfluxData trademark guidelines",
+      "licenceUrl": "https://www.influxdata.com/legal/guidelines-for-using-influxdata-trademarks/",
+      "bytes": "on-demand",
+      "reason": "InfluxData's trademark guidelines require an express written logo licence before any third party uses an InfluxData logo in a product, publication or website, even though the Telegraf repository itself is MIT-licensed",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.influxdata.com/time-series-platform/telegraf/> --name telegraf"
+    },
+    {
+      "id": "observability/cortex",
+      "pack": "observability",
+      "title": "Cortex",
+      "aliases": [
+        "cortex",
+        "cortex metrics"
+      ],
+      "source": "vendor",
+      "upstreamId": "cortex",
+      "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/cortex/icon/color/cortex-icon-color.svg",
+      "brandUrl": "https://cortexmetrics.io/",
+      "licence": "none - Linux Foundation trademark policy",
+      "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
+      "bytes": "on-demand",
+      "reason": "Cortex's official artwork lives in cncf/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and Cortex is on the Linux Foundation trademark list",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/cortex/icon/color/cortex-icon-color.svg --name cortex"
+    },
+    {
+      "id": "observability/mimir",
+      "pack": "observability",
+      "title": "Grafana Mimir",
+      "aliases": [
+        "mimir",
+        "grafana mimir"
+      ],
+      "source": "vendor",
+      "upstreamId": "mimir",
+      "brandUrl": "https://grafana.com/oss/mimir/",
+      "licence": "none - AGPL-3.0",
+      "licenceUrl": "https://github.com/grafana/mimir/blob/b464e5d6656e8ff45bf2c9c8837ab9da5d56f382/LICENSE",
+      "bytes": "on-demand",
+      "reason": "grafana/mimir is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under, and contains no logo file; the Mimir mark is published only on grafana.com under the Grafana Labs trademark policy",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://grafana.com/oss/mimir/> --name mimir"
     },
     {
       "id": "devops/terraform",

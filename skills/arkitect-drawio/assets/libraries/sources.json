@@ -461,6 +461,33 @@
       "licence": "MIT",
       "licenceUrl": "https://github.com/zitadel/typescript/blob/a970096d80472ccccaae4790eff065e3a3194810/LICENSE",
       "note": "ZITADEL's own solo mark, public/logo/zitadel-logo-solo-lightdesign.svg in zitadel/typescript at commit a970096, committed byte-for-byte on 2026-09-14. ZITADEL's brand and trademark policy names \"use in architecture diagrams without implying affiliation or partnership\" as fair use of its unmodified logo, which is exactly this use, and the file is published in the project's own MIT-licensed repository (#20). ZITADEL is a trademark of CAOS AG, named here only to identify the product."
+    },
+    "lancedb-logo": {
+      "type": "local-files",
+      "dir": "local/lancedb-logo",
+      "sha256": "6805e40447c11bf74862cd0b833bfd26da3dfc1e5fc0ead2b30917a3aad8bf81",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/lancedb/lancedb/blob/b8f0048b5a0f4bd9f9d735cb60fc444db3f5a42d/LICENSE",
+      "note": "LanceDB's own square mark, docs/src/assets/logo.png in lancedb/lancedb at commit b8f0048, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The project publishes no SVG, so the raster ships. Apache-2.0 grants no trademark rights; LanceDB is named here only to identify the product."
+    },
+    "marqo-logo": {
+      "type": "local-files",
+      "dir": "local/marqo-logo",
+      "sha256": "d27844640166b672f00e338f5c22e5f5238a98fe2e0679ce252f6fc50ed33b53",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/marqo-ai/marqo/blob/37a728385a25c4572a8f47b5327e6a7c946d94a9/LICENSE",
+      "note": "Marqo's own circular mark, assets/logo.svg in marqo-ai/marqo at commit 37a7283, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; Marqo is named here only to identify the product."
+    },
+    "orientdb-logo": {
+      "type": "local-files",
+      "dir": "local/orientdb-logo",
+      "sha256": "f9f9e495a60cebec77bd5952f7570af4f0dc080c9c65675e75e98f3132140792",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/orientechnologies/orientdb/blob/62069bb64297b53f2bf9aa78e672e9e31dc8eb7b/license.txt",
+      "note": "OrientDB's own logo, OrientDB_logo.svg at the root of orientechnologies/orientdb at commit 62069bb, committed byte-for-byte on 2026-09-14. The repository's REUSE.toml annotates this file specifically with SPDX-License-Identifier Apache-2.0, an explicit per-file grant on the artwork rather than an inference from the code licence (#20). Apache-2.0 grants no trademark rights; OrientDB is named here only to identify the product."
     }
   },
   "packs": [
@@ -2229,6 +2256,38 @@
             "nebula"
           ],
           "source": "simple-icons@16.30.0"
+        },
+        {
+          "slug": "lancedb",
+          "title": "LanceDB",
+          "aliases": [
+            "lancedb",
+            "lance db"
+          ],
+          "source": "lancedb-logo",
+          "file": "lancedb-logo.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/lancedb/lancedb/b8f0048b5a0f4bd9f9d735cb60fc444db3f5a42d/docs/src/assets/logo.png"
+        },
+        {
+          "slug": "marqo",
+          "title": "Marqo",
+          "aliases": [
+            "marqo"
+          ],
+          "source": "marqo-logo",
+          "file": "marqo-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/marqo-ai/marqo/37a728385a25c4572a8f47b5327e6a7c946d94a9/assets/logo.svg"
+        },
+        {
+          "slug": "orientdb",
+          "title": "OrientDB",
+          "aliases": [
+            "orientdb",
+            "orient db"
+          ],
+          "source": "orientdb-logo",
+          "file": "orientdb-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/orientechnologies/orientdb/62069bb64297b53f2bf9aa78e672e9e31dc8eb7b/OrientDB_logo.svg"
         }
       ],
       "onDemand": [
@@ -2242,6 +2301,61 @@
           "licence": "none - nominative use only",
           "reason": "no permissively licensed mark exists",
           "brandUrl": "https://questdb.com/"
+        },
+        {
+          "slug": "libsql",
+          "title": "libSQL",
+          "aliases": [
+            "libsql",
+            "lib sql"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://github.com/tursodatabase/libsql/blob/d6c75af6353bb1c34985399608e37cd272a35aa1/LICENSE.md",
+          "reason": "libSQL publishes no logo of its own: the MIT-licensed repository contains no logo file, libsql.org redirects to turso.tech, and the only marks in its documentation repository are Turso's",
+          "brandUrl": "https://github.com/tursodatabase/libsql"
+        },
+        {
+          "slug": "rethinkdb",
+          "title": "RethinkDB",
+          "aliases": [
+            "rethinkdb",
+            "rethink db"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
+          "reason": "RethinkDB is on the Linux Foundation trademark list, the CNCF having bought the copyright and contributed the project to the Foundation in 2017, and the Foundation's trademark usage guidelines require written permission to place its logos in third-party materials",
+          "upstreamUrl": "https://raw.githubusercontent.com/rethinkdb/www/1be3fee3b171bbdba45e013001f9780b555c67bd/assets/images/logo.png",
+          "brandUrl": "https://rethinkdb.com/"
+        },
+        {
+          "slug": "ravendb",
+          "title": "RavenDB",
+          "aliases": [
+            "ravendb",
+            "raven db"
+          ],
+          "source": "vendor",
+          "licence": "none - AGPL-3.0 and proprietary EULA",
+          "licenceUrl": "https://github.com/ravendb/ravendb/blob/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/LICENSE.txt",
+          "reason": "the RavenDB repository ships under an end user licence agreement that licenses the server under AGPLv3 and expressly prohibits reproduction or redistribution it does not authorise, so the logo files inside it are not permissively licensed",
+          "upstreamUrl": "https://raw.githubusercontent.com/ravendb/ravendb/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/src/Raven.Studio/wwwroot/Content/img/ravendb_logo.svg",
+          "brandUrl": "https://ravendb.net/"
+        },
+        {
+          "slug": "janusgraph",
+          "title": "JanusGraph",
+          "aliases": [
+            "janusgraph",
+            "janus graph"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
+          "reason": "JanusGraph's official artwork lives in lfai/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and JanusGraph is a registered Linux Foundation trademark; the code repository being Apache-2.0 does not change the artwork terms",
+          "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/janusgraph/icon/color/janusgraph-icon-color.svg",
+          "brandUrl": "https://janusgraph.org/"
         }
       ]
     },
@@ -4351,6 +4465,95 @@
           "licence": "none - nominative use only",
           "reason": "no permissively licensed mark exists",
           "brandUrl": "https://grafana.com/oss/loki/"
+        },
+        {
+          "slug": "chronosphere",
+          "title": "Chronosphere",
+          "aliases": [
+            "chronosphere"
+          ],
+          "source": "vendor",
+          "licence": "none - media kit with no licence stated",
+          "licenceUrl": "https://chronosphere.io/",
+          "reason": "Chronosphere publishes its logo only through a hosted media kit that states no licence or usage terms, publishes no trademark policy, and keeps no logo file in its GitHub organisation",
+          "brandUrl": "https://chronosphere.io/"
+        },
+        {
+          "slug": "lightstep",
+          "title": "ServiceNow Cloud Observability",
+          "aliases": [
+            "lightstep",
+            "servicenow cloud observability"
+          ],
+          "source": "vendor",
+          "licence": "none - brand retired, no logo licence",
+          "licenceUrl": "https://docs.lightstep.com/changelog/eol-notice",
+          "reason": "the Lightstep brand was retired when ServiceNow renamed the product in August 2023, ServiceNow's own notice ends support on 1 March 2026, and no ServiceNow logo licence permits redistribution",
+          "brandUrl": "https://docs.lightstep.com/"
+        },
+        {
+          "slug": "coralogix",
+          "title": "Coralogix",
+          "aliases": [
+            "coralogix"
+          ],
+          "source": "vendor",
+          "licence": "none - nominative use only",
+          "licenceUrl": "https://land.coralogix.com/brand/",
+          "reason": "Coralogix's brand page permits the logo only to link back to its own site or to illustrate posts about Coralogix products, which is nominative use and licenses no redistribution of the file",
+          "brandUrl": "https://coralogix.com/"
+        },
+        {
+          "slug": "logzio",
+          "title": "Logz.io",
+          "aliases": [
+            "logz.io",
+            "logzio"
+          ],
+          "source": "vendor",
+          "licence": "none - express written consent required",
+          "licenceUrl": "https://logz.io/about-us/terms-of-use/",
+          "reason": "an official Logz.io wordmark does sit in an Apache-2.0 documentation repository, but Logz.io's terms of use separately forbid use or display of its name, trademark or logo without express written consent, and a published policy decides before a repository licence",
+          "brandUrl": "https://logz.io/"
+        },
+        {
+          "slug": "telegraf",
+          "title": "Telegraf",
+          "aliases": [
+            "telegraf"
+          ],
+          "source": "vendor",
+          "licence": "none - InfluxData trademark guidelines",
+          "licenceUrl": "https://www.influxdata.com/legal/guidelines-for-using-influxdata-trademarks/",
+          "reason": "InfluxData's trademark guidelines require an express written logo licence before any third party uses an InfluxData logo in a product, publication or website, even though the Telegraf repository itself is MIT-licensed",
+          "brandUrl": "https://www.influxdata.com/time-series-platform/telegraf/"
+        },
+        {
+          "slug": "cortex",
+          "title": "Cortex",
+          "aliases": [
+            "cortex",
+            "cortex metrics"
+          ],
+          "source": "vendor",
+          "licence": "none - Linux Foundation trademark policy",
+          "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
+          "reason": "Cortex's official artwork lives in cncf/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and Cortex is on the Linux Foundation trademark list",
+          "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/cortex/icon/color/cortex-icon-color.svg",
+          "brandUrl": "https://cortexmetrics.io/"
+        },
+        {
+          "slug": "mimir",
+          "title": "Grafana Mimir",
+          "aliases": [
+            "mimir",
+            "grafana mimir"
+          ],
+          "source": "vendor",
+          "licence": "none - AGPL-3.0",
+          "licenceUrl": "https://github.com/grafana/mimir/blob/b464e5d6656e8ff45bf2c9c8837ab9da5d56f382/LICENSE",
+          "reason": "grafana/mimir is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under, and contains no logo file; the Mimir mark is published only on grafana.com under the Grafana Labs trademark policy",
+          "brandUrl": "https://grafana.com/oss/mimir/"
         }
       ]
     },
