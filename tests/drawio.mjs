@@ -25,6 +25,15 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
+// Tests that need reference diagrams of your own. They skip on a clone without
+// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
+// in docs/testing.md against how many are declared this way (#47).
+let sourceDependent = 0;
+function sourceTest(name, fn) {
+  sourceDependent++;
+  test(name, fn);
+}
+
 function test(name, fn) {
   try {
     const r = fn();
@@ -1721,7 +1730,7 @@ clearTestLogos();
 
 // ------------------------------------------------------------- analysis
 
-test('all five reference diagrams summarize without emitting page XML', () => {
+sourceTest('all five reference diagrams summarize without emitting page XML', () => {
   if (!haveSources) return 'skip';
   const out = node('analyze-drawio.mjs', sourceList);
   for (const marker of ['<mxCell', '<mxGraphModel', '<root>', 'data:image/']) {
@@ -1732,7 +1741,7 @@ test('all five reference diagrams summarize without emitting page XML', () => {
   assert(parsed.files.every((f) => f.pages.length >= 1), 'pages summarized');
 });
 
-test('page inventory matches the shipped record', () => {
+sourceTest('page inventory matches the shipped record', () => {
   if (!haveSources) return 'skip';
   // Structure only: page names are authored text and never enter the record,
   // so the invariant is the shape of each file, not what its pages are called.
@@ -1754,7 +1763,7 @@ test('the record carries no page names', () => {
   }
 });
 
-test('reference diagrams are unmodified since analysis', () => {
+sourceTest('reference diagrams are unmodified since analysis', () => {
   if (!haveSources) return 'skip';
   const record = JSON.parse(readFileSync(join(SKILL, 'references', 'source-analysis.json'), 'utf8'));
   sourceList.forEach((p, i) => {
@@ -1895,7 +1904,7 @@ function repoFiles(dir, acc = []) {
   return acc;
 }
 
-test('no sensitive string from the reference diagrams appears in the repository', () => {
+sourceTest('no sensitive string from the reference diagrams appears in the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.drawio.sha256');
   let sensitive;
 
@@ -2017,5 +2026,6 @@ test('scripts avoid hard-coded absolute paths', () => {
 // -------------------------------------------------------------
 
 console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
+console.log(`source-dependent: ${sourceDependent}`);
 if (!haveSources) console.log('(reference-diagram tests skipped: .analysis/sources.local.json not present)');
 if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }

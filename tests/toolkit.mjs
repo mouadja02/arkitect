@@ -524,6 +524,55 @@ test('a pull request that changes bin/, skills/ or docs/ must add a fragment (#3
   }
 });
 
+// ------------------------------------------------------ the quoted count (#47)
+//
+// The fresh-clone count was written by hand in four files and drifted twice. It
+// is quoted once, in docs/testing.md, and run-tests.mjs checks it.
+
+const countGuard = await import(pathToFileURL(join(ROOT, 'tests', 'count-guard.mjs')).href);
+
+test('the documented fresh-clone count is checked against what ran (#47)', () => {
+  const clean = { pass: 186, fail: 0, skip: 7 };
+  const check = (documented, totals, sourceDependent, sourcesPresent) => countGuard.checkCounts({ documented, totals, sourceDependent, sourcesPresent });
+
+  let r = check({ passed: 186, skipped: 7 }, clean, 7, false);
+  eq(r.problems.join('; '), '', 'a matching quote on a clean clone passes');
+  eq(JSON.stringify(r.expected), JSON.stringify({ passed: 186, skipped: 7 }), 'and the expectation is that quote');
+
+  r = check({ passed: 186, skipped: 7 }, { pass: 190, fail: 0, skip: 3 }, 7, true);
+  eq(r.problems.join('; '), '', 'the same quote holds on a checkout where local sources run four of the seven');
+  eq(JSON.stringify(r.expected), JSON.stringify({ passed: 186, skipped: 7 }), 'which still expects the fresh-clone numbers');
+
+  // The drift of #30: numbers copied from a checkout with sources present.
+  r = check({ passed: 190, skipped: 3 }, clean, 7, false);
+  assert(r.problems.some((p) => p.includes('3 skipped but 7 tests need local sources') && p.includes('`186 passed, 0 failed, 7 skipped`')),
+    `copied local numbers are caught: ${r.problems.join('; ')}`);
+
+  // A test added without updating the quote.
+  r = check({ passed: 186, skipped: 7 }, { pass: 187, fail: 0, skip: 7 }, 7, false);
+  assert(r.problems.some((p) => p.includes('quotes 193 tests') && p.includes('194 ran') && p.includes('`187 passed, 0 failed, 7 skipped`')),
+    `an added test is caught: ${r.problems.join('; ')}`);
+
+  // A test that skips on a clean clone without being declared.
+  r = check({ passed: 185, skipped: 8 }, { pass: 185, fail: 0, skip: 8 }, 7, false);
+  assert(r.problems.some((p) => p.includes('8 tests skipped') && p.includes('only 7 are marked')), `an undeclared skip is caught: ${r.problems.join('; ')}`);
+
+  assert(check(null, clean, 7, false).problems.some((p) => p.includes('has no')), 'a missing quote is caught');
+  assert(countGuard.documentedCount(readFileSync(join(ROOT, 'docs', 'testing.md'), 'utf8')), 'docs/testing.md states the fresh-clone count in a line the runner reads');
+});
+
+test('the count is quoted only in docs/testing.md, and no doc claims an unmeasured runtime (#47)', () => {
+  const hits = [];
+  for (const f of FILES.filter((p) => p.endsWith('.md'))) {
+    const rel = relative(ROOT, f).split(sep).join('/');
+    if (rel === 'CHANGELOG.md' || rel.startsWith('changelog.d/')) continue;
+    const s = readFileSync(f, 'utf8');
+    if (rel !== 'docs/testing.md' && /\b\d+ passed, \d+ failed, \d+ skipped\b/.test(s)) hits.push(`${rel}: quotes a test count; link to docs/testing.md instead`);
+    if (/~\s?2\s?s\b|couple of seconds|roughly two seconds/i.test(s)) hits.push(`${rel}: claims a runtime nobody measured`);
+  }
+  assert(hits.length === 0, hits.join('\n        '));
+});
+
 // ------------------------------------------------------ the npm package (#38)
 //
 // What npm publishes is decided by `files` in package.json, not by .gitignore,
