@@ -211,7 +211,7 @@ names, file names, paths or image payloads. A test enforces that on every run.
 
 Issues and pull requests are welcome — new patterns, new icon coverage, another agent
 adapter, a bug in the generators. Start with **[CONTRIBUTING.md](CONTRIBUTING.md)**; the
-suite is `node tests/run-tests.mjs` and it runs offline in a couple of seconds.
+suite is `node tests/run-tests.mjs` and it runs offline in about 20 seconds.
 
 ## Credits
 

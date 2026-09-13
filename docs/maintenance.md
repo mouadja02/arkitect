@@ -17,10 +17,12 @@ clean checkout, before opening a pull request.
 node tests/run-tests.mjs
 ```
 
-The bar is **0 failed**, and no test that used to pass may start skipping. On a
-clone with no reference diagrams of your own, the expected shape is
-`176 passed, 0 failed, 7 skipped` — the skips are the tests that need a local
-corpus. A drop in the passing count is a regression even if nothing says FAIL.
+The bar is **0 failed**, and no test that used to pass may start skipping. The
+result to expect on a clone with no reference diagrams of your own is stated
+once, in [testing.md](testing.md), and the runner fails when it no longer matches
+what ran; the skips are the tests that need a local corpus. A pull request that
+adds a test updates that line. A drop in the passing count is a regression even
+if nothing says FAIL.
 
 ```bash
 node bin/arkitect.mjs doctor

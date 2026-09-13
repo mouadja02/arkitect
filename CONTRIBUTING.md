@@ -9,12 +9,13 @@ useful by staying small — so the bar for *adding* is higher than the bar for
 ```bash
 git clone https://github.com/mouadja02/arkitect.git
 cd arkitect
-node tests/run-tests.mjs        # ~2s, offline, no dependencies
+node tests/run-tests.mjs        # offline, no dependencies, about 20 seconds
 node bin/arkitect.mjs doctor
 ```
 
-On a fresh clone the suite reports roughly `176 passed, 0 failed, 7 skipped`.
-The skips need reference diagrams of your own — that is the expected result.
+The result to expect on a fresh clone is stated once, in
+[docs/testing.md](docs/testing.md), and the runner checks it. The skips need
+reference diagrams of your own — that is the expected result.
 
 The full contract — every invariant, the verification ritual, and what an
 automated maintainer may and may not do — is in
@@ -77,7 +78,8 @@ PNGs. A change that suits the small example can wreck the large one.
    sources present.
 2. **Add a test** for anything you fixed. The suites live in `tests/drawio.mjs`,
    `tests/excalidraw.mjs` and `tests/toolkit.mjs`; they are plain assertions,
-   no framework.
+   no framework. Then update the count in [docs/testing.md](docs/testing.md);
+   the runner prints the line to use when it no longer matches.
 3. **Add a changelog fragment**, `changelog.d/<issue>-<slug>.md`, rather than
    editing `CHANGELOG.md`; see [changelog.d/README.md](changelog.d/README.md).
    A test, CI or typo fix takes the `skip-changelog` label instead.

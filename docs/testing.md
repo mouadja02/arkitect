@@ -7,14 +7,23 @@ node tests/run-tests.mjs excalidraw
 node tests/run-tests.mjs toolkit
 ```
 
-Offline, deterministic, no network, no Docker, no dependencies. Roughly two
-seconds.
+Offline, deterministic, no network, no Docker, no dependencies. About 20
+seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect about `176 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `194 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)) and they run.
+
+That line is the only place the count is written down, and every full
+`run-tests.mjs` run checks it: passed plus skipped must equal the number of
+tests that ran, the skipped count must equal the tests declared with
+`sourceTest()`, and on a checkout without local sources every skip must be one
+of those. A pull request that adds a test updates the line; when it no longer
+matches, the runner prints the line to use. With local sources present, the
+runner also prints the fresh-clone expectation beside the local numbers. Quote
+that, never the local result (#47).
 
 Each suite writes its scratch to `tests/output/<engine>/` and is a separate
 process, so they cannot tread on each other.

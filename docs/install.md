@@ -114,10 +114,10 @@ CLI distribution only: install the plugin through route A or B.
 node tests/run-tests.mjs
 ```
 
-Offline, deterministic, a couple of seconds. On a fresh clone expect roughly
-`176 passed, 0 failed, 7 skipped` — the skips are the tests that need reference
-diagrams of your own, which a clone does not have. That is the correct result,
-not a problem.
+Offline, deterministic, about 20 seconds. A fresh clone reports some skipped
+tests: they need reference diagrams of your own, which a clone does not have.
+That is the correct result, not a problem. The exact numbers to expect are in
+[testing.md](testing.md).
 
 ## The optional pieces
 

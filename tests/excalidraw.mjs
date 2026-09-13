@@ -29,6 +29,15 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
+// Tests that need reference scenes of your own. They skip on a clone without
+// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
+// in docs/testing.md against how many are declared this way (#47).
+let sourceDependent = 0;
+function sourceTest(name, fn) {
+  sourceDependent++;
+  test(name, fn);
+}
+
 function test(name, fn) {
   try {
     const r = fn();
@@ -1099,7 +1108,7 @@ test('the style guide matches the state of the corpus', () => {
 // Elbow arrows are routed by the app, which is fussy about the fields it finds.
 // The reference corpus contains arrows the app itself wrote; compare against
 // those rather than guessing.
-test('generated elbow arrows carry the fields the app writes', () => {
+sourceTest('generated elbow arrows carry the fields the app writes', () => {
   if (!haveSources) return 'skip';
   let reference = null;
   for (const p of sourceList) {
@@ -1138,7 +1147,7 @@ test('a bound elbow arrow names the edge it leaves from', () => {
   assert(!('fixedPoint' in plain.startBinding), 'a plain arrow carries no fixedPoint');
 });
 
-test('reference scenes summarize without their text reaching the record', () => {
+sourceTest('reference scenes summarize without their text reaching the record', () => {
   if (!haveSources) return 'skip';
   for (const p of sourceList) {
     const before = createHash('sha256').update(readFileSync(p)).digest('hex');
@@ -1192,7 +1201,7 @@ function repoFiles(dir, out = []) {
   return out;
 }
 
-test('no string from a reference scene leaks into the repository', () => {
+sourceTest('no string from a reference scene leaks into the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.excalidraw.sha256');
   let digests;
 
@@ -1412,5 +1421,6 @@ test('the docker compose file pins the official image and a port', () => {
 cleanTestIcons();
 
 console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
+console.log(`source-dependent: ${sourceDependent}`);
 if (!haveSources) console.log('(reference-scene tests skipped: .analysis/sources.local.json not present)');
 if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }
