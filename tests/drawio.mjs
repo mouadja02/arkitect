@@ -834,6 +834,72 @@ test('build-packs refuses to write a pack holding a malformed SVG, naming every 
     && !error.message.includes('test-pack/fine'), error.message);
 });
 
+// #31: a devicon mark with no paint of its own draws black. One flagged
+// "paint": "tint" is filled with its brand colour through the root, keeping
+// every namespace and its viewBox; artwork that already carries paint is
+// refused, never guessed at.
+test('a devicon mark flagged for tint is filled through its root, and paint it cannot override is refused (#31)', () => {
+  const NS = 'xmlns="http://www.w3.org/2000/svg"';
+  const plain = `<svg ${NS} viewBox="0 0 128 128"><path d="M0 0h10v10z"/></svg>`;
+  const { svg, render } = iconBuild.tintUnpaintedMark(plain, '00b0ad');
+  eq(render, 'tinted', 'render');
+  eq(svg, `<svg ${NS} width="64" height="64" viewBox="0 0 128 128" fill="#00b0ad"><path d="M0 0h10v10z"/></svg>`, 'filled through the root, viewBox kept');
+  const linked = iconBuild.tintUnpaintedMark(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">`
+    + '<defs><path id="a" d="M0 0h1v1z"/></defs><use xlink:href="#a"/></svg>', '00b0ad');
+  assert(linked.svg.includes(' xmlns:xlink="http://www.w3.org/1999/xlink"') && linked.svg.includes('xlink:href="#a"'),
+    `the xlink declaration survives the tint: ${linked.svg}`);
+  const refused = {
+    'an explicit black fill': `<svg ${NS} viewBox="0 0 24 24"><path fill="#000000" d="M0 0h1v1z"/></svg>`,
+    currentColor: `<svg ${NS} viewBox="0 0 24 24"><path fill="currentColor" d="M0 0h1v1z"/></svg>`,
+    'a stroke': `<svg ${NS} viewBox="0 0 24 24"><path stroke="#000" d="M0 0h1v1z"/></svg>`,
+    'a style attribute': `<svg ${NS} viewBox="0 0 24 24"><path style="fill:#000" d="M0 0h1v1z"/></svg>`,
+    'a gradient': `<svg ${NS} viewBox="0 0 24 24"><linearGradient id="g"/><path d="M0 0h1v1z"/></svg>`,
+    'fill="none" on the root': `<svg ${NS} viewBox="0 0 24 24" fill="none"><path d="M0 0h1v1z"/></svg>`,
+  };
+  for (const [what, text] of Object.entries(refused)) {
+    let error;
+    try { iconBuild.tintUnpaintedMark(text, '00b0ad'); } catch (e) { error = e; }
+    assert(error && /already carries paint/.test(error.message), `tinted artwork with ${what}: ${error?.message ?? 'no error'}`);
+  }
+  rejects(() => iconBuild.tintUnpaintedMark(plain, '#00b0ad'), /six-digit hex/);
+  rejects(() => iconBuild.tintUnpaintedMark(plain, undefined), /six-digit hex/);
+  eq(iconBuild.sizedSvg(`<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink" width="128" height="128"><path/></svg>`),
+    `<svg ${NS} xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64" viewBox="0 0 128 128"><path/></svg>`,
+    'a verbatim mark is only resized');
+});
+
+// The seven full-colour devicon marks as built before #31. The tint must not
+// touch a byte of them.
+const DEVICON_VERBATIM = {
+  'databases/oracle': '7643635b2306795d283976c2ac3bcbe36a321e5567c144042eccf8ec1cf3333e',
+  'databases/microsoftsqlserver': 'fbdd4a5cbd969f9d97b210d162d23a393776780f7ce3979c821d3a81bccede9c',
+  'databases/memcached': '83073fc28501ea75994af428cc1faedfd359ce98321ccfaaa60bc88b0c88d2d8',
+  'databases/yugabytedb': '0273097482e119d86fb981f0dbeae1f5f85b5404e019fef3c6b81b21ea496123',
+  'ml-training/kubeflow': 'f5873bb2d4133f4f5157e13992eb7eac0f1d0be8a37a5cf0c2a9f97bdaef3471',
+  'devops/sonarqube': '44ab2530f7a929e37be661b5ce074de01a9192383d54c0705dd7e1516cf3e641',
+  'languages-runtimes/csharp': 'd73d492a523c1102b8e59660de27da613f65e5dc47652971fb376c2b09aaaaa4',
+};
+
+test('gRPC ships tinted in its manifest colour, the other devicon marks stay verbatim, and painted rows record their hex (#31)', () => {
+  const cat = finder.loadCatalog();
+  const grpc = cat.icons.find((i) => i.id === 'languages-runtimes/grpc');
+  eq(`${grpc.render} ${grpc.hex}`, 'tinted 00b0ad', 'the gRPC catalog row');
+  const entry = core.readLibrary(join(LIB_DIR, 'languages-runtimes.drawio'))[grpc.libraryIndex];
+  const svg = Buffer.from(entry.dataUri.split(',')[1], 'base64').toString('utf8');
+  assert(/^<svg [^>]*\sfill="#00b0ad"[^>]*>/.test(svg) && svg.includes('viewBox="0 0 128 128"'), `gRPC's payload root: ${svg.slice(0, 160)}`);
+  const devicon = cat.icons.filter((i) => i.source.startsWith('devicon@') && i.id !== grpc.id);
+  eq(devicon.map((i) => i.id).sort().join(' '), Object.keys(DEVICON_VERBATIM).sort().join(' '), 'the other devicon marks');
+  for (const icon of devicon) {
+    eq(`${icon.render} ${icon.hex ?? '-'}`, 'verbatim-colour -', `${icon.id} render`);
+    eq(icon.sha256, DEVICON_VERBATIM[icon.id], `${icon.id} payload untouched by the tint`);
+  }
+  const painted = cat.icons.filter((i) => i.render === 'tinted' || i.render === 'tile-bright');
+  const unrecorded = painted.filter((i) => !/^[0-9A-Fa-f]{6}$/.test(i.hex ?? ''));
+  assert(painted.length > 3000 && unrecorded.length === 0, `painted rows without the colour they were painted: ${unrecorded.slice(0, 3).map((i) => i.id).join(', ')}`);
+  const stray = cat.icons.filter((i) => i.hex && i.render !== 'tinted' && i.render !== 'tile-bright');
+  eq(stray.length, 0, `rows carrying a hex nothing painted: ${stray.slice(0, 3).map((i) => i.id).join(', ')}`);
+});
+
 test('committed libraries still match the manifest they were built from', async () => {
   const checks = await packs.verify();
   const bad = checks.filter((c) => !c.pass);

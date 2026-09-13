@@ -4824,6 +4824,7 @@
           "source": "devicon@2.17.0",
           "deviconName": "grpc",
           "deviconVariant": "plain",
+          "paint": "tint",
           "hex": "00b0ad"
         },
         {
