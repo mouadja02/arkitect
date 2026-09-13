@@ -142,16 +142,21 @@ the generator's defaults; do not undo them by hand:
    are judgement calls; check them against the render.
 
 7. **Render and actually look at it.**
-   ```powershell
-   ./scripts/render-excalidraw.ps1 -Path "path/to/architecture.excalidraw" -OutDir .analysis/renders -Width 2200
+   ```bash
+   node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
+   That writes `architecture.png` with a local Edge, Chrome or Chromium, on any
+   OS; pin one with `--browser` or `ARKITECT_BROWSER`. With none installed it
+   says so and exits 1: install one, or fall back to `--format svg` and say that
+   you could not look at a PNG. `--out preview.png` names the file instead. The
+   Windows helper `./scripts/render-excalidraw.ps1 -Path … -OutDir …` still works.
    Read the PNG back as an image. Iterate until spacing, hierarchy, routing and
    label legibility hold up. A scene that validates but reads badly is not done.
 
    The preview is geometry-faithful, not pixel-faithful: Excalidraw's fonts are
    not installed outside the app, so text is substituted and runs a little wide,
-   and fills are flat. Judge layout from it, not typography. `-Style clean`
-   drops the hand-drawn stroke and is easier to read when the question is
+   and fills are flat. Judge layout from it, not typography. `--style clean`
+   (`-Style clean` in the PowerShell helper) drops the hand-drawn stroke and is easier to read when the question is
    whether something collides.
 
    Three things the first render nearly always shows, all fixed in the spec:

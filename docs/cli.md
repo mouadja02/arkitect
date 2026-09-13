@@ -322,9 +322,26 @@ only from committed repository templates.
 
 | | Draw.io | Excalidraw |
 |---|---|---|
-| command | `arkitect drawio render`, or unchanged `render-drawio.ps1` | `arkitect excalidraw render`, or `render-excalidraw.ps1` for PNG |
-| needs | Draw.io Desktop; Xvfb for headless Linux | nothing (SVG) / Edge or Chrome (PNG) |
+| command | `arkitect drawio render`, or unchanged `render-drawio.ps1` | `arkitect excalidraw render`, or unchanged `render-excalidraw.ps1` |
+| needs | Draw.io Desktop; Xvfb for headless Linux | nothing (SVG) / a local Edge, Chrome or Chromium (PNG) |
 | fidelity | exact | geometry exact; fonts substituted, fills flat |
+
+`arkitect excalidraw render <scene>` writes `<scene>.svg` beside the scene.
+`--out FILE.svg` or `--out FILE.png` chooses the file, and its extension
+chooses the format; any other extension, or a directory, exits `2`.
+`--out-dir DIR` writes `DIR/<scene>.png`, or `.svg` with `--format svg`, the way
+`drawio render --out-dir` does. A PNG takes `--width` pixels (default 2200) and
+uses a local Edge, Chrome or Chromium, found on `PATH` or where each OS installs
+it; `--browser PATH` or `ARKITECT_BROWSER` pins one, and an unusable pin fails
+instead of falling back to another browser. Ubuntu's snap-packaged Chromium
+(also behind `/usr/bin/chromium-browser`) cannot see the host's `/tmp`, so for a
+snap the page and screenshot are staged in `~/snap/chromium/common` and removed
+afterwards. With no browser, the command exits
+`1`, lists every path it tried, and writes nothing. The PNG replaces the
+previous file only once it is a real PNG, so a crashed, timed-out or empty
+screenshot leaves the old preview as it was. `--scale`, `--padding`, `--style`
+and `--background` are checked before anything is drawn. `--no-sandbox` is
+opt-in, for a Linux host where Chromium cannot start its sandbox.
 
 The Excalidraw preview is a preview, not an export: Excalidraw's fonts are not
 installed outside the app, so text runs a little wide. `-Style clean` drops the

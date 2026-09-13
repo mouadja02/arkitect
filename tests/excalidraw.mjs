@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
+import { tmpdir } from 'node:os';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -56,6 +57,7 @@ const rough = await mod('lib/rough.mjs');
 const builder = await mod('build-diagram.mjs');
 const validator = await mod('validate-excalidraw.mjs');
 const renderer = await mod('render-excalidraw.mjs');
+const browserLib = await mod('lib/browser.mjs');
 const analyzer = await mod('analyze-excalidraw.mjs');
 const icons = await mod('make-icon.mjs');
 const finder = await mod('find-icon.mjs');
@@ -976,6 +978,232 @@ test('the renderer produces an SVG covering every element', () => {
 
 test('the render is stable across runs', () => {
   eq(renderer.sceneToSvg(built.scene), renderer.sceneToSvg(built.scene), 'same scene, same SVG');
+});
+
+// `render --out preview.png` used to exit 0 having written SVG bytes, `--out
+// renders` became a file, and `--scale nope` drew NaN dimensions (#39).
+test('render checks its arguments before writing, and the extension decides the format (#39)', () => {
+  const scenePath = join(TMP, 'render-args.excalidraw');
+  core.writeScene(scenePath, built.scene);
+  const dir = join(TMP, 'render-args');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const parse = (...args) => renderer.parseRenderArgs([scenePath, ...args]);
+  const shape = (o) => JSON.stringify([o.out, o.format]);
+  eq(shape(parse()), JSON.stringify([join(TMP, 'render-args.svg'), 'svg']), 'no output flag: <scene>.svg beside the scene');
+  eq(shape(parse('--out', join(dir, 'p.png'))), JSON.stringify([join(dir, 'p.png'), 'png']), '--out FILE.png');
+  eq(shape(parse('--out', join(dir, 'p.SVG'))), JSON.stringify([join(dir, 'p.SVG'), 'svg']), '--out FILE.SVG');
+  eq(shape(parse('--out-dir', dir)), JSON.stringify([join(dir, 'render-args.png'), 'png']), '--out-dir defaults to PNG, like drawio render');
+  eq(shape(parse('--out-dir', dir, '--format', 'svg')), JSON.stringify([join(dir, 'render-args.svg'), 'svg']), '--out-dir with --format svg');
+  const tuned = parse('--out', 'x.png', '--width', '800', '--scale', '2', '--padding', '0', '--style', 'clean', '--no-sandbox');
+  eq(JSON.stringify([tuned.width, tuned.scale, tuned.padding, tuned.style, tuned.noSandbox]), JSON.stringify([800, 2, 0, 'clean', true]), 'values parsed');
+
+  for (const [args, why] of [
+    [[], /expected a \.excalidraw scene/],
+    [[scenePath, scenePath], /expected one scene, got 2/],
+    [[scenePath, '--bogus'], /unknown option --bogus/],
+    [[scenePath, '--out'], /--out needs a value/],
+    [[scenePath, '--out', 'a.png', '--out', 'b.png'], /--out given twice/],
+    [[scenePath, '--out', 'preview.jpg'], /must end in \.svg or \.png/],
+    [[scenePath, '--out', 'renders'], /must end in \.svg or \.png/],
+    [[scenePath, '--out', dir], /is a directory; use --out-dir/],
+    [[scenePath, '--out', 'renders/'], /is a directory; use --out-dir/],
+    [[scenePath, '--out', 'a.png', '--out-dir', dir], /not both/],
+    [[scenePath, '--format', 'gif'], /--format expects png or svg/],
+    [[scenePath, '--out', 'a.png', '--format', 'svg'], /contradicts/],
+    [[scenePath, '--scale', 'nope'], /--scale expects a positive number/],
+    [[scenePath, '--scale', '0'], /--scale expects a positive number/],
+    [[scenePath, '--scale', '-1'], /--scale expects a positive number/],
+    [[scenePath, '--padding', '-5'], /--padding expects a non-negative number/],
+    [[scenePath, '--out', 'a.png', '--width', '0'], /--width expects/],
+    [[scenePath, '--out', 'a.png', '--width', '1.5'], /--width expects/],
+    [[scenePath, '--out', 'a.png', '--width', '20000'], /--width expects/],
+    [[scenePath, '--style', 'fancy'], /--style expects rough or clean/],
+    [[scenePath, '--out', 'a.svg', '--width', '800'], /--width only applies to PNG/],
+    [[scenePath, '--out', 'a.svg', '--browser', '/usr/bin/chromium'], /--browser only applies to PNG/],
+    [[scenePath, '--background', '"><script>'], /--background expects a colour/],
+  ]) {
+    let message = '';
+    try { renderer.parseRenderArgs(args); } catch (error) { message = error.message; }
+    assert(why.test(message), `${JSON.stringify(args.slice(1))} should be refused with ${why}; got: ${message || 'accepted'}`);
+  }
+
+  const cli = (...args) => {
+    try {
+      return { status: 0, stdout: execFileSync(process.execPath, [join(SCRIPTS, 'render-excalidraw.mjs'), ...args], { encoding: 'utf8', stdio: 'pipe' }) };
+    } catch (error) {
+      return { status: error.status, stdout: String(error.stdout ?? ''), stderr: String(error.stderr ?? '') };
+    }
+  };
+  for (const [args, file] of [
+    [['--out', join(dir, 'preview.png'), '--scale', 'nope'], 'preview.png'],
+    [['--out', join(dir, 'preview.jpg')], 'preview.jpg'],
+    [['--out', join(dir, 'renders')], 'renders'],
+  ]) {
+    const r = cli(scenePath, ...args);
+    eq(r.status, 2, `${args.join(' ')} exits 2`);
+    assert(!existsSync(join(dir, file)), `${args.join(' ')} wrote nothing`);
+    assert(/usage: render-excalidraw\.mjs/.test(r.stderr), 'and prints the usage');
+  }
+  const missing = cli(join(dir, 'no-such.excalidraw'));
+  eq(missing.status, 2, 'a missing scene exits 2');
+  assert(missing.stderr.includes('no scene at'), `a missing scene is named: ${missing.stderr}`);
+  const svg = cli(scenePath, '--out', join(dir, 'preview.svg'));
+  eq(svg.status, 0, 'an SVG render succeeds');
+  eq(JSON.parse(svg.stdout).format, 'svg', 'and reports its format');
+  assert(readFileSync(join(dir, 'preview.svg'), 'utf8').startsWith('<?xml'), 'an SVG is written');
+});
+
+test('a PNG render proves a real PNG before replacing the previous preview (#39)', () => {
+  const scenePath = join(TMP, 'render-png.excalidraw');
+  core.writeScene(scenePath, built.scene);
+  const dir = join(TMP, 'render-png');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'preview.png');
+  const fakePng = (w, h) => {
+    const b = Buffer.alloc(33);
+    browserLib.PNG_SIGNATURE.copy(b, 0);
+    b.writeUInt32BE(13, 8);
+    b.write('IHDR', 12, 'latin1');
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  };
+  const shotOf = (args) => args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
+  const lines = []; const errors = [];
+  let seen = null;
+  const good = (exe, args) => {
+    seen = { exe, args, page: readFileSync(fileURLToPath(args.at(-1)), 'utf8') };
+    writeFileSync(shotOf(args), fakePng(800, 311));
+  };
+  const deps = (runner, extra = {}) => ({
+    runner, platform: 'linux', env: { PATH: '' }, isExecutable: (p) => p === '/usr/bin/chromium',
+    log: (s) => lines.push(s), error: (s) => errors.push(s), ...extra,
+  });
+
+  eq(renderer.run([scenePath, '--out', out, '--width', '800'], deps(good)), 0, `renders: ${errors.join(' | ')}`);
+  assert(readFileSync(out).subarray(0, 8).equals(browserLib.PNG_SIGNATURE), 'a PNG is written under the .png name');
+  const report = JSON.parse(lines.at(-1));
+  eq(JSON.stringify([report.format, report.width, report.height]), JSON.stringify(['png', 800, 311]), 'the report says what was written');
+  eq(JSON.stringify(report.browser), JSON.stringify({ path: '/usr/bin/chromium', source: 'install location' }), 'and with which browser');
+  eq(seen.exe, '/usr/bin/chromium', 'the located browser is the one run');
+  assert(seen.args.includes('--headless=new') && !seen.args.includes('--no-sandbox'), 'headless, with the sandbox kept unless asked');
+  const svgSize = /<svg\b[^>]*?\swidth="([\d.]+)"[^>]*?\sheight="([\d.]+)"/.exec(renderer.sceneToSvg(built.scene));
+  const tall = Math.round((Math.ceil(Number(svgSize[2])) * 800) / Math.ceil(Number(svgSize[1])));
+  assert(seen.args.includes(`--window-size=800,${tall}`) && seen.args.includes('--force-device-scale-factor=1'),
+    `the window is the output size at scale factor 1: ${seen.args.join(' ')}`);
+  assert(seen.page.includes(`width="800" height="${tall}"`), 'and the SVG is drawn at that size, as vectors');
+  const profile = seen.args.find((a) => a.startsWith('--user-data-dir=')).slice('--user-data-dir='.length);
+  assert(!existsSync(profile) && !existsSync(dirname(profile)), 'the throwaway profile and page are removed');
+
+  const previous = readFileSync(out);
+  for (const [why, runner] of [
+    ['the browser failed', () => { const e = new Error('crashed'); e.status = 1; throw e; }],
+    ['timed out', () => { const e = new Error('spawnSync ETIMEDOUT'); e.code = 'ETIMEDOUT'; throw e; }],
+    ['without writing a screenshot', () => {}],
+    ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '<?xml version="1.0"?><svg/>')],
+    ['empty or not a PNG', (exe, args) => writeFileSync(shotOf(args), '')],
+  ]) {
+    errors.length = 0;
+    eq(renderer.run([scenePath, '--out', out], deps(runner)), 1, `"${why}" exits 1`);
+    assert(errors.join(' ').includes(why), `says "${why}": ${errors.join(' | ')}`);
+    assert(readFileSync(out).equals(previous), `"${why}" left the previous preview untouched`);
+  }
+  eq(readdirSync(dir).join(','), 'preview.png', 'no temporary file is left beside the preview');
+
+  errors.length = 0;
+  const never = join(dir, 'never.png');
+  eq(renderer.run([scenePath, '--out', never], deps(good, { env: { PATH: '/tools' }, isExecutable: () => false })), 1, 'no browser exits 1');
+  assert(!existsSync(never), 'and writes nothing');
+  const said = errors.join('\n');
+  assert(said.includes('tried /tools/chromium') && said.includes('tried /snap/bin/chromium'), `every path tried is listed:\n${said}`);
+  assert(said.includes('--format svg') && said.includes('ARKITECT_BROWSER'), `and the ways out are named:\n${said}`);
+
+  errors.length = 0;
+  let probes = 0;
+  const pinned = deps(good, { env: { ARKITECT_BROWSER: '/pinned/chrome' }, isExecutable: (p) => { probes++; return p === '/usr/bin/chromium'; } });
+  eq(renderer.run([scenePath, '--out', never], pinned), 1, 'an unusable pin exits 1');
+  eq(probes, 1, 'the pin is probed once and never swapped for another browser');
+  assert(errors.join(' ').includes('ARKITECT_BROWSER /pinned/chrome is not executable'), `the pin is named: ${errors.join(' | ')}`);
+
+  eq(renderer.run([scenePath, '--out', out, '--no-sandbox'], deps(good)), 0, '--no-sandbox renders');
+  assert(seen.args.includes('--no-sandbox'), '--no-sandbox reaches the browser only when asked');
+});
+
+test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH first (#39)', () => {
+  const at = (platform, env, winner) => browserLib.locateBrowser(undefined, { platform, env, isExecutable: (p) => p === winner });
+  const win = { PATH: 'C:\\Tools', ProgramFiles: 'C:\\Program Files', 'ProgramFiles(x86)': 'C:\\Program Files (x86)', LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local' };
+  for (const p of ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Users\\u\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe']) {
+    eq(at('win32', win, p).path, p, `Windows finds ${p}`);
+  }
+  eq(JSON.stringify(at('win32', win, 'C:\\Tools\\msedge.exe')), JSON.stringify({ path: 'C:\\Tools\\msedge.exe', source: 'PATH', tried: ['C:\\Tools\\msedge.exe'] }), 'PATH is tried first');
+  eq(at('darwin', { PATH: '' }, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome').source, 'install location', 'macOS Chrome');
+  eq(at('darwin', { PATH: '' }, '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge').source, 'install location', 'macOS Edge');
+  eq(at('linux', { PATH: '/usr/local/bin' }, '/usr/local/bin/google-chrome').source, 'PATH', 'a Chrome on the Linux PATH');
+  eq(at('linux', { PATH: '' }, '/snap/bin/chromium').path, '/snap/bin/chromium', 'snap Chromium');
+  const none = at('linux', { PATH: '/a' }, null);
+  eq(JSON.stringify([none.path, none.source]), JSON.stringify([null, null]), 'nothing found');
+  assert(none.tried.includes('/a/chromium') && none.tried.includes('/opt/google/chrome/chrome'), 'every candidate tried');
+  const flag = browserLib.locateBrowser('/flag/chrome', { platform: 'linux', env: { ARKITECT_BROWSER: '/env/chrome' }, isExecutable: (p) => p === '/flag/chrome' });
+  eq(JSON.stringify([flag.path, flag.source]), JSON.stringify(['/flag/chrome', '--browser']), '--browser wins over ARKITECT_BROWSER');
+
+  // A snap Chromium has a private /tmp, so it works in its own data directory.
+  const home = { HOME: '/home/u' };
+  const wrapper = () => '#!/bin/sh\n# transitional package\nexec /snap/bin/chromium "$@"\n';
+  const binary = () => '\x7fELF\x02\x01\x01';
+  eq(browserLib.workRootFor('/snap/bin/chromium', { platform: 'linux', env: home }), join('/home/u', 'snap', 'chromium', 'common'), 'a snap binary');
+  eq(browserLib.workRootFor('/usr/bin/chromium-browser', { platform: 'linux', env: home, readHead: wrapper }), join('/home/u', 'snap', 'chromium', 'common'),
+    'an Ubuntu wrapper that execs the snap');
+  eq(browserLib.workRootFor('/usr/bin/google-chrome', { platform: 'linux', env: home, readHead: binary }), tmpdir(), 'a real binary uses the temp dir');
+  eq(browserLib.workRootFor('/usr/bin/missing', { platform: 'linux', env: home, readHead: () => { throw new Error('ENOENT'); } }), tmpdir(), 'an unreadable path uses the temp dir');
+  eq(browserLib.workRootFor('/snap/bin/chromium', { platform: 'darwin', env: home }), tmpdir(), 'only Linux has snaps');
+
+  // The page, profile and screenshot live in that directory and are removed from it.
+  const root = join(TMP, 'render-work-root');
+  rmSync(root, { recursive: true, force: true });
+  let seenArgs = [];
+  const svg = renderer.sceneToSvg(built.scene);
+  browserLib.rasteriseSvg(svg, { browser: '/snap/bin/chromium', width: 300, workRoot: root, runner: (exe, args) => {
+    seenArgs = args;
+    const shot = args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length);
+    const png = Buffer.alloc(33);
+    browserLib.PNG_SIGNATURE.copy(png, 0);
+    png.write('IHDR', 12, 'latin1');
+    writeFileSync(shot, png);
+  } });
+  const profile = seenArgs.find((a) => a.startsWith('--user-data-dir=')).slice('--user-data-dir='.length);
+  assert(profile.startsWith(root), `the profile is inside the work root: ${profile}`);
+  eq(readdirSync(root).length, 0, 'and nothing is left there afterwards');
+
+  let tooTall = '';
+  try {
+    browserLib.rasteriseSvg('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="1000"></svg>',
+      { browser: '/snap/bin/chromium', width: 1600, workRoot: root, runner: () => { throw new Error('the browser must not start'); } });
+  } catch (error) { tooTall = error.message; }
+  assert(/past Chromium's 16000px limit; use a smaller --width/.test(tooTall), `an impossible screenshot is refused before the browser starts: ${tooTall}`);
+});
+
+// Runs wherever a Chromium-based browser is installed, which includes every CI
+// runner; elsewhere it says so and passes, so the skip count stays exact.
+test('a real local browser renders a real PNG where one is installed (#39)', () => {
+  const found = browserLib.locateBrowser();
+  if (!found.path) {
+    console.log(`      (no Edge, Chrome or Chromium here; tried ${found.tried.length} paths)`);
+    return;
+  }
+  const scenePath = join(TMP, 'render-real.excalidraw');
+  core.writeScene(scenePath, built.scene);
+  const out = join(TMP, 'render-real', 'preview.png');
+  const lines = []; const errors = [];
+  const sandbox = process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [];
+  eq(renderer.run([scenePath, '--out', out, '--width', '600', ...sandbox], { log: (s) => lines.push(s), error: (s) => errors.push(s) }), 0,
+    `render with ${found.path}: ${errors.join(' | ')}`);
+  const bytes = readFileSync(out);
+  assert(bytes.subarray(0, 8).equals(browserLib.PNG_SIGNATURE), 'a real PNG signature');
+  assert(Math.abs(bytes.readUInt32BE(16) - 600) <= 2, `600px wide, got ${bytes.readUInt32BE(16)}`);
+  assert(bytes.length > 2000, `a drawing, not a blank page (${bytes.length} bytes)`);
 });
 
 // ------------------------------------------------------------- analysis
