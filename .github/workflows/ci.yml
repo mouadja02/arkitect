@@ -36,6 +36,32 @@ jobs:
           node bin/arkitect.mjs drawio icon "bedrock"
           node bin/arkitect.mjs excalidraw icon "postgres"
 
+  # setup-node brings the npm that shipped with that Node, so the matrix never
+  # sees a new npm. npm 12 changed `npm pack --json` and broke the packaging
+  # tests on a fresh install while every job above stayed green (#54).
+  npm-latest:
+    name: ubuntu-latest · node 22 · npm latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Newest npm, beside node where the suite looks for it
+        run: |
+          npm install -g npm@latest
+          beside="$(dirname "$(command -v node)")/../lib/node_modules/npm/bin/npm-cli.js"
+          test -f "$beside"
+          got="$(node "$beside" --version)"
+          want="$(npm view npm@latest version)"
+          echo "node $(node --version), npm beside node $got, npm latest $want"
+          test "$got" = "$want"
+
+      - name: Suite
+        run: node tests/run-tests.mjs
+
   plugin:
     name: plugin manifest
     runs-on: ubuntu-latest
