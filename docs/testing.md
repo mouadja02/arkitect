@@ -157,8 +157,12 @@ LLM graders. See [../evals/README.md](../evals/README.md).
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs the suite on Ubuntu, Windows and macOS against
-Node 20 and 22, on every push and pull request. It is the same command you run
-locally, with no sources present — so CI always sees the fresh-clone result.
+Node 20, 22 and 24, on every push and pull request. It is the same command you
+run locally, with no sources present — so CI always sees the fresh-clone result.
+Each of those jobs uses the npm bundled with its Node, so one more job upgrades
+Node 22 to the newest npm and runs the suite again; the packaging tests call the
+npm beside Node, and a change in npm's output (npm 12's `npm pack --json`, #54)
+turns CI red instead of only a fresh install.
 
 `.github/workflows/changelog.yml` runs on every pull request. It fails when
 `bin/`, `skills/` or `docs/` change and no `changelog.d/` fragment is added,
