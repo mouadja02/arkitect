@@ -317,6 +317,51 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "note": "OpenMetadata's own monogram, openmetadata-ui/src/main/resources/ui/src/assets/svg/logo-monogram.svg in open-metadata/OpenMetadata at commit 68606d7, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). Apache-2.0 grants no trademark rights; OpenMetadata is named here only to identify the product."
+    },
+    "sysdig-logo": {
+      "type": "local-files",
+      "dir": "local/sysdig-logo",
+      "sha256": "31ee7e4871394d82226b5671a16e0f8dfc4e14bb3a31f83fc934297f204080f0",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/draios/sysdig/blob/e91d29b401b98bbda580f11e1ef092dc55a5fbaa/COPYING",
+      "note": "Sysdig's own mark, img/logo_large.png in draios/sysdig at commit e91d29b, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The repository's COPYING licenses everything outside driver/ under Apache-2.0, this file included, and Sysdig publishes no logo or trademark policy; the terms of use on its documentation site govern that site's own content rather than this separately licensed repository. Apache-2.0 grants no trademark rights; Sysdig is named here only to identify the product."
+    },
+    "checkov-logo": {
+      "type": "local-files",
+      "dir": "local/checkov-logo",
+      "sha256": "658ae83d18e6332c081bd9796c3fb167846b08398af5221ee32223ec67a4307c",
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/bridgecrewio/checkov/blob/d99cd85240b24ba5da3aa354eff43bfe27ed433f/LICENSE",
+      "note": "Checkov's own wordmark, docs/web/images/checkov-logo.svg in bridgecrewio/checkov at commit d99cd85, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's Apache-2.0 licence, and no separate logo or trademark policy governs it (#20). The project publishes no separate icon mark. Apache-2.0 grants no trademark rights; Checkov is named here only to identify the product."
+    },
+    "tfsec-logo": {
+      "type": "local-files",
+      "dir": "local/tfsec-logo",
+      "sha256": "8605d326ee55f18c13fb9a1f734076982682c0c98746cbca86bede73397a80a1",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/aquasecurity/tfsec/blob/b692c20b68c0121346b7b34e81d6b1867ca8e1a8/LICENSE",
+      "note": "tfsec's own shield mark, tfsec.png in aquasecurity/tfsec at commit b692c20, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). tfsec has been folded into Trivy, which ships as security-identity/trivy, so this is a legacy mark kept because diagrams still name it. tfsec is a trademark of its owner, named here only to identify the product."
+    },
+    "infisical-logo": {
+      "type": "local-files",
+      "dir": "local/infisical-logo",
+      "sha256": "d12b993dd49e3bf5cc6f58846672785e3608064c85f3a42794e6b5633f662c49",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/Infisical/infisical/blob/56e6895c3886d14ac6279d6ea3319e39c1571f2b/LICENSE",
+      "note": "Infisical's own lockup, docs/logo/light.svg in Infisical/infisical at commit 56e6895, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20). The file sits outside the ee/ directory and so falls under the repository's MIT Expat licence. Infisical is a trademark of its owner, named here only to identify the product."
+    },
+    "zitadel-logo": {
+      "type": "local-files",
+      "dir": "local/zitadel-logo",
+      "sha256": "15a966758054968073f59888db71a2e377221c8b4c6ad92d143ad97a4918c429",
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/zitadel/typescript/blob/a970096d80472ccccaae4790eff065e3a3194810/LICENSE",
+      "note": "ZITADEL's own solo mark, public/logo/zitadel-logo-solo-lightdesign.svg in zitadel/typescript at commit a970096, committed byte-for-byte on 2026-09-14. ZITADEL's brand and trademark policy names \"use in architecture diagrams without implying affiliation or partnership\" as fair use of its unmodified logo, which is exactly this use, and the file is published in the project's own MIT-licensed repository (#20). ZITADEL is a trademark of CAOS AG, named here only to identify the product."
     }
   },
   "packs": [
@@ -5013,6 +5058,56 @@
           "deviconName": "teleport",
           "deviconVariant": "original",
           "hex": "512fc9"
+        },
+        {
+          "slug": "sysdig",
+          "title": "Sysdig",
+          "aliases": [
+            "sysdig"
+          ],
+          "source": "sysdig-logo",
+          "file": "sysdig-logo.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/draios/sysdig/e91d29b401b98bbda580f11e1ef092dc55a5fbaa/img/logo_large.png"
+        },
+        {
+          "slug": "checkov",
+          "title": "Checkov",
+          "aliases": [
+            "checkov"
+          ],
+          "source": "checkov-logo",
+          "file": "checkov-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/bridgecrewio/checkov/d99cd85240b24ba5da3aa354eff43bfe27ed433f/docs/web/images/checkov-logo.svg"
+        },
+        {
+          "slug": "tfsec",
+          "title": "tfsec",
+          "aliases": [
+            "tfsec"
+          ],
+          "source": "tfsec-logo",
+          "file": "tfsec.png",
+          "upstreamUrl": "https://raw.githubusercontent.com/aquasecurity/tfsec/b692c20b68c0121346b7b34e81d6b1867ca8e1a8/tfsec.png"
+        },
+        {
+          "slug": "infisical",
+          "title": "Infisical",
+          "aliases": [
+            "infisical"
+          ],
+          "source": "infisical-logo",
+          "file": "infisical-logo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/Infisical/infisical/56e6895c3886d14ac6279d6ea3319e39c1571f2b/docs/logo/light.svg"
+        },
+        {
+          "slug": "zitadel",
+          "title": "ZITADEL",
+          "aliases": [
+            "zitadel"
+          ],
+          "source": "zitadel-logo",
+          "file": "zitadel-logo-solo.svg",
+          "upstreamUrl": "https://raw.githubusercontent.com/zitadel/typescript/a970096d80472ccccaae4790eff065e3a3194810/public/logo/zitadel-logo-solo-lightdesign.svg"
         }
       ],
       "onDemand": [
@@ -5091,6 +5186,146 @@
           "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
           "upstreamUrl": "https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/spiffe/icon/color/spiffe-icon-color.svg",
           "brandUrl": "https://spiffe.io/"
+        },
+        {
+          "slug": "wiz",
+          "title": "Wiz",
+          "aliases": [
+            "wiz",
+            "wiz.io"
+          ],
+          "source": "vendor",
+          "licence": "none - prior written consent required",
+          "licenceUrl": "https://legal.wiz.io/legal",
+          "reason": "Wiz's terms of use state that the logos on its site are its property and that the content \"may not be used, modified, copied, distributed, transmitted\" without its prior written consent, and no logo is published under any licence",
+          "brandUrl": "https://www.wiz.io/"
+        },
+        {
+          "slug": "orca",
+          "title": "Orca Security",
+          "aliases": [
+            "orca",
+            "orca security"
+          ],
+          "source": "vendor",
+          "licence": "none - brand guide reserves all rights",
+          "licenceUrl": "https://orca.security/resources/media-kit/",
+          "reason": "Orca Security publishes its logo only through a media kit governed by a brand guide marked all rights reserved, which restricts use to approved unmodified files and grants no redistribution licence",
+          "brandUrl": "https://orca.security/"
+        },
+        {
+          "slug": "semgrep",
+          "title": "Semgrep",
+          "aliases": [
+            "semgrep"
+          ],
+          "source": "vendor",
+          "licence": "none - LGPL-2.1 and prior written permission required",
+          "licenceUrl": "https://github.com/semgrep/semgrep/blob/0516c0f23a3dceac5c8f5ff3fecd402af4450182/LICENSE",
+          "reason": "Semgrep does publish logo SVGs, but the repository holding them is LGPL-2.1, a copyleft licence this repository does not redistribute artwork under, and Semgrep's website terms separately require prior written permission to display or use its trademarks",
+          "upstreamUrl": "https://raw.githubusercontent.com/semgrep/semgrep/0516c0f23a3dceac5c8f5ff3fecd402af4450182/semgrep.svg",
+          "brandUrl": "https://semgrep.dev/"
+        },
+        {
+          "slug": "gitleaks",
+          "title": "Gitleaks",
+          "aliases": [
+            "gitleaks"
+          ],
+          "source": "vendor",
+          "licence": "none - no published logo",
+          "licenceUrl": "https://github.com/gitleaks/gitleaks/blob/master/LICENSE",
+          "reason": "the MIT-licensed gitleaks repository publishes no logo file at all, its README using only ASCII art, and the only mark is an unlicensed raster on the project marketing site",
+          "brandUrl": "https://gitleaks.io/"
+        },
+        {
+          "slug": "vanta",
+          "title": "Vanta",
+          "aliases": [
+            "vanta"
+          ],
+          "source": "vendor",
+          "licence": "none - press kit with no licence stated",
+          "licenceUrl": "https://www.vanta.com/company/press",
+          "reason": "Vanta publishes its logo only through a press-page asset download, with no trademark policy, brand guidelines or licence terms stated anywhere",
+          "brandUrl": "https://www.vanta.com/"
+        },
+        {
+          "slug": "drata",
+          "title": "Drata",
+          "aliases": [
+            "drata"
+          ],
+          "source": "vendor",
+          "licence": "none - logo kit with no licence stated",
+          "licenceUrl": "https://drata.com/about/news",
+          "reason": "Drata publishes a downloadable logo kit on its newsroom page with no licence or usage grant beyond asking that the brand be used responsibly",
+          "brandUrl": "https://drata.com/"
+        },
+        {
+          "slug": "stepsecurity",
+          "title": "StepSecurity",
+          "aliases": [
+            "stepsecurity",
+            "step security"
+          ],
+          "source": "vendor",
+          "licence": "none - artwork repository has no LICENSE",
+          "licenceUrl": "https://github.com/step-security/.github",
+          "reason": "the only StepSecurity logo on GitHub sits in its .github repository, which contains no LICENSE file, and its own site publishes no brand-asset or trademark page",
+          "upstreamUrl": "https://raw.githubusercontent.com/step-security/.github/b649665c7ec6e925962cb7d7b6081b07820fb9bc/profile/step-security-logo.png",
+          "brandUrl": "https://www.stepsecurity.io/"
+        },
+        {
+          "slug": "boundary",
+          "title": "HashiCorp Boundary",
+          "aliases": [
+            "boundary",
+            "hashicorp boundary"
+          ],
+          "source": "vendor",
+          "licence": "none - HashiCorp trademark policy and BUSL-1.1",
+          "licenceUrl": "https://github.com/hashicorp/boundary/blob/01cd5c86e8602aa9babc54b07e51ef7b8445e0b6/LICENSE",
+          "reason": "HashiCorp's trademark policy permits its project logos only to identify and hyperlink to the project's own website and requires written approval for all other uses, and the Boundary repository is additionally under the Business Source License 1.1",
+          "brandUrl": "https://www.boundaryproject.io/"
+        },
+        {
+          "slug": "doppler",
+          "title": "Doppler",
+          "aliases": [
+            "doppler"
+          ],
+          "source": "vendor",
+          "licence": "none - no logo in a licensed repository",
+          "licenceUrl": "https://www.doppler.com/",
+          "reason": "Doppler publishes no logo file in any of its licensed repositories and no brand-asset or trademark page; its mark appears only on the marketing site",
+          "brandUrl": "https://www.doppler.com/"
+        },
+        {
+          "slug": "supertokens",
+          "title": "SuperTokens",
+          "aliases": [
+            "supertokens",
+            "super tokens"
+          ],
+          "source": "vendor",
+          "licence": "none - logo repository has no LICENSE",
+          "licenceUrl": "https://github.com/supertokens/supertokens-logo",
+          "reason": "the SuperTokens logo files are published only in a dedicated logo repository that carries no LICENSE file, and the Apache-2.0 supertokens-core repository contains no logo",
+          "upstreamUrl": "https://raw.githubusercontent.com/supertokens/supertokens-logo/796112db2f60bbced7521f30d5b3cecc40069788/logo/ST_icon_light_theme.svg",
+          "brandUrl": "https://supertokens.com/"
+        },
+        {
+          "slug": "stytch",
+          "title": "Stytch",
+          "aliases": [
+            "stytch"
+          ],
+          "source": "vendor",
+          "licence": "none - Twilio trademark usage guidelines",
+          "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
+          "reason": "Stytch is now owned by Twilio and its legal terms redirect to Twilio's, whose trademark usage guidelines require express written permission for any use of a Twilio mark outside those guidelines",
+          "brandUrl": "https://stytch.com/"
         }
       ]
     },

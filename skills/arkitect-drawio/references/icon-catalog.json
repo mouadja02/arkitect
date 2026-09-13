@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-13T21:37:03.323Z",
+  "generated": "2026-09-13T21:37:21.244Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "3f9d51e0651733c5639ff1ca971a35892d62d125c7c23f7af7ee67548760ac17"
+    "sha256": "4455dccdc2a842865057bf576e8b5bdabac81d41856a0897c547252eff890f84"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -226,6 +226,36 @@
       "licence": "Apache-2.0",
       "licenceUrl": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
       "archiveSha256": "c921f990a631b9665b76e610c8b97e323dc9e2ed954a778abb90609f6a8b9929"
+    },
+    "sysdig-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/draios/sysdig/blob/e91d29b401b98bbda580f11e1ef092dc55a5fbaa/COPYING",
+      "archiveSha256": "31ee7e4871394d82226b5671a16e0f8dfc4e14bb3a31f83fc934297f204080f0"
+    },
+    "checkov-logo": {
+      "terms": "licence",
+      "licence": "Apache-2.0",
+      "licenceUrl": "https://github.com/bridgecrewio/checkov/blob/d99cd85240b24ba5da3aa354eff43bfe27ed433f/LICENSE",
+      "archiveSha256": "658ae83d18e6332c081bd9796c3fb167846b08398af5221ee32223ec67a4307c"
+    },
+    "tfsec-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/aquasecurity/tfsec/blob/b692c20b68c0121346b7b34e81d6b1867ca8e1a8/LICENSE",
+      "archiveSha256": "8605d326ee55f18c13fb9a1f734076982682c0c98746cbca86bede73397a80a1"
+    },
+    "infisical-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/Infisical/infisical/blob/56e6895c3886d14ac6279d6ea3319e39c1571f2b/LICENSE",
+      "archiveSha256": "d12b993dd49e3bf5cc6f58846672785e3608064c85f3a42794e6b5633f662c49"
+    },
+    "zitadel-logo": {
+      "terms": "licence",
+      "licence": "MIT",
+      "licenceUrl": "https://github.com/zitadel/typescript/blob/a970096d80472ccccaae4790eff065e3a3194810/LICENSE",
+      "archiveSha256": "15a966758054968073f59888db71a2e377221c8b4c6ad92d143ad97a4918c429"
     }
   },
   "packs": [
@@ -337,9 +367,9 @@
       "description": "Secrets, SSO, scanning, runtime security and VPN",
       "rank": 20,
       "file": "security-identity.drawio",
-      "count": 27,
-      "onDemand": 6,
-      "sha256": "e5457c7fbc78b5c6d0c2c991b7cb9f856f46167073c15fc023b5abf0c947ead0"
+      "count": 32,
+      "onDemand": 17,
+      "sha256": "ab75dc8b6e8e0506aa4ac0c8890bd42c3f81032caf2a1045313c47eacfb17c00"
     },
     {
       "id": "github",
@@ -416,9 +446,9 @@
   ],
   "counts": {
     "packs": 18,
-    "total": 4940,
-    "committed": 4823,
-    "onDemand": 117
+    "total": 4956,
+    "committed": 4828,
+    "onDemand": 128
   },
   "icons": [
     {
@@ -40349,6 +40379,96 @@
       "libraryIndex": 26
     },
     {
+      "id": "security-identity/sysdig",
+      "pack": "security-identity",
+      "title": "Sysdig",
+      "aliases": [
+        "sysdig"
+      ],
+      "source": "sysdig-logo",
+      "upstreamId": "https://raw.githubusercontent.com/draios/sysdig/e91d29b401b98bbda580f11e1ef092dc55a5fbaa/img/logo_large.png",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 1424,
+      "height": 396,
+      "sha256": "0c152e6c3098cc521f3fc1a17c5ca07f5e9c2483ffda21e62d6aed6b3340989b",
+      "bytes": "committed",
+      "libraryIndex": 27
+    },
+    {
+      "id": "security-identity/checkov",
+      "pack": "security-identity",
+      "title": "Checkov",
+      "aliases": [
+        "checkov"
+      ],
+      "source": "checkov-logo",
+      "upstreamId": "https://raw.githubusercontent.com/bridgecrewio/checkov/d99cd85240b24ba5da3aa354eff43bfe27ed433f/docs/web/images/checkov-logo.svg",
+      "licence": "Apache-2.0",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 216,
+      "height": 43,
+      "sha256": "e88eb1c328ec213c76e8a024609c547c8ec3819daf29fd008f85b598aa4650cb",
+      "bytes": "committed",
+      "libraryIndex": 28
+    },
+    {
+      "id": "security-identity/tfsec",
+      "pack": "security-identity",
+      "title": "tfsec",
+      "aliases": [
+        "tfsec"
+      ],
+      "source": "tfsec-logo",
+      "upstreamId": "https://raw.githubusercontent.com/aquasecurity/tfsec/b692c20b68c0121346b7b34e81d6b1867ca8e1a8/tfsec.png",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/png",
+      "width": 363,
+      "height": 352,
+      "sha256": "263c06ef11dbab55f4c8a547b0d7befabaa555ee5bf4477d097e58295b42a44c",
+      "bytes": "committed",
+      "libraryIndex": 29
+    },
+    {
+      "id": "security-identity/infisical",
+      "pack": "security-identity",
+      "title": "Infisical",
+      "aliases": [
+        "infisical"
+      ],
+      "source": "infisical-logo",
+      "upstreamId": "https://raw.githubusercontent.com/Infisical/infisical/56e6895c3886d14ac6279d6ea3319e39c1571f2b/docs/logo/light.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 306,
+      "height": 50,
+      "sha256": "c3cf5ea03b9efd5a484ef69f85525717ca6eedfce48ee7c51cd5a30ddfdd0cec",
+      "bytes": "committed",
+      "libraryIndex": 30
+    },
+    {
+      "id": "security-identity/zitadel",
+      "pack": "security-identity",
+      "title": "ZITADEL",
+      "aliases": [
+        "zitadel"
+      ],
+      "source": "zitadel-logo",
+      "upstreamId": "https://raw.githubusercontent.com/zitadel/typescript/a970096d80472ccccaae4790eff065e3a3194810/public/logo/zitadel-logo-solo-lightdesign.svg",
+      "licence": "MIT",
+      "render": "verbatim",
+      "mime": "image/svg+xml",
+      "width": 467,
+      "height": 468,
+      "sha256": "c868bfb25a9a363c12a63dc3c1fc5ffe8eb187bc3a0c0c545e1afe2c8b74ef62",
+      "bytes": "committed",
+      "libraryIndex": 31
+    },
+    {
       "id": "security-identity/onelogin",
       "pack": "security-identity",
       "title": "OneLogin",
@@ -40447,6 +40567,190 @@
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/spiffe/icon/color/spiffe-icon-color.svg --name spiffe"
+    },
+    {
+      "id": "security-identity/wiz",
+      "pack": "security-identity",
+      "title": "Wiz",
+      "aliases": [
+        "wiz",
+        "wiz.io"
+      ],
+      "source": "vendor",
+      "upstreamId": "wiz",
+      "brandUrl": "https://www.wiz.io/",
+      "licence": "none - prior written consent required",
+      "licenceUrl": "https://legal.wiz.io/legal",
+      "bytes": "on-demand",
+      "reason": "Wiz's terms of use state that the logos on its site are its property and that the content \"may not be used, modified, copied, distributed, transmitted\" without its prior written consent, and no logo is published under any licence",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.wiz.io/> --name wiz"
+    },
+    {
+      "id": "security-identity/orca",
+      "pack": "security-identity",
+      "title": "Orca Security",
+      "aliases": [
+        "orca",
+        "orca security"
+      ],
+      "source": "vendor",
+      "upstreamId": "orca",
+      "brandUrl": "https://orca.security/",
+      "licence": "none - brand guide reserves all rights",
+      "licenceUrl": "https://orca.security/resources/media-kit/",
+      "bytes": "on-demand",
+      "reason": "Orca Security publishes its logo only through a media kit governed by a brand guide marked all rights reserved, which restricts use to approved unmodified files and grants no redistribution licence",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://orca.security/> --name orca"
+    },
+    {
+      "id": "security-identity/semgrep",
+      "pack": "security-identity",
+      "title": "Semgrep",
+      "aliases": [
+        "semgrep"
+      ],
+      "source": "vendor",
+      "upstreamId": "semgrep",
+      "upstreamUrl": "https://raw.githubusercontent.com/semgrep/semgrep/0516c0f23a3dceac5c8f5ff3fecd402af4450182/semgrep.svg",
+      "brandUrl": "https://semgrep.dev/",
+      "licence": "none - LGPL-2.1 and prior written permission required",
+      "licenceUrl": "https://github.com/semgrep/semgrep/blob/0516c0f23a3dceac5c8f5ff3fecd402af4450182/LICENSE",
+      "bytes": "on-demand",
+      "reason": "Semgrep does publish logo SVGs, but the repository holding them is LGPL-2.1, a copyleft licence this repository does not redistribute artwork under, and Semgrep's website terms separately require prior written permission to display or use its trademarks",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/semgrep/semgrep/0516c0f23a3dceac5c8f5ff3fecd402af4450182/semgrep.svg --name semgrep"
+    },
+    {
+      "id": "security-identity/gitleaks",
+      "pack": "security-identity",
+      "title": "Gitleaks",
+      "aliases": [
+        "gitleaks"
+      ],
+      "source": "vendor",
+      "upstreamId": "gitleaks",
+      "brandUrl": "https://gitleaks.io/",
+      "licence": "none - no published logo",
+      "licenceUrl": "https://github.com/gitleaks/gitleaks/blob/master/LICENSE",
+      "bytes": "on-demand",
+      "reason": "the MIT-licensed gitleaks repository publishes no logo file at all, its README using only ASCII art, and the only mark is an unlicensed raster on the project marketing site",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://gitleaks.io/> --name gitleaks"
+    },
+    {
+      "id": "security-identity/vanta",
+      "pack": "security-identity",
+      "title": "Vanta",
+      "aliases": [
+        "vanta"
+      ],
+      "source": "vendor",
+      "upstreamId": "vanta",
+      "brandUrl": "https://www.vanta.com/",
+      "licence": "none - press kit with no licence stated",
+      "licenceUrl": "https://www.vanta.com/company/press",
+      "bytes": "on-demand",
+      "reason": "Vanta publishes its logo only through a press-page asset download, with no trademark policy, brand guidelines or licence terms stated anywhere",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.vanta.com/> --name vanta"
+    },
+    {
+      "id": "security-identity/drata",
+      "pack": "security-identity",
+      "title": "Drata",
+      "aliases": [
+        "drata"
+      ],
+      "source": "vendor",
+      "upstreamId": "drata",
+      "brandUrl": "https://drata.com/",
+      "licence": "none - logo kit with no licence stated",
+      "licenceUrl": "https://drata.com/about/news",
+      "bytes": "on-demand",
+      "reason": "Drata publishes a downloadable logo kit on its newsroom page with no licence or usage grant beyond asking that the brand be used responsibly",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://drata.com/> --name drata"
+    },
+    {
+      "id": "security-identity/stepsecurity",
+      "pack": "security-identity",
+      "title": "StepSecurity",
+      "aliases": [
+        "stepsecurity",
+        "step security"
+      ],
+      "source": "vendor",
+      "upstreamId": "stepsecurity",
+      "upstreamUrl": "https://raw.githubusercontent.com/step-security/.github/b649665c7ec6e925962cb7d7b6081b07820fb9bc/profile/step-security-logo.png",
+      "brandUrl": "https://www.stepsecurity.io/",
+      "licence": "none - artwork repository has no LICENSE",
+      "licenceUrl": "https://github.com/step-security/.github",
+      "bytes": "on-demand",
+      "reason": "the only StepSecurity logo on GitHub sits in its .github repository, which contains no LICENSE file, and its own site publishes no brand-asset or trademark page",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/step-security/.github/b649665c7ec6e925962cb7d7b6081b07820fb9bc/profile/step-security-logo.png --name stepsecurity"
+    },
+    {
+      "id": "security-identity/boundary",
+      "pack": "security-identity",
+      "title": "HashiCorp Boundary",
+      "aliases": [
+        "boundary",
+        "hashicorp boundary"
+      ],
+      "source": "vendor",
+      "upstreamId": "boundary",
+      "brandUrl": "https://www.boundaryproject.io/",
+      "licence": "none - HashiCorp trademark policy and BUSL-1.1",
+      "licenceUrl": "https://github.com/hashicorp/boundary/blob/01cd5c86e8602aa9babc54b07e51ef7b8445e0b6/LICENSE",
+      "bytes": "on-demand",
+      "reason": "HashiCorp's trademark policy permits its project logos only to identify and hyperlink to the project's own website and requires written approval for all other uses, and the Boundary repository is additionally under the Business Source License 1.1",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.boundaryproject.io/> --name boundary"
+    },
+    {
+      "id": "security-identity/doppler",
+      "pack": "security-identity",
+      "title": "Doppler",
+      "aliases": [
+        "doppler"
+      ],
+      "source": "vendor",
+      "upstreamId": "doppler",
+      "brandUrl": "https://www.doppler.com/",
+      "licence": "none - no logo in a licensed repository",
+      "licenceUrl": "https://www.doppler.com/",
+      "bytes": "on-demand",
+      "reason": "Doppler publishes no logo file in any of its licensed repositories and no brand-asset or trademark page; its mark appears only on the marketing site",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.doppler.com/> --name doppler"
+    },
+    {
+      "id": "security-identity/supertokens",
+      "pack": "security-identity",
+      "title": "SuperTokens",
+      "aliases": [
+        "supertokens",
+        "super tokens"
+      ],
+      "source": "vendor",
+      "upstreamId": "supertokens",
+      "upstreamUrl": "https://raw.githubusercontent.com/supertokens/supertokens-logo/796112db2f60bbced7521f30d5b3cecc40069788/logo/ST_icon_light_theme.svg",
+      "brandUrl": "https://supertokens.com/",
+      "licence": "none - logo repository has no LICENSE",
+      "licenceUrl": "https://github.com/supertokens/supertokens-logo",
+      "bytes": "on-demand",
+      "reason": "the SuperTokens logo files are published only in a dedicated logo repository that carries no LICENSE file, and the Apache-2.0 supertokens-core repository contains no logo",
+      "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/supertokens/supertokens-logo/796112db2f60bbced7521f30d5b3cecc40069788/logo/ST_icon_light_theme.svg --name supertokens"
+    },
+    {
+      "id": "security-identity/stytch",
+      "pack": "security-identity",
+      "title": "Stytch",
+      "aliases": [
+        "stytch"
+      ],
+      "source": "vendor",
+      "upstreamId": "stytch",
+      "brandUrl": "https://stytch.com/",
+      "licence": "none - Twilio trademark usage guidelines",
+      "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
+      "bytes": "on-demand",
+      "reason": "Stytch is now owned by Twilio and its legal terms redirect to Twilio's, whose trademark usage guidelines require express written permission for any use of a Twilio mark outside those guidelines",
+      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://stytch.com/> --name stytch"
     },
     {
       "id": "github/github",
