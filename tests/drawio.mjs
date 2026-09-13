@@ -1148,6 +1148,28 @@ test('the sheet HTML stays only when it is the output or --keep-html asks for it
 const SPEC = join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json');
 const OUT = join(TMP, 'generated.drawio');
 
+// Agents read the committed example, and its PNG, before writing a spec, so a
+// stale one teaches the wrong output. Draw.io output is deterministic, so the
+// committed file must be exactly what its spec builds today (#50).
+test('the committed Draw.io starter is exactly what its spec builds (#50)', () => {
+  const committedPath = join(SKILL, 'assets', 'templates', 'starter-architecture.drawio');
+  assert(existsSync(join(SKILL, 'assets', 'templates', 'starter-architecture.png')), 'a rendered PNG ships beside the example');
+  const build = () => builder.buildDiagram(JSON.parse(readFileSync(SPEC, 'utf8'))).xml;
+  const xml = build();
+  eq(build(), xml, 'two builds of the same spec are identical');
+  const committed = readFileSync(committedPath, 'utf8');
+  if (xml === committed) return;
+  const a = committed.split('\n');
+  const b = xml.split('\n');
+  let line = a.findIndex((l, i) => l !== b[i]);
+  if (line === -1) line = Math.min(a.length, b.length);
+  const cell = /<mxCell id="([^"]+)"/.exec(a[line] ?? b[line] ?? '')?.[1];
+  const column = [...(a[line] ?? '')].findIndex((c, i) => c !== (b[line] ?? '')[i]) + 1;
+  throw new Error(`starter-architecture.drawio is stale: line ${line + 1}${cell ? `, cell "${cell}"` : ''}, column ${column} differs from a fresh build. `
+    + 'Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/starter-architecture.spec.json --out <tmp>), '
+    + 'copy it over, and re-render starter-architecture.png in the same pull request.');
+});
+
 test('a generated diagram is valid, connected and portable', () => {
   const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
   const { xml, report } = builder.buildDiagram(spec);

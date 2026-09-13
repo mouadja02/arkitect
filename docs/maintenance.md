@@ -111,6 +111,11 @@ reformat, re-indent or "clean up" those files.
 - **Described.** The pull request says what changed, why, what could break, and
   exactly what was run to verify it. If generated output changed, it shows the
   before and after render.
+- **Examples stay fresh.** A change that alters what a generator builds rebuilds
+  the committed worked examples in `skills/*/assets/templates/` and re-renders
+  their PNGs in the same pull request, and says so. Agents copy those examples,
+  so a stale one teaches the old output. The suite fails when a committed
+  example no longer matches its spec (#50).
 - **Reversible.** Say how to undo it in one line.
 
 ## Areas, and how much care each needs
