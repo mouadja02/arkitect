@@ -33,7 +33,9 @@ const COMMANDS = {
     analyze: [DRAWIO, 'analyze-drawio.mjs', 'summarize a .drawio file without loading its XML'],
     packs: [DRAWIO, 'build-packs.mjs', 'verify or rebuild the icon packs and catalog'],
     sheets: [DRAWIO, 'contact-sheet.mjs', 'render a pack as a labelled grid for review'],
-    learn: [DRAWIO, 'build-knowledge.mjs', 'rebuild the style record from your own diagrams'],
+    learn: [DRAWIO, 'build-knowledge.mjs', 'rebuild your style record from your own diagrams'],
+    findings: [DRAWIO, 'style-findings.mjs', 'record what your own diagrams say about the style'],
+    apply: [DRAWIO, 'apply-style.mjs', 'choose which findings this install draws with'],
   },
   excalidraw: {
     icon: [EXCALI, 'find-icon.mjs', 'search native Excalidraw libraries and the shared packs'],
@@ -44,7 +46,7 @@ const COMMANDS = {
     validate: [EXCALI, 'validate-excalidraw.mjs', 'structural checks on an .excalidraw file'],
     analyze: [EXCALI, 'analyze-excalidraw.mjs', 'summarize a scene without loading its JSON'],
     render: [EXCALI, 'render-excalidraw.mjs', 'rasterise a scene to SVG/PNG for a look'],
-    learn: [EXCALI, 'build-knowledge.mjs', 'rebuild the style record from your own scenes'],
+    learn: [EXCALI, 'build-knowledge.mjs', 'rebuild your style record from your own scenes'],
   },
 };
 

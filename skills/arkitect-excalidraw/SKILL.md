@@ -13,6 +13,10 @@ Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw/scripts`.
 Read `references/style-guide.md` before laying anything out and
 `references/pattern-catalog.md` to pick a starting shape.
 `references/excalidraw-format.md` is the schema reference for hand-editing.
+Then, if they exist, read the user's own `style-notes.md` and `patterns.md` in
+`~/.arkitect/excalidraw/` (`$ARKITECT_HOME/excalidraw/` when that is set) — what
+`/learn-excalidraw-style` found in their scenes. Where those conflict with the
+shipped guide, the user's notes win; say so in the report.
 
 **The style is learned, and the guide says from what.** It rests on a corpus of
 9 designated real-world scenes (3,270 elements), analysed 2026-09-08; every rule

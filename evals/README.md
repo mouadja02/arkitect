@@ -1,9 +1,9 @@
 # Eval cases
 
-Six cases, three per engine, covering what matters most: that a plain request
-fires the right skill and produces valid, styled, native output; that a missing
-product icon is reported or built honestly rather than substituted; and that the
-learning skills never fire on their own.
+Seven cases, four for Draw.io and three for Excalidraw, covering what matters
+most: that a plain request fires the right skill and produces valid, styled,
+native output; that a missing product icon is reported or built honestly rather
+than substituted; and that the learning and apply skills never fire on their own.
 
 ```
 evals/
@@ -11,6 +11,7 @@ evals/
     generate-architecture/          a plain request produces a valid styled .drawio
     missing-icon-honesty/           a missing icon is reported, never substituted
     learning-skill-stays-manual/    reading a diagram must not trigger learning
+    apply-skill-stays-manual/       talking about style must not apply it
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 an icon is built from the real logo, not faked
@@ -34,7 +35,7 @@ Three caveats:
 - `icon-from-logo` reaches the network to fetch a real logo. It is the only case
   that does, and it is the point of that case — a run without network fails it
   for the wrong reason.
-- `learning-skill-stays-manual` uses `scaffold_script`, which only runs under
+- `learning-skill-stays-manual` and `apply-skill-stays-manual` use `scaffold_script`, which only runs under
   `--scaffold`. Without that flag, create the `eval-input/` fixture by hand
   first; the script in each case file shows what it needs.
 

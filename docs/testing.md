@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `217 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `231 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -39,7 +39,8 @@ process, so they cannot tread on each other.
 | Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35); after a successful write each builder keeps the oldest backup of that target and the newest five, counting `-10` as newer than `-2` and any later second as newer than every counter, never reusing a counter that pruning freed, and never touches another file's backups, a lookalike stem, another extension or a hand-named copy; `--keep-backups N` sets the count, `0` keeps all, and a malformed value exits 2 before any backup is written or deleted (#49) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |
-| Plugin shape | the manifest is valid, all four skills are well formed, the learning skills are user-invoked only, no hard-coded install paths |
+| Plugin shape | the manifest is valid, all five skills are well formed, the learning and apply skills are user-invoked only, CI expects the same skill count, no hard-coded install paths |
+| Committed examples | every documented command that rebuilds a Draw.io template passes `--defaults`, so a personal style override never reaches the repository (#89) |
 | Packaging | the real `npm pack` tarball, with a sentinel planted in every local-only location, ships every bundled asset and none of the caches, cached logos, built icons, downloaded libraries, contact-sheet HTML, browser profiles or backups, and unpacks under 60 MB; extracted outside the checkout its CLI runs `version`, `doctor`, both icon searches and a build and validate per engine, and `test` exits 2. Uses the npm beside Node, offline; skips only if there is none (#38) |
 | Redaction | no sensitive string from a reference diagram appears anywhere in the repository |
 
@@ -68,6 +69,7 @@ process, so they cannot tread on each other.
 | The record | carries no diagram content, no page names, no modification times |
 | Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50); no edge in it runs through a caption (#45) |
 | Caption routing | an edge leaving an icon downward, or entering one from below, in the same column, attaches below the caption (34px, more for a caption on several lines); horizontal, diagonal and box-to-box edges are left to the router; the validator estimates each route from its ports and warns, naming the edge and the icon, when it crosses a caption, and names exactly the two crossings when those attachments are stripped (#45) |
+| Personal style | the store defaults outside the plugin and `ARKITECT_HOME` moves it; with no override every build is byte-identical to the house style; the committed starter builds exactly through the API and through `--defaults` with a personal override planted, which a plain CLI build picks up; an override restyles tokens and kinds and adds a kind while a spec's own values still win; every field is checked — a raw style string, an unknown token or kind field, a bad colour, a pitch that stacks icons, a partial new kind, a wrong engine or schema — and a bad override is ignored whole, the build warning once and drawing the house style; `--print-style` shows the resolved style and writes nothing; learning tallies corner rounding and writes to the store, elsewhere only by `--out`; findings derive four tokens graded like conventions, refuse what a build would refuse, split a kind into fields and let an agent finding hold its target; apply lists only contradictions, strongest first with low confidence flagged, refuses a non-candidate, reports each change, drops values back at the house style, never replaces a broken override, and `--reset` restores the house style; style literals go through named tokens (#89) |
 
 ### Excalidraw
 
@@ -95,6 +97,7 @@ artwork audit (#18/#33).
 | Shipped knowledge | the record claims no evidence it lacks; the style guide says out loud which rules are defaults |
 | Docker | the compose file pins the official image and publishes container port 80 |
 | Templates | both committed examples are valid and match what their specs build, compared element by element through a projection that keeps type, geometry, points, stroke, fill, font, text, bindings by position and embedded file hashes and drops ids, seeds, nonces, timestamps and index keys; the failure names the first differing element and field; the projection is proven blind to reissued ids and to see a caption moved 4px and a changed embedded file (#50) |
+| Style store | learning writes your record and its source list to `ARKITECT_HOME`, `--out` writes anywhere else and is never read as a scene, `--print` falls back to the shipped record until you have your own, and the shipped record is untouched (#89) |
 
 ## The icon-store tests write to the real store
 
@@ -161,10 +164,11 @@ bound arrows, the dashed boundaries, the legend.
 
 ## Evals
 
-`evals/` holds six cases — three per engine: that a plain request fires the
-skill and yields valid, styled output; that a missing icon is reported rather
-than substituted (and, for Excalidraw, that an icon can be built from a real
-logo); and that the learning skills never fire on their own.
+`evals/` holds seven cases — four for Draw.io, three for Excalidraw: that a
+plain request fires the skill and yields valid, styled output; that a missing
+icon is reported rather than substituted (and, for Excalidraw, that an icon can
+be built from a real logo); and that the learning and apply skills never fire on
+their own.
 
 **They are not run by default — they cost money.** They spawn real agent runs and
 LLM graders. See [../evals/README.md](../evals/README.md).

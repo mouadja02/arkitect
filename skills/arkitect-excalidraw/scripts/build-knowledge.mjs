@@ -1,28 +1,33 @@
 #!/usr/bin/env node
 // Derive the style-evidence record from designated .excalidraw examples.
 //
-//   node build-knowledge.mjs --sources a.excalidraw b.excalidraw --merge
-//   node build-knowledge.mjs --baseline          rewrite the shipped defaults
-//   node build-knowledge.mjs --print             show the current record
+//   node build-knowledge.mjs --sources a.excalidraw b.excalidraw --merge [--out <file>]
+//   node build-knowledge.mjs --baseline [--out <file>]   a defaults record, no corpus
+//   node build-knowledge.mjs --print [--out <file>]      show the record
 //
-// Writes references/source-analysis.json: structural statistics, style-token
-// counts and file digests. Never labels, file names, paths, hostnames, URLs or
-// image payloads - that redaction is what makes it safe to commit a record
-// derived from private diagrams.
+// Writes structural statistics, style-token counts and file digests. Never
+// labels, file names, paths, hostnames, URLs or image payloads - that redaction
+// is what makes it safe to commit a record derived from private diagrams.
+//
+// By default the record is this install's own, in <ARKITECT_HOME>/excalidraw/,
+// beside a sources.json naming the files it came from - outside the plugin, so
+// an update cannot wipe it (#89). references/source-analysis.json is the shipped
+// house style; a maintainer rebuilds that only with an explicit --out.
 //
 // Until examples are supplied, every convention is marked `default`: it comes
 // from Excalidraw's own defaults and ordinary architecture-drawing practice,
 // not from evidence. Nothing here invents an evidence count it does not have.
 
-import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { readScene, sha256 } from './lib/excalidraw-core.mjs';
 import { analyzeScene } from './analyze-excalidraw.mjs';
+import { storeFile, writeJson } from '../../arkitect-drawio/scripts/lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
-const RECORD = join(SKILL_ROOT, 'references', 'source-analysis.json');
+const SHIPPED_RECORD = join(SKILL_ROOT, 'references', 'source-analysis.json');
 
 // Each convention names the tally it is read from and the value the house style
 // asserts. `basis` is what it rests on when there is no corpus yet.
@@ -263,18 +268,28 @@ export function buildRecord(analyses, { previous = null } = {}) {
   };
 }
 
-function loadPrevious() {
-  if (!existsSync(RECORD)) return null;
-  try { return JSON.parse(readFileSync(RECORD, 'utf8')); } catch { return null; }
+function loadRecord(path) {
+  if (!existsSync(path)) return null;
+  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
 }
 
 function main(argv) {
   const has = (n) => argv.includes(n);
+  const oi = argv.indexOf('--out');
+  if (oi !== -1 && (!argv[oi + 1] || argv[oi + 1].startsWith('--'))) {
+    console.error('--out needs a file');
+    process.exit(2);
+  }
+  const ownRecord = storeFile('excalidraw', 'record');
+  const out = oi === -1 ? ownRecord : resolve(argv[oi + 1]);
 
   if (has('--print')) {
-    const rec = loadPrevious();
-    if (!rec) { console.error('no record yet'); process.exit(1); }
+    // Your own record once you have one, the shipped house style until then.
+    const path = oi === -1 && !existsSync(ownRecord) ? SHIPPED_RECORD : out;
+    const rec = loadRecord(path);
+    if (!rec) { console.error(`no record at ${path}`); process.exit(1); }
     console.log(JSON.stringify({
+      record: path,
       version: rec.version,
       corpus: rec.corpus,
       conventions: rec.conventions.map((c) => ({ id: c.id, confidence: c.confidence, observed: c.observed })),
@@ -283,8 +298,11 @@ function main(argv) {
     return;
   }
 
+  // Sources run up to the next flag, so `--sources a b --out rec.json` does not
+  // read rec.json as a scene.
   const si = argv.indexOf('--sources');
-  const sources = si === -1 ? [] : argv.slice(si + 1).filter((a) => !a.startsWith('--'));
+  const sources = [];
+  if (si !== -1) for (let i = si + 1; i < argv.length && !argv[i].startsWith('--'); i++) sources.push(argv[i]);
 
   if (!sources.length && !has('--baseline')) {
     console.error('usage: build-knowledge.mjs --sources <file...> [--merge]\n'
@@ -301,13 +319,17 @@ function main(argv) {
     };
   });
 
-  const previous = has('--merge') ? loadPrevious() : null;
+  const previous = has('--merge') ? loadRecord(out) : null;
   const record = buildRecord(analyses, { previous });
   if (has('--baseline')) { record.version = 0; record.history = []; }
-  writeFileSync(RECORD, `${JSON.stringify(record, null, 2)}\n`);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, `${JSON.stringify(record, null, 2)}\n`);
+  // The paths stay beside your own record in the store, never beside a record
+  // that could be committed.
+  if (out === ownRecord && sources.length) writeJson(storeFile('excalidraw', 'sources'), { files: sources.map((f) => resolve(f)) });
 
   console.log(JSON.stringify({
-    wrote: RECORD,
+    wrote: out,
     version: record.version,
     corpus: record.corpus,
     conventions: record.conventions.map((c) => ({ id: c.id, confidence: c.confidence, observed: c.observed })),

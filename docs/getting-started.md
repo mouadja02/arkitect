@@ -131,8 +131,8 @@ node bin/arkitect.mjs drawio logo --url https://.../snowflake.svg --name snowfla
 house style with its evidence attached — every rule carries the count behind it,
 and the rules that are just sensible defaults say so.
 
-Point the learning skill at diagrams you have already drawn and it merges them
-into the record:
+Point the learning skill at diagrams you have already drawn and it builds your
+own record from them, outside the plugin:
 
 ```
 /learn-excalidraw-style
@@ -149,14 +149,20 @@ Learn the style from these:
   C:\path\to\first.drawio
 ```
 
+Learning records evidence; it does not change a diagram by itself. For Draw.io,
+choose what to draw differently with `/apply-drawio-style` — it offers only the
+findings that contradict the house style, one at a time, and every later build
+picks up what you accept. Your record, findings, notes and choices live in
+`~/.arkitect/`, so a plugin update never wipes them.
+
 If your host namespaces plugin skills it is `/arkitect:learn-excalidraw-style` —
-type `/` to see which form is listed. Both carry
+type `/` to see which form is listed. All three carry
 `disable-model-invocation: true`, so they only ever run when you ask; reading or
 discussing a diagram never triggers one.
 
-Your files are read-only throughout: hashes are checked before and after. What
-enters the repository is **structural statistics and digests only** — no labels,
-no page names, no paths, no image payloads.
+Your files are read-only throughout: hashes are checked before and after. The
+record holds **structural statistics and digests only** — no labels, no page
+names, no paths, no image payloads.
 
 To do the rebuild by hand:
 
@@ -171,7 +177,9 @@ the record. → [style.md](style.md)
 ### The local source list
 
 `.analysis/sources.local.json` is gitignored — the paths themselves can be
-identifying. The learning skills write it for you; by hand:
+identifying. It is what the test suite reads in a checkout, and the corpus a
+maintainer rebuilds the shipped house style from; your own learning keeps its
+list in `~/.arkitect/<engine>/sources.json` instead. By hand:
 
 ```bash
 mkdir -p .analysis

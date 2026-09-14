@@ -4,6 +4,13 @@
 // icons from the bundled libraries so the result is portable.
 //
 //   node build-diagram.mjs spec.json --out diagram.drawio
+//   node build-diagram.mjs spec.json --out diagram.drawio --defaults   house style only
+//   node build-diagram.mjs --print-style                              what a build would use
+//
+// A person's own conventions, chosen with apply-style.mjs, are merged in from
+// <ARKITECT_HOME>/drawio/style-overrides.json on every CLI build (#89).
+// Anything that rebuilds a committed example passes --defaults, so the example
+// builds the same on every machine.
 //
 // An existing target is never overwritten silently: a timestamped sibling
 // backup is written first (see backupExisting), and once the new file is
@@ -20,40 +27,21 @@ import { dirname, join, basename, extname } from 'node:path';
 import { resolve, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
+import { engineStore } from './lib/store.mjs';
+import { resolveStyle, loadStyle } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- tokens
 
-export const T = {
-  text: '#232F3E',
-  onDark: '#ffffff',
-  flow: '#000000',
-  error: '#CC0000',
-  success: '#009900',
-  proposed: '#E7157B',
-  info: '#0050ef',
-  infoStroke: '#001DBC',
-  neutralStroke: '#666666',
-  labelBg: '#E6E6E6',
-  fontBody: 12,
-  fontHeading: 16,
-  iconSize: 78,
-  colPitch: 320,
-  rowPitch: 190,
-};
+// The house style's tokens (`T`) and connector kinds (`EDGE_KINDS`) live in
+// lib/style-tokens.mjs, beside the per-install override layer that can restyle
+// them (#89).
+export { T, EDGE_KINDS, resolveStyle, loadStyle, validateOverrides } from './lib/style-tokens.mjs';
 
 // Icon captions render below the cell; boundaries must leave room for them.
 const CAPTION_ROOM = 34;
 // Height of one caption line at the body font size, for captions that wrap onto
 // several lines (#45).
 const CAPTION_LINE = 15;
-
-const EDGE_KINDS = {
-  flow: { stroke: T.flow, dashed: 0, width: 2, meaning: 'primary data or control flow' },
-  async: { stroke: T.flow, dashed: 1, width: 2, meaning: 'scheduled, asynchronous or reference link' },
-  error: { stroke: T.error, dashed: 0, width: 2, meaning: 'failure or exception path' },
-  success: { stroke: T.success, dashed: 1, width: 2, meaning: 'successful completion path' },
-  light: { stroke: T.neutralStroke, dashed: 1, width: 1, meaning: 'weak association' },
-};
 
 // Node kinds the builder draws. Any other kind still draws, as a box, and is
 // named in the build report so a typo cannot silently change the diagram (#48).
@@ -63,7 +51,11 @@ export const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const STYLE = {
+// Every style string the builder writes, from one resolved set of tokens and
+// kinds. Literals that used to be baked in here - corner rounding, the note
+// colours, the scope stroke, the edge-label size - go through named tokens now
+// (#89); with the shipped tokens each string is exactly what it always was.
+const stylesFor = (T, EDGE_KINDS) => ({
   icon: (uri) => `shape=image;html=1;verticalLabelPosition=bottom;verticalAlign=top;`
     + `labelBackgroundColor=none;imageAspect=0;aspect=fixed;fontSize=${T.fontBody};fontColor=${T.text};image=${uri};`,
   aws4: (resIcon, fill) => `sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],`
@@ -71,10 +63,11 @@ const STYLE = {
     + `fontColor=${T.text};gradientColor=none;fillColor=${fill};strokeColor=#ffffff;dashed=0;`
     + `verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=${T.fontBody};fontStyle=0;`
     + `aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=${resIcon};`,
-  box: `rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=${T.text};fontColor=${T.text};fontSize=${T.fontBody};`,
-  note: `rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F7F7;strokeColor=#DFDFDF;fontColor=#333333;fontSize=${T.fontBody};align=left;verticalAlign=top;spacing=6;`,
+  box: `rounded=${T.rounded};whiteSpace=wrap;html=1;fillColor=none;strokeColor=${T.text};fontColor=${T.text};fontSize=${T.fontBody};`,
+  note: `rounded=${T.rounded};whiteSpace=wrap;html=1;fillColor=${T.noteFill};strokeColor=${T.noteStroke};fontColor=${T.noteText};`
+    + `fontSize=${T.fontBody};align=left;verticalAlign=top;spacing=6;`,
   text: (size, color, bold, align = 'center') =>
-    `text;html=1;whiteSpace=wrap;align=${align};verticalAlign=middle;rounded=0;fillColor=none;strokeColor=none;`
+    `text;html=1;whiteSpace=wrap;align=${align};verticalAlign=middle;rounded=${T.rounded};fillColor=none;strokeColor=none;`
     + `fontSize=${size};fontColor=${color};${bold ? 'fontStyle=1;' : ''}`,
   // Copied from the reference corpus verbatim apart from grIcon/colour.
   awsGroup: (grIcon, color) => 'points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],'
@@ -82,19 +75,19 @@ const STYLE = {
     + `whiteSpace=wrap;fontSize=${T.fontBody};fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;`
     + `shape=mxgraph.aws4.group;grIcon=${grIcon};strokeColor=${color};fillColor=none;verticalAlign=top;align=left;`
     + `spacingLeft=30;fontColor=${color};dashed=0;`,
-  scope: (color, dashed) => `rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=${color};strokeWidth=3;`
-    + `${dashed ? 'dashed=1;dashPattern=8 8;' : 'dashed=0;'}fontColor=${color};fontSize=${T.fontBody};`
+  scope: (color, dashed) => `rounded=${T.rounded};whiteSpace=wrap;html=1;fillColor=none;strokeColor=${color};strokeWidth=${T.scopeStrokeWidth};`
+    + `${dashed ? `dashed=1;dashPattern=${T.scopeDashPattern};` : 'dashed=0;'}fontColor=${color};fontSize=${T.fontBody};`
     + 'verticalAlign=top;align=left;spacingLeft=8;spacingTop=2;container=1;collapsible=0;pointerEvents=0;',
-  lane: `swimlane;html=1;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=${T.text};fontColor=${T.text};`
+  lane: `swimlane;html=1;whiteSpace=wrap;rounded=${T.rounded};fillColor=none;strokeColor=${T.text};fontColor=${T.text};`
     + `fontSize=${T.fontHeading};fontStyle=1;startSize=34;horizontal=1;collapsible=0;container=1;`,
   edge: (k) => {
-    const e = EDGE_KINDS[k] ?? EDGE_KINDS.flow;
-    return `edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;`
+    const e = Object.hasOwn(EDGE_KINDS, k) ? EDGE_KINDS[k] : EDGE_KINDS.flow;
+    return `edgeStyle=orthogonalEdgeStyle;rounded=${T.edgeRounded};html=1;jettySize=auto;orthogonalLoop=1;`
       + `strokeColor=${e.stroke};strokeWidth=${e.width};dashed=${e.dashed};endArrow=classic;endFill=1;`;
   },
   edgeLabel: (color) => `edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;`
-    + `labelBackgroundColor=${T.labelBg};fontSize=11;fontColor=${color ?? T.text};`,
-};
+    + `labelBackgroundColor=${T.labelBg};fontSize=${T.fontEdgeLabel};fontColor=${color ?? T.text};`,
+});
 
 // ---------------------------------------------------------------- helpers
 
@@ -295,11 +288,22 @@ export function validateSpec(spec) {
 
 // ---------------------------------------------------------------- build
 
-export function buildDiagram(spec) {
+// `style` is what to draw with: the shipped house style unless the caller hands
+// over another (resolveStyle(override) or loadStyle()). This never reads an
+// install's override itself - main() does - so an example built through here is
+// the same on every machine (#89).
+export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const problems = validateSpec(spec);
   if (problems.length) throw new SpecError(problems);
+  // The resolved tokens and kinds, under the names the drawing code has always used.
+  const T = style.tokens;
+  const EDGE_KINDS = style.edgeKinds;
+  const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
-  const report = { used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [] };
+  const report = {
+    used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
+    style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
+  };
   // Packs named by the spec win ties, so a diagram declared as GCP resolves
   // "cloud run" inside GCP rather than wherever the string happens to match.
   const contextPacks = spec.context?.packs ?? null;
@@ -490,10 +494,48 @@ export function buildDiagram(spec) {
   return { xml, report };
 }
 
-const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N]';
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N] [--defaults]\n'
+  + '       build-diagram.mjs --print-style [--defaults]';
+
+// Where the style came from and what it changed. The build report carries each
+// active edge kind's meaning, so a kind is chosen by what it means on this
+// install; --print-style adds every token and kind in full.
+function styleSummary(style, { full = false } = {}) {
+  return {
+    source: style.source,
+    reason: style.reason,
+    file: style.file,
+    overridden: style.overridden,
+    errors: style.errors,
+    ...(full
+      ? { tokens: style.tokens, edgeKinds: style.edgeKinds }
+      : { edgeKinds: Object.fromEntries(Object.entries(style.edgeKinds).map(([kind, e]) => [kind, e.meaning])) }),
+  };
+}
+
+// An override with problems is ignored as a whole and the build goes ahead in
+// the house style. Said once on stderr, so it is not only buried in the report.
+function loadStyleOrWarn(defaults) {
+  const style = loadStyle({ defaults });
+  if (style.errors.length) {
+    console.error(`warning: ignoring ${style.file} (${style.errors.length} problem${style.errors.length === 1 ? '' : 's'}); `
+      + 'drawing with the house style. The report lists them under style.errors; re-run apply-style.mjs, or --reset it.');
+  }
+  return style;
+}
 
 function main(argv) {
-  const { options, positionals } = parseCliOrExit(argv, { values: { '--out': null, '--keep-backups': null } }, USAGE);
+  const { options, positionals } = parseCliOrExit(argv, {
+    values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style'],
+  }, USAGE);
+  if (options['print-style']) {
+    if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined) {
+      exitUsage('--print-style builds nothing, so it takes no spec, --out or --keep-backups', USAGE);
+    }
+    const style = loadStyleOrWarn(Boolean(options.defaults));
+    console.log(JSON.stringify({ store: engineStore('drawio'), ...styleSummary(style, { full: true }) }, null, 2));
+    return;
+  }
   if (positionals.length !== 1) {
     exitUsage(positionals.length ? `expected one spec file, got ${positionals.length}` : 'expected a spec file', USAGE);
   }
@@ -514,9 +556,10 @@ function main(argv) {
       : error instanceof SyntaxError ? `${specPath} is not valid JSON`
         : `cannot read spec ${specPath}: ${error.code ?? error.message}`);
   }
+  const style = loadStyleOrWarn(Boolean(options.defaults));
   let built;
   try {
-    built = buildDiagram(spec);
+    built = buildDiagram(spec, { style });
   } catch (error) {
     if (!(error instanceof SpecError)) throw error;
     // Refused before the backup and the write, so an existing file is untouched.
@@ -542,6 +585,8 @@ function main(argv) {
     // Drawn, but not as the spec said. Treat it like an unresolved icon: fix the
     // kind and rebuild, or say why it stays (#48).
     unknownKinds: report.unknownKinds,
+    // Which style drew this: the house style, or this install's override (#89).
+    style: styleSummary(style),
   }, null, 2));
 }
 

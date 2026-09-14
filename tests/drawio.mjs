@@ -22,6 +22,11 @@ const SCRIPTS = join(SKILL, 'scripts');
 const TMP = join(HERE, 'output', 'drawio');
 const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 
+// The suite never reads or writes the style store of the person running it
+// (#89). Every process a test spawns inherits this, so a personal override on
+// the machine cannot change what a build here draws.
+process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
+
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
@@ -64,6 +69,11 @@ const finder = await import(`file://${join(SCRIPTS, 'find-icon.mjs').replace(/\\
 const builder = await import(`file://${join(SCRIPTS, 'build-diagram.mjs').replace(/\\/g, '/')}`);
 const logos = await import(`file://${join(SCRIPTS, 'fetch-logo.mjs').replace(/\\/g, '/')}`);
 const validator = await import(`file://${join(SCRIPTS, 'validate-drawio.mjs').replace(/\\/g, '/')}`);
+const styleTokens = await import(`file://${join(SCRIPTS, 'lib', 'style-tokens.mjs').replace(/\\/g, '/')}`);
+const store = await import(`file://${join(SCRIPTS, 'lib', 'store.mjs').replace(/\\/g, '/')}`);
+const findingsTool = await import(`file://${join(SCRIPTS, 'style-findings.mjs').replace(/\\/g, '/')}`);
+const applyTool = await import(`file://${join(SCRIPTS, 'apply-style.mjs').replace(/\\/g, '/')}`);
+const osHome = (await import('node:os')).homedir();
 
 const LIB_DIR = join(SKILL, 'assets', 'libraries');
 
@@ -1846,8 +1856,334 @@ test('the committed Draw.io starter is exactly what its spec builds (#50)', () =
   const cell = /<mxCell id="([^"]+)"/.exec(a[line] ?? b[line] ?? '')?.[1];
   const column = [...(a[line] ?? '')].findIndex((c, i) => c !== (b[line] ?? '')[i]) + 1;
   throw new Error(`starter-architecture.drawio is stale: line ${line + 1}${cell ? `, cell "${cell}"` : ''}, column ${column} differs from a fresh build. `
-    + 'Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/starter-architecture.spec.json --out <tmp>), '
+    + 'Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/starter-architecture.spec.json --out <tmp> --defaults), '
     + 'copy it over, and re-render starter-architecture.png in the same pull request.');
+});
+
+// ------------------------------------------------------------- per-install style (#89)
+
+const OWN_STORE = join(process.env.ARKITECT_HOME, 'drawio');
+const OVERRIDES = join(OWN_STORE, 'style-overrides.json');
+const COMMITTED_STARTER = join(SKILL, 'assets', 'templates', 'starter-architecture.drawio');
+const clearStore = () => rmSync(process.env.ARKITECT_HOME, { recursive: true, force: true });
+const plantOverride = (value) => {
+  mkdirSync(OWN_STORE, { recursive: true });
+  writeFileSync(OVERRIDES, typeof value === 'string' ? value : JSON.stringify(value));
+};
+const buildCli = (...args) => spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), ...args], { encoding: 'utf8' });
+const toolCli = (script, ...args) => spawnSync(process.execPath, [join(SCRIPTS, script), ...args], { encoding: 'utf8' });
+const PERSONAL = {
+  schemaVersion: 1,
+  engine: 'drawio',
+  tokens: { rounded: 1, noteFill: '#FFF4CC' },
+  edgeKinds: {
+    flow: { meaning: 'trigger' },
+    query: { stroke: '#7A00CC', dashed: 0, width: 2, meaning: 'SQL query' },
+  },
+};
+
+test('the style store lives outside the plugin, and ARKITECT_HOME moves it (#89)', () => {
+  const env = { ...process.env };
+  delete env.ARKITECT_HOME;
+  const home = store.arkitectHome(env);
+  eq(home, join(osHome, '.arkitect'), 'the default is <home>/.arkitect');
+  assert(relative(ROOT, home).startsWith('..'), 'the default store is not inside the plugin, so an update cannot wipe it');
+  eq(store.arkitectHome({ ARKITECT_HOME: '' }), join(osHome, '.arkitect'), 'an empty ARKITECT_HOME counts as unset');
+  eq(store.engineStore('drawio', { ARKITECT_HOME: TMP }), join(TMP, 'drawio'), 'ARKITECT_HOME replaces <home>/.arkitect');
+  eq(styleTokens.overridesPath({ ARKITECT_HOME: TMP }), join(TMP, 'drawio', 'style-overrides.json'), 'the override sits in the drawio store');
+  let threw = false;
+  try { store.engineStore('visio'); } catch { threw = true; }
+  assert(threw, 'an unknown engine is refused');
+});
+
+test('without an override every build is the shipped house style, byte for byte (#89)', () => {
+  clearStore();
+  const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
+  const committed = readFileSync(COMMITTED_STARTER, 'utf8');
+  eq(builder.buildDiagram(spec, { style: styleTokens.resolveStyle() }).xml, committed, 'the house style handed over explicitly draws the committed example');
+  const style = styleTokens.loadStyle();
+  eq(style.source, 'defaults', 'an empty store means the house style');
+  eq(JSON.stringify(style.tokens), JSON.stringify(builder.T), 'every token is the shipped one');
+  eq(builder.buildDiagram(spec, { style }).xml, committed, 'and draws the committed example');
+  const out = join(TMP, 'no-override.drawio');
+  const r = buildCli(SPEC, '--out', out);
+  eq(r.status, 0, `build: ${r.stderr}`);
+  eq(r.stderr, '', 'no warning');
+  eq(readFileSync(out, 'utf8'), committed, 'the CLI with no override draws the committed example');
+  const report = JSON.parse(r.stdout);
+  eq(report.style.source, 'defaults', 'the report says the house style drew it');
+  eq(report.style.edgeKinds.flow, 'primary data or control flow', 'and names each kind by its meaning');
+});
+
+// A committed example is shared: it must build the same on a maintainer's
+// machine with a personal override as on CI with none (#50). buildDiagram()
+// never reads the store, and the CLI's --defaults skips it.
+test('the committed starter builds exactly even with a personal override on the machine (#50, #89)', () => {
+  clearStore();
+  plantOverride(PERSONAL);
+  const committed = readFileSync(COMMITTED_STARTER, 'utf8');
+  eq(builder.buildDiagram(JSON.parse(readFileSync(SPEC, 'utf8'))).xml, committed, 'buildDiagram() ignores the store');
+  const forced = join(TMP, 'forced-defaults.drawio');
+  const r = buildCli(SPEC, '--out', forced, '--defaults');
+  eq(r.status, 0, `--defaults build: ${r.stderr}`);
+  eq(readFileSync(forced, 'utf8'), committed, '--defaults draws the committed example although an override is present');
+  eq(JSON.parse(r.stdout).style.reason, '--defaults', 'and says why');
+  const personal = join(TMP, 'personal.drawio');
+  const p = buildCli(SPEC, '--out', personal);
+  eq(p.status, 0, `personal build: ${p.stderr}`);
+  assert(readFileSync(personal, 'utf8') !== committed, 'without --defaults the override is picked up automatically');
+  eq(JSON.parse(p.stdout).style.source, 'override', 'and the report says so');
+  clearStore();
+});
+
+test('an override restyles tokens and kinds, adds a kind, and never outranks the spec (#89)', () => {
+  const style = styleTokens.resolveStyle({ ...PERSONAL, tokens: { ...PERSONAL.tokens, colPitch: 500 } });
+  eq(style.source, 'override', 'a valid override applies');
+  eq(style.overridden.join(','), 'tokens.rounded,tokens.noteFill,tokens.colPitch,edgeKinds.flow.meaning,edgeKinds.query',
+    'overridden names every value it changed');
+  const spec = {
+    title: 'Styled', titleColor: '#123456', layout: { colPitch: 400 },
+    boundaries: [{ id: 'zone', label: 'Zone', col: 0, row: 0, cols: 3 }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A', col: 0, row: 0, parent: 'zone' },
+      { id: 'b', kind: 'box', label: 'B', col: 1, row: 0, parent: 'zone' },
+      { id: 'c', kind: 'box', label: 'C', col: 2, row: 0, parent: 'zone' },
+      { id: 'n', kind: 'note', label: 'Note', col: 0, row: 1 },
+    ],
+    edges: [
+      { from: 'a', to: 'b', kind: 'flow' },
+      { from: 'b', to: 'c', kind: 'query' },
+      { from: 'a', to: 'c', kind: 'error' },
+    ],
+  };
+  const { xml, report } = builder.buildDiagram(spec, { style });
+  eq(report.unknownKinds.length, 0, 'a kind the override adds is a known kind');
+  eq(report.style.source, 'override', 'the report names the style');
+  assert(xml.includes('<mxCell id="a" value="A" style="rounded=1;'), 'boxes take the rounded token');
+  assert(xml.includes('<mxCell id="zone" value="Zone" style="rounded=1;'), 'scopes take the rounded token');
+  assert(xml.includes('fillColor=#FFF4CC;'), 'notes take the note fill token');
+  assert(xml.includes('value="trigger"'), 'the legend gives flow its overridden meaning');
+  assert(xml.includes('value="SQL query"') && xml.includes('value="failure or exception path"'),
+    'the new kind joins the legend, and error keeps its own meaning');
+  assert(xml.includes('strokeColor=#7A00CC;strokeWidth=2;dashed=0;'), 'the new kind draws in its own stroke');
+  assert(xml.includes('fontColor=#123456;'), 'a colour the spec sets still wins');
+  const geometryOf = (x, id) => new RegExp(`<mxCell id="${id}" [^>]*><mxGeometry x="(-?\\d+)"`).exec(x)?.[1];
+  const houseStyle = builder.buildDiagram(spec).xml;
+  eq(geometryOf(xml, 'b'), geometryOf(houseStyle, 'b'), 'the spec layout pitch still wins over an overridden pitch');
+});
+
+// An override is named values only; a raw style string, or a value that would
+// break a cell, is refused - and never echoed when it is a legend's free text.
+// Icon choice is not a token, so no override can reach it (invariant 4).
+test('an override is checked field by field, and a bad one is ignored whole (#89)', () => {
+  const base = { schemaVersion: 1, engine: 'drawio' };
+  const kind = { stroke: '#7A00CC', dashed: 0, width: 2, meaning: 'SQL query' };
+  const cases = [
+    [{ ...base, tokens: { rounded: 2 } }, 'tokens.rounded: expected 0 or 1'],
+    [{ ...base, tokens: { text: 'red' } }, 'tokens.text: expected a #RRGGBB colour'],
+    [{ ...base, tokens: { shadow: 1 } }, 'tokens.shadow: not a style token'],
+    [{ ...base, tokens: { box: 'rounded=1;shadow=1' } }, 'tokens.box: not a style token'],
+    [{ ...base, tokens: { icon: 'aws/amazon-s3' } }, 'tokens.icon: not a style token'],
+    [{ ...base, tokens: { scopeDashPattern: '8 8;shadow=1' } }, 'tokens.scopeDashPattern: expected a dash pattern'],
+    [{ ...base, tokens: { colPitch: 100 } }, 'tokens.colPitch: 100 leaves less than 40px'],
+    [{ ...base, edgeKinds: { query: { stroke: '#CC0000' } } }, 'a new kind needs all of stroke, dashed, width and meaning'],
+    [{ ...base, edgeKinds: { Query: kind } }, 'a kind name is lower-case'],
+    [{ ...base, edgeKinds: { constructor: { meaning: 'x' } } }, 'edgeKinds.constructor: a new kind needs all'],
+    [{ ...base, edgeKinds: { flow: { meaning: 'x'.repeat(61) } } }, 'edgeKinds.flow.meaning: expected one line of 1 to 60 characters'],
+    [{ ...base, edgeKinds: { flow: { style: 'dashed=1' } } }, 'edgeKinds.flow.style: not an edge kind field'],
+    [{ schemaVersion: 2, engine: 'drawio' }, 'schemaVersion: expected 1'],
+    [{ schemaVersion: 1, engine: 'excalidraw' }, 'engine: expected "drawio"'],
+    [{ ...base, extra: true }, 'extra: not a field an override carries'],
+    [[], 'expected a JSON object'],
+  ];
+  for (const [raw, expected] of cases) {
+    const errors = styleTokens.validateOverrides(raw);
+    assert(errors.some((e) => e.includes(expected)), `expected "${expected}", got: ${errors.join('; ')}`);
+    const resolved = styleTokens.resolveStyle(raw);
+    assert(resolved.source === 'defaults' && resolved.errors.length && resolved.overridden.length === 0,
+      `a bad override is ignored whole: ${expected}`);
+    eq(JSON.stringify(resolved.tokens), JSON.stringify(builder.T), `and every token is the house style's: ${expected}`);
+    assert(!errors.some((e) => e.includes('xxxxxxxxxx')), 'a legend meaning is never echoed');
+  }
+  eq(styleTokens.validateOverrides({ ...base, tokens: { ...builder.T }, edgeKinds: { query: kind } }).length, 0,
+    'every shipped value, and a whole new kind, is itself a valid override');
+});
+
+test('a broken override warns once, and the build draws the house style (#89)', () => {
+  for (const [label, content] of [
+    ['bad JSON', '{"schemaVersion":1,'],
+    ['bad value', JSON.stringify({ schemaVersion: 1, engine: 'drawio', tokens: { rounded: 5 } })],
+  ]) {
+    clearStore();
+    plantOverride(content);
+    const out = join(TMP, `broken-override-${label.replace(' ', '-')}.drawio`);
+    const r = buildCli(SPEC, '--out', out);
+    eq(r.status, 0, `${label}: the build still succeeds (${r.stderr})`);
+    eq(r.stderr.trim().split('\n').length, 1, `${label}: one warning line`);
+    assert(r.stderr.startsWith('warning: ignoring'), `${label}: the warning says what was ignored`);
+    const report = JSON.parse(r.stdout);
+    eq(report.style.source, 'defaults', `${label}: the house style drew it`);
+    assert(report.style.errors.length > 0, `${label}: the report lists the problems`);
+    eq(readFileSync(out, 'utf8'), readFileSync(COMMITTED_STARTER, 'utf8'), `${label}: exactly the house-style output`);
+  }
+  clearStore();
+});
+
+test('--print-style shows the style a build would use, and writes nothing (#89)', () => {
+  clearStore();
+  plantOverride(`﻿${JSON.stringify(PERSONAL)}`);
+  const r = buildCli('--print-style');
+  eq(r.status, 0, `--print-style: ${r.stderr}`);
+  const shown = JSON.parse(r.stdout);
+  eq(shown.store, OWN_STORE, 'it names the store');
+  eq(shown.source, 'override', 'a byte-order mark does not make the override unreadable');
+  eq(shown.edgeKinds.query.meaning, 'SQL query', 'every active kind, in full');
+  eq(shown.edgeKinds.error.meaning, 'failure or exception path', 'shipped kinds included');
+  eq(shown.tokens.rounded, 1, 'every token');
+  eq(JSON.parse(buildCli('--print-style', '--defaults').stdout).source, 'defaults', '--defaults shows the house style');
+  const stray = join(TMP, 'print-style-stray.drawio');
+  for (const bad of [[SPEC, '--print-style'], ['--print-style', '--out', stray]]) {
+    eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);
+  }
+  assert(!existsSync(stray), 'nothing was written');
+  clearStore();
+});
+
+test('learning writes your record to the store, and elsewhere only by --out (#89)', () => {
+  clearStore();
+  const shipped = join(SKILL, 'references', 'source-analysis.json');
+  const before = readFileSync(shipped);
+  const r = toolCli('build-knowledge.mjs', '--sources', COMMITTED_STARTER);
+  eq(r.status, 0, `learn: ${r.stderr}`);
+  const record = JSON.parse(readFileSync(join(OWN_STORE, 'source-analysis.json'), 'utf8'));
+  assert(Array.isArray(record.tokens.rounded) && record.tokens.rounded[0].value === '0', 'the record tallies corner rounding');
+  eq(JSON.parse(readFileSync(join(OWN_STORE, 'sources.json'), 'utf8')).files[0], COMMITTED_STARTER, 'the designated paths stay beside it, in the store');
+  assert(before.equals(readFileSync(shipped)), 'the shipped record is untouched');
+  const elsewhere = join(TMP, 'maintainer', 'record.json');
+  eq(toolCli('build-knowledge.mjs', '--sources', COMMITTED_STARTER, '--out', elsewhere).status, 0, '--out builds a record elsewhere');
+  assert(existsSync(elsewhere) && !existsSync(join(TMP, 'maintainer', 'sources.json')), '--out writes the record where it is told, and no paths beside it');
+  clearStore();
+});
+
+test('findings: --derive reads four tokens, --add is checked, and an agent finding holds its target (#89)', () => {
+  const record = {
+    version: 3,
+    conventions: [{ id: 'type-scale', evidence: { total: 155 } }],
+    tokens: {
+      fontSize: [{ value: '14', count: 120 }, { value: '18', count: 30 }, { value: '12', count: 5 }],
+      fontColor: [{ value: '#ffffff', count: 30 }, { value: '#232f3e', count: 3 }],
+      rounded: [{ value: '0', count: 200 }, { value: '1', count: 10 }],
+    },
+  };
+  const { derived, skipped } = findingsTool.deriveFindings(record);
+  const at = (target) => derived.find((f) => f.target === target);
+  eq(at('tokens.fontBody').observed, 14, 'body size is the commonest size');
+  eq(at('tokens.fontBody').confidence, 'high', 'graded like a convention: 120 of 155');
+  eq(at('tokens.fontHeading').observed, 18, 'heading is the next size up');
+  eq(at('tokens.fontHeading').confidence, 'medium', 'weighed against the sizes that are not body text: 30 of 35');
+  eq(at('tokens.text').observed, '#232F3E', 'a colour differing only in case is the shipped colour');
+  eq(at('tokens.text').confidence, 'low', 'three sightings are a hint');
+  eq(at('tokens.rounded').observed, 0, 'square corners');
+  eq(skipped.length, 0, 'nothing skipped');
+  eq(findingsTool.deriveFindings({ tokens: { fontSize: record.tokens.fontSize } }).skipped.map((s) => s.target).join(','),
+    'tokens.text,tokens.rounded', 'a record without those tallies is named, not guessed');
+
+  let file = findingsTool.mergeDerived(findingsTool.readFindings(join(TMP, 'no-such-findings.json')), record).file;
+  eq(file.findings.length, 4, 'four record-based findings');
+  const bad = findingsTool.addFinding(file, { target: 'edgeKinds.query', observed: { stroke: 'red' }, evidence: 0, confidence: 'sure' });
+  eq(bad.added.length, 0, 'a bad finding adds nothing');
+  for (const expected of ['edgeKinds.query.stroke', 'a new kind needs', '--evidence', '--confidence']) {
+    assert(bad.errors.some((e) => e.includes(expected)), `a bad finding names ${expected}: ${bad.errors.join('; ')}`);
+  }
+  for (const [target, observed] of [
+    ['tokens.box', 'rounded=1;shadow=1'], ['icons.snowflake', 'aws/amazon-s3'],
+    ['edgeKinds.query.meaning', 'SQL query'], ['edgeKinds.flow', 'trigger'],
+  ]) {
+    eq(findingsTool.addFinding(file, { target, observed, evidence: 2, confidence: 'low' }).added.length, 0, `${target} is refused`);
+  }
+  const split = findingsTool.addFinding(file, {
+    target: 'edgeKinds.async', observed: { meaning: 'file transfer', width: 3 }, evidence: 4, confidence: 'medium', note: 'legend on 4 of 5',
+  });
+  eq(split.added.map((f) => f.target).join(','), 'edgeKinds.async.meaning,edgeKinds.async.width', 'a whole shipped kind splits into one finding per field');
+  file = findingsTool.addFinding(split.file, { target: 'tokens.fontBody', observed: 12, evidence: 2, confidence: 'low' }).file;
+  const again = findingsTool.mergeDerived(file, record);
+  eq(again.heldByAgent.join(','), 'tokens.fontBody', 'a later --derive leaves a target the agent holds');
+  eq(again.file.findings.filter((f) => f.target === 'tokens.fontBody').length, 1, 'one entry per target');
+  eq(findingsTool.removeFinding(again.file, 'edgeKinds.async').removed.length, 2, 'removing a kind removes its fields');
+});
+
+test('apply: --list offers only contradictions, --accept says what changed, --reset undoes it (#89)', () => {
+  clearStore();
+  mkdirSync(OWN_STORE, { recursive: true });
+  writeFileSync(join(OWN_STORE, 'source-analysis.json'), JSON.stringify({
+    version: 1,
+    tokens: {
+      fontSize: [{ value: '12', count: 90 }, { value: '16', count: 40 }],
+      fontColor: [{ value: '#232F3E', count: 80 }],
+      rounded: [{ value: '1', count: 9 }, { value: '0', count: 1 }],
+    },
+  }));
+  const json = (r, what) => { eq(r.status, 0, `${what}: ${r.stderr}`); return JSON.parse(r.stdout); };
+  const newKind = { stroke: '#7A00CC', dashed: 0, width: 2, meaning: 'SQL query' };
+  json(toolCli('style-findings.mjs', '--derive'), 'derive');
+  json(toolCli('style-findings.mjs', '--add', 'edgeKinds.flow.meaning', '--observed', 'trigger', '--evidence', '4', '--confidence', 'medium'), 'add a meaning');
+  json(toolCli('style-findings.mjs', '--add', 'edgeKinds.query', '--observed', JSON.stringify(newKind), '--evidence', '3', '--confidence', 'medium'), 'add a kind');
+  eq(toolCli('style-findings.mjs', '--add', 'tokens.rounded', '--observed', 'yes', '--evidence', '1', '--confidence', 'low').status, 1,
+    'a value a build would refuse is refused as a finding');
+
+  const listed = json(toolCli('apply-style.mjs', '--list'), 'list');
+  eq(listed.candidates.map((c) => c.id).join(','), 'edgeKinds.flow.meaning,edgeKinds.query,tokens.rounded', 'only the contradictions, strongest first');
+  assert(['tokens.fontBody', 'tokens.fontHeading', 'tokens.text'].every((t) => listed.alreadyInEffect.includes(t)),
+    'findings that match what is drawn are not offered');
+  const rounded = listed.candidates.find((c) => c.id === 'tokens.rounded');
+  assert(rounded.lowConfidence && rounded.shipped === 0 && rounded.current === 0 && rounded.proposed === 1,
+    'a low-confidence candidate is still offered, flagged, with shipped, current and proposed');
+
+  eq(toolCli('apply-style.mjs', '--accept', 'tokens.fontBody').status, 2, 'accepting what is not a candidate exits 2');
+  assert(!existsSync(OVERRIDES), 'and writes nothing');
+
+  const accepted = json(toolCli('apply-style.mjs', '--accept', 'edgeKinds.query,tokens.rounded'), 'accept');
+  eq(JSON.stringify(accepted.changed), JSON.stringify([
+    { target: 'edgeKinds.query', from: null, fromSource: 'house style', to: newKind },
+    { target: 'tokens.rounded', from: 0, fromSource: 'house style', to: 1 },
+  ]), 'it reports each change against what was in effect');
+  const written = JSON.parse(readFileSync(OVERRIDES, 'utf8'));
+  eq(Object.keys(written).join(','), 'schemaVersion,engine,updated,tokens,edgeKinds', 'the override carries named tokens and kinds only');
+  eq(styleTokens.validateOverrides(written).length, 0, 'and is valid');
+
+  const second = json(toolCli('apply-style.mjs', '--accept', 'edgeKinds.flow.meaning'), 'accept on top');
+  eq(second.overridden.join(','), 'tokens.rounded,edgeKinds.query,edgeKinds.flow.meaning', 'a later accept keeps what was accepted before');
+  eq(json(toolCli('apply-style.mjs', '--list'), 'list after').candidates.length, 0, 'nothing accepted is offered again');
+  eq(json(buildCli('--print-style'), 'print-style').edgeKinds.flow.meaning, 'trigger', 'the next build draws what was accepted');
+
+  writeFileSync(OVERRIDES, '{');
+  eq(toolCli('apply-style.mjs', '--accept', 'tokens.rounded').status, 1, 'a broken override is never quietly replaced');
+  eq(json(toolCli('apply-style.mjs', '--reset'), 'reset').removed, OVERRIDES, '--reset removes the override');
+  eq(json(buildCli('--print-style'), 'print-style after reset').source, 'defaults', 'and the house style is back');
+  clearStore();
+});
+
+test('apply drops whatever equals the house style, so an override says only where you differ (#89)', () => {
+  const next = applyTool.applyAccepted(
+    { schemaVersion: 1, engine: 'drawio', tokens: { rounded: 1, flow: '#333333' }, edgeKinds: { flow: { meaning: 'trigger' } } },
+    [
+      { id: 'tokens.rounded', proposed: 0 },
+      { id: 'edgeKinds.flow.meaning', proposed: 'primary data or control flow' },
+      { id: 'edgeKinds.async.stroke', proposed: '#333333' },
+    ],
+  );
+  eq(JSON.stringify(next), JSON.stringify({ schemaVersion: 1, engine: 'drawio', tokens: { flow: '#333333' } }),
+    'values back at the house style drop out, a kind colour that follows its token included');
+});
+
+test('corner rounding and the other style literals go through named tokens (#89)', () => {
+  const src = readFileSync(join(SCRIPTS, 'build-diagram.mjs'), 'utf8');
+  for (const literal of ['rounded=0', 'rounded=1', 'fontSize=11', '#F7F7F7', '#DFDFDF', '#333333', 'strokeWidth=3', 'dashPattern=8 8']) {
+    assert(!src.includes(literal), `build-diagram.mjs still hard-codes ${literal}`);
+  }
+  const t = builder.T;
+  eq([t.rounded, t.edgeRounded, t.fontEdgeLabel, t.noteFill, t.noteStroke, t.noteText, t.scopeStrokeWidth, t.scopeDashPattern].join('|'),
+    '0|0|11|#F7F7F7|#DFDFDF|#333333|3|8 8', 'each token defaults to the literal it replaced');
 });
 
 // An edge attached to the bottom of an icon ran through the caption hanging
