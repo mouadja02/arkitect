@@ -1888,8 +1888,9 @@ test('the style store lives outside the plugin, and ARKITECT_HOME moves it (#89)
   const home = store.arkitectHome(env);
   eq(home, join(osHome, '.arkitect'), 'the default is <home>/.arkitect');
   // Outside means `..` - or, when the checkout and the home directory are on
-  // different Windows drives (D:\a\... and C:\Users\... on a CI runner), an
-  // absolute path, which is what relative() returns across drives.
+  // different Windows drives (the checkout on D: and the home directory on C:,
+  // as on a CI runner), an absolute path, which is what relative() returns
+  // across drives.
   const fromPlugin = relative(ROOT, home);
   assert(fromPlugin.startsWith('..') || isAbsolute(fromPlugin), `the default store is not inside the plugin, so an update cannot wipe it (${fromPlugin})`);
   eq(store.arkitectHome({ ARKITECT_HOME: '' }), join(osHome, '.arkitect'), 'an empty ARKITECT_HOME counts as unset');
