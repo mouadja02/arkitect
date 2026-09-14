@@ -77,13 +77,14 @@ Vendor artwork is embedded **byte-for-byte**. Microsoft and Google grant permiss
 use their icons in architecture diagrams and forbid altering the icon shape, so there is
 no optimisation pass — and the untouched bytes keep the recorded SHA-256 meaningful.
 
-Seventy-five products are catalogued with a URL, a licence note and the exact
-`fetch-logo` command, but **no bytes**. For most, no permissively licensed mark exists.
-Seven were removed from Simple Icons 16 at the brand owner's request; shipping them
-from an older pin would have made the rest of `ATTRIBUTION.md` dishonest. Four Apache
-projects have a licensed logo whose official artwork does not draw correctly at icon
-size, and each entry says why. `find-icon` hands back the command; `build-diagram`
-refuses to draw them.
+158 products (`node scripts/find-icon.mjs --stats` has the live count) are
+catalogued with a URL, a licence note and the exact `fetch-logo` command, but
+**no bytes**. For most, no permissively licensed mark exists. Seven were
+removed from Simple Icons 16 at the brand owner's request; shipping them from
+an older pin would have made the rest of `ATTRIBUTION.md` dishonest. A few
+Apache projects have a licensed logo whose official artwork does not draw
+correctly at icon size, and each entry says why. `find-icon` hands back the
+command; `build-diagram` refuses to draw them.
 
 A licence that covers the artwork, or a trademark policy that explicitly allows
 identifying use, is what lets a mark ship; a repository holding the file is not. The
@@ -240,8 +241,8 @@ at, from committed files under `assets/libraries/local/` — which took the pack
 ## Third-party product logos
 
 The packs cover most of a real architecture. Everything else — a niche vendor, an
-internal product, one of the sixty-six marks catalogued without artwork — gets its
-actual logo, downloaded and embedded.
+internal product, one of the marks catalogued without artwork (`--stats` for the
+live count) — gets its actual logo, downloaded and embedded.
 
 This is not a nice-to-have: in the five reference diagrams, **77 of 97 embedded images
 were third-party logos**, not AWS icons. A grey box labelled "Snowflake" is a

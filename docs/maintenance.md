@@ -139,6 +139,23 @@ reformat, re-indent or "clean up" those files.
 
 ## Adding an icon library
 
+### Draw.io packs
+
+1. Confirm the licence or permission covers redistribution, and pin the source
+   in `skills/arkitect-drawio/assets/libraries/sources.json`.
+2. `node skills/arkitect-drawio/scripts/build-packs.mjs --all` — rebuilds every
+   pack and `references/icon-catalog.json` from the pins.
+3. `node skills/arkitect-drawio/scripts/write-pack-docs.mjs` — regenerates
+   `references/pack-index.md` and `assets/libraries/ATTRIBUTION.md` from the
+   catalog. **Always rerun this after `build-packs.mjs`** — both files say "do
+   not edit by hand" for a reason, and a catalog change that skips this step is
+   exactly how the pack counts and the "no bytes" figure quoted throughout the
+   docs drifted (75, then 66, then 69 — the real, current number stayed 158 the
+   whole time).
+4. Search for a product in the new pack to prove it resolves.
+
+### Excalidraw libraries
+
 1. Confirm the licence permits redistribution, and who the author is.
 2. Drop the `.excalidrawlib` into
    `skills/arkitect-excalidraw/assets/libraries/bundled/`.
@@ -146,12 +163,19 @@ reformat, re-indent or "clean up" those files.
    and `ATTRIBUTION.md`. A test fails if the index and the files disagree.
 4. If the library has unnamed items, generate its contact sheet and commit the
    PNG; unnamed items are otherwise unfindable.
-5. Check the item count and author landed in `ATTRIBUTION.md`, and update the
-   counts quoted in `README.md`, `docs/icons.md` and both `SKILL.md` files if
-   they moved.
-6. Search for a product in the new library to prove it resolves.
+5. Search for a product in the new library to prove it resolves.
 
-Never edit a bundled library's bytes by hand.
+### Either engine
+
+Never edit a bundled library's or a generated doc's bytes by hand — rerun the
+generator instead. After either engine's icon count moves, check whether it is
+quoted in `README.md`, `docs/icons.md`, `docs/drawio-icons.md` and both
+`SKILL.md` files, and update it there. The exact-total figures in
+`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`package.json`'s description and `bin/lib/install-agent.mjs`'s adapter body
+are deliberately a rounded `6,000+` instead — `tests/toolkit.mjs` checks that
+phrase stays identical across all four, so update every one of them together
+or none.
 
 ## Watching the upstreams
 
