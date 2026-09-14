@@ -378,164 +378,28 @@ test('gitignore keeps derived and third-party material out of the repository', (
     'the bundled libraries must stay committed - they are the offline icon source');
 });
 
-// ------------------------------------------------- changelog fragments (#32)
+// -------------------------------------------------------- conflict markers
 //
-// Every pull request used to edit the top of [Unreleased], so parallel ones
-// conflicted there, and a hand resolution could drop an entry or publish a
-// conflict marker without any check failing.
+// A hand resolution of a merge conflict can leave a marker behind with
+// nothing to catch it.
 
-const changelog = await import(pathToFileURL(join(ROOT, 'scripts', 'changelog.mjs')).href);
+const CONFLICT_MARKER = /^(?:<{7}|\|{7}|>{7})(?:[ \r]|$)/m;
 const MARK = (c) => c.repeat(7);
 
-test('no tracked text file carries a merge conflict marker (#32)', () => {
+test('no tracked text file carries a merge conflict marker', () => {
   const hits = [];
   for (const f of FILES) {
     const s = readFileSync(f, 'utf8');
-    const m = changelog.CONFLICT_MARKER.exec(s);
+    const m = CONFLICT_MARKER.exec(s);
     if (m) hits.push(`${relative(ROOT, f)}:${s.slice(0, m.index).split('\n').length}`);
   }
   assert(hits.length === 0, `conflict markers left in:\n        ${hits.slice(0, 10).join('\n        ')}`);
   for (const c of ['<', '|', '>']) {
-    assert(changelog.CONFLICT_MARKER.test(`kept\n${MARK(c)} origin/main\nkept\n`), `a ${MARK(c)} line is not caught`);
-    assert(changelog.CONFLICT_MARKER.test(`kept\r\n${MARK(c)}\r\n`), `a bare CRLF ${MARK(c)} line is not caught`);
+    assert(CONFLICT_MARKER.test(`kept\n${MARK(c)} origin/main\nkept\n`), `a ${MARK(c)} line is not caught`);
+    assert(CONFLICT_MARKER.test(`kept\r\n${MARK(c)}\r\n`), `a bare CRLF ${MARK(c)} line is not caught`);
   }
-  assert(!changelog.CONFLICT_MARKER.test(`Title\n${MARK('=')}\n\n  ${MARK('<')} indented\n`),
+  assert(!CONFLICT_MARKER.test(`Title\n${MARK('=')}\n\n  ${MARK('<')} indented\n`),
     'a heading underline or an indented run is not a conflict');
-});
-
-test('every committed changelog fragment is well formed (#32)', () => {
-  const problems = changelog.readFragments(ROOT).flatMap((f) => f.problems);
-  assert(problems.length === 0, `fix these fragments (see changelog.d/README.md):\n        ${problems.join('\n        ')}`);
-  assert(existsSync(join(ROOT, 'changelog.d', 'README.md')), 'changelog.d/README.md explains the format');
-});
-
-test('a fragment is refused unless it names its issue under a known heading (#32)', () => {
-  const good = changelog.parseFragment('46-doctor.md', '### Fixed\n\n- **doctor finds Desktop** (#46). Body\n  continues.\n\n');
-  eq(good.problems.join('; '), '', 'a well-formed fragment passes');
-  eq(good.issue, 46, 'the issue is read from the name');
-  eq(good.sections[0].lines.join('\n'), '- **doctor finds Desktop** (#46). Body\n  continues.', 'surrounding blank lines are trimmed');
-  eq(changelog.parseFragment('nopr-ci-leg.md', '### Changed\n\n- **CI** runs the newest npm.\n').problems.join('; '), '',
-    'a fragment with no issue needs no reference');
-  eq(changelog.parseFragment('46-doctor.md', '### Fixed\r\n\r\n- x (#46)\r\n').problems.join('; '), '', 'CRLF is accepted');
-  for (const [name, text, why] of [
-    ['doctor.md', '### Fixed\n\n- x\n', /name it/],
-    ['46_doctor.md', '### Fixed\n\n- x (#46)\n', /name it/],
-    ['46-Doctor.md', '### Fixed\n\n- x (#46)\n', /name it/],
-    ['46-doctor.md', '### Fixes\n\n- x (#46)\n', /is not one of/],
-    ['46-doctor.md', '## Fixed\n\n- x (#46)\n', /is not one of/],
-    ['46-doctor.md', 'Intro (#46)\n### Fixed\n\n- x\n', /before the first/],
-    ['46-doctor.md', '### Fixed\n\n', /has no entry/],
-    ['46-doctor.md', '### Fixed\n\nprose (#46)\n', /must start with/],
-    ['46-doctor.md', '### Fixed\n- a (#46)\n### Fixed\n- b\n', /appears twice/],
-    ['46-doctor.md', '### Fixed\n\n- x (#460)\n', /never mentions #46/],
-    ['46-doctor.md', '', /no ###/],
-    ['46-doctor.md', `### Fixed\n\n- x (#46)\n${MARK('>')} origin/main\n`, /conflict marker/],
-  ]) {
-    const { problems } = changelog.parseFragment(name, text);
-    assert(problems.some((p) => why.test(p)),
-      `${name} ${JSON.stringify(text)} should be refused (${why}); got: ${problems.join('; ') || 'nothing'}`);
-  }
-});
-
-test('fragments assemble under their headings in issue order, and released notes stay put (#32)', () => {
-  const released = ['## [1.0.0] — 2026-01-01', '', '### Fixed', '', '- **released** (#0).', ''];
-  const before = ['# Changelog', '', 'Intro.', '', '## [Unreleased]', '', '### Added', '', '- **old added** (#1).', '',
-    '### Fixed', '', '- **old fixed** (#2).', '  More.', '', ...released].join('\n');
-  const frag = (name, text) => changelog.parseFragment(name, text);
-  const after = changelog.assemble(before, [
-    frag('9-late.md', '### Fixed\n\n- **nine** (#9).\n'),
-    frag('nopr-tooling.md', '### Changed\n\n- **tooling**.\n'),
-    frag('3-early.md', '### Removed\n\n- **three removed** (#3).\n\n### Fixed\n\n- **three** (#3).\n  Wrapped.\n'),
-  ]);
-  eq(after, ['# Changelog', '', 'Intro.', '', '## [Unreleased]', '', '### Added', '', '- **old added** (#1).', '',
-    '### Changed', '', '- **tooling**.', '', '### Removed', '', '- **three removed** (#3).', '',
-    '### Fixed', '', '- **old fixed** (#2).', '  More.', '- **three** (#3).', '  Wrapped.', '- **nine** (#9).', '',
-    ...released].join('\n'), 'assembled changelog');
-  eq(changelog.assemble('# Changelog\n\n## [1.0.0]\n\n- old\n', [frag('5-x.md', '### Added\n\n- **x** (#5).\n')]),
-    '# Changelog\n\n## [Unreleased]\n\n### Added\n\n- **x** (#5).\n\n## [1.0.0]\n\n- old\n', 'a missing [Unreleased] is created');
-  let refused = false;
-  try { changelog.assemble(before, [frag('5-x.md', 'nope')]); } catch { refused = true; }
-  assert(refused, 'a malformed fragment is never assembled');
-});
-
-test('the changelog CLI checks, assembles into a checkout and gates a pull request (#32)', () => {
-  const root = join(TMP, 'changelog');
-  const dir = join(root, 'changelog.d');
-  mkdirSync(dir, { recursive: true });
-  const logPath = join(root, 'CHANGELOG.md');
-  const fragment = join(dir, '5-thing.md');
-  writeFileSync(logPath, '# Changelog\n\n## [Unreleased]\n\n## [1.0.0]\n\n- old\n');
-  writeFileSync(join(dir, 'README.md'), 'How to write one.\n');
-  writeFileSync(fragment, '### Added\n\n- **thing** (#5).\n');
-  const script = join(ROOT, 'scripts', 'changelog.mjs');
-  const run = (...args) => spawnSync(process.execPath, [script, ...args, '--root', root], { encoding: 'utf8' });
-
-  eq(run('--check').status, 0, '--check on a good fragment');
-  const dry = run('--assemble', '--dry-run');
-  eq(dry.status, 0, '--assemble --dry-run');
-  assert(dry.stdout.includes('### Added\n\n- **thing** (#5).\n\n## [1.0.0]'), `dry run prints the result:\n${dry.stdout}`);
-  assert(existsSync(fragment) && readFileSync(logPath, 'utf8').startsWith('# Changelog\n\n## [Unreleased]\n\n## [1.0.0]'),
-    'a dry run changes nothing');
-  eq(run('--assemble').status, 0, '--assemble');
-  assert(!existsSync(fragment), 'an assembled fragment is deleted');
-  assert(existsSync(join(dir, 'README.md')), 'the README stays');
-  assert(readFileSync(logPath, 'utf8').includes('## [Unreleased]\n\n### Added\n\n- **thing** (#5).\n\n## [1.0.0]'), 'the entry landed');
-
-  writeFileSync(join(dir, '7-bad.md'), 'not a fragment\n');
-  const assembled = readFileSync(logPath, 'utf8');
-  const bad = run('--check');
-  eq(bad.status, 1, '--check on a malformed fragment');
-  assert(bad.stderr.includes('changelog.d/7-bad.md'), 'the failure names the fragment');
-  eq(run('--assemble').status, 1, '--assemble refuses a malformed fragment');
-  eq(readFileSync(logPath, 'utf8'), assembled, 'and leaves CHANGELOG.md alone');
-  rmSync(join(dir, '7-bad.md'));
-
-  eq(run('--bogus').status, 2, 'an unknown flag');
-  eq(run().status, 2, 'no mode');
-  eq(run('--check', '--assemble').status, 2, 'two modes');
-  eq(run('--check', '--dry-run').status, 2, '--dry-run without --assemble');
-  eq(spawnSync(process.execPath, [script, '--require-fragment'], { encoding: 'utf8' }).status, 2, '--require-fragment without a base');
-
-  // The gate against a real repository of its own, so a fragment in this
-  // checkout can never decide it.
-  if (spawnSync('git', ['--version']).status !== 0) return;
-  const repo = join(TMP, 'changelog-repo');
-  mkdirSync(join(repo, 'skills'), { recursive: true });
-  mkdirSync(join(repo, 'changelog.d'), { recursive: true });
-  const git = (...args) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid',
-    '-c', 'commit.gpgsign=false', ...args], { cwd: repo, encoding: 'utf8', stdio: 'pipe' });
-  writeFileSync(join(repo, 'skills', 'x.mjs'), '1\n');
-  git('init', '-q');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'base');
-  const base = git('rev-parse', 'HEAD').trim();
-  const gate = (ref = base) => spawnSync(process.execPath, [script, '--require-fragment', ref, '--root', repo], { encoding: 'utf8' });
-  eq(gate().status, 0, 'an empty diff needs no fragment');
-  writeFileSync(join(repo, 'skills', 'x.mjs'), '2\n');
-  git('commit', '-q', '-a', '-m', 'change');
-  const missing = gate();
-  eq(missing.status, 1, 'a skills/ change without a fragment');
-  assert(missing.stderr.includes('skills/x.mjs') && missing.stderr.includes('skip-changelog'),
-    `the failure names the file and the label:\n${missing.stderr}`);
-  writeFileSync(join(repo, 'changelog.d', '9-x.md'), '### Fixed\n\n- **x** (#9).\n');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'fragment');
-  eq(gate().status, 0, 'adding a fragment satisfies the gate');
-  eq(gate('no-such-ref').status, 2, 'an unknown base is a usage error, not a pass');
-});
-
-test('a pull request that changes bin/, skills/ or docs/ must add a fragment (#32)', () => {
-  const c = (status, path) => ({ status, path });
-  assert(changelog.missingFragment([c('M', 'skills/arkitect-drawio/scripts/build-diagram.mjs')]), 'a generator change without a fragment');
-  eq(changelog.missingFragment([c('M', 'bin/arkitect.mjs'), c('A', 'changelog.d/46-doctor.md')]), null, 'a fragment satisfies it');
-  eq(changelog.missingFragment([c('M', 'docs/cli.md'), c('M', 'changelog.d/46-doctor.md')]), null, 'extending a fragment satisfies it');
-  eq(changelog.missingFragment([c('M', 'tests/toolkit.mjs'), c('M', '.github/workflows/ci.yml')]), null, 'tests and CI need none');
-  assert(changelog.missingFragment([c('M', 'docs/cli.md'), c('M', 'changelog.d/README.md')]), 'editing the README is not a fragment');
-  assert(changelog.missingFragment([c('M', 'docs/cli.md'), c('D', 'changelog.d/4-old.md')]), 'deleting a fragment is not adding one');
-  const wf = readFileSync(join(ROOT, '.github', 'workflows', 'changelog.yml'), 'utf8');
-  for (const s of ['labeled', 'unlabeled', "'skip-changelog'", '--require-fragment', '--check', 'fetch-depth: 0']) {
-    assert(wf.includes(s), `.github/workflows/changelog.yml does not mention ${s}`);
-  }
 });
 
 // ------------------------------------------------------ the quoted count (#47)
@@ -579,7 +443,7 @@ test('the count is quoted only in docs/testing.md, and no doc claims an unmeasur
   const hits = [];
   for (const f of FILES.filter((p) => p.endsWith('.md'))) {
     const rel = relative(ROOT, f).split(sep).join('/');
-    if (rel === 'CHANGELOG.md' || rel.startsWith('changelog.d/')) continue;
+    if (rel === 'CHANGELOG.md') continue;
     const s = readFileSync(f, 'utf8');
     if (rel !== 'docs/testing.md' && /\b\d+ passed, \d+ failed, \d+ skipped\b/.test(s)) hits.push(`${rel}: quotes a test count; link to docs/testing.md instead`);
     if (/~\s?2\s?s\b|couple of seconds|roughly two seconds/i.test(s)) hits.push(`${rel}: claims a runtime nobody measured`);

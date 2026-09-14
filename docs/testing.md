@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `222 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `217 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -178,10 +178,6 @@ Each of those jobs uses the npm bundled with its Node, so one more job upgrades
 Node 22 to the newest npm and runs the suite again; the packaging tests call the
 npm beside Node, and a change in npm's output (npm 12's `npm pack --json`, #54)
 turns CI red instead of only a fresh install.
-
-`.github/workflows/changelog.yml` runs on every pull request. It fails when
-`bin/`, `skills/` or `docs/` change and no `changelog.d/` fragment is added,
-unless the pull request is labelled `skip-changelog` (#32).
 
 `.github/workflows/drawio-desktop.yml` is the one place a real Draw.io runs. When
 a change touches `skills/arkitect-drawio/`, `tests/drawio.mjs` or the workflow

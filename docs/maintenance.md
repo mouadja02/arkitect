@@ -129,7 +129,7 @@ reformat, re-indent or "clean up" those files.
 | `docs/`, `README.md` | low — fix freely, keep links resolving |
 | `bin/`, agent adapters in `bin/lib/install-agent.mjs` | low — covered by `tests/toolkit.mjs` |
 | `tests/` | medium — add tests freely; never weaken one to make a change pass |
-| `changelog.d/`, `scripts/` | low — release-note fragments and maintainer tooling; neither ships in the npm package |
+| `scripts/`, `CHANGELOG.md` | low — maintainer tooling and release notes; `scripts/` does not ship in the npm package |
 | `skills/*/references/*.md` | medium — evidence rules apply (invariants 8 and 9) |
 | `skills/*/scripts/` | high — the generators. Full ritual, plus a render you looked at |
 | `skills/*/scripts/lib/` | high — the scene model, the tracer, the stroke generator. Small, surgical changes only |
@@ -216,30 +216,26 @@ requests a person reviews.
 
 ## Changelog entries
 
-A change records its release note in the same pull request, as a fragment of
-its own: `changelog.d/<issue>-<slug>.md` (or `nopr-<slug>.md`), written under
-`### Added`, `### Changed`, `### Removed` or `### Fixed` exactly as the entry
-should read. Never edit `[Unreleased]` in `CHANGELOG.md` directly. Every open
-pull request used to edit the same lines there, so each merge after the first
-conflicted (#32). [changelog.d/README.md](../changelog.d/README.md) has the
-format.
+A change records its release note in the same pull request: one bullet added
+directly to `[Unreleased]` in `CHANGELOG.md`, under `### Added`, `### Changed`,
+`### Removed` or `### Fixed`, as a single line naming what changed and, where
+one exists, the issue or PR it came from. No separate file, no naming scheme,
+no CI gate enforcing it — this used to be a `changelog.d/` fragment per
+change, assembled by a script, specifically to stop parallel pull requests
+conflicting on the same lines (#32); that problem was real, but the apparatus
+it took to solve it (a folder, a naming convention, an issue-linking regex, an
+assembly tool, a CI gate and a label) was more than this project's size
+warrants. If parallel `[Unreleased]` edits start conflicting often enough to
+matter again, revisit this — but as its own deliberate change, not a default.
 
-```bash
-node scripts/changelog.mjs --check
-```
-
-The suite checks every fragment and fails on a conflict marker in any tracked
-text file. The `changelog` workflow fails a pull request that changes `bin/`,
-`skills/` or `docs/` without adding a fragment. A change a reader of the release
-notes would not notice (a test, CI, a typo) carries the `skip-changelog` label
-instead.
+The suite still fails on a conflict marker left in any tracked text file
+(`tests/toolkit.mjs`).
 
 ## Version bumps
 
 `package.json` `version` and `.claude-plugin/plugin.json` `version` move
-together, always. The release pull request folds the fragments into
-`CHANGELOG.md` with `node scripts/changelog.mjs --assemble`, which deletes them,
-and renames `[Unreleased]` to the version.
+together, always. The release process renames `[Unreleased]` to the version
+being cut, with today's date, and opens a fresh empty `[Unreleased]` above it.
 [SemVer](https://semver.org): a new capability is a minor, a fix is a patch, and
 anything that changes the shape of generated output or removes a command is a
 major.

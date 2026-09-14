@@ -4,162 +4,115 @@ All notable changes to Arkitect are recorded here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-Changes not yet released are written as fragments in
-[changelog.d/](changelog.d/README.md) and folded in here when a release is cut.
+A change adds its own one-line bullet under `### Added` / `### Changed` /
+`### Removed` / `### Fixed` in `[Unreleased]` below, in the same pull request
+that makes it — naming the issue or PR it came from where one exists. No
+separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
 ### Added
 
-- **Shared icon packs in Excalidraw** (#17). All 4,793 committed Draw.io marks
-  can be selected with `drawio:<pack>/<slug>` or used as conservative name
-  fallbacks. Existing successful native resolutions keep their artwork.
-  Original SVG/PNG bytes travel inside the scene with provenance, deduplicated
-  files and bound arrows; on-demand entries stay placeholders. No tracing or
-  new artwork is involved.
-- **An accuracy measure for icon resolution** (#15). `tests/icon-queries.json`
-  is a 362-query answer key; the suite fails on any confident wrong answer or if
-  precision at rank 1 drops below 92%, and prints the numbers on every run.
-  Today: 94.5% at rank 1, zero confident wrong answers, 36 of 36 refusals held.
-- **The pins are watched.** `build-packs.mjs --check-upstream` compares every
-  Simple Icons slug we ship with the latest release and reports removals,
-  telling a rename apart (#10). `--check-drift` compares every pinned source with
-  what upstream publishes now (#9). `.github/workflows/upstream-watch.yml` runs
-  the first weekly and the second quarterly. Each opens an issue, or comments on
-  the open one, and never changes the repository.
-- **Proof that a built library opens in Draw.io** (#12). Every committed
-  library is loaded the way `EditorUi.loadLibrary` reads one, by a strict loader
-  that shares no code with `readLibrary`. `drawio-desktop.yml` installs a pinned,
-  checksum-verified Draw.io Desktop and exports one icon from every pack. The job
-  fails on any blank page. It runs when Draw.io files change.
-- The five GCP legacy marks drawn with luminance masks and filters ride along in
-  that export. They render correctly, so #13 is closed with evidence and guarded
-  from now on.
+- Excalidraw can use all shared Draw.io marks via `drawio:<pack>/<slug>` or as
+  a name-match fallback, embedded with provenance (#17)
+- A 362-query icon-resolution answer key guards against confident wrong
+  matches and rank-1 precision regressions (#15)
+- Weekly/quarterly checks catch a removed or drifted upstream icon source and
+  open an issue (#10, #9)
+- Every committed Draw.io library is proven to load the way Draw.io itself
+  reads one; GCP's masked/filtered legacy marks render correctly (#12, #13)
+- Apache Iceberg, Pinot and Beam ship real icons from the ASF's own licensed
+  originals (#11)
+- Every shipped Azure mark is reviewed against its caption, with the review on
+  record (#18)
+- JAX, Flax, LightGBM, CatBoost, Metaflow and SigNoz ship their own
+  project-licensed logos; nine more products catalogued on-demand with a
+  recorded licence finding (#20)
+- 123 products a modern data/ML/platform stack uses now all resolve — 38 ship
+  their artwork, the rest are catalogued on-demand with the blocking licence
+  named (#20)
+- QuickSight resolves under the name AWS renamed it to; Aqua Security promoted
+  out of the catch-all (#20)
+- Teleport, Argo CD, Playwright and dlt get icons from sources already pinned
+  in the repo, no new licence needed (#20)
+- `excalidraw render` writes a real PNG on any OS using a local Edge, Chrome or
+  Chromium (#39)
 
 ### Changed
 
-- **The AWS pack is built from Amazon's official icon package** (#8). Every
-  service icon from the AWS Architecture Icons package of July 2026, at 64px,
-  embedded verbatim and pinned by sha256: 311 icons where the palette had 243,
-  68 of them new (Braket, Chime, Connect, the Elemental media services, IoT Core
-  and Greengrass, Thinkbox, Transfer Family and more). Every id the palette used
-  still resolves, and its captions stay searchable. The `local-aws` special case
-  in the builder is gone; AWS is an ordinary `zip-tree` pack.
-- **The AgentCore rasters are 73 KB, not 4.65 MB** (#7). The service now uses
-  Amazon's official SVG under both of its ids. The five feature marks Amazon has
-  only published as ~1024px PNGs ship proportionally shrunk to 156px - twice their
-  drawn size - by a dependency-free area-average resampler
-  (`build-packs.mjs --downscale-png`), committed under `assets/libraries/local/` as
-  a pinned `local-files` source. `aws.drawio` went from 7.3 MB to 1.5 MB.
-- **66 products leave the catch-all for the packs they belong in** (#19). Their
-  marks already shipped in `brands`, ranked below every curated pack and labelled
-  "confirm this is the right product" even on an exact match. They are now
-  curated: Mixpanel, PostHog and Elementary in `data-platforms`; Vespa, PocketBase,
-  Appwrite, Turso and Nebula in `databases`; Modal, Braintrust, Langflow and OpenAI
-  Gym in `ai-frameworks`; Deepnote and Lightning in `ml-training`; Checkmk, Icinga,
-  Netdata and Thanos in `observability`; Devbox, Talos, Coolify, CapRover,
-  Portainer, Watchtower and Kong in `devops`; Ory and Clerk in `security-identity`;
-  Coda, Obsidian, Logseq, Shortcut, Pivotal Tracker, Retool, Appsmith and Budibase in
-  `saas-collab`; and 31 languages, frameworks, build tools, linters and test runners
-  in `languages-runtimes`, which grows from 49 to 80. The same CC0 bytes, no
-  licensing change; `brands` goes from 3,158 to 3,092.
+- The AWS pack is rebuilt from Amazon's official July 2026 icon package: 311
+  icons, up from 243, embedded verbatim and pinned by sha256 (#8)
+- The AgentCore icon's five raster-only feature marks shrink from 4.65 MB to
+  73 KB via a dependency-free area-average resampler (#7)
+- 66 products are promoted from the generic `brands` catch-all into their
+  proper curated packs (#19)
+- Seven on-demand marks (Hudi, Samza, ActiveMQ, ZooKeeper, Crossplane, Flux,
+  Open Policy Agent) now record why their official artwork can't ship (#11)
+- The artwork licence bar is explicit: permissive licences ship, copyleft
+  (MPL/LGPL/GPL/AGPL/SSPL/BUSL) does not, with two named brand-policy
+  exceptions (#20)
+- A vendor's published logo policy is checked ahead of the repository licence
+  it happens to live in, in both directions (#20)
+- `tests/icon-queries.json` grew to 492 rows; rank-1 precision is 96.4%, up
+  from 94.5% (#20)
+- Rebuilding a diagram no longer piles up unlimited backups — both builders
+  keep the newest five plus the oldest and prune the rest, `--keep-backups N`
+  (#49)
+
+### Removed
+
+- The `changelog.d/` fragment system, its CI gate and the `skip-changelog`
+  label (#32) — entries are written directly into this file's `[Unreleased]`
+  section again, as before #32. The fragment mechanism solved real PR
+  conflicts, but the folder, naming scheme, issue-linking regex and assembly
+  tool were more apparatus than a project this size needs.
 
 ### Fixed
 
-- **Long file-type extensions are readable on their band** (#14). `fileSheet()`
-  shrank the band text until it fit, so `DOCKERFILE` and `EXCALIDRAW` rendered at
-  5.65px, a grey smear at diagram zoom. A file-type entry in `sources.json` can
-  now set a shorter `band`: `.dockerfile` shows `DOCKER` and `.excalidraw` shows
-  `EXCALI`, both at the full 9px. The slug, title, caption and aliases keep the
-  full extension, so lookup is unchanged. The builder refuses band text that
-  would render under 8px, so a future long extension fails the build instead of
-  shipping unreadable; `PARQUET` and `GRAPHQL` fit at 8.06px and keep their full
-  names. The file-types library, the catalog and the file-types contact sheet
-  are rebuilt; no other pack's bytes change.
-- **Draw.io `validate`, `build` and `analyze` no longer read a flag's value as a
-  file** (#37). `validate x.drawio --page 0` validated the diagram, then crashed
-  opening a file named `0`; `build --out arch.drawio spec.json` read
-  `arch.drawio` as the spec; and `validateFile(file, { pageIndex: 999 })`
-  returned `ok: true` having checked nothing. The three CLIs now share one strict
-  parser in `drawio-core.mjs`: a flag takes its value with it, and an unknown
-  flag, a missing value, a repeated flag, a malformed `--page`, a second spec,
-  or a spec that is missing or not valid JSON exits 2 with a one-line reason
-  instead of a stack trace. A page the file does not have fails validation
-  (exit 1) and `analyze` exits 1 instead of crashing; the API throws a
-  `TypeError` for a negative, fractional or non-numeric `pageIndex`. The
-  never-implemented `--force` (build) and `--labels` (analyze) are gone from the
-  scripts' header comments.
-- **Contact sheets no longer leave a Chrome profile in the skill** (#44).
-  `contact-sheet.mjs --png` pointed Chrome's `--user-data-dir` at
-  `contact-sheets/.shot/` and never removed it, so one run left cookies,
-  history and login data in a directory people zip, copy and sync. The profile
-  and the intermediate HTML now live in a temporary directory removed after
-  every shot, pass or fail. The screenshot is taken there too and replaces
-  `<pack>.png` only if it is a real PNG, so a crash, a timeout or an empty shot
-  keeps the previous sheet and is reported as `FAILED` (exit 1) instead of
-  passing for a fresh one. Without `--png` the HTML is still written beside the
-  PNGs; with it, `--keep-html` keeps a copy. **If you have
-  `skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/`, delete it.**
-  The script warns while it exists and never deletes it for you.
-- **The npm package carries what it should and nothing local** (#38). `files`
-  listed all of `skills/`, and npm does not read `.gitignore`, so `npm pack`
-  took in whatever had been generated locally: 106 MB packed and 153 MB
-  unpacked, including all nine upstream source archives, cached logos and built
-  icons, the contact-sheet HTML, and the Chrome profile `contact-sheet.mjs`
-  leaves under `contact-sheets/.shot/` (cookies, history, login data). It also
-  left out `.claude-plugin/`, which `doctor` checks. `files` now keeps the
-  bundled assets and excludes every local-only location: 179 files, 16 MB
-  packed, 47 MB unpacked. The plugin manifest ships; the test suite does not,
-  and `arkitect test` outside a checkout exits 2 saying where to find it. A
-  toolkit test packs the real tarball with sentinels planted in each excluded
-  location and runs the CLI from the extracted copy.
-- **A spec that names something that does not exist is refused, not built**
-  (#36). A typo in an edge endpoint exited 0 in both engines: Excalidraw dropped
-  the connection and the scene still validated, Draw.io wrote a dangling edge.
-  Each builder now exports `validateSpec`, and `buildDiagram` throws a
-  `SpecError` listing every problem - unknown edge endpoints, a `parent` that is
-  not a boundary, boundary cycles, missing or repeated ids and, in Draw.io, ids
-  reserved for cells it writes itself. The CLI exits 1 before the backup or the
-  write, so an existing file is untouched. A Draw.io edge may still end on a
-  boundary; an Excalidraw edge connects nodes only. Draw.io's automatic edge ids
-  skip ids the spec uses, so a node called `e1` no longer duplicates one, and an
-  unknown edge kind with a label draws as `flow` instead of crashing.
-- **A rebuild in the same second no longer overwrites the previous backup** (#35).
-  Both builders stamped backups to the second and copied over whatever was
-  there, so two quick updates left one backup holding the first revision and
-  the original was gone. `backupExisting` now creates each backup exclusively
-  and, when the name is taken, tries `-1`, `-2`, ... in turn. Names stay
-  timestamped siblings, and the build report still gives the path it wrote.
-- **A fragment of a different product's name no longer resolves confidently.**
-  `tempo` resolved to Temporal, `cube` to Azure's generic "Cubes" and
-  `active directory` to its Connect Health sub-product, all without comment
-  (#21). A prefix now counts only when what it leaves off is a generic tail
-  (`postgres` → PostgreSQL still does), and a plural the builder generated for a
-  one-word vendor title is never used unattended. Scores and ranking are
-  unchanged; only the confidence verdict moved. The catalog records
-  `generatedAliases` so the resolver can tell them apart.
-- **An icon cell fits its image instead of stretching square.** A requested
-  icon size became both width and height, and cell styles set `imageAspect=0`,
-  so any non-square raster was squashed. The size is now the longest side.
-- **Excalidraw no longer draws a different product for a name it was only
-  handed** (#22). A spec node naming a component rather than a ref fell back to
-  any search hit scoring 70, so `postgres` drew Azure Database for PostgreSQL,
-  `grafana` AWS Managed Grafana, `nifi` Oracle Unified Directory - silently.
-  The fallback now draws only the product by name: an exact match (a leading
-  Azure/AWS/Google/Apache word aside), or a prefix whose remainder is a generic
-  tail, clearly ahead of any differently named rival. Anything else becomes a
-  placeholder named in the report, and `excalidraw icon` says which, and why.
-  `tests/excalidraw-icon-queries.json` measures it: 0 wrong draws, 123 right.
-- **The gRPC and Memcached icons draw again.** The devicon builder rebuilt each
-  mark's root `<svg>` to normalise its canvas and dropped every namespace
-  declaration with it. Both marks paint gradients through `xlink:href`, so their
-  embedded SVG was not valid XML and showed as a broken image - on the contact
-  sheet and in every diagram that used them. The rebuilt root now keeps the
-  original `xmlns:*` declarations, and the strict library loader rejects any SVG
-  payload that uses a namespace prefix it never declares. The other 4,786 marks
-  were unaffected. Once gRPC could render, it showed what devicon's `original`
-  variant really is: two small chevrons in one corner of the canvas, no wordmark.
-  It now uses devicon's `plain` variant, the actual gRPC logo.
+- Long file-type extensions render readably instead of shrinking to 5.65px
+  (#14)
+- Draw.io `validate`/`build`/`analyze` no longer misread a flag's value as a
+  file, or silently skip an unchecked page (#37)
+- `contact-sheet.mjs --png` no longer leaves a Chrome profile (cookies,
+  history) behind in the skill directory (#44)
+- The npm package is trimmed from 106 MB/153 MB to 16 MB/47 MB packed/unpacked
+  by excluding local-only caches and profiles (#38)
+- A spec naming a missing node, parent or edge endpoint is refused before
+  anything is written, in both engines (#36)
+- Two rebuilds in the same second no longer overwrite each other's backup
+  (#35)
+- A name fragment (`tempo`, `cube`, `active directory`) no longer resolves
+  confidently to an unrelated product (#21)
+- A non-square icon no longer stretches to a square cell; size now fits the
+  longest side
+- Excalidraw's name-only fallback no longer draws an unrelated product;
+  unresolved names become a reported placeholder instead (#22)
+- gRPC and Memcached icons render again after their embedded SVG's dropped
+  namespace declarations were restored
+- A broken SVG icon payload can no longer pass validation; every payload is
+  now parsed by a strict XML checker (#33)
+- gRPC renders in its brand colour instead of black, via a new `paint: tint`
+  flag for single-colour devicon marks (#31)
+- Draw.io edges no longer route straight through an icon's caption; `validate`
+  warns on any route that still crosses one (#45)
+- `doctor` finds Draw.io Desktop the same way `render` does, instead of
+  checking 4 hard-coded paths (#46)
+- The documented fresh-clone test count is checked by the suite itself instead
+  of drifting silently across 4 files (#47)
+- An unknown node/edge `kind` (a typo) is named in the build report instead of
+  silently drawing a fallback with no trace (#48)
+- The committed worked examples are proven byte-identical to a fresh build
+  from their spec (#50)
+- `AGENTS.md` and both engine `SKILL.md` files no longer contradict each other
+  on icon-search order, spec-vs-hand-written-XML, or the render/commit policy
+- The Draw.io icon search's own hint no longer suggests a command that prints
+  base64 icon bytes into an agent's context
+- `pack-index.md` and `ATTRIBUTION.md` are regenerated after drifting out of
+  sync with the current icon catalog
+- The bundled-icon count no longer drifts independently across `plugin.json`,
+  `marketplace.json`, `package.json` and the installer's adapter text
+- `learn-excalidraw-style/SKILL.md` no longer contradicts itself about whether
+  the shipped style record already carries real evidence
 
 ## [1.1.0] — 2026-09-12
 
