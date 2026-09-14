@@ -126,6 +126,8 @@ separate file, no naming scheme, no required format beyond that.
   `marketplace.json`, `package.json` and the installer's adapter text
 - `learn-excalidraw-style/SKILL.md` no longer contradicts itself about whether
   the shipped style record already carries real evidence
+- A Draw.io search, `--cell` and a build size a shipped mark at its library
+  cell, so Restate is placed at 78x69 instead of 78x71 (#80)
 
 ## [1.1.0] — 2026-09-12
 

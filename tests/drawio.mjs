@@ -1084,13 +1084,18 @@ test('the modern-stack marks that ship are pinned to a commit and committed byte
       || icon.upstreamId.startsWith('https://www.apache.org/logos/originals/'), `${id} pins its upstream: ${icon.upstreamId}`);
     const entry = core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`))[icon.libraryIndex];
     // The cell fits 78px on the longest side and keeps the artwork's own
-    // aspect. Only the long side is asserted here: the catalog stores the
-    // intrinsic size rounded to integers while the cell is computed from the
-    // raw floats, so for artwork with a fractional viewBox — Restate's 34.46
-    // by 30.52 — recommendedSize and the cell disagree by a pixel.
-    eq(`${Math.max(entry.w, entry.h)} ${entry.aspect} ${entry.mime}`,
-      `78 fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
-      `${id} library cell is fitted to 78px and keeps its format`);
+    // aspect, both sides checked against the committed original's own size, the
+    // one build-packs fits - Restate's 34.46 by 30.52, not the 34 by 31 the
+    // catalog rounds it to - and recommendedSize hands back that same cell (#80).
+    const original = files.get(file);
+    const png = file.endsWith('.png') ? iconBuild.pngSize(original) : null;
+    const [width, height] = png ? [png.width, png.height] : iconBuild.viewBoxOf(original.toString('utf8')).slice(2);
+    const scale = 78 / Math.max(width, height);
+    eq(`${entry.w}x${entry.h} ${entry.aspect} ${entry.mime}`,
+      `${Math.round(width * scale)}x${Math.round(height * scale)} fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
+      `${id} library cell is its artwork fitted to 78px, in its own format`);
+    const fitted = finder.recommendedSize(icon);
+    eq(`${fitted.width}x${fitted.height}`, `${entry.w}x${entry.h}`, `${id} recommendedSize is its library cell`);
   }
   // llama.cpp is the one mark a policy rather than a bare licence lets in: the
   // brand repository grants redistribution notwithstanding CC BY-NC's terms.
@@ -1373,6 +1378,34 @@ test('an icon cell is fitted to its image, never stretched square', () => {
   eq(size(156, 147, 78), JSON.stringify({ width: 78, height: 74 }), 'a requested size is the longest side');
   eq(size(78, 78), JSON.stringify({ width: 78, height: 78 }), 'a square mark stays square');
   eq(size(1024, 512), JSON.stringify({ width: 78, height: 39 }), 'the default footprint is fitted too');
+});
+
+// The size the resolver hands back is the cell the library ships (#80). The
+// catalog keeps the artwork's size rounded to integers, and fitting that pair
+// drew Restate's 34.46x30.52 artwork at 78x71 beside its 78x69 cell.
+test('recommendedSize is the library cell of every committed mark (#80)', () => {
+  const cat = finder.loadCatalog();
+  const libraries = new Map();
+  const committed = cat.icons.filter((i) => i.bytes === 'committed');
+  const mismatched = [];
+  for (const icon of committed) {
+    if (!libraries.has(icon.pack)) libraries.set(icon.pack, core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`)));
+    const entry = libraries.get(icon.pack)[icon.libraryIndex];
+    const fitted = finder.recommendedSize(icon);
+    if (`${fitted.width}x${fitted.height}` !== `${entry?.w}x${entry?.h}`) {
+      mismatched.push(`${icon.id}: recommends ${fitted.width}x${fitted.height}, its cell is ${entry?.w}x${entry?.h}`);
+    }
+  }
+  assert(committed.length > 0, 'no committed marks to check');
+  assert(!mismatched.length, `${mismatched.length} of ${committed.length} marks disagree with their cell:\n        ${mismatched.slice(0, 10).join('\n        ')}`);
+
+  // What an agent is handed: the build's own call, --cell and a search.
+  const restate = committed.find((i) => i.id === 'streaming-orchestration/restate');
+  const at78 = finder.recommendedSize(restate, 78);
+  eq(`${at78.width}x${at78.height}`, '78x69', 'Restate at the 78px footprint a build asks for');
+  assert(node('find-icon.mjs', ['--cell', restate.id]).includes('width="78" height="69"'), '--cell places Restate at its cell');
+  const hit = JSON.parse(node('find-icon.mjs', ['restate'])).matches[0].variants[0];
+  eq(hit.recommended, '78x69', 'a search recommends Restate at its cell');
 });
 
 test('both SVG and PNG entries decode with real dimensions', () => {
