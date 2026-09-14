@@ -116,7 +116,10 @@ node bin/arkitect.mjs excalidraw browse --install <source>
 The dishonest one is using a different product's mark. Arkitect will not do it,
 and neither should you. → [icons.md](icons.md)
 
-For Draw.io, non-AWS products get their real logo fetched and embedded:
+For Draw.io, search the bundled packs first — 18 packs cover far more than AWS,
+so most named products (Snowflake, Grafana, Databricks, Postgres included) are
+already there. Only the minority the search reports as on-demand or unmatched
+need a fetched logo:
 
 ```bash
 node bin/arkitect.mjs drawio logo --url https://.../snowflake.svg --name snowflake

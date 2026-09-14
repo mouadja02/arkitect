@@ -29,16 +29,20 @@ Read `references/style-guide.md` before laying anything out, and
    ```bash
    node scripts/find-icon.mjs "bedrock"                    # rank matches, metadata only
    node scripts/find-icon.mjs "cloud run" --context gcp    # bias toward the stack in play
-   node scripts/find-icon.mjs --cell <id> --label "Amazon Bedrock" --x 0 --y 0
    ```
    The search answers with `confident: true` or with the reason it is not, plus the
-   alternatives. **A result that is not confident is a question, not an answer** —
-   pick an id deliberately, narrow with `--pack`, or ask. Do not take the first row
-   because it was first.
+   alternatives, and never prints icon bytes. **A result that is not confident is a
+   question, not an answer** — pick an id deliberately, narrow with `--pack`, or ask.
+   Do not take the first row because it was first. Put the resolved id straight into
+   the spec: `{ "kind": "icon", "icon": "<id>" }` — the builder embeds the artwork; do
+   not fetch it into context yourself. `--cell`/`--style`/`--data` print the raw XML
+   cell, style string or data URI for that icon and exist only for the hand-written
+   XML exception (step 4) — redirect their output straight to a file
+   (`> cell.xml`), never read the bytes into the conversation.
 
-   Seventy-five products are catalogued without artwork, because their marks carry no
-   redistribution licence or their licensed artwork does not draw at icon size. Those
-   come back as `bytes: "on-demand"` with the exact
+   Some catalogued products carry no bundled artwork, because their marks carry no
+   redistribution licence or their licensed artwork does not draw at icon size (see
+   `--stats` for the live count). Those come back as `bytes: "on-demand"` with the exact
    `fetch-logo` command to run. Run it, then use the cached logo.
 
    If nothing matches, fall back to a built-in `mxgraph.aws4.*` shape, then to the MCP
@@ -65,9 +69,12 @@ Read `references/style-guide.md` before laying anything out, and
    the field, the value, what it was drawn as and the valid kinds. Treat a
    non-empty `unknownKinds` like an unresolved icon: fix the spec and rebuild, or
    name it in your report.
-   Hand-written XML is fine too — copy the exact style strings from the style
-   guide — but embedded icons must use the comma-only data URI form
-   (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.
+   Hand-written XML is a narrow exception — only when the spec format genuinely
+   cannot express what you need, or for a targeted edit to an existing file (see
+   "Editing an existing diagram" below) — never the way a new diagram gets built.
+   When you do, copy the exact style strings from the style guide — embedded icons
+   must use the comma-only data URI form (`data:image/svg+xml,<base64>`), because
+   `;` terminates a draw.io style.
 
 5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling backup
    before replacing an existing file. Once the new file is written it keeps the
@@ -115,8 +122,12 @@ Read `references/style-guide.md` before laying anything out, and
    `--no-sandbox` only for a diagnosed sandbox failure. Never add them blindly.
    After a host update breaks rendering, report 🔴 and explicitly fall back to
    validate-only until fixed. Generator changes need a build, render and visual
-   inspection before a PR; only committed-template renders may be attached.
-   Never commit a render or upload real architecture.
+   inspection before a PR. A render of a real or user diagram stays local —
+   never commit it, never attach it to a PR. The deliberate exception is the
+   committed template PNGs and contact sheets under `assets/` — refresh those
+   in the same PR whenever generator output changes (see `docs/maintenance.md`);
+   only those public, template-derived renders may be attached to a PR. Never
+   upload real architecture.
 
 8. **Open it on request.** `& 'C:\Program Files\draw.io\draw.io.exe' "<file>"`.
 

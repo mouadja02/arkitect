@@ -45,9 +45,12 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    they go into your report and, where they matter, into a note on the canvas.
 3. **Resolve icons before laying out.** A diagram of grey boxes is not worth
    drawing. See §4.
-4. **Write a spec, then build.** Both engines generate from a small JSON spec,
-   not from hand-written XML/JSON. This is what applies the style, keeps the
-   layout collision-free and keeps base64 out of your context. A spec whose
+4. **Write a spec, then build.** Both engines generate from a small JSON spec —
+   the normal route for every new diagram. This is what applies the style,
+   keeps the layout collision-free and keeps base64 out of your context.
+   Hand-written XML/JSON is a narrow exception — only when the spec format
+   genuinely cannot express what you need, or for a targeted edit to an
+   existing file (§5) — never how a new diagram gets built. A spec whose
    edges or parents name something that does not exist is refused before
    anything is written, every problem listed; fix the spec, never drop the edge.
    A `kind` the builder does not know still builds, drawn as a default, and is
@@ -111,21 +114,31 @@ writes `<name>.png` using a local Edge, Chrome or Chromium (pin one with
 by extension, and `--format svg` needs no browser at all.
 
 Draw.io generator changes must be built, validated, rendered and visually
-inspected before a PR. Never commit renders; only renders built from committed
-repository templates may be attached to a PR. Real architecture stays local.
-If a host update breaks rendering, report 🔴 and explicitly fall back to
-validate-only until repaired; do not silently omit visual verification.
+inspected before a PR. A render of a real or user diagram stays local — never
+commit it, never attach it to a PR; real architecture stays local, full stop.
+The deliberate exception is the committed template PNGs and contact sheets
+under `skills/*/assets/` — refresh those in the same PR whenever generator
+output changes, and only those public, template-derived renders may be
+attached to or referenced from a PR (see `docs/maintenance.md`). If a host
+update breaks rendering, report 🔴 and explicitly fall back to validate-only
+until repaired; do not silently omit visual verification.
 
 Every script also runs directly out of `skills/*/scripts/` if you prefer.
 Full reference: `docs/cli.md`.
 
 ## 4. Icons — the rule that matters most
 
-**Draw.io:** bundled AWS palette first (`drawio icon`), then a built-in
-`mxgraph.aws4.*` shape, then the Draw.io MCP `search_shapes` tool. For non-AWS
-products — Snowflake, Grafana, Databricks, Postgres, an internal product —
-fetch the **real logo** and embed it (`drawio logo --url …`). A grey box
-labelled "Snowflake" is a regression, not a safe default.
+**Draw.io:** search the bundled packs first (`drawio icon "<product>"` — one
+search across all 18 packs: AWS, Azure, Google Cloud and curated packs for
+data platforms, databases, AI frameworks, DevOps, security, GitHub, SaaS,
+languages, file types and agent concepts, not AWS alone). Most named
+products — Snowflake, Grafana, Databricks, Postgres included — are already
+bundled. Only for the minority the search reports as on-demand or unmatched,
+fetch the **real logo** and embed it (`drawio logo --url …`, or the exact
+`fetch-logo` command the search names). Last resort, and only then: a
+built-in `mxgraph.aws4.*` shape, the Draw.io MCP `search_shapes` tool, or a
+plain labelled box named in the report. A grey box labelled "Snowflake" when a
+bundled mark existed is a regression, not a safe default.
 
 **Excalidraw:** the 36 bundled libraries first (`excalidraw icon`). 239 items
 carry no name; find those by reading the numbered contact sheets in

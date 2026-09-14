@@ -126,8 +126,11 @@ the generator's defaults; do not undo them by hand:
    Treat a non-empty `unknownKinds` like an unresolved icon: fix the spec and
    rebuild, or name it in your report.
 
-   Hand-written JSON is fine too — read `references/excalidraw-format.md` first,
-   particularly the parts about relative arrow points and two-sided bindings.
+   Hand-written JSON is a narrow exception — only when the spec format genuinely
+   cannot express what you need, or for a targeted edit to an existing file (see
+   "Editing an existing scene" below) — never the way a new scene gets built. When
+   you do, read `references/excalidraw-format.md` first, particularly the parts
+   about relative arrow points and two-sided bindings.
 
 5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling
    backup before replacing an existing file. Once the new scene is written it
