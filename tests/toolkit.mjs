@@ -249,6 +249,7 @@ test('this repository ships the adapters it advertises', () => {
 
 test('the plugin, marketplace and package manifests agree', () => {
   eq(manifest.name, pkg.name, 'plugin vs package name');
+  eq(manifest.version, pkg.version, 'plugin vs package version');
   eq(marketplace.plugins[0].name, manifest.name, 'marketplace vs plugin name');
   assert(existsSync(join(ROOT, pkg.bin.arkitect)), 'package.json bin points at a missing file');
   assert(manifest.description.length > 40, 'plugin description is too thin to be useful');
