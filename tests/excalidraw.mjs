@@ -27,6 +27,10 @@ const SCRIPTS = join(SKILL, 'scripts');
 const TMP = join(HERE, 'output', 'excalidraw');
 const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 
+// The suite never reads or writes the style store of the person running it
+// (#89); every process a test spawns inherits this.
+process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
+
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
@@ -1687,6 +1691,29 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
       `${name} uses kinds the builder does not know: ${rebuilt.report.unknownKinds.map((u) => `${u.field}=${u.value}`).join(', ')}`);
   });
 }
+
+// Learning builds this install's own record outside the plugin (#89). Only an
+// explicit --out writes anywhere else, which is how a maintainer rebuilds the
+// shipped record.
+test('learning writes your record to the store, and elsewhere only by --out (#89)', () => {
+  const home = process.env.ARKITECT_HOME;
+  rmSync(home, { recursive: true, force: true });
+  const shipped = join(SKILL, 'references', 'source-analysis.json');
+  const before = readFileSync(shipped);
+  const scene = join(SKILL, 'assets', 'templates', 'starter-architecture.excalidraw');
+  eq(JSON.parse(node('build-knowledge.mjs', ['--print'])).record, shipped, 'with no record of your own, --print shows the shipped one');
+  const elsewhere = join(TMP, 'maintainer', 'record.json');
+  const wrote = JSON.parse(node('build-knowledge.mjs', ['--sources', scene, '--out', elsewhere]));
+  eq(wrote.wrote, elsewhere, '--out after the sources is where the record goes');
+  eq(wrote.corpus.files, 1, 'and its value is not read as a second scene');
+  node('build-knowledge.mjs', ['--sources', scene]);
+  const own = join(home, 'excalidraw', 'source-analysis.json');
+  assert(existsSync(own), 'by default the record goes to the store');
+  eq(JSON.parse(readFileSync(join(home, 'excalidraw', 'sources.json'), 'utf8')).files[0], scene, 'with the designated paths beside it');
+  eq(JSON.parse(node('build-knowledge.mjs', ['--print'])).record, own, 'and --print shows it once it exists');
+  assert(before.equals(readFileSync(shipped)), 'the shipped record is untouched');
+  rmSync(home, { recursive: true, force: true });
+});
 
 test('the docker compose file pins the official image and a port', () => {
   const compose = readFileSync(join(ROOT, 'docker', 'docker-compose.yml'), 'utf8');

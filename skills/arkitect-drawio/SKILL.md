@@ -12,7 +12,11 @@ about 4,800 marks - bundled with this skill and resolved by one search.
 
 Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-drawio/scripts`.
 Read `references/style-guide.md` before laying anything out, and
-`references/pattern-catalog.md` to pick a starting pattern.
+`references/pattern-catalog.md` to pick a starting pattern. Then, if they exist,
+read the user's own `style-notes.md` and `patterns.md` in `~/.arkitect/drawio/`
+(`$ARKITECT_HOME/drawio/` when that is set) — what `/learn-drawio-style` found in
+their diagrams. Where those conflict with the shipped guide, the user's notes win;
+say so in the report.
 
 ## Workflow
 
@@ -49,7 +53,19 @@ Read `references/style-guide.md` before laying anything out, and
    `search_shapes` tool, then to a plain labelled box that you call out in the report.
    **Never** swap in a different product's icon to fill a gap.
 
-4. **Generate the file.** Write a spec and build it; this applies the style tokens,
+4. **Generate the file.** First check which style this install draws with:
+   ```bash
+   node scripts/build-diagram.mjs --print-style
+   ```
+   With `"source": "override"` the user chose some of their own conventions with
+   `/apply-drawio-style`. Pick each edge `kind` by its `meaning` in that list — a kind
+   can mean something different on this install, and there may be extra kinds — and
+   do not fight the tokens it changed. The build report repeats the active kinds
+   under `style`; a non-empty `style.errors` means the override was ignored, so tell
+   the user. Never pass `--defaults` for a user's diagram: it exists for committed
+   examples.
+
+   Write a spec and build it; this applies the style tokens,
    embeds the icon data directly in each cell, and keeps the layout collision-free:
    ```bash
    node scripts/build-diagram.mjs my-spec.json --out "path/to/diagram.drawio"
@@ -305,7 +321,9 @@ say so in the report — do not substitute a different product's mark.
 - Editable `.drawio` XML is the deliverable.
 - Icons and logos embed in the cell, so the file renders without the palette loaded.
 - Real product marks for every component, transparent background, not grey boxes.
-- Orthogonal routing, square corners, no shadows, captions under icons, `#232F3E` text,
-  12px body / 16px headings.
+- Orthogonal routing, no shadows, captions under icons. Corners, connector meanings,
+  colours and type sizes follow the house style — square corners, `#232F3E` text, 12px
+  body / 16px headings — unless this install's applied override (`--print-style`) says
+  otherwise.
 - Keep the user's own diagrams local. Never upload them anywhere. Fetching a public
   logo is fine; putting anything from the diagram into a query is not.

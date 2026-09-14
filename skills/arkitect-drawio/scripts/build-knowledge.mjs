@@ -1,9 +1,14 @@
 #!/usr/bin/env node
-// Turn read-only .drawio examples into the sanitized evidence record at
-// references/source-analysis.json. Used by the learn-drawio-style
-// skill; also reproduces the record shipped with the plugin.
+// Turn read-only .drawio examples into the sanitized evidence record. Used by
+// the learn-drawio-style skill.
 //
 //   node build-knowledge.mjs --sources <file...> [--merge] [--out <path>]
+//
+// By default the record is this install's own, in <ARKITECT_HOME>/drawio/ (see
+// lib/store.mjs), beside a sources.json naming the files it came from - outside
+// the plugin, so an update cannot wipe it (#89). references/source-analysis.json
+// is the shipped house style; a maintainer rebuilds that only with an explicit
+// --out, in a reviewed pull request.
 //
 // SANITIZATION CONTRACT - the output carries only:
 //   * structural counts, geometry statistics, style tokens, colour codes
@@ -11,17 +16,17 @@
 // It never carries: file names, paths, cell labels, hostnames, URLs, or any
 // other string drawn from the examples.
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   fileMeta, readMxfile, extractCells, graphModelAttrs,
   parseStyle, styleShape, styleSignature, parseDataUri,
 } from './lib/drawio-core.mjs';
+import { storeFile, writeJson } from './lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
-const OUT_DEFAULT = join(SKILL_ROOT, 'references', 'source-analysis.json');
 const CATALOG = join(SKILL_ROOT, 'references', 'icon-catalog.json');
 
 const roleOf = (pages, vertices) => {
@@ -48,7 +53,7 @@ function collect(files) {
     fontSizes: new Map(), signatures: new Map(), iconSizes: new Map(), aws4Sizes: new Map(),
     routing: new Map(), arrows: new Map(), dash: new Map(), strokeWidth: new Map(),
     labelPlacement: new Map(), grIcons: new Map(), resIcons: new Map(), boundaries: new Map(),
-    edgeLabelStyle: new Map(),
+    edgeLabelStyle: new Map(), rounded: new Map(),
   };
   const flow = { horizontal: 0, vertical: 0, diagonal: 0, hSteps: [], vSteps: [] };
   const totals = {
@@ -106,6 +111,8 @@ function collect(files) {
           add(agg.edgeLabelStyle, styleSignature(c.style));
         } else if (c.vertex) {
           v++; fileVertices++; totals.vertices++;
+          // Read the way analyze-drawio.mjs reads it: unset is square (#89).
+          add(agg.rounded, s.rounded ?? '0');
           const g = c.geometry;
           if (g && g.x != null && !g.relative) {
             totals.coords += 2;
@@ -260,13 +267,15 @@ function conventions({ agg, flow, totals, q }) {
 }
 
 function main(argv) {
-  const files = []; let out = OUT_DEFAULT; let merge = false;
+  const files = []; let out = null; let merge = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--sources') { while (argv[i + 1] && !argv[i + 1].startsWith('--')) files.push(argv[++i]); }
     else if (argv[i] === '--out') out = argv[++i];
     else if (argv[i] === '--merge') merge = true;
   }
   if (!files.length) { console.error('usage: build-knowledge.mjs --sources <file...> [--out p] [--merge]'); process.exit(2); }
+  const ownRecord = storeFile('drawio', 'record');
+  out = out ? resolve(out) : ownRecord;
 
   const data = collect(files);
   const prior = merge && existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null;
@@ -308,11 +317,16 @@ function main(argv) {
       recurringStyleSignatures: top(data.agg.signatures, 12),
       boundarySignatures: top(data.agg.boundaries, 8),
       edgeLabelSignatures: top(data.agg.edgeLabelStyle, 4),
+      rounded: top(data.agg.rounded, 4),
     },
     history: prior ? [...(prior.history ?? []), { version: prior.version ?? 1, generated: prior.generated, files: prior.corpus?.files }] : [],
   };
 
+  mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(record, null, 2));
+  // The paths stay beside your own record in the store, never beside a record
+  // that could be committed.
+  if (out === ownRecord) writeJson(storeFile('drawio', 'sources'), { files: files.map((f) => resolve(f)) });
   console.log(`source-analysis v${record.version}: ${record.corpus.files} files, ${record.corpus.pages} pages, ${record.conventions.length} conventions -> ${out}`);
 }
 

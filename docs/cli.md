@@ -32,7 +32,13 @@ arkitect drawio analyze docs/arch.drawio --page 0 --cells
 arkitect drawio analyze docs/arch.drawio --page 0 --images
 arkitect drawio library --verify                      # 14 library invariants
 arkitect drawio library --build                       # merged library + icon catalog
-arkitect drawio learn --sources <files> --merge       # rebuild the style record
+arkitect drawio build spec.json --out docs/arch.drawio --defaults   # the house style, ignoring your own
+arkitect drawio build --print-style                   # the style a build uses, and where it came from
+arkitect drawio learn --sources <files> --merge       # rebuild your style record
+arkitect drawio findings --derive                     # what your record says, for apply
+arkitect drawio apply --list                          # findings that differ from what is drawn
+arkitect drawio apply --accept <id,id>                # draw with them from now on
+arkitect drawio apply --reset                         # back to the house style
 ```
 
 `build`, `validate` and `analyze` parse their arguments strictly. A flag takes
@@ -42,6 +48,12 @@ spec that is missing or not valid JSON exits `2` with a one-line reason.
 `validate --page N` checks page N only (0-based), and a page the file does not
 have is a failure (exit `1`), never a pass over nothing; `analyze --page N` goes
 with `--cells` or `--images` and exits `1` the same way.
+
+`build` merges this install's style override, `~/.arkitect/drawio/style-overrides.json`
+(`$ARKITECT_HOME/drawio/`), into every build and says so under `style` in its
+report. `--defaults` draws the shipped house style regardless — use it for
+anything that gets committed. An override with problems is ignored whole, with a
+one-line warning, and never half applied. See [style.md](style.md#making-it-yours).
 
 ```powershell
 ./skills/arkitect-drawio/scripts/render-drawio.ps1 `
@@ -105,7 +117,7 @@ skills/arkitect-drawio/
   assets/templates/     starter spec, the built diagram, its PNG, pattern fragments
   assets/logos/         product logo cache (gitignored)
   scripts/              analysis, icon lookup, generation, validation, rendering
-  scripts/lib/          the .drawio parsing core
+  scripts/lib/          the .drawio parsing core, style tokens, the style store
 skills/arkitect-excalidraw/
   SKILL.md              the Excalidraw workflow contract
   references/           style-guide.md, pattern-catalog.md, excalidraw-format.md,
@@ -117,6 +129,7 @@ skills/arkitect-excalidraw/
   scripts/lib/          scene model, SVG tracer, hand-drawn stroke generator
 skills/learn-drawio-style/        user-invoked only
 skills/learn-excalidraw-style/    user-invoked only
+skills/apply-drawio-style/        user-invoked only
 docs/                   this documentation
 tests/                  run-tests.mjs (all suites), drawio.mjs, excalidraw.mjs,
                         toolkit.mjs
@@ -155,7 +168,8 @@ applied without you naming a single colour.
 Node `kind`: `icon` (the bundled AWS palette), `logo` (a cached product logo),
 `aws4` (a built-in Draw.io shape), `box`, `note`, `text`. Nodes sit on a
 column/row grid and name their boundary as `parent`; boundaries span whole grid
-cells. Edge `kind` is `flow`, `async`, `error`, `success` or `light`, and a
+cells. Edge `kind` is `flow`, `async`, `error`, `success` or `light` — plus any
+kind this install's style override adds, as `build --print-style` lists — and a
 legend is generated once more than one is used; an unknown kind draws as `flow`.
 
 The build refuses a spec that names something that does not exist, before it

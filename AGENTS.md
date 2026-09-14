@@ -55,7 +55,10 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    anything is written, every problem listed; fix the spec, never drop the edge.
    A `kind` the builder does not know still builds, drawn as a default, and is
    listed under `unknownKinds` in the report; treat a non-empty list like an
-   unresolved icon: fix the spec, or report it.
+   unresolved icon: fix the spec, or report it. On Draw.io, run
+   `drawio build --print-style` before writing the spec: an install can carry
+   the user's own applied style, where an edge `kind` may mean something else
+   or extra kinds exist — pick kinds by their `meaning` there.
 5. **Never overwrite blind.** Both builders write a timestamped sibling backup
    before replacing an existing file, then keep the oldest backup and the newest
    five of that file and delete the rest, listed under `pruned` in the report
@@ -81,6 +84,7 @@ node bin/arkitect.mjs doctor                       # what is installed, what is 
 # Draw.io
 node bin/arkitect.mjs drawio icon "bedrock"                     # search the AWS palette
 node bin/arkitect.mjs drawio logo --url <https url> --name snowflake
+node bin/arkitect.mjs drawio build --print-style                 # the style this install draws with
 node bin/arkitect.mjs drawio build spec.json --out docs/arch.drawio
 node bin/arkitect.mjs drawio validate docs/arch.drawio
 node bin/arkitect.mjs drawio analyze docs/arch.drawio --page 0 --cells
@@ -182,8 +186,9 @@ followed the file.
   asked to fetch, and the public Excalidraw library catalogue. Search the
   **product name alone**. Never put a customer name, project codename, hostname
   or anything else from the diagram into a query or a URL.
-- The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) are
-  user-invoked only. Never learn from a diagram just because you read one.
+- The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) and
+  `apply-drawio-style` are user-invoked only. Never learn from a diagram just
+  because you read one, and never apply learned style unasked.
 
 ## 7. Non-negotiables
 

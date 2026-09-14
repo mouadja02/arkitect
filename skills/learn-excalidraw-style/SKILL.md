@@ -1,28 +1,42 @@
 ---
 name: learn-excalidraw-style
-description: Teach the arkitect-excalidraw skill from additional .excalidraw examples the user explicitly designates. Replaces the shipped defaults with derived evidence, conventions and confidence levels. User-invoked only.
+description: Teach the arkitect-excalidraw skill from additional .excalidraw examples the user explicitly designates. Builds this install's own style record and notes outside the plugin, where an update cannot wipe them. User-invoked only.
 disable-model-invocation: true
 ---
 
-# Learn from a new Excalidraw example
+# Learn from your own Excalidraw scenes
 
-Folds user-designated `.excalidraw` files into the style knowledge behind the
-`arkitect-excalidraw` skill. It only ever runs when the user asks for it — never
-learn from a scene just because you happened to read one.
+Folds user-designated `.excalidraw` files into this install's own style
+knowledge. It only ever runs when the user asks for it — never learn from a
+scene just because you happened to read one.
 
 Plugin root: `${CLAUDE_PLUGIN_ROOT}`. Work from
 `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw`.
 
-This is what turns the shipped guide from *defaults* into *this user's style*.
-The shipped record already carries real evidence: version 1, 9 scenes, 3,270
-elements, learned 2026-09-08. (Before that first learning run, `source-analysis.json`
-was version 0 with an empty corpus and every convention marked `default` — that
-state shipped in older releases and would reappear if the file were deleted, but
-it is not what a fresh install of this repository has today.) A further run
-merges into the current version-1 record rather than replacing it.
+The shipped house style already carries real evidence: version 1, 9 scenes,
+3,270 elements, learned 2026-09-08. (Before that first learning run,
+`source-analysis.json` was version 0 with an empty corpus and every convention
+marked `default` — that state shipped in older releases and would reappear if
+the file were deleted, but it is not what a fresh install of this repository has
+today.) This skill does not change that record. It builds the **user's own**,
+and a further run merges into theirs.
 
-Scratch space is `<repo root>/.analysis/` — gitignored, and where the test
-suite looks for `sources.local.json`. Its `files` key is the designated list.
+**Where it goes.** Everything this skill writes lives in the user's store,
+`~/.arkitect/excalidraw/` (`$ARKITECT_HOME/excalidraw/` when that is set) —
+outside the plugin, so a plugin update or reinstall never wipes it:
+
+| file | what |
+|---|---|
+| `source-analysis.json` | the evidence record, built from the designated scenes only |
+| `sources.json` | the designated paths, written by `build-knowledge.mjs` |
+| `style-notes.md` | prose: only where these scenes differ from the shipped guide |
+| `patterns.md` | prose: recurring layouts the shipped catalog lacks |
+| `renders/` | scratch renders of the examples |
+
+The drawing skill reads `style-notes.md` and `patterns.md` after the shipped
+guides, and they win where the two conflict — that is how what is learned here
+reaches the next scene. Excalidraw has no apply step yet (a follow-up to #89),
+so nothing here changes the generator's tokens.
 
 ## Rules
 
@@ -30,10 +44,12 @@ suite looks for `sources.local.json`. Its `files` key is the designated list.
   SHA-256 before and after and confirm they match.
 - **Explicit designation only.** The user names the files. Do not scan
   directories for candidates.
-- **Nothing confidential enters the repository.** Element text, file names,
-  paths, frame names, links and image payloads stay out. `build-knowledge.mjs`
-  enforces this — it emits structural statistics, style-token counts and digests
-  only.
+- **Nothing confidential enters the plugin.** Element text, file names, paths,
+  frame names, links and image payloads stay out of it. `build-knowledge.mjs`
+  enforces this for the record — structural statistics, style-token counts and
+  digests only.
+- **Learning never edits the plugin.** Not `references/`, not a script, not a
+  committed example. That is maintenance, below.
 - **Preserve prior knowledge.** Use `--merge` so the record keeps its version
   history instead of being replaced.
 - **Contradiction is data.** If a new example disagrees with an existing rule,
@@ -41,6 +57,12 @@ suite looks for `sources.local.json`. Its `files` key is the designated list.
   to make the corpus look consistent.
 
 ## Steps
+
+0. **Earlier designations.** If the store has no `sources.json` but
+   `${CLAUDE_PLUGIN_ROOT}/.analysis/sources.local.json` exists, it lists scenes
+   designated before the store existed. Offer to include its `excalidraw` paths
+   in this run. Only copy the paths — never move or delete that file: in a git
+   checkout it is also the test suite's corpus.
 
 1. Confirm each path exists and record hashes:
    ```bash
@@ -63,39 +85,27 @@ suite looks for `sources.local.json`. Its `files` key is the designated list.
 3. **Look at it.** Render and inspect the image before drawing any conclusion
    about layout — the numbers say how far apart things are, not whether it
    reads well:
-   ```powershell
-   ./scripts/render-excalidraw.ps1 -Path "<example.excalidraw>" -OutDir .analysis/renders
+   ```bash
+   node scripts/render-excalidraw.mjs "<example.excalidraw>" --out-dir "$HOME/.arkitect/excalidraw/renders"
    ```
 
-4. Add it to the local source list (`<repo root>/.analysis/sources.local.json`,
-   gitignored, `{"files": [...]}`) and rebuild the record over the whole corpus:
+4. Rebuild the record over the whole corpus — every designated scene, including
+   the ones already in `sources.json`:
    ```bash
    node scripts/build-knowledge.mjs --sources <every example path> --merge
    ```
-   This bumps `version`, appends to `history`, and recomputes every convention's
-   evidence count and confidence level.
+   This writes `source-analysis.json` and `sources.json` in the store, bumps
+   `version`, appends to `history`, and recomputes every convention's evidence
+   count and confidence level.
 
    Read the `roles` tallies, not the whole-scene ones. A scene's raw style
    counts are dominated by the line segments inside library icons; `roles`
-   separates arrows, authored text, authored shapes and boundary boxes. If a
-   convention you care about has no role tally, add one — a misleading count is
-   worse than none.
+   separates arrows, authored text, authored shapes and boundary boxes.
 
-5. **Change the generator, not just the prose.** A convention that moved and is
-   not reflected in `STYLE` / `EDGE_KINDS` in `build-diagram.mjs` has been
-   noted and not learned; the next diagram will still come out in the old
-   style. Where the corpus needs a field the core does not emit, add it — and
-   verify the field set against an element the app itself wrote, which the
-   corpus is full of. That is the only in-repo check available for a
-   format detail.
-
-6. Update the prose references where the evidence actually moved:
-   - `references/style-guide.md` — token or rule changes, with the new counts.
-     **Remove the "these are defaults" banner once there is a real corpus**, and
-     replace each `default` basis with its evidence.
-   - `references/pattern-catalog.md` — a genuinely new recurring layout.
-   - `arkitect-excalidraw/SKILL.md` — only the findings that change what the agent
-     must do.
+5. Update the user's prose where the evidence actually moved:
+   - `style-notes.md` — only rules where these scenes differ from
+     `references/style-guide.md`, with the new counts and confidence.
+   - `patterns.md` — a genuinely new recurring layout.
 
    Do not restate a convention whose confidence did not change.
 
@@ -104,7 +114,37 @@ suite looks for `sources.local.json`. Its `files` key is the designated list.
    traced, embedded or library items; whether arrows are bound or free; whether
    labels are bound to shapes or floating; whether the canvas is on a grid.
 
-7. Rebuild **both** committed worked examples, so the shipped examples are in
+6. Report: what was learned, which conventions changed confidence, which
+   contradicted the house style or earlier evidence, and anything the corpus
+   does that the generator cannot yet produce.
+
+## Maintaining the shipped house style
+
+Only for a maintainer changing this repository in a reviewed pull request —
+never part of a user's learning run. The shipped record is rebuilt from the
+maintainer's corpus, listed in the checkout's gitignored
+`.analysis/sources.local.json`, with an explicit `--out`:
+
+```bash
+node scripts/build-knowledge.mjs --sources <every example path> --merge --out references/source-analysis.json
+```
+
+Then:
+
+1. **Change the generator, not just the prose.** A convention that moved and is
+   not reflected in `STYLE` / `EDGE_KINDS` in `build-diagram.mjs` has been noted
+   and not learned; the next diagram will still come out in the old style. Where
+   the corpus needs a field the core does not emit, add it — and verify the field
+   set against an element the app itself wrote, which the corpus is full of.
+   That is the only in-repo check available for a format detail.
+
+2. Update `references/style-guide.md` with the new counts (**remove the "these
+   are defaults" banner once there is a real corpus**, and replace each `default`
+   basis with its evidence), `references/pattern-catalog.md` for a new layout, and
+   `arkitect-excalidraw/SKILL.md` only for findings that change what the agent
+   must do.
+
+3. Rebuild **both** committed worked examples, so the shipped examples are in
    the learned style rather than the previous one:
    ```powershell
    foreach ($n in 'starter-architecture', 'aws-data-platform') {
@@ -117,11 +157,7 @@ suite looks for `sources.local.json`. Its `files` key is the designated list.
    PNGs afterwards: a style change that makes the small example look fine can
    still break the large one, where regions are narrow and edges are crowded.
 
-8. Re-run the suite — the redaction check regenerates from the new corpus:
+4. Re-run the suite — the redaction check regenerates from the corpus:
    ```bash
    node tests/run-tests.mjs
    ```
-
-9. Report: what was learned, which conventions changed confidence, which
-   contradicted earlier evidence, and anything the corpus does that the
-   generator cannot yet produce.

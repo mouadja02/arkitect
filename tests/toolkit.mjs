@@ -19,6 +19,10 @@ const ROOT = join(HERE, '..');
 const CLI = join(ROOT, 'bin', 'arkitect.mjs');
 const TMP = join(HERE, 'output', 'toolkit');
 
+// Never the style store of the person running the suite (#89): every CLI a test
+// runs, the packed one included, inherits this.
+process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
+
 let pass = 0; let fail = 0; let skip = 0;
 const failures = [];
 
@@ -268,16 +272,42 @@ test('every advertised icon count agrees, so one cannot drift from the rest', ()
   eq(adapters.ADAPTERS.agents.render('/opt/arkitect').includes(PHRASE), true, 'install-agent.mjs agents body');
 });
 
-test('all four skills are well formed, and only the learning ones are manual', () => {
+test('all five skills are well formed, and only the learning and apply ones are manual', () => {
   const skills = readdirSync(join(ROOT, 'skills')).sort();
-  eq(skills.join(','), 'arkitect-drawio,arkitect-excalidraw,learn-drawio-style,learn-excalidraw-style', 'skill directories');
+  eq(skills.join(','), 'apply-drawio-style,arkitect-drawio,arkitect-excalidraw,learn-drawio-style,learn-excalidraw-style', 'skill directories');
   for (const s of skills) {
     const md = readFileSync(join(ROOT, 'skills', s, 'SKILL.md'), 'utf8');
     assert(/^---\r?\n/.test(md), `${s}: no YAML frontmatter`);
     assert(md.includes(`name: ${s}`), `${s}: frontmatter name does not match the directory`);
-    const manual = s.startsWith('learn-');
+    // They change what an install knows or draws, so they never fire on their own.
+    const manual = s.startsWith('learn-') || s.startsWith('apply-');
     eq(md.includes('disable-model-invocation: true'), manual, `${s}: wrong invocation mode`);
   }
+  const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert(ci.includes(`skills.length !== ${skills.length}`), `ci.yml's plugin job still expects a different skill count than ${skills.length}`);
+});
+
+// A committed example must build the same on every machine, so a documented
+// command that rebuilds a Draw.io template passes --defaults. Without it, a
+// maintainer's personal style override would end up in the repository (#89).
+test('every documented rebuild of a committed Draw.io template passes --defaults (#89)', () => {
+  const offenders = [];
+  let seen = 0;
+  for (const f of FILES) {
+    const drawioSkill = /skills[\\/](?:arkitect-drawio|learn-drawio-style|apply-drawio-style)[\\/]/.test(f);
+    // A command continued over lines reads as one.
+    const text = readFileSync(f, 'utf8').replace(/[ \t]*[\\`]\r?\n[ \t]*/g, ' ');
+    for (const line of text.split('\n')) {
+      if (!/assets\/templates\/[^\s"'`]*\.spec\.json/.test(line)) continue;
+      const drawioBuild = /drawio build\b|arkitect-drawio\/scripts\/build-diagram\.mjs/.test(line)
+        || (drawioSkill && /build-diagram\.mjs/.test(line));
+      if (!drawioBuild) continue;
+      seen++;
+      if (!line.includes('--defaults')) offenders.push(`${relative(ROOT, f)}: ${line.trim().slice(0, 140)}`);
+    }
+  }
+  assert(seen > 0, 'found no documented template rebuild at all - the check has lost its teeth');
+  assert(!offenders.length, `rebuilds without --defaults:\n        ${offenders.join('\n        ')}`);
 });
 
 test('the agent contract states the rules an agent must not get wrong', () => {

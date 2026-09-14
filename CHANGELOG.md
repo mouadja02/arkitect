@@ -13,6 +13,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Learned Draw.io style can change what gets drawn: `/apply-drawio-style` turns
+  findings into a per-install override of named tokens and edge kinds that
+  every CLI build merges in, `--defaults` ignores and `--print-style` shows (#89)
 - Excalidraw can use all shared Draw.io marks via `drawio:<pack>/<slug>` or as
   a name-match fallback, embedded with provenance (#17)
 - A 362-query icon-resolution answer key guards against confident wrong
@@ -69,6 +72,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A plugin update no longer wipes what the learning skills learned: records,
+  source lists and notes live in `~/.arkitect/` (`ARKITECT_HOME`), outside the
+  plugin (#89)
 - Long file-type extensions render readably instead of shrinking to 5.65px
   (#14)
 - Draw.io `validate`/`build`/`analyze` no longer misread a flag's value as a

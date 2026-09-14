@@ -88,6 +88,16 @@ record, and a test asserts it on every run.
 
 Your source files are opened read-only and hashed before and after.
 
+## Your style store
+
+What you teach Arkitect about your own style lives in `~/.arkitect/<engine>/`
+(or `$ARKITECT_HOME/<engine>/`), outside the plugin and outside any repository:
+your record, the paths of the files you designated, findings, prose notes and
+the Draw.io style override. It never leaves the machine and nothing commits it.
+The paths in `sources.json`, and whatever a note or a legend meaning says, are
+yours — the learning skills keep meanings generic, but treat the folder with the
+same care as `.analysis/`.
+
 ## What is deliberately not committed
 
 The `.gitignore` is part of the design, not housekeeping:

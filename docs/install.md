@@ -39,8 +39,8 @@ Verify:
 claude plugin details arkitect
 ```
 
-Expect `Skills (4)` — `arkitect-drawio`, `arkitect-excalidraw`,
-`learn-drawio-style`, `learn-excalidraw-style`.
+Expect `Skills (5)` — `arkitect-drawio`, `arkitect-excalidraw`,
+`learn-drawio-style`, `learn-excalidraw-style`, `apply-drawio-style`.
 
 ## Route B — Claude Code plugin (clone into the skills directory)
 
@@ -101,7 +101,7 @@ render. See **[cli.md](cli.md)**.
 ### The npm package
 
 `package.json` is kept publishable, and its `files` list is the whole content
-policy: the CLI, the four skills, their bundled icon packs, libraries and
+policy: the CLI, the five skills, their bundled icon packs, libraries and
 attribution, the plugin manifest and the docs. It never carries the upstream
 archive cache, cached logos, built icons, downloaded libraries, contact-sheet
 HTML or browser profiles, or backups; a test packs the real tarball to prove it.
@@ -139,9 +139,10 @@ claude plugin update arkitect              # route A
 node ~/arkitect/bin/arkitect.mjs install --all --force   # route C, refresh adapters
 ```
 
-Your icon store, your installed libraries and your style record live under
-`skills/*/assets/` and `.analysis/`, all gitignored, so a pull never touches
-them.
+Your icon store and your installed libraries live under `skills/*/assets/`,
+gitignored, so a pull never touches them. Your learned style — record,
+findings, notes and override — lives in `~/.arkitect/` (or `$ARKITECT_HOME`),
+outside the plugin, so no route's update can wipe it.
 
 ## Remove
 
@@ -154,6 +155,7 @@ them.
 
 Deleting the directory takes your icon store with it. Copy
 `skills/arkitect-excalidraw/assets/icons/` somewhere first if you built icons
-you want to keep.
+you want to keep. Your learned style in `~/.arkitect/` is not removed with the
+plugin; delete that folder to forget it.
 
 Stop the container with `docker compose -f docker/docker-compose.yml down`.
