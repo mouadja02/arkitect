@@ -31,9 +31,10 @@ Read \`${join(root, 'AGENTS.md')}\` for the full contract before drawing. In sho
 
 - **Draw.io** for formal solution architecture, AWS-heavy designs, client-facing
   decks. **Excalidraw** for system design, block diagrams, flows, README art.
-- **Resolve icons first** — 243 AWS Architecture Icons for Draw.io, 1,162
-  bundled library items for Excalidraw. Never substitute one product's mark for
-  another; use a named placeholder and say so.
+- **Resolve icons first** — 6,000+ bundled: 18 Draw.io packs (AWS, Azure, GCP
+  and curated non-AWS packs, not AWS alone) plus 1,162 Excalidraw library items.
+  Never substitute one product's mark for another; use a named placeholder and
+  say so.
 - **Generate from a spec**, validate, render, and *look at the PNG* before
   calling it done.
 - **Nothing is uploaded.** Diagrams stay local; only a public product logo or

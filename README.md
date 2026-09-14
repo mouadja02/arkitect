@@ -11,7 +11,7 @@ by your coding agent, entirely on your machine.
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-black.svg)](package.json)
 [![Dependencies](https://img.shields.io/badge/dependencies-none-black.svg)](package.json)
-[![Icons](https://img.shields.io/badge/icons-1%2C405%20bundled-black.svg)](docs/icons.md)
+[![Icons](https://img.shields.io/badge/icons-6%2C005%20bundled-black.svg)](docs/icons.md)
 
 </div>
 

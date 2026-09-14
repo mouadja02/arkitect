@@ -254,6 +254,19 @@ test('the plugin, marketplace and package manifests agree', () => {
   assert(manifest.description.length > 40, 'plugin description is too thin to be useful');
 });
 
+test('every advertised icon count agrees, so one cannot drift from the rest', () => {
+  // Not the exact catalog number - that changes with every pack addition. This
+  // just stops plugin.json, marketplace.json, package.json and the installer's
+  // own pointer text from independently going stale relative to each other, the
+  // way "1,400+", "5,900+" and "243 AWS icons" once did in the same repository.
+  const PHRASE = '6,000+';
+  eq(manifest.description.includes(PHRASE), true, 'plugin.json description');
+  eq(marketplace.description.includes(PHRASE), true, 'marketplace.json description');
+  eq(marketplace.plugins[0].description.includes(PHRASE), true, 'marketplace.json plugin description');
+  eq(pkg.description.includes(PHRASE), true, 'package.json description');
+  eq(adapters.ADAPTERS.agents.render('/opt/arkitect').includes(PHRASE), true, 'install-agent.mjs agents body');
+});
+
 test('all four skills are well formed, and only the learning ones are manual', () => {
   const skills = readdirSync(join(ROOT, 'skills')).sort();
   eq(skills.join(','), 'arkitect-drawio,arkitect-excalidraw,learn-drawio-style,learn-excalidraw-style', 'skill directories');
