@@ -14,11 +14,12 @@ Plugin root: `${CLAUDE_PLUGIN_ROOT}`. Work from
 `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw`.
 
 This is what turns the shipped guide from *defaults* into *this user's style*.
-On a fresh install `source-analysis.json` is version 0 with an empty corpus and
-every convention marked `default`. After a run it carries real counts.
-
-The record stands at version 1: 9 scenes, 3,270 elements, learned 2026-09-08.
-A further run merges into that rather than replacing it.
+The shipped record already carries real evidence: version 1, 9 scenes, 3,270
+elements, learned 2026-09-08. (Before that first learning run, `source-analysis.json`
+was version 0 with an empty corpus and every convention marked `default` — that
+state shipped in older releases and would reappear if the file were deleted, but
+it is not what a fresh install of this repository has today.) A further run
+merges into the current version-1 record rather than replacing it.
 
 Scratch space is `<repo root>/.analysis/` — gitignored, and where the test
 suite looks for `sources.local.json`. Its `files` key is the designated list.
