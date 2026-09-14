@@ -76,6 +76,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The Excalidraw library README links to `docs/excalidraw-libraries.md`
+  instead of a page that no longer exists, and the docs link check now reads
+  first-party Markdown inside library folders (#87)
 - A plugin update no longer wipes what the learning skills learned: records,
   source lists and notes live in `~/.arkitect/` (`ARKITECT_HOME`), outside the
   plugin (#89)

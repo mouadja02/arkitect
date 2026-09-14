@@ -27,4 +27,4 @@ node ../../scripts/browse-libraries.mjs --search "kubernetes"
 node ../../scripts/browse-libraries.mjs --install <source>
 ```
 
-See [docs/libraries.md](../../../../docs/libraries.md).
+See [docs/excalidraw-libraries.md](../../../../docs/excalidraw-libraries.md).
