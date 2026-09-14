@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Search the bundled icon packs and emit ready-to-paste draw.io cell styles.
 // Ranking runs against references/icon-catalog.json only - image payloads are
-// read from assets/libraries/<pack>.drawio solely when --style or --data is
-// requested, so a search never pulls base64 into the caller's context.
+// printed from assets/libraries/<pack>.drawio solely when --style or --data is
+// requested, so a search never pulls base64 into the caller's context. A search
+// does read a matched mark's library, for the cell size it recommends (#80).
 //
 //   node find-icon.mjs bedrock                     rank matches (metadata only)
 //   node find-icon.mjs kafka --pack streaming-orchestration
@@ -186,11 +187,27 @@ export function styleFor(icon) {
 // observed 78px service-icon footprint - becomes its longest side, and the other
 // side follows the image. Cell styles set imageAspect=0, so a square cell would
 // squash a raster like the 156x147 AgentCore Identity mark.
+//
+// At the size its library cell was built for, a shipped mark gets that cell.
+// The catalog keeps the artwork's size rounded to integers, which can fit a
+// pixel away from the cell build-packs fitted from the real size: Restate's
+// 34.46x30.52 artwork is 34x31 in the catalog, 78x71 fitted, in a 78x69 cell (#80).
 export function recommendedSize(icon, requested) {
+  const size = requested ?? 78;
+  const cell = libraryCell(icon);
+  if (cell && Math.max(cell.w, cell.h) === size) return { width: cell.w, height: cell.h };
   const w = icon.width ?? 78;
   const h = icon.height ?? 78;
-  const scale = (requested ?? 78) / Math.max(w, h);
+  const scale = size / Math.max(w, h);
   return { width: Math.round(w * scale), height: Math.round(h * scale) };
+}
+
+// The cell a committed mark ships in; null for a mark with no bytes, for an
+// object that is not a catalog row, and for a library that no longer matches.
+function libraryCell(icon) {
+  if (icon.bytes !== 'committed' || !Number.isInteger(icon.libraryIndex)) return null;
+  const entry = libraryFor(icon.pack)[icon.libraryIndex];
+  return entry?.hash === icon.sha256 && entry.w > 0 && entry.h > 0 ? entry : null;
 }
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')

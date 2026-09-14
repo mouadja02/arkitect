@@ -127,7 +127,9 @@ node skills/arkitect-drawio/scripts/find-icon.mjs "compute optimizer"
 aliases, source, licence, dimensions, and the SHA-256 of the decoded image. Image
 payloads are **not** duplicated there; they are read from the pack library by
 `libraryIndex` when a style is actually requested, so a search never drags base64 into
-context.
+context. The dimensions are the artwork's own, rounded to integers, so the size a
+search, `--cell` or a build recommends at the 78px footprint is read from the mark's
+library cell instead, which was fitted from the artwork's exact size.
 
 ## Rebuilding
 
