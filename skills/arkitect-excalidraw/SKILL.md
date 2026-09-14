@@ -26,7 +26,9 @@ distributions. A few rules the corpus does not settle are still marked
 as an observation. `/learn-excalidraw-style` folds in further examples.
 
 Four findings contradict what a generator would do by default. They are already
-the generator's defaults; do not undo them by hand:
+the generator's defaults; do not undo them by hand. An install's applied style
+override can change some of them — `build-diagram.mjs --print-style` shows what
+is in effect:
 
 - **Connectors are elbow arrows** (`elbowed: true`, 70% of 165), stroke width 4.
 - **Edge captions are free text beside the line** — not one arrow in the corpus
@@ -98,7 +100,19 @@ the generator's defaults; do not undo them by hand:
      button opens. See [Libraries](#the-public-library-catalogue).
    - **Trace it from the real logo.** See [Icons](#building-an-icon-from-a-logo).
 
-4. **Generate.** Write a spec and build it. This applies the style tokens,
+4. **Generate.** First check which style this install draws with:
+   ```bash
+   node scripts/build-diagram.mjs --print-style
+   ```
+   With `"source": "override"` the user chose some of their own conventions with
+   `/apply-excalidraw-style`. Pick each edge `kind` by its `meaning` in that
+   list — a kind can mean something different on this install, and there may be
+   extra kinds — and do not fight the tokens it changed. The build report repeats
+   the active kinds under `style`; a non-empty `style.errors` means the override
+   was ignored, so tell the user. Never pass `--defaults` for a user's scene: it
+   exists for committed examples.
+
+   Write a spec and build it. This applies the style tokens,
    binds every arrow to its shapes, sizes boundaries from their contents and
    keeps the layout collision-free:
    ```bash
@@ -434,6 +448,9 @@ of truth), and the app cannot open a file off the disk by itself, which is why
   five house accents in `HOUSE_ACCENTS`, and a product's own brand colour where
   the diagram is about that product.
 - A legend whenever more than one connector kind is used.
+- Connector meanings, colours and routing, stroke widths, fills, corners and
+  boundary strokes follow the house style unless this install's applied override
+  (`--print-style`) says otherwise.
 - Assumptions written on the canvas, not just in chat.
 - Keep the user's diagrams local. Nothing is ever uploaded; the only network
   requests are for public logos and the public library catalogue, and nothing

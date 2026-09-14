@@ -47,6 +47,8 @@ const COMMANDS = {
     analyze: [EXCALI, 'analyze-excalidraw.mjs', 'summarize a scene without loading its JSON'],
     render: [EXCALI, 'render-excalidraw.mjs', 'rasterise a scene to SVG/PNG for a look'],
     learn: [EXCALI, 'build-knowledge.mjs', 'rebuild your style record from your own scenes'],
+    findings: [EXCALI, 'style-findings.mjs', 'record what your own scenes say about the style'],
+    apply: [EXCALI, 'apply-style.mjs', 'choose which findings this install draws with'],
   },
 };
 

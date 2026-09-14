@@ -149,14 +149,14 @@ Learn the style from these:
   C:\path\to\first.drawio
 ```
 
-Learning records evidence; it does not change a diagram by itself. For Draw.io,
-choose what to draw differently with `/apply-drawio-style` — it offers only the
-findings that contradict the house style, one at a time, and every later build
-picks up what you accept. Your record, findings, notes and choices live in
+Learning records evidence; it does not change a diagram by itself. Choose what
+to draw differently with `/apply-drawio-style` or `/apply-excalidraw-style` —
+each offers only the findings that contradict the house style, one at a time,
+and every later build picks up what you accept. Your record, findings, notes and choices live in
 `~/.arkitect/`, so a plugin update never wipes them.
 
 If your host namespaces plugin skills it is `/arkitect:learn-excalidraw-style` —
-type `/` to see which form is listed. All three carry
+type `/` to see which form is listed. All four carry
 `disable-model-invocation: true`, so they only ever run when you ask; reading or
 discussing a diagram never triggers one.
 

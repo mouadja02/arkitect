@@ -272,9 +272,9 @@ test('every advertised icon count agrees, so one cannot drift from the rest', ()
   eq(adapters.ADAPTERS.agents.render('/opt/arkitect').includes(PHRASE), true, 'install-agent.mjs agents body');
 });
 
-test('all five skills are well formed, and only the learning and apply ones are manual', () => {
+test('all six skills are well formed, and only the learning and apply ones are manual', () => {
   const skills = readdirSync(join(ROOT, 'skills')).sort();
-  eq(skills.join(','), 'apply-drawio-style,arkitect-drawio,arkitect-excalidraw,learn-drawio-style,learn-excalidraw-style', 'skill directories');
+  eq(skills.join(','), 'apply-drawio-style,apply-excalidraw-style,arkitect-drawio,arkitect-excalidraw,learn-drawio-style,learn-excalidraw-style', 'skill directories');
   for (const s of skills) {
     const md = readFileSync(join(ROOT, 'skills', s, 'SKILL.md'), 'utf8');
     assert(/^---\r?\n/.test(md), `${s}: no YAML frontmatter`);
@@ -288,25 +288,31 @@ test('all five skills are well formed, and only the learning and apply ones are 
 });
 
 // A committed example must build the same on every machine, so a documented
-// command that rebuilds a Draw.io template passes --defaults. Without it, a
-// maintainer's personal style override would end up in the repository (#89).
-test('every documented rebuild of a committed Draw.io template passes --defaults (#89)', () => {
+// command that rebuilds a template passes --defaults. Without it, a maintainer's
+// personal style override would end up in the repository (#89, #90).
+test('every documented rebuild of a committed template passes --defaults, in both engines (#89, #90)', () => {
   const offenders = [];
-  let seen = 0;
+  const seen = { drawio: 0, excalidraw: 0 };
   for (const f of FILES) {
-    const drawioSkill = /skills[\\/](?:arkitect-drawio|learn-drawio-style|apply-drawio-style)[\\/]/.test(f);
+    // Inside an engine's own skills a bare build-diagram.mjs is that engine's builder.
+    const skill = /skills[\\/](?:arkitect-(drawio|excalidraw)|(?:learn|apply)-(drawio|excalidraw)-style)[\\/]/.exec(f);
+    const skillEngine = skill ? skill[1] ?? skill[2] : null;
     // A command continued over lines reads as one.
     const text = readFileSync(f, 'utf8').replace(/[ \t]*[\\`]\r?\n[ \t]*/g, ' ');
     for (const line of text.split('\n')) {
       if (!/assets\/templates\/[^\s"'`]*\.spec\.json/.test(line)) continue;
-      const drawioBuild = /drawio build\b|arkitect-drawio\/scripts\/build-diagram\.mjs/.test(line)
-        || (drawioSkill && /build-diagram\.mjs/.test(line));
-      if (!drawioBuild) continue;
-      seen++;
-      if (!line.includes('--defaults')) offenders.push(`${relative(ROOT, f)}: ${line.trim().slice(0, 140)}`);
+      for (const engine of Object.keys(seen)) {
+        const build = new RegExp(`\\b${engine} build\\b|arkitect-${engine}/scripts/build-diagram\\.mjs`).test(line)
+          || (skillEngine === engine && /build-diagram\.mjs/.test(line));
+        if (!build) continue;
+        seen[engine]++;
+        if (!line.includes('--defaults')) offenders.push(`${relative(ROOT, f)} (${engine}): ${line.trim().slice(0, 140)}`);
+      }
     }
   }
-  assert(seen > 0, 'found no documented template rebuild at all - the check has lost its teeth');
+  for (const [engine, n] of Object.entries(seen)) {
+    assert(n > 0, `found no documented ${engine} template rebuild at all - the check has lost its teeth`);
+  }
   assert(!offenders.length, `rebuilds without --defaults:\n        ${offenders.join('\n        ')}`);
 });
 

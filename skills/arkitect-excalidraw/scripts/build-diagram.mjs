@@ -12,6 +12,13 @@
 //
 // An existing target is never overwritten silently; a timestamped sibling
 // backup is written first.
+//
+// The style is this install's (#90): the shipped tokens in lib/style-tokens.mjs,
+// with the person's own override merged in by the CLI. buildDiagram() never
+// reads the override itself.
+//
+//   node build-diagram.mjs spec.json --out a.excalidraw --defaults   the house style, ignoring the override
+//   node build-diagram.mjs --print-style                             what a build would use
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import {
@@ -23,61 +30,14 @@ import {
   positionals, normalizeName,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon } from './find-icon.mjs';
+import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
 
-// Every number here is read off the reference corpus - see
-// references/source-analysis.json for the counts behind each one.
-export const STYLE = {
-  roughness: ROUGHNESS.artist,          // 1, in 71% of all elements
-  fontFamily: FONT_FAMILY.hand,         // family 1, in 57% of authored text
-  bodyFontFamily: FONT_FAMILY.nunito,   // family 6, for multi-line body copy
-  strokeWidth: STROKE_WIDTH.bold,
-  edgeStrokeWidth: STROKE_WIDTH.extraBold, // 4, on 71% of connectors
-  rounded: true,
-  canvasBackground: CANVAS_BG.white,    // #ffffff, in 9 of 9 scenes
-  nodeWidth: 180,
-  nodeHeight: 90,
-  iconSize: 100,                        // 100x100 is the commonest footprint
-  captionSize: FONT.M,                  // 20; 28 for a lane or section title
-  captionGap: 10,
-  colPitch: 320,                        // median horizontal pitch ~300-385
-  rowPitch: 200,                        // median vertical pitch ~120-150
-  cell: 100,
-  originX: 0,
-  originY: 0,
-  // Elbow arrows, on 70% of the corpus's connectors. The app re-routes them
-  // itself, so they stay square when a box is dragged.
-  edgeRouting: 'elbow',
-  // Edge captions sit beside the line as free text: not one arrow in the
-  // corpus carries a bound label.
-  edgeLabelBound: false,
-  // Boundaries are dashed rectangles. The corpus contains 21 of them and no
-  // frame elements at all.
-  boundaryStroke: 'dashed',
-  boundaryStrokeWidth: STROKE_WIDTH.bold,
-};
-
-// Accents the corpus actually reaches for, beyond Excalidraw's five swatches.
-export const HOUSE_ACCENTS = {
-  cyan:  { stroke: '#29b5e8', bg: 'transparent' },
-  sky:   { stroke: '#01b0f0', bg: 'transparent' },
-  slate: { stroke: '#343a40', bg: '#e9ecef' },
-  amber: { stroke: '#fc5d0d', bg: '#ffec99' },
-  teal:  { stroke: '#0b7285', bg: 'transparent' },
-};
-
-// Connector semantics. Excalidraw has no notion of a line "meaning" anything,
-// so the meaning has to live in colour and dash and be spelled out in a legend.
-export const EDGE_KINDS = {
-  flow:    { color: PALETTE.black.stroke,  strokeStyle: 'solid',  width: STROKE_WIDTH.extraBold, meaning: 'primary flow' },
-  async:   { color: PALETTE.black.stroke,  strokeStyle: 'dashed', width: STROKE_WIDTH.extraBold, meaning: 'async or scheduled' },
-  branch:  { color: PALETTE.blue.stroke,   strokeStyle: 'solid',  width: STROKE_WIDTH.extraBold, meaning: 'conditional branch' },
-  error:   { color: PALETTE.red.stroke,    strokeStyle: 'solid',  width: STROKE_WIDTH.extraBold, meaning: 'failure path' },
-  success: { color: PALETTE.green.stroke,  strokeStyle: 'dashed', width: STROKE_WIDTH.extraBold, meaning: 'success path' },
-  data:    { color: HOUSE_ACCENTS.cyan.stroke, strokeStyle: 'solid', width: STROKE_WIDTH.extraBold, meaning: 'data movement' },
-  light:   { color: PALETTE.grey.stroke,   strokeStyle: 'dotted', width: STROKE_WIDTH.thin, meaning: 'weak association' },
-};
+// STYLE, HOUSE_ACCENTS and the connector kinds live in lib/style-tokens.mjs,
+// with the rules an override must meet.
+export { STYLE, T, HOUSE_ACCENTS, EDGE_KINDS, resolveStyle, loadStyle, validateOverrides } from './lib/style-tokens.mjs';
 
 // Node kinds the builder draws. Any other kind still draws, as a plain
 // rectangle, and is named in the build report so a typo cannot silently change
@@ -229,7 +189,7 @@ function cylinder(x, y, w, h, look) {
   const capH = Math.min(h * 0.28, 34);
   const group = newId();
   const common = {
-    strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: 'solid',
+    strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: look.fillStyle,
     strokeWidth: look.strokeWidth, roughness: look.roughness, groupIds: [group],
   };
 
@@ -263,7 +223,7 @@ function actor(x, y, w, h, look) {
   const group = newId();
   const headR = Math.min(w, h) * 0.3;
   const common = {
-    strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: 'solid',
+    strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: look.fillStyle,
     strokeWidth: look.strokeWidth, roughness: look.roughness, groupIds: [group],
   };
   const cx = x + w / 2;
@@ -362,10 +322,14 @@ export function validateSpec(spec) {
 
 // ---------------------------------------------------------------- build
 
-export function buildDiagram(spec) {
+// `style` is a resolved style: the house style, or this install's override
+// merged into it, which only the CLI loads. A spec's own `style`, `layout` and
+// per-node values still win over either.
+export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const problems = validateSpec(spec);
   if (problems.length) throw new SpecError(problems);
-  const S = { ...STYLE, ...(spec.style ?? {}) };
+  const EDGE_KINDS = style.edgeKinds;
+  const S = { ...style.tokens, ...(spec.style ?? {}) };
   const L = {
     originX: S.originX, originY: S.originY, colPitch: S.colPitch, rowPitch: S.rowPitch, cell: S.cell,
     ...(spec.layout ?? {}),
@@ -373,7 +337,10 @@ export function buildDiagram(spec) {
   const scene = emptyScene();
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
-  const report = { icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [] };
+  const report = {
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [],
+    style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
+  };
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
 
@@ -406,6 +373,7 @@ export function buildDiagram(spec) {
       ...accentOf(n.accent),
       strokeWidth: n.strokeWidth ?? S.strokeWidth,
       roughness: n.roughness ?? S.roughness,
+      fillStyle: n.fillStyle ?? S.fillStyle,
     };
     if (n.fill === false) look.bg = 'transparent';
     if (n.fill && typeof n.fill === 'string') look.bg = n.fill;
@@ -574,7 +542,7 @@ export function buildDiagram(spec) {
       const make = n.kind === 'ellipse' ? ellipse : n.kind === 'diamond' ? diamond : rectangle;
       const shape = make({
         x, y, width: w, height: h,
-        strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: n.fillStyle ?? 'solid',
+        strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: look.fillStyle,
         strokeWidth: look.strokeWidth, roughness: look.roughness,
         strokeStyle: n.strokeStyle ?? 'solid',
         roundness: n.kind === 'box' ? null : (n.kind === 'round' || S.rounded) && n.kind !== 'diamond' && n.kind !== 'ellipse' ? ROUND : null,
@@ -742,7 +710,7 @@ export function buildDiagram(spec) {
       strokeColor: e.color ?? k.color,
       strokeWidth: e.strokeWidth ?? k.width,
       strokeStyle: e.strokeStyle ?? k.strokeStyle,
-      roughness: e.roughness ?? STYLE.roughness,
+      roughness: e.roughness ?? style.tokens.roughness,
       endArrowhead: e.endArrowhead === null ? null : (e.endArrowhead ?? 'arrow'),
       startArrowhead: e.startArrowhead ?? null,
       elbowed,
@@ -826,9 +794,20 @@ export function buildDiagram(spec) {
 }
 
 function main(argv) {
-  const usage = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N]';
+  const usage = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N] [--defaults]\n'
+    + '       build-diagram.mjs --print-style [--defaults]';
   const [specPath] = positionals(argv, ['--out', '--keep-backups']);
   const flag = (name) => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
+  const defaults = argv.includes('--defaults');
+  if (argv.includes('--print-style')) {
+    if (specPath || argv.includes('--out') || argv.includes('--keep-backups')) {
+      console.error(`--print-style builds nothing, so it takes no spec, --out or --keep-backups\n${usage}`);
+      process.exit(2);
+    }
+    const style = loadStyleOrWarn(defaults);
+    console.log(JSON.stringify({ store: engineStore('excalidraw'), ...styleSummary(style, { full: true }) }, null, 2));
+    return;
+  }
   const out = flag('--out');
   if (!specPath || !out) {
     console.error(usage);
@@ -843,9 +822,10 @@ function main(argv) {
   }
 
   const spec = JSON.parse(readFileSync(specPath, 'utf8'));
+  const style = loadStyleOrWarn(defaults);
   let built;
   try {
-    built = buildDiagram(spec);
+    built = buildDiagram(spec, { style });
   } catch (error) {
     if (!(error instanceof SpecError)) throw error;
     // Refused before the backup and the write, so an existing file is untouched.
@@ -890,6 +870,8 @@ function main(argv) {
     // and rebuild, or say why it stays (#48).
     unknownKinds: report.unknownKinds,
     notes: report.notes,
+    // Which style drew this: the house style, or this install's override (#90).
+    style: styleSummary(style),
   }, null, 2));
 }
 

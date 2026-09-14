@@ -39,8 +39,9 @@ Verify:
 claude plugin details arkitect
 ```
 
-Expect `Skills (5)` — `arkitect-drawio`, `arkitect-excalidraw`,
-`learn-drawio-style`, `learn-excalidraw-style`, `apply-drawio-style`.
+Expect `Skills (6)` — `arkitect-drawio`, `arkitect-excalidraw`,
+`learn-drawio-style`, `learn-excalidraw-style`, `apply-drawio-style`,
+`apply-excalidraw-style`.
 
 ## Route B — Claude Code plugin (clone into the skills directory)
 
@@ -101,7 +102,7 @@ render. See **[cli.md](cli.md)**.
 ### The npm package
 
 `package.json` is kept publishable, and its `files` list is the whole content
-policy: the CLI, the five skills, their bundled icon packs, libraries and
+policy: the CLI, the six skills, their bundled icon packs, libraries and
 attribution, the plugin manifest and the docs. It never carries the upstream
 archive cache, cached logos, built icons, downloaded libraries, contact-sheet
 HTML or browser profiles, or backups; a test packs the real tarball to prove it.

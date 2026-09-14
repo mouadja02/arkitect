@@ -16,6 +16,10 @@ separate file, no naming scheme, no required format beyond that.
 - Learned Draw.io style can change what gets drawn: `/apply-drawio-style` turns
   findings into a per-install override of named tokens and edge kinds that
   every CLI build merges in, `--defaults` ignores and `--print-style` shows (#89)
+- Learned Excalidraw style can change what gets drawn too:
+  `/apply-excalidraw-style`, `excalidraw findings`/`apply`, and `excalidraw
+  build --defaults`/`--print-style` work as Draw.io's do, on one override layer
+  both engines share (#90)
 - Excalidraw can use all shared Draw.io marks via `drawio:<pack>/<slug>` or as
   a name-match fallback, embedded with provenance (#17)
 - A 362-query icon-resolution answer key guards against confident wrong

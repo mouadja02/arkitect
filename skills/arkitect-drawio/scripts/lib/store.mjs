@@ -6,7 +6,7 @@
 // The shipped house style stays in skills/*/references/ and changes only in a
 // reviewed pull request. This is what a person's own diagrams taught this
 // install. Nothing in it is ever committed or sent anywhere, and nothing reads
-// it except the learning, findings and apply tools and the Draw.io CLI build.
+// it except the learning, findings and apply tools and the CLI builds.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';

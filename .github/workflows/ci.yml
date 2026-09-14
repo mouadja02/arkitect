@@ -89,7 +89,7 @@ jobs:
             if (p.name !== 'arkitect') throw new Error('plugin name');
             if (m.plugins[0].name !== 'arkitect') throw new Error('marketplace name');
             const skills = fs.readdirSync('skills');
-            if (skills.length !== 5) throw new Error('expected 5 skills, found ' + skills.length);
+            if (skills.length !== 6) throw new Error('expected 6 skills, found ' + skills.length);
             for (const s of skills) {
               const md = fs.readFileSync('skills/' + s + '/SKILL.md', 'utf8');
               if (!md.startsWith('---')) throw new Error(s + ': no frontmatter');

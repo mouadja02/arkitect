@@ -35,12 +35,12 @@ that is replaced in place on the next run; your own content is untouched.
 ## Claude Code
 
 The richest integration, because Claude Code loads Arkitect as a **plugin with
-five skills** rather than a block of instructions.
+six skills** rather than a block of instructions.
 
 ```bash
 claude plugin marketplace add mouadja02/arkitect
 claude plugin install arkitect@arkitect
-claude plugin details arkitect          # expect: Skills (5)
+claude plugin details arkitect          # expect: Skills (6)
 ```
 
 Or clone into `~/.claude/skills/arkitect`, which is the same thing without the
@@ -53,6 +53,7 @@ marketplace. See [install.md](install.md).
 | `learn-drawio-style` | `/learn-drawio-style` only |
 | `learn-excalidraw-style` | `/learn-excalidraw-style` only |
 | `apply-drawio-style` | `/apply-drawio-style` only |
+| `apply-excalidraw-style` | `/apply-excalidraw-style` only |
 
 The two main skills are model-invoked — there is no command to remember, just
 ask for a diagram. The learning and apply skills carry

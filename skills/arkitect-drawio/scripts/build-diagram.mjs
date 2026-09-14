@@ -28,7 +28,7 @@ import { resolve, recommendedSize, styleSafeDataUri, loadCatalog } from './find-
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
 import { engineStore } from './lib/store.mjs';
-import { resolveStyle, loadStyle } from './lib/style-tokens.mjs';
+import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- tokens
 
@@ -497,33 +497,9 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
-// Where the style came from and what it changed. The build report carries each
-// active edge kind's meaning, so a kind is chosen by what it means on this
-// install; --print-style adds every token and kind in full.
-function styleSummary(style, { full = false } = {}) {
-  return {
-    source: style.source,
-    reason: style.reason,
-    file: style.file,
-    overridden: style.overridden,
-    errors: style.errors,
-    ...(full
-      ? { tokens: style.tokens, edgeKinds: style.edgeKinds }
-      : { edgeKinds: Object.fromEntries(Object.entries(style.edgeKinds).map(([kind, e]) => [kind, e.meaning])) }),
-  };
-}
-
-// An override with problems is ignored as a whole and the build goes ahead in
-// the house style. Said once on stderr, so it is not only buried in the report.
-function loadStyleOrWarn(defaults) {
-  const style = loadStyle({ defaults });
-  if (style.errors.length) {
-    console.error(`warning: ignoring ${style.file} (${style.errors.length} problem${style.errors.length === 1 ? '' : 's'}); `
-      + 'drawing with the house style. The report lists them under style.errors; re-run apply-style.mjs, or --reset it.');
-  }
-  return style;
-}
-
+// styleSummary() says where the style came from and what it changed, and
+// loadStyleOrWarn() warns once about an override it ignores; both are shared with
+// Excalidraw's build, in lib/style-layer.mjs.
 function main(argv) {
   const { options, positionals } = parseCliOrExit(argv, {
     values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style'],
