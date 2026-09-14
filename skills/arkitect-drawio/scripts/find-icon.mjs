@@ -8,13 +8,17 @@
 //   node find-icon.mjs kafka --pack streaming-orchestration
 //   node find-icon.mjs "cloud run" --context gcp,devops    bias toward a stack
 //   node find-icon.mjs --list-packs
-//   node find-icon.mjs --style <id> [--size 78]    full mxCell style with the icon
-//   node find-icon.mjs --cell <id> --label "X" --x 100 --y 100
 //   node find-icon.mjs --stats
 //
-// Sixty-nine products ship as catalogue entries without bytes, because their
-// marks carry no redistribution licence. Those resolve to a fetch-logo command,
-// never to a substitute icon.
+// --style/--cell/--data print the raw cell style, mxCell XML or data URI for one
+// icon - the hand-written-XML exception, not the normal search path. Redirect
+// their output to a file rather than reading it into an agent's context.
+//   node find-icon.mjs --style <id> [--size 78] > style.txt
+//   node find-icon.mjs --cell <id> --label "X" --x 100 --y 100 > cell.xml
+//
+// Some products ship as catalogue entries without bytes, because their marks
+// carry no redistribution licence (see --stats for the live count). Those
+// resolve to a fetch-logo command, never to a substitute icon.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -289,7 +293,7 @@ function main(argv) {
       variants: g.variants.map((v) => describe(v, catalog)),
     })),
     next: r.confident
-      ? `node find-icon.mjs --cell ${r.icon.id} --label "Caption" --x 0 --y 0`
+      ? `spec node: { "kind": "icon", "icon": "${r.icon.id}" }`
       : 'Pick one id deliberately, or narrow with --pack / --context.',
   }, null, 2));
 }
