@@ -82,24 +82,24 @@ across the whole corpus; then write down where your diagrams differ from the
 house style. Your files are read-only throughout — hashes are checked before and
 after.
 
-**2. Nothing has changed yet.** Learning records evidence. For Draw.io it also
-records *findings*: each place your corpus contradicts the house style, with its
-confidence and evidence count. For both engines, your prose notes are read by
-the drawing skill after the shipped guide.
+**2. Nothing has changed yet.** Learning records evidence, and *findings*: each
+place your corpus contradicts the house style, with its confidence and evidence
+count. Your prose notes are read by the drawing skill after the shipped guide.
 
-**3. Apply (Draw.io).** Choose which findings this install draws with:
+**3. Apply.** Choose which findings this install draws with:
 
 ```
 /apply-drawio-style
+/apply-excalidraw-style
 ```
 
 It offers only the findings that contradict what is drawn now, strongest first,
 walks you through them one at a time, writes the ones you pick and reports
 exactly what changed. From then on every build picks them up. `node
-bin/arkitect.mjs drawio apply --reset` goes back to the house style, and
+bin/arkitect.mjs <engine> apply --reset` goes back to the house style, and
 `--defaults` on a single build ignores your choices.
 
-All three skills carry `disable-model-invocation: true` — they change what your
+All four skills carry `disable-model-invocation: true` — they change what your
 install knows or draws, so they never fire on their own. Reading or discussing a
 diagram never triggers one.
 
@@ -112,9 +112,9 @@ the plugin, so updating or reinstalling Arkitect never wipes it:
 |---|---|
 | `source-analysis.json` | your record: structural statistics from your corpus only |
 | `sources.json` | the files you designated — paths, so it stays local |
-| `findings.json` | Draw.io: where your corpus contradicts the house style |
+| `findings.json` | where your corpus contradicts the house style |
 | `style-notes.md`, `patterns.md` | prose the drawing skills read after the shipped guides; yours win |
-| `style-overrides.json` | Draw.io: what you chose with `/apply-drawio-style` |
+| `style-overrides.json` | what you chose with `/apply-drawio-style` or `/apply-excalidraw-style` |
 
 None of this touches the shipped `references/` files.
 
@@ -126,6 +126,9 @@ node bin/arkitect.mjs drawio findings  --derive
 node bin/arkitect.mjs drawio apply     --list
 node bin/arkitect.mjs drawio build     --print-style
 node bin/arkitect.mjs excalidraw learn --sources "C:\a.excalidraw" --merge
+node bin/arkitect.mjs excalidraw findings  --derive
+node bin/arkitect.mjs excalidraw apply     --list
+node bin/arkitect.mjs excalidraw build     --print-style
 ```
 
 **`--merge` is what preserves prior knowledge.** It bumps `version`, appends to
@@ -134,20 +137,35 @@ Omit it and you replace the record instead of extending it.
 
 ## What an override can change
 
-Draw.io only, for now; Excalidraw's apply step is a follow-up. An override is
-named values, never a raw style string, so a bad one cannot produce a broken
-cell — it is ignored whole, with a one-line warning, and the build uses the
-house style.
+Both engines follow the same rules. An override is named values, never a raw
+style string or element JSON, so a bad one cannot produce a broken diagram — it
+is ignored whole, with a one-line warning, and the build uses the house style.
+A shipped kind can be restyled but never removed, so every spec keeps building,
+and anything a spec sets itself still wins over an override.
+
+**Draw.io**
 
 - **Tokens** — text and semantic colours, body, heading and edge-label font
   sizes, icon size and grid pitch, corner rounding, note colours, scope stroke
   width and dash pattern.
 - **Edge kinds** — the colour, dash, width and legend meaning of `flow`,
-  `async`, `error`, `success` and `light`, and new kinds of your own. A shipped
-  kind can be restyled but never removed, so every spec keeps building.
+  `async`, `error`, `success` and `light`, and new kinds of your own.
+- **Never** — which icon or logo stands for a product, AWS shape internals,
+  orthogonal routing or arrowheads.
 
-Never: which icon or logo stands for a product, AWS shape internals, orthogonal
-routing or arrowheads. Anything a spec sets itself still wins over an override.
+**Excalidraw**
+
+- **Tokens** — roughness, font family and caption size, shape, connector and
+  boundary stroke widths, connector colour and routing (`elbow` or `points`),
+  corner rounding, fill style, boundary stroke style, canvas colour, node and
+  icon size, caption gap, grid pitch, and whether an edge label is bound. Values
+  stay in Excalidraw's own vocabulary: stroke widths 1, 2 or 4, font sizes 16,
+  20, 28 or 36.
+- **Edge kinds** — the colour, stroke style, width and legend meaning of `flow`,
+  `async`, `branch`, `error`, `success`, `data` and `light`, and new kinds of
+  your own.
+- **Never** — which library item, shared mark or logo stands for a product,
+  arrowheads, arrow binding, the placeholder's look or the grid cell.
 
 ## Contradiction is data
 
@@ -160,13 +178,13 @@ your diagrams do something different is the system working.
 
 That is a pull request, not a learning run. A convention that moved and is not
 reflected in the generator has been *noted*, not *learned* — the next diagram
-still comes out in the old style. The shipped tokens live in `STYLE` and
-`EDGE_KINDS` in Excalidraw's `build-diagram.mjs`, and in `T` and `EDGE_KINDS` in
-Draw.io's `scripts/lib/style-tokens.mjs`. See [maintenance.md](maintenance.md).
+still comes out in the old style. The shipped tokens live in each engine's
+`scripts/lib/style-tokens.mjs`: `STYLE` and `edgeKindsFor` for Excalidraw, `T`
+and `edgeKindsFor` for Draw.io. See [maintenance.md](maintenance.md).
 
-After a style change, rebuild the committed worked examples — Draw.io with
-`--defaults` — so the shipped templates are in the new style, and look at both
-PNGs. A change that makes the
+After a style change, rebuild the committed worked examples with `--defaults`,
+so the shipped templates are in the new style, and look at both PNGs. A change
+that makes the
 small example look fine can still break the large one, where regions are narrow
 and edges crowded.
 

@@ -78,8 +78,19 @@ arkitect excalidraw build spec.json --out docs/arch.excalidraw
 arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw analyze docs/arch.excalidraw --cells
 arkitect excalidraw render docs/arch.excalidraw --out preview.svg
-arkitect excalidraw learn --sources <files> --merge
+arkitect excalidraw build spec.json --out docs/arch.excalidraw --defaults   # the house style, ignoring your own
+arkitect excalidraw build --print-style               # the style a build uses, and where it came from
+arkitect excalidraw learn --sources <files> --merge   # rebuild your style record
+arkitect excalidraw findings --derive                 # what your record says, for apply
+arkitect excalidraw apply --list                      # findings that differ from what is drawn
+arkitect excalidraw apply --accept <id,id>            # draw with them from now on
+arkitect excalidraw apply --reset                     # back to the house style
 ```
+
+Excalidraw's `build` merges `~/.arkitect/excalidraw/style-overrides.json` exactly
+as Draw.io's merges its own: reported under `style`, skipped by `--defaults`,
+shown by `--print-style`, and ignored whole with a one-line warning when it has
+problems.
 
 Both `build` commands copy an existing target to
 `<name>.backup-YYYYMMDD-HHMMSS[-n].<ext>` before replacing it. Once the new file
@@ -117,7 +128,8 @@ skills/arkitect-drawio/
   assets/templates/     starter spec, the built diagram, its PNG, pattern fragments
   assets/logos/         product logo cache (gitignored)
   scripts/              analysis, icon lookup, generation, validation, rendering
-  scripts/lib/          the .drawio parsing core, style tokens, the style store
+  scripts/lib/          the .drawio parsing core, style tokens, and what both engines
+                        share: the style store, override layer and findings/apply workflow
 skills/arkitect-excalidraw/
   SKILL.md              the Excalidraw workflow contract
   references/           style-guide.md, pattern-catalog.md, excalidraw-format.md,
@@ -126,10 +138,11 @@ skills/arkitect-excalidraw/
   assets/icons/         icons built from logos (gitignored)
   assets/templates/     two worked specs, their scenes, their PNGs
   scripts/              generation, validation, rendering, icons, libraries
-  scripts/lib/          scene model, SVG tracer, hand-drawn stroke generator
+  scripts/lib/          scene model, SVG tracer, hand-drawn stroke generator, style tokens
 skills/learn-drawio-style/        user-invoked only
 skills/learn-excalidraw-style/    user-invoked only
 skills/apply-drawio-style/        user-invoked only
+skills/apply-excalidraw-style/    user-invoked only
 docs/                   this documentation
 tests/                  run-tests.mjs (all suites), drawio.mjs, excalidraw.mjs,
                         toolkit.mjs
@@ -229,7 +242,8 @@ from their contents, captions included, so a wide node cannot poke out of its
 own boundary.
 
 **Edges** take `kind`: `flow`, `async`, `branch`, `error`, `success`, `data`,
-`light`. `routing` is `elbow` (default) or `points`; `route` shapes the path —
+`light` — plus any kind this install's style override adds, as
+`build --print-style` lists. `routing` is `elbow` (default) or `points`; `route` shapes the path —
 `auto`, `straight`, `elbow`. Labels are placed as free text beside the line.
 An edge connects two node ids; a boundary cannot be an endpoint.
 

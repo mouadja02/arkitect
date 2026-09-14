@@ -1,6 +1,6 @@
 ---
 name: learn-excalidraw-style
-description: Teach the arkitect-excalidraw skill from additional .excalidraw examples the user explicitly designates. Builds this install's own style record and notes outside the plugin, where an update cannot wipe them. User-invoked only.
+description: Teach the arkitect-excalidraw skill from additional .excalidraw examples the user explicitly designates. Builds this install's own style record, findings and notes outside the plugin, where an update cannot wipe them. Never changes what gets drawn - that is apply-excalidraw-style. User-invoked only.
 disable-model-invocation: true
 ---
 
@@ -29,14 +29,15 @@ outside the plugin, so a plugin update or reinstall never wipes it:
 |---|---|
 | `source-analysis.json` | the evidence record, built from the designated scenes only |
 | `sources.json` | the designated paths, written by `build-knowledge.mjs` |
+| `findings.json` | what the corpus says, for `/apply-excalidraw-style` |
 | `style-notes.md` | prose: only where these scenes differ from the shipped guide |
 | `patterns.md` | prose: recurring layouts the shipped catalog lacks |
 | `renders/` | scratch renders of the examples |
 
 The drawing skill reads `style-notes.md` and `patterns.md` after the shipped
-guides, and they win where the two conflict — that is how what is learned here
-reaches the next scene. Excalidraw has no apply step yet (a follow-up to #89),
-so nothing here changes the generator's tokens.
+guides, and they win where the two conflict. What the generator draws changes
+only when the user runs `/apply-excalidraw-style` and chooses among the findings
+recorded here.
 
 ## Rules
 
@@ -50,6 +51,8 @@ so nothing here changes the generator's tokens.
   digests only.
 - **Learning never edits the plugin.** Not `references/`, not a script, not a
   committed example. That is maintenance, below.
+- **Learning never changes the drawing.** It records evidence. What gets drawn
+  changes only when the user runs `/apply-excalidraw-style` and chooses.
 - **Preserve prior knowledge.** Use `--merge` so the record keeps its version
   history instead of being replaced.
 - **Contradiction is data.** If a new example disagrees with an existing rule,
@@ -102,7 +105,36 @@ so nothing here changes the generator's tokens.
    counts are dominated by the line segments inside library icons; `roles`
    separates arrows, authored text, authored shapes and boundary boxes.
 
-5. Update the user's prose where the evidence actually moved:
+5. Record what the conventions settle:
+   ```bash
+   node scripts/style-findings.mjs --derive
+   ```
+   It compares every convention that is exactly one style token with the house
+   style: roughness, shape and connector stroke width, font family, corner
+   rounding, fill style, connector colour and routing, boundary stroke style and
+   width, and canvas colour. Font size is not derived — its tally mixes labels,
+   captions and titles — so judge it by eye in the next step.
+
+6. Record what only looking settles. For each convention the scenes contradict
+   and a style override can express — what a connector style means (a legend is
+   the best evidence), a connector's colour, dash or width, the caption size,
+   node size or grid pitch — add one finding, with how many of the scenes show it:
+   ```bash
+   node scripts/style-findings.mjs --add edgeKinds.async.meaning --observed "file transfer" --evidence 4 --confidence medium --note "legend in 4 of 5 scenes"
+   node scripts/style-findings.mjs --add edgeKinds.query --observed '{"color":"#f08c00","strokeStyle":"solid","width":2,"meaning":"SQL query"}' --evidence 3 --confidence medium
+   ```
+   Values are Excalidraw's own: stroke widths 1, 2 or 4, font sizes 16, 20, 28 or
+   36, strokes `solid`, `dashed` or `dotted`, fills `solid`, `hachure` or
+   `cross-hatch`; anything else is refused. When the scenes give a colour or dash
+   a meaning that a shipped kind already uses for something else, record a
+   **new** kind: red `error` stays the failure path, and an orange "SQL query"
+   arrow is `edgeKinds.query`. Confidence is `high` when every scene agrees,
+   `medium` for a clear majority, `low` for one or two. Keep a meaning generic —
+   the kind of data or trigger, never a customer, system or project name.
+   `--list` shows every finding; `--remove <target>` drops one that no longer
+   holds. Which library item or logo stands for a product is never a finding.
+
+7. Update the user's prose where the evidence actually moved:
    - `style-notes.md` — only rules where these scenes differ from
      `references/style-guide.md`, with the new counts and confidence.
    - `patterns.md` — a genuinely new recurring layout.
@@ -114,9 +146,10 @@ so nothing here changes the generator's tokens.
    traced, embedded or library items; whether arrows are bound or free; whether
    labels are bound to shapes or floating; whether the canvas is on a grid.
 
-6. Report: what was learned, which conventions changed confidence, which
-   contradicted the house style or earlier evidence, and anything the corpus
-   does that the generator cannot yet produce.
+8. Report: what was learned, which conventions changed confidence, which
+   contradicted the house style or earlier evidence, anything the corpus does
+   that the generator cannot yet produce — and that none of it changes a scene
+   until the user runs `/apply-excalidraw-style`.
 
 ## Maintaining the shipped house style
 
@@ -132,8 +165,9 @@ node scripts/build-knowledge.mjs --sources <every example path> --merge --out re
 Then:
 
 1. **Change the generator, not just the prose.** A convention that moved and is
-   not reflected in `STYLE` / `EDGE_KINDS` in `build-diagram.mjs` has been noted
-   and not learned; the next diagram will still come out in the old style. Where
+   not reflected in `STYLE` / `edgeKindsFor` in `scripts/lib/style-tokens.mjs`
+   has been noted and not learned; the next diagram will still come out in the
+   old style. Where
    the corpus needs a field the core does not emit, add it — and verify the field
    set against an element the app itself wrote, which the corpus is full of.
    That is the only in-repo check available for a format detail.
@@ -145,11 +179,12 @@ Then:
    must do.
 
 3. Rebuild **both** committed worked examples, so the shipped examples are in
-   the learned style rather than the previous one:
+   the learned style rather than the previous one. `--defaults` keeps a personal
+   style override on your machine out of them:
    ```powershell
    foreach ($n in 'starter-architecture', 'aws-data-platform') {
      node scripts/build-diagram.mjs "assets/templates/$n.spec.json" `
-       --out "assets/templates/$n.excalidraw" --force
+       --out "assets/templates/$n.excalidraw" --defaults
      ./scripts/render-excalidraw.ps1 -Path "assets/templates/$n.excalidraw" -OutDir assets/templates
    }
    ```

@@ -38,7 +38,7 @@ node bin/arkitect.mjs drawio build \
 node bin/arkitect.mjs drawio validate /tmp/a.drawio
 
 node bin/arkitect.mjs excalidraw build \
-  skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json --out /tmp/b.excalidraw
+  skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json --out /tmp/b.excalidraw --defaults
 node bin/arkitect.mjs excalidraw validate /tmp/b.excalidraw
 node bin/arkitect.mjs excalidraw render /tmp/b.excalidraw --out /tmp/b.svg
 ```
@@ -95,14 +95,15 @@ settle, and must keep saying so. Never dress a preference up as an observation.
 
 **9. A convention that moves must move in the generator.** Changing prose in
 `style-guide.md` without changing the tokens and kinds that engine's generator
-draws with (`STYLE` / `EDGE_KINDS` in Excalidraw's `build-diagram.mjs`; `T` /
-`EDGE_KINDS` in Draw.io's `scripts/lib/style-tokens.mjs`) means the rule was
+draws with (`STYLE` / `edgeKindsFor` in Excalidraw's `scripts/lib/style-tokens.mjs`;
+`T` / `edgeKindsFor` in Draw.io's) means the rule was
 noted, not learned — the next diagram still comes out the old way. After any
 style change, rebuild both committed worked examples and look at the PNGs.
 This governs the **shipped** house style, which changes only in a reviewed pull
-request. A person's own style, applied with `/apply-drawio-style`, is not a
-repository change at all: it lives in their store outside the plugin and is
-never committed — see [Personal style overrides](#personal-style-overrides).
+request. A person's own style, applied with `/apply-drawio-style` or
+`/apply-excalidraw-style`, is not a repository change at all: it lives in their
+store outside the plugin and is never committed — see
+[Personal style overrides](#personal-style-overrides).
 
 **10. Line endings are load-bearing.** `.drawio`, `.excalidraw`,
 `.excalidrawlib`, `.xml`, `.svg`, `.png` and `.json` are marked binary or
@@ -124,9 +125,9 @@ reformat, re-indent or "clean up" those files.
   the committed worked examples in `skills/*/assets/templates/` and re-renders
   their PNGs in the same pull request, and says so. Agents copy those examples,
   so a stale one teaches the old output. The suite fails when a committed
-  example no longer matches its spec (#50). Rebuild Draw.io examples with
-  `--defaults`, so a personal style override on your machine never reaches
-  them (#89).
+  example no longer matches its spec (#50). Rebuild examples with
+  `--defaults`, in either engine, so a personal style override on your machine
+  never reaches them (#89, #90).
 - **Reversible.** Say how to undo it in one line.
 
 ## Areas, and how much care each needs
@@ -146,30 +147,35 @@ reformat, re-indent or "clean up" those files.
 
 ## Personal style overrides
 
-What one install learns is kept apart from what the repository ships (#89):
+What one install learns is kept apart from what the repository ships (#89, #90):
 
 | | shipped house style | one install's own style |
 |---|---|---|
-| lives in | `skills/*/references/`, the generators, Draw.io's `scripts/lib/style-tokens.mjs` | `~/.arkitect/<engine>/`, or `$ARKITECT_HOME/<engine>/` |
-| changed by | a reviewed pull request (invariants 8 and 9) | `/learn-*-style` records it; `/apply-drawio-style` applies it |
+| lives in | `skills/*/references/`, the generators, each engine's `scripts/lib/style-tokens.mjs` | `~/.arkitect/<engine>/`, or `$ARKITECT_HOME/<engine>/` |
+| changed by | a reviewed pull request (invariants 8 and 9) | `/learn-*-style` records it; `/apply-*-style` applies it |
 | reaches | everyone who installs Arkitect | that install only; never committed |
 
 - The store holds the person's record, source list, findings, prose notes and
   `style-overrides.json`. Only the learning, findings and apply tools write
-  there, and only the Draw.io CLI build and the drawing skills read it.
-- An override names tokens and edge kinds, never a raw style string;
-  `scripts/lib/style-tokens.mjs` holds the rules. It can never change which icon
-  or logo stands for a product (invariant 4), AWS shape internals, routing or
-  arrowheads. A literal that becomes a token gets the old literal as its
-  default, so output without an override stays byte-identical.
+  there, and only the CLI builds and the drawing skills read it.
+- An override names tokens and edge kinds, never a raw style string or element
+  JSON; each engine's `scripts/lib/style-tokens.mjs` holds its rules. It can
+  never change which icon, library item or logo stands for a product
+  (invariant 4), arrowheads, Draw.io's AWS shape internals and orthogonal
+  routing, or Excalidraw's arrow binding and placeholder. A literal that becomes
+  a token gets the old literal as its default, so output without an override is
+  unchanged — byte for byte in Draw.io, through the #50 projection in Excalidraw.
+- How an override is validated, resolved and loaded, and the findings and apply
+  tools, are one implementation for both engines:
+  `skills/arkitect-drawio/scripts/lib/style-layer.mjs` and `style-workflow.mjs`.
+  An engine supplies only its tokens, kinds and rules, and how its record
+  becomes findings. Change shared behaviour there, never in one engine alone.
 - `buildDiagram()` never reads the store; only the CLI does, and `--defaults`
   skips it. **Committed examples always build with defaults**: every documented
-  command that rebuilds one passes `--defaults`, the freshness check builds
+  command that rebuilds one passes `--defaults`, the freshness checks build
   through the API, and both are tested with a personal override present.
 - The suite points `ARKITECT_HOME` into `tests/output/`, so it never reads or
   writes the store of the person running it.
-- Excalidraw's learning already writes to the store; its override layer and
-  apply step are a follow-up to #89 and not built yet.
 
 ## Adding an icon library
 

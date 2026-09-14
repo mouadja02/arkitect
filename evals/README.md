@@ -1,6 +1,6 @@
 # Eval cases
 
-Seven cases, four for Draw.io and three for Excalidraw, covering what matters
+Eight cases, four for each engine, covering what matters
 most: that a plain request fires the right skill and produces valid, styled,
 native output; that a missing product icon is reported or built honestly rather
 than substituted; and that the learning and apply skills never fire on their own.
@@ -16,6 +16,7 @@ evals/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 an icon is built from the real logo, not faked
     learning-skill-stays-manual/    same rule, other engine
+    apply-skill-stays-manual/       same rule, other engine
 ```
 
 ```bash

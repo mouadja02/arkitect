@@ -55,7 +55,7 @@ declined, however convenient it is.
 ## Changing the style
 
 This is about the **shipped** house style. Your own conventions never need a
-pull request: `/learn-drawio-style` and `/apply-drawio-style` keep them in your
+pull request: the `/learn-*-style` and `/apply-*-style` skills keep them in your
 install's store (see [docs/style.md](docs/style.md#making-it-yours)).
 
 Style rules carry evidence. A rule in `references/style-guide.md` states a count
@@ -69,13 +69,13 @@ So a style change is not "I prefer rounded corners". It is either:
 - a change backed by evidence you can describe without shipping the diagrams
   themselves.
 
-And a convention that moves must move in the **generator** too — `STYLE` and
-`EDGE_KINDS` in Excalidraw's `build-diagram.mjs`, `T` and `EDGE_KINDS` in
-Draw.io's `scripts/lib/style-tokens.mjs`. A rule changed only in the prose has
-been noted, not learned; the next diagram still comes out the old way.
+And a convention that moves must move in the **generator** too — the tokens and
+kinds in each engine's `scripts/lib/style-tokens.mjs`. A rule changed only in
+the prose has been noted, not learned; the next diagram still comes out the old
+way.
 
-After a style change, rebuild the committed worked examples (Draw.io with
-`--defaults`) and look at both PNGs. A change that suits the small example can wreck the large one.
+After a style change, rebuild the committed worked examples with `--defaults`
+and look at both PNGs. A change that suits the small example can wreck the large one.
 
 ## Pull requests
 

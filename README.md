@@ -136,7 +136,7 @@ in whatever format your tool reads.
 
 | agent | how it loads | command |
 |---|---|---|
-| **Claude Code** | plugin — 5 skills, model-invoked | `claude plugin install arkitect@arkitect` |
+| **Claude Code** | plugin — 6 skills, model-invoked | `claude plugin install arkitect@arkitect` |
 | **Codex** | `AGENTS.md` (+ `~/.codex/prompts/` for `/diagram`) | `arkitect install codex` |
 | **Cursor** | `.cursor/rules/arkitect.mdc` + `/diagram` command | `arkitect install cursor cursor-command` |
 | **OpenCode** | `AGENTS.md` + `.opencode/command/diagram.md` | `arkitect install opencode agents` |
@@ -187,7 +187,8 @@ claude mcp add --scope user drawio -- npx --yes --ignore-scripts @drawio/mcp
 | `arkitect-excalidraw` | automatic | create or edit `.excalidraw` diagrams and scenes |
 | `learn-drawio-style` | `/learn-drawio-style` only | fold your own `.drawio` files into the style record |
 | `learn-excalidraw-style` | `/learn-excalidraw-style` only | fold your own scenes into the style record |
-| `apply-drawio-style` | `/apply-drawio-style` only | choose which of your learned conventions this install draws with |
+| `apply-drawio-style` | `/apply-drawio-style` only | choose which of your learned Draw.io conventions this install draws with |
+| `apply-excalidraw-style` | `/apply-excalidraw-style` only | choose which of your learned Excalidraw conventions this install draws with |
 
 The learning and apply skills carry `disable-model-invocation: true`. They change
 what your install knows or draws, so they never fire on their own — reading or

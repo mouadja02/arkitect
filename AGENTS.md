@@ -55,10 +55,10 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    anything is written, every problem listed; fix the spec, never drop the edge.
    A `kind` the builder does not know still builds, drawn as a default, and is
    listed under `unknownKinds` in the report; treat a non-empty list like an
-   unresolved icon: fix the spec, or report it. On Draw.io, run
-   `drawio build --print-style` before writing the spec: an install can carry
-   the user's own applied style, where an edge `kind` may mean something else
-   or extra kinds exist — pick kinds by their `meaning` there.
+   unresolved icon: fix the spec, or report it. Run `drawio build --print-style`
+   or `excalidraw build --print-style` before writing the spec: an install can
+   carry the user's own applied style, where an edge `kind` may mean something
+   else or extra kinds exist — pick kinds by their `meaning` there.
 5. **Never overwrite blind.** Both builders write a timestamped sibling backup
    before replacing an existing file, then keep the oldest backup and the newest
    five of that file and delete the rest, listed under `pruned` in the report
@@ -92,6 +92,7 @@ node bin/arkitect.mjs drawio analyze docs/arch.drawio --page 0 --cells
 # Excalidraw
 node bin/arkitect.mjs excalidraw icon "postgres"                # native libraries + shared packs
 node bin/arkitect.mjs excalidraw libraries --unnamed
+node bin/arkitect.mjs excalidraw build --print-style             # the style this install draws with
 node bin/arkitect.mjs excalidraw build spec.json --out docs/arch.excalidraw
 node bin/arkitect.mjs excalidraw validate docs/arch.excalidraw
 node bin/arkitect.mjs excalidraw render docs/arch.excalidraw --out-dir .analysis/renders   # PNG
@@ -186,8 +187,9 @@ followed the file.
   asked to fetch, and the public Excalidraw library catalogue. Search the
   **product name alone**. Never put a customer name, project codename, hostname
   or anything else from the diagram into a query or a URL.
-- The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) and
-  `apply-drawio-style` are user-invoked only. Never learn from a diagram just
+- The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) and the
+  apply skills (`apply-drawio-style`, `apply-excalidraw-style`) are user-invoked
+  only. Never learn from a diagram just
   because you read one, and never apply learned style unasked.
 
 ## 7. Non-negotiables

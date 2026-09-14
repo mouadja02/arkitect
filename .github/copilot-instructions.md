@@ -53,6 +53,6 @@ node bin/arkitect.mjs excalidraw validate docs/arch.excalidraw
 | `skills/arkitect-drawio/` | Draw.io engine: scripts, references, AWS icon palette |
 | `skills/arkitect-excalidraw/` | Excalidraw engine: scripts, references, 36 bundled libraries |
 | `skills/learn-*-style/` | user-invoked style learning, never automatic |
-| `skills/apply-drawio-style/` | user-invoked: apply learned Draw.io style to this install |
+| `skills/apply-*-style/` | user-invoked: apply learned style to this install |
 | `docs/` | install, agent setup, MCP, Docker, CLI, icons, testing |
 | `tests/` | the offline suite |

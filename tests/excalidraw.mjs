@@ -12,7 +12,7 @@
 // clean up after themselves, because the alternative - a mock filesystem -
 // would stop testing the thing that actually breaks.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
@@ -75,6 +75,9 @@ const analyzer = await mod('analyze-excalidraw.mjs');
 const icons = await mod('make-icon.mjs');
 const finder = await mod('find-icon.mjs');
 const libIndex = await mod('index-libraries.mjs');
+const styleTokens = await mod('lib/style-tokens.mjs');
+const findingsTool = await mod('style-findings.mjs');
+const applyTool = await mod('apply-style.mjs');
 
 const sources = existsSync(SOURCES_FILE) ? JSON.parse(readFileSync(SOURCES_FILE, 'utf8')) : null;
 const sourceList = sources ? (sources.excalidraw ?? sources.files ?? sources.scenes ?? []) : [];
@@ -1545,20 +1548,23 @@ sourceTest('no string from a reference scene leaks into the repository', () => {
 
 // ------------------------------------------------------------- plugin shape
 
-test('plugin manifest and both skills are well formed', () => {
+test('plugin manifest and the three Excalidraw skills are well formed', () => {
   const manifest = JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'plugin.json'), 'utf8'));
   eq(manifest.name, 'arkitect', 'plugin name');
   assert(manifest.description && manifest.description.length > 20, 'plugin description');
 
   const main = readFileSync(join(SKILL, 'SKILL.md'), 'utf8');
   const learn = readFileSync(join(ROOT, 'skills', 'learn-excalidraw-style', 'SKILL.md'), 'utf8');
-  assert(/^---\r?\n/.test(main) && /^---\r?\n/.test(learn), 'skills need YAML frontmatter');
+  const apply = readFileSync(join(ROOT, 'skills', 'apply-excalidraw-style', 'SKILL.md'), 'utf8');
+  assert([main, learn, apply].every((md) => /^---\r?\n/.test(md)), 'skills need YAML frontmatter');
   assert(main.includes('name: arkitect-excalidraw'), 'main skill name');
   assert(learn.includes('name: learn-excalidraw-style'), 'learning skill name');
+  assert(apply.includes('name: apply-excalidraw-style'), 'apply skill name');
   assert(learn.includes('disable-model-invocation: true'), 'learning skill must be user-invoked only');
+  assert(apply.includes('disable-model-invocation: true'), 'apply skill must be user-invoked only');
   assert(!main.includes('disable-model-invocation'), 'main skill must stay model-invocable');
   assert(main.includes('${CLAUDE_PLUGIN_ROOT}'), 'main skill should use ${CLAUDE_PLUGIN_ROOT}');
-  assert(!/C:\\Users/i.test(main) && !/C:\\Users/i.test(learn), 'skills must not hard-code install paths');
+  assert(![main, learn, apply].some((md) => /C:\\Users/i.test(md)), 'skills must not hard-code install paths');
 });
 
 test('scripts avoid hard-coded absolute paths', () => {
@@ -1683,7 +1689,7 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
     const rebuilt = builder.buildDiagram(spec);
     const drift = firstDifference(projectScene(JSON.parse(readFileSync(scenePath, 'utf8'))), projectScene(rebuilt.scene));
     assert(!drift, `the committed ${name}.excalidraw is stale at ${drift}. Rebuild it (node bin/arkitect.mjs excalidraw build `
-      + `skills/arkitect-excalidraw/assets/templates/${name}.spec.json --out <tmp>), copy it over, and re-render ${name}.png `
+      + `skills/arkitect-excalidraw/assets/templates/${name}.spec.json --out <tmp> --defaults), copy it over, and re-render ${name}.png `
       + 'in the same pull request.');
     assert(!rebuilt.report.missingIcons.length,
       `${name} has unresolved icons: ${rebuilt.report.missingIcons.join(', ')}`);
@@ -1713,6 +1719,341 @@ test('learning writes your record to the store, and elsewhere only by --out (#89
   eq(JSON.parse(node('build-knowledge.mjs', ['--print'])).record, own, 'and --print shows it once it exists');
   assert(before.equals(readFileSync(shipped)), 'the shipped record is untouched');
   rmSync(home, { recursive: true, force: true });
+});
+
+// ------------------------------------------------------------- per-install style (#90)
+
+const OWN_STORE = join(process.env.ARKITECT_HOME, 'excalidraw');
+const OVERRIDES = join(OWN_STORE, 'style-overrides.json');
+const TEMPLATES = join(SKILL, 'assets', 'templates');
+const STARTER_SPEC = join(TEMPLATES, 'starter-architecture.spec.json');
+const STARTER = join(TEMPLATES, 'starter-architecture.excalidraw');
+const clearStore = () => rmSync(process.env.ARKITECT_HOME, { recursive: true, force: true });
+const plantOverride = (value) => {
+  mkdirSync(OWN_STORE, { recursive: true });
+  writeFileSync(OVERRIDES, typeof value === 'string' ? value : JSON.stringify(value));
+};
+const buildCli = (...args) => spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const toolCli = (script, ...args) => spawnSync(process.execPath, [join(SCRIPTS, script), ...args], { encoding: 'utf8' });
+// The first projected difference from a committed scene, or null (#50).
+const driftFrom = (committedPath, scene) => firstDifference(projectScene(JSON.parse(readFileSync(committedPath, 'utf8'))), projectScene(scene));
+const readScene = (path) => JSON.parse(readFileSync(path, 'utf8'));
+const QUERY = { color: '#f08c00', strokeStyle: 'solid', width: 2, meaning: 'SQL query' };
+const PERSONAL = {
+  schemaVersion: 1,
+  engine: 'excalidraw',
+  tokens: { rounded: false, fillStyle: 'hachure', boundaryStroke: 'dotted', edgeColor: '#343a40' },
+  edgeKinds: { flow: { meaning: 'trigger' }, query: QUERY },
+};
+const convention = (id, observed, n, total) => ({ id, observed, evidence: { n, total, share: n / total }, confidence: 'recorded' });
+
+test('without an override a build draws the shipped Excalidraw house style (#90)', () => {
+  clearStore();
+  eq(styleTokens.overridesPath({ ARKITECT_HOME: TMP }), join(TMP, 'excalidraw', 'style-overrides.json'), 'the override sits in the excalidraw store');
+  const style = styleTokens.loadStyle();
+  eq(style.source, 'defaults', 'an empty store means the house style');
+  eq(JSON.stringify(style.tokens), JSON.stringify(builder.STYLE), 'every token is the shipped one');
+  eq(JSON.stringify(style.edgeKinds), JSON.stringify(builder.EDGE_KINDS), 'and every kind');
+  eq(driftFrom(STARTER, builder.buildDiagram(readScene(STARTER_SPEC), { style }).scene), null, 'the resolved house style draws the committed example');
+  const out = join(TMP, 'no-override.excalidraw');
+  const r = buildCli(STARTER_SPEC, '--out', out);
+  eq(r.status, 0, `build: ${r.stderr}`);
+  eq(r.stderr, '', 'no warning');
+  eq(driftFrom(STARTER, readScene(out)), null, 'the CLI with no override draws the committed example');
+  const report = JSON.parse(r.stdout);
+  eq(report.style.source, 'defaults', 'the report says the house style drew it');
+  eq(report.style.edgeKinds.flow, 'primary flow', 'and names each kind by its meaning');
+});
+
+// A committed example is shared: it must build the same on a maintainer's
+// machine with a personal override as on CI with none (#50). buildDiagram()
+// never reads the store, and the CLI's --defaults skips it.
+test('both committed Excalidraw examples build exactly even with a personal override on the machine (#50, #90)', () => {
+  clearStore();
+  plantOverride(PERSONAL);
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const specPath = join(TEMPLATES, `${name}.spec.json`);
+    const committed = join(TEMPLATES, `${name}.excalidraw`);
+    eq(driftFrom(committed, builder.buildDiagram(readScene(specPath)).scene), null, `${name}: buildDiagram() ignores the store`);
+    const forced = join(TMP, `${name}.forced-defaults.excalidraw`);
+    const r = buildCli(specPath, '--out', forced, '--defaults');
+    eq(r.status, 0, `${name}: --defaults build: ${r.stderr}`);
+    eq(driftFrom(committed, readScene(forced)), null, `${name}: --defaults draws the committed example although an override is present`);
+    eq(JSON.parse(r.stdout).style.reason, '--defaults', `${name}: and says why`);
+  }
+  const personal = join(TMP, 'personal.excalidraw');
+  const p = buildCli(STARTER_SPEC, '--out', personal);
+  eq(p.status, 0, `personal build: ${p.stderr}`);
+  assert(driftFrom(STARTER, readScene(personal)), 'without --defaults the override is picked up automatically');
+  eq(JSON.parse(p.stdout).style.source, 'override', 'and the report says so');
+  clearStore();
+});
+
+test('an Excalidraw override restyles tokens and kinds, adds a kind, and never outranks the spec (#90)', () => {
+  const style = styleTokens.resolveStyle({ ...PERSONAL, tokens: { ...PERSONAL.tokens, edgeRouting: 'points', colPitch: 600 } });
+  eq(style.source, 'override', 'a valid override applies');
+  eq(style.overridden.join(','),
+    'tokens.rounded,tokens.fillStyle,tokens.boundaryStroke,tokens.edgeColor,tokens.edgeRouting,tokens.colPitch,edgeKinds.flow.meaning,edgeKinds.query',
+    'overridden names every value it changed');
+  eq(style.edgeKinds.async.color, '#343a40', 'a kind whose colour follows a token takes the override');
+  eq(style.edgeKinds.error.color, builder.EDGE_KINDS.error.color, 'and a kind with its own colour keeps it');
+  const spec = {
+    style: { boundaryStroke: 'dashed' },
+    layout: { colPitch: 400 },
+    boundaries: [{ id: 'zone', label: 'Zone' }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A', accent: 'blue', col: 0, row: 0, parent: 'zone' },
+      { id: 'b', kind: 'round', label: 'B', accent: 'green', fillStyle: 'solid', col: 1, row: 0, parent: 'zone' },
+      { id: 'c', label: 'C', col: 2, row: 0 },
+    ],
+    edges: [
+      { from: 'a', to: 'b', kind: 'flow' },
+      { from: 'b', to: 'c', kind: 'query' },
+      { from: 'a', to: 'c', kind: 'error', color: '#0b7285' },
+    ],
+  };
+  const { scene, report } = builder.buildDiagram(spec, { style });
+  const house = builder.buildDiagram(spec).scene;
+  const shape = (s, label) => s.elements.find((e) => e.id === s.elements.find((t) => t.type === 'text' && t.text === label)?.containerId);
+  eq(report.unknownKinds.length, 0, 'a kind the override adds is a known kind');
+  eq(report.style.source, 'override', 'the report names the style');
+  eq(shape(scene, 'A').fillStyle, 'hachure', 'nodes take the fill style token');
+  eq(shape(scene, 'B').fillStyle, 'solid', 'a fill style the node sets still wins');
+  eq(shape(scene, 'C').roundness, null, 'corners follow the rounded token');
+  eq(JSON.stringify(shape(house, 'C').roundness), JSON.stringify(core.ROUND), 'where the house style rounds them');
+  eq(shape(scene, 'B').x, shape(house, 'B').x, 'the spec layout pitch still wins over an overridden pitch');
+  const arrows = scene.elements.filter((e) => e.type === 'arrow' && e.startBinding);
+  eq(JSON.stringify(arrows.map((a) => [a.strokeColor, a.strokeWidth])), JSON.stringify([['#343a40', 4], ['#f08c00', 2], ['#0b7285', 4]]),
+    'flow takes the connector colour token, the new kind its own colour and width, and a colour the edge sets still wins');
+  assert(arrows.every((a) => !a.elbowed), 'the routing token turns elbow arrows off');
+  const texts = scene.elements.filter((e) => e.type === 'text').map((e) => e.text);
+  assert(['trigger', 'SQL query', 'failure path'].every((t) => texts.includes(t)),
+    'the legend gives flow its overridden meaning, adds the new kind, and error keeps its own');
+  const boundary = (s) => {
+    const label = s.elements.find((e) => e.type === 'text' && e.text === 'Zone');
+    return s.elements.find((e) => e.type === 'rectangle' && e.groupIds?.includes(label.groupIds[0]));
+  };
+  eq(boundary(scene).strokeStyle, 'dashed', 'a boundary stroke the spec style sets still wins');
+  const { style: _, ...unstyled } = spec;
+  eq(boundary(builder.buildDiagram(unstyled, { style }).scene).strokeStyle, 'dotted', 'and without it the override draws the boundary');
+});
+
+// An override is named values in Excalidraw's own vocabulary; raw element JSON,
+// a value the app does not offer, or a builder constant is refused - and a
+// legend's free text is never echoed. Icon choice is not a token (invariant 4).
+test('an Excalidraw override is checked field by field, and a bad one is ignored whole (#90)', () => {
+  const base = { schemaVersion: 1, engine: 'excalidraw' };
+  const cases = [
+    [{ ...base, tokens: { strokeWidth: 3 } }, 'tokens.strokeWidth: expected one of 1, 2 or 4'],
+    [{ ...base, tokens: { fontFamily: 8 } }, 'tokens.fontFamily: expected one of 1, 2, 3, 5 or 6'],
+    [{ ...base, tokens: { captionSize: 24 } }, 'tokens.captionSize: expected one of 16, 20, 28 or 36'],
+    [{ ...base, tokens: { rounded: 1 } }, 'tokens.rounded: expected true or false'],
+    [{ ...base, tokens: { fillStyle: 'zigzag' } }, 'tokens.fillStyle: expected one of "solid", "hachure" or "cross-hatch"'],
+    [{ ...base, tokens: { edgeRouting: 'curved' } }, 'tokens.edgeRouting: expected "elbow" or "points"'],
+    [{ ...base, tokens: { edgeColor: 'black' } }, 'tokens.edgeColor: expected a #RRGGBB colour'],
+    [{ ...base, tokens: { cell: 50 } }, 'tokens.cell: fixed by the builder'],
+    [{ ...base, tokens: { icon: 'aws-serverless:0' } }, 'tokens.icon: not a style token'],
+    [{ ...base, tokens: { nodeWidth: 300 } }, 'tokens.colPitch: 320 leaves less than 40px between 300px-wide nodes'],
+    [{ ...base, edgeKinds: { flow: { strokeStyle: 'wavy' } } }, 'edgeKinds.flow.strokeStyle: expected one of "solid", "dashed" or "dotted"'],
+    [{ ...base, edgeKinds: { flow: { element: { type: 'arrow', roundness: null } } } }, 'edgeKinds.flow.element: not an edge kind field (color, strokeStyle, width, meaning)'],
+    [{ ...base, edgeKinds: { flow: { endArrowhead: 'dot' } } }, 'edgeKinds.flow.endArrowhead: not an edge kind field'],
+    [{ ...base, edgeKinds: { query: { color: '#f08c00' } } }, 'a new kind needs all of color, strokeStyle, width and meaning'],
+    [{ ...base, edgeKinds: { flow: { meaning: 'x'.repeat(61) } } }, 'edgeKinds.flow.meaning: expected one line of 1 to 60 characters'],
+    [{ schemaVersion: 1, engine: 'drawio' }, 'engine: expected "excalidraw"'],
+  ];
+  for (const [raw, expected] of cases) {
+    const errors = styleTokens.validateOverrides(raw);
+    assert(errors.some((e) => e.includes(expected)), `expected "${expected}", got: ${errors.join('; ')}`);
+    const resolved = styleTokens.resolveStyle(raw);
+    assert(resolved.source === 'defaults' && resolved.errors.length && resolved.overridden.length === 0,
+      `a bad override is ignored whole: ${expected}`);
+    eq(JSON.stringify(resolved.tokens), JSON.stringify(builder.STYLE), `and every token is the house style's: ${expected}`);
+    assert(!errors.some((e) => e.includes('xxxxxxxxxx')), 'a legend meaning is never echoed');
+  }
+  const overridable = Object.fromEntries(Object.keys(styleTokens.TOKEN_RULES).map((k) => [k, builder.STYLE[k]]));
+  eq(styleTokens.validateOverrides({ ...base, tokens: overridable, edgeKinds: { query: QUERY } }).length, 0,
+    'every overridable shipped value, and a whole new kind, is itself a valid override');
+});
+
+test('a broken Excalidraw override warns once, and the build draws the house style (#90)', () => {
+  for (const [label, content] of [
+    ['bad JSON', '{"schemaVersion":1,'],
+    ['bad value', JSON.stringify({ schemaVersion: 1, engine: 'excalidraw', tokens: { strokeWidth: 3 } })],
+  ]) {
+    clearStore();
+    plantOverride(content);
+    const out = join(TMP, `broken-override-${label.replace(' ', '-')}.excalidraw`);
+    const r = buildCli(STARTER_SPEC, '--out', out);
+    eq(r.status, 0, `${label}: the build still succeeds (${r.stderr})`);
+    eq(r.stderr.trim().split('\n').length, 1, `${label}: one warning line`);
+    assert(r.stderr.startsWith('warning: ignoring'), `${label}: the warning says what was ignored`);
+    const report = JSON.parse(r.stdout);
+    eq(report.style.source, 'defaults', `${label}: the house style drew it`);
+    assert(report.style.errors.length > 0, `${label}: the report lists the problems`);
+    eq(driftFrom(STARTER, readScene(out)), null, `${label}: exactly the house-style scene`);
+  }
+  clearStore();
+});
+
+test('Excalidraw --print-style shows the style a build would use, and writes nothing (#90)', () => {
+  clearStore();
+  plantOverride(`﻿${JSON.stringify(PERSONAL)}`);
+  const r = buildCli('--print-style');
+  eq(r.status, 0, `--print-style: ${r.stderr}`);
+  const shown = JSON.parse(r.stdout);
+  eq(shown.store, OWN_STORE, 'it names the store');
+  eq(shown.source, 'override', 'a byte-order mark does not make the override unreadable');
+  eq(shown.edgeKinds.query.meaning, 'SQL query', 'every active kind, in full');
+  eq(shown.edgeKinds.error.meaning, 'failure path', 'shipped kinds included');
+  eq(shown.tokens.fillStyle, 'hachure', 'every token');
+  eq(JSON.parse(buildCli('--print-style', '--defaults').stdout).source, 'defaults', '--defaults shows the house style');
+  const stray = join(TMP, 'print-style-stray.excalidraw');
+  for (const bad of [[STARTER_SPEC, '--print-style'], ['--print-style', '--out', stray]]) {
+    eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);
+  }
+  assert(!existsSync(stray), 'nothing was written');
+  clearStore();
+});
+
+test('Excalidraw findings: --derive reads the conventions that are one token each, and an agent finding holds its target (#90)', () => {
+  const record = {
+    version: 4,
+    conventions: [
+      convention('stroke-roughness', '0', 90, 100),
+      convention('stroke-width', '6', 50, 60),
+      convention('font-family', '5', 35, 50),
+      convention('arrow-routing', 'false', 20, 40),
+      convention('zone-stroke-style', 'dotted', 5, 5),
+      convention('arrow-color', '#1E1E1E', 70, 100),
+      { id: 'canvas-background', observed: null, evidence: { n: 0, total: 0, share: null }, confidence: 'default' },
+      convention('edges-rounded', 'sharp', 40, 100),
+      convention('font-size', '28', 53, 173),
+    ],
+    tallies: { roles: { shape: { roundness: { sharp: 40, type3: 35, type2: 25 } } } },
+  };
+  const { derived, skipped } = findingsTool.deriveFindings(record);
+  const at = (target) => derived.find((f) => f.target === target);
+  eq(at('tokens.roughness').observed, 0, 'a value is read as the type its token takes');
+  eq(at('tokens.roughness').confidence, 'high', 'graded like a convention: 90 of 100');
+  eq(at('tokens.fontFamily').confidence, 'medium', '35 of 50');
+  eq(at('tokens.edgeRouting').observed, 'points', 'an arrow that is not elbowed is the builder\'s points routing');
+  eq(at('tokens.edgeRouting').confidence, 'low', '20 of 40');
+  eq(at('tokens.boundaryStroke').confidence, 'low', 'five boundaries are a hint, whatever their share');
+  eq(at('tokens.edgeColor').observed, '#1e1e1e', 'a colour differing only in case is the shipped colour');
+  eq(at('tokens.rounded').observed, true, 'every roundness type counts as a rounded corner');
+  eq(at('tokens.rounded').evidence, 60, 'so 60 rounded corners outweigh 40 sharp ones');
+  assert(!derived.some((f) => /fontSize|captionSize/.test(f.target)), 'font size is not derived: its tally mixes labels, captions and titles');
+  const why = Object.fromEntries(skipped.map((s) => [s.target, s.reason]));
+  assert(why['tokens.strokeWidth']?.includes('outside what a build accepts'), `a stroke width Excalidraw does not offer is skipped: ${why['tokens.strokeWidth']}`);
+  assert(why['tokens.canvasBackground']?.includes('no evidence'), 'a convention resting on a default is no finding');
+  assert(why['tokens.fillStyle']?.includes('no fill-style convention'), 'a convention the record lacks is named');
+
+  let file = findingsTool.mergeDerived(findingsTool.readFindings(join(TMP, 'no-such-findings.json')), record).file;
+  eq(file.engine, 'excalidraw', 'the findings file is for this engine');
+  const split = findingsTool.addFinding(file, {
+    target: 'edgeKinds.async', observed: { meaning: 'file transfer', strokeStyle: 'dotted' }, evidence: 4, confidence: 'medium',
+  });
+  eq(split.added.map((f) => f.target).join(','), 'edgeKinds.async.meaning,edgeKinds.async.strokeStyle', 'a whole shipped kind splits into one finding per field');
+  for (const [target, observed] of [
+    ['tokens.icon', 'aws-serverless:0'], ['edgeKinds.flow.endArrowhead', 'dot'], ['edgeKinds.query.color', '#f08c00'], ['tokens.cell', 50],
+  ]) {
+    eq(findingsTool.addFinding(file, { target, observed, evidence: 2, confidence: 'low' }).added.length, 0, `${target} is refused`);
+  }
+  file = findingsTool.addFinding(split.file, { target: 'tokens.roughness', observed: 1, evidence: 3, confidence: 'low' }).file;
+  const again = findingsTool.mergeDerived(file, record);
+  eq(again.heldByAgent.join(','), 'tokens.roughness', 'a later --derive leaves a target the agent holds');
+  eq(again.file.findings.filter((f) => f.target === 'tokens.roughness').length, 1, 'one entry per target');
+  let refused = '';
+  try { findingsTool.readFindings(writeSpec('drawio-findings.json', { schemaVersion: 1, engine: 'drawio', findings: [] })); } catch (e) { refused = e.message; }
+  assert(refused.includes('not a findings file for Excalidraw'), `a Draw.io findings file is not read as this engine's: ${refused}`);
+});
+
+test('Excalidraw apply: --list offers only contradictions, --accept says what changed, --reset undoes it (#90)', () => {
+  clearStore();
+  mkdirSync(OWN_STORE, { recursive: true });
+  writeFileSync(join(OWN_STORE, 'source-analysis.json'), JSON.stringify({
+    version: 2,
+    conventions: [
+      convention('stroke-roughness', '1', 80, 100),
+      convention('zone-stroke-style', 'dotted', 12, 13),
+      convention('fill-style', 'hachure', 7, 10),
+    ],
+  }));
+  const json = (r, what) => { eq(r.status, 0, `${what}: ${r.stderr}`); return JSON.parse(r.stdout); };
+  json(toolCli('style-findings.mjs', '--derive'), 'derive');
+  json(toolCli('style-findings.mjs', '--add', 'edgeKinds.flow.meaning', '--observed', 'trigger', '--evidence', '2', '--confidence', 'low'), 'add a meaning');
+  json(toolCli('style-findings.mjs', '--add', 'edgeKinds.query', '--observed', JSON.stringify(QUERY), '--evidence', '3', '--confidence', 'medium'), 'add a kind');
+  eq(toolCli('style-findings.mjs', '--add', 'tokens.strokeWidth', '--observed', '3', '--evidence', '1', '--confidence', 'low').status, 1,
+    'a value a build would refuse is refused as a finding');
+
+  const listed = json(toolCli('apply-style.mjs', '--list'), 'list');
+  eq(listed.candidates.map((c) => c.id).join(','), 'tokens.boundaryStroke,tokens.fillStyle,edgeKinds.query,edgeKinds.flow.meaning',
+    'only the contradictions, strongest first');
+  assert(listed.alreadyInEffect.includes('tokens.roughness'), 'a finding that matches what is drawn is not offered');
+  const meaning = listed.candidates.find((c) => c.id === 'edgeKinds.flow.meaning');
+  assert(meaning.lowConfidence && meaning.shipped === 'primary flow' && meaning.current === 'primary flow' && meaning.proposed === 'trigger',
+    'a low-confidence candidate is still offered, flagged, with shipped, current and proposed');
+
+  eq(toolCli('apply-style.mjs', '--accept', 'tokens.roughness').status, 2, 'accepting what is not a candidate exits 2');
+  assert(!existsSync(OVERRIDES), 'and writes nothing');
+
+  const accepted = json(toolCli('apply-style.mjs', '--accept', 'edgeKinds.query,tokens.boundaryStroke'), 'accept');
+  eq(JSON.stringify(accepted.changed), JSON.stringify([
+    { target: 'edgeKinds.query', from: null, fromSource: 'house style', to: QUERY },
+    { target: 'tokens.boundaryStroke', from: 'dashed', fromSource: 'house style', to: 'dotted' },
+  ]), 'it reports each change against what was in effect');
+  const written = JSON.parse(readFileSync(OVERRIDES, 'utf8'));
+  eq(Object.keys(written).join(','), 'schemaVersion,engine,updated,tokens,edgeKinds', 'the override carries named tokens and kinds only');
+  eq(written.engine, 'excalidraw', 'for this engine');
+  eq(styleTokens.validateOverrides(written).length, 0, 'and is valid');
+  json(toolCli('apply-style.mjs', '--accept', 'edgeKinds.flow.meaning'), 'accept on top');
+  eq(json(toolCli('apply-style.mjs', '--list'), 'list after').candidates.map((c) => c.id).join(','), 'tokens.fillStyle', 'nothing accepted is offered again');
+
+  const specPath = writeSpec('applied.spec.json', {
+    boundaries: [{ id: 'zone', label: 'Zone' }],
+    nodes: [{ id: 'a', label: 'A', col: 0, row: 0, parent: 'zone' }, { id: 'b', label: 'B', col: 1, row: 0, parent: 'zone' }, { id: 'c', label: 'C', col: 2, row: 0 }],
+    edges: [{ from: 'a', to: 'b', kind: 'query' }, { from: 'b', to: 'c', kind: 'flow' }],
+  });
+  const out = join(TMP, 'applied.excalidraw');
+  const report = json(buildCli(specPath, '--out', out), 'build with the override');
+  eq(report.style.edgeKinds.query, 'SQL query', 'the next build draws what was accepted');
+  eq(report.unknownKinds.length, 0, 'and knows the new kind');
+  const scene = readScene(out);
+  assert(scene.elements.some((e) => e.type === 'rectangle' && e.strokeStyle === 'dotted'), 'the boundary is drawn dotted');
+  assert(scene.elements.some((e) => e.type === 'text' && e.text === 'trigger'), 'and the legend says what flow means here');
+
+  writeFileSync(OVERRIDES, '{');
+  eq(toolCli('apply-style.mjs', '--accept', 'tokens.fillStyle').status, 1, 'a broken override is never quietly replaced');
+  eq(json(toolCli('apply-style.mjs', '--reset'), 'reset').removed, OVERRIDES, '--reset removes the override');
+  eq(json(buildCli('--print-style'), 'print-style after reset').source, 'defaults', 'and the house style is back');
+  clearStore();
+});
+
+test('Excalidraw apply drops whatever equals the house style, a kind that follows a token included (#90)', () => {
+  const next = applyTool.applyAccepted(
+    { schemaVersion: 1, engine: 'excalidraw', tokens: { fillStyle: 'hachure', edgeColor: '#343a40' }, edgeKinds: { flow: { meaning: 'trigger' } } },
+    [
+      { id: 'tokens.fillStyle', proposed: 'solid' },
+      { id: 'edgeKinds.flow.meaning', proposed: 'primary flow' },
+      { id: 'edgeKinds.async.color', proposed: '#343A40' },
+      { id: 'edgeKinds.data.width', proposed: 4 },
+    ],
+  );
+  eq(JSON.stringify(next), JSON.stringify({ schemaVersion: 1, engine: 'excalidraw', tokens: { edgeColor: '#343a40' } }),
+    'values back at the house style drop out, a kind colour or width that follows its token included');
+});
+
+test('the Excalidraw builder draws from the resolved style, not its own constants (#90)', () => {
+  const src = readFileSync(join(SCRIPTS, 'build-diagram.mjs'), 'utf8');
+  for (const literal of ['export const STYLE = {', 'export const EDGE_KINDS = {', 'STYLE.', "n.fillStyle ?? 'solid'", "backgroundColor: look.bg, fillStyle: 'solid'"]) {
+    assert(!src.includes(literal), `build-diagram.mjs still hard-codes ${JSON.stringify(literal)}`);
+  }
+  eq(builder.STYLE.fillStyle, 'solid', 'the fill style token defaults to the literal it replaced');
+  eq(builder.STYLE.edgeColor, core.PALETTE.black.stroke, 'the connector colour token defaults to the colour flow and async drew with');
+  eq(JSON.stringify(Object.values(builder.EDGE_KINDS).map((k) => [k.color, k.strokeStyle, k.width])), JSON.stringify([
+    ['#1e1e1e', 'solid', 4], ['#1e1e1e', 'dashed', 4], ['#1971c2', 'solid', 4], ['#e03131', 'solid', 4],
+    ['#2f9e44', 'dashed', 4], ['#29b5e8', 'solid', 4], ['#495057', 'dotted', 1],
+  ]), 'every shipped kind draws exactly as before');
 });
 
 test('the docker compose file pins the official image and a port', () => {
