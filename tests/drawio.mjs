@@ -11,7 +11,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { basename, dirname, join, relative } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 
@@ -1887,7 +1887,11 @@ test('the style store lives outside the plugin, and ARKITECT_HOME moves it (#89)
   delete env.ARKITECT_HOME;
   const home = store.arkitectHome(env);
   eq(home, join(osHome, '.arkitect'), 'the default is <home>/.arkitect');
-  assert(relative(ROOT, home).startsWith('..'), 'the default store is not inside the plugin, so an update cannot wipe it');
+  // Outside means `..` - or, when the checkout and the home directory are on
+  // different Windows drives (D:\a\... and C:\Users\... on a CI runner), an
+  // absolute path, which is what relative() returns across drives.
+  const fromPlugin = relative(ROOT, home);
+  assert(fromPlugin.startsWith('..') || isAbsolute(fromPlugin), `the default store is not inside the plugin, so an update cannot wipe it (${fromPlugin})`);
   eq(store.arkitectHome({ ARKITECT_HOME: '' }), join(osHome, '.arkitect'), 'an empty ARKITECT_HOME counts as unset');
   eq(store.engineStore('drawio', { ARKITECT_HOME: TMP }), join(TMP, 'drawio'), 'ARKITECT_HOME replaces <home>/.arkitect');
   eq(styleTokens.overridesPath({ ARKITECT_HOME: TMP }), join(TMP, 'drawio', 'style-overrides.json'), 'the override sits in the drawio store');
