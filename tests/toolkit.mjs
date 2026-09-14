@@ -50,15 +50,20 @@ const manifest = JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'plugin.js
 const marketplace = JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'marketplace.json'), 'utf8'));
 
 // Text files worth scanning. Binary assets and vendored libraries are excluded:
-// they are other people's bytes and are verified by digest elsewhere.
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.analysis', 'output', 'bundled', 'libraries']);
-function textFiles(dir, acc = []) {
+// they are other people's bytes and are verified by digest elsewhere. Inside a
+// library folder only our own Markdown is read - its README and the generated
+// ATTRIBUTION.md files - so their links are checked like any other doc (#87).
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.analysis', 'output']);
+const LIBRARY_DIRS = new Set(['bundled', 'libraries']);
+const TEXT = /\.(md|mdc|json|mjs|js|ps1|ya?ml|txt)$/i;
+const MARKDOWN = /\.mdc?$/i;
+function textFiles(dir, acc = [], inLibrary = false) {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name)) continue;
     const p = join(dir, name);
     const st = statSync(p);
-    if (st.isDirectory()) textFiles(p, acc);
-    else if (/\.(md|mdc|json|mjs|js|ps1|ya?ml|txt)$/i.test(name) && st.size < 4 * 1024 * 1024) acc.push(p);
+    if (st.isDirectory()) textFiles(p, acc, inLibrary || LIBRARY_DIRS.has(name));
+    else if ((inLibrary ? MARKDOWN : TEXT).test(name) && st.size < 4 * 1024 * 1024) acc.push(p);
   }
   return acc;
 }
@@ -368,6 +373,18 @@ test('every relative link in the docs resolves', () => {
     }
   }
   assert(broken.length === 0, `broken links:\n        ${broken.slice(0, 15).join('\n        ')}`);
+});
+
+// A library folder was skipped whole, so a dead link in its README went unseen (#87).
+test('the docs checks read our own Markdown inside library folders, and none of the library payloads (#87)', () => {
+  const scanned = FILES.map((f) => relative(ROOT, f).split(sep).join('/'));
+  for (const doc of ['skills/arkitect-excalidraw/assets/libraries/README.md',
+    'skills/arkitect-excalidraw/assets/libraries/bundled/ATTRIBUTION.md',
+    'skills/arkitect-drawio/assets/libraries/ATTRIBUTION.md']) {
+    assert(scanned.includes(doc), `${doc} is not scanned, so its links go unchecked`);
+  }
+  const payloads = scanned.filter((f) => /(?:^|\/)(?:libraries|bundled)\//.test(f) && !MARKDOWN.test(f));
+  assert(!payloads.length, `library payloads are scanned:\n        ${payloads.slice(0, 10).join('\n        ')}`);
 });
 
 test('the README shows images that are actually committed', () => {
