@@ -25,7 +25,7 @@ import { readLibrary, titleAliases } from './lib/drawio-core.mjs';
 import {
   sha256, download, readZip, readTgz, viewBoxOf, sizedSvg, tintUnpaintedMark, paintMark, conceptTile,
   fileSheet, dataUri, writeLibrary, prettyTitle, slugify, aliasSet, withPlurals, withShortName,
-  normalise, pngSize, downscalePng,
+  normalise, pngSize, downscalePng, paintsOnlyWhite,
 } from './lib/icon-build.mjs';
 import { checkSimpleIcons, checkDrift, removalReport, driftReport } from './lib/upstream.mjs';
 import { svgBytesProblem } from './lib/xml-check.mjs';
@@ -437,6 +437,7 @@ async function buildPack(pack, manifest, cache, claimed) {
   }
 
   refuseMalformedSvg(pack.id, entries);
+  refuseWhiteMarks(pack.id, entries);
   const file = join(LIB_DIR, `${pack.id}.drawio`);
   const libEntries = entries.map((e) => ({
     data: e.data ?? dataUri(e.svg),
@@ -627,6 +628,26 @@ export function refuseMalformedSvg(packId, entries) {
   }
 }
 
+const svgTextOf = (uri) => {
+  const m = /^data:image\/svg\+xml;base64,(.*)$/.exec(uri);
+  return m ? Buffer.from(m[1], 'base64').toString('utf8') : null;
+};
+
+// A project that publishes light and dark logos can hand over the wrong half,
+// and its file names are no guide: mem0's white-ink file passed every check
+// above and drew an empty tile (#85). Refused the same way, every entry named.
+export function refuseWhiteMarks(packId, entries) {
+  const bad = entries.flatMap((e) => {
+    const svg = svgTextOf(e.data ?? dataUri(e.svg));
+    return svg && paintsOnlyWhite(svg) ? [`${packId}/${e.slug}${e.upstreamId ? ` (${e.upstreamId})` : ''}`] : [];
+  });
+  if (bad.length) {
+    throw new Error(`${packId}: every paint is white in ${bad.length} mark${bad.length === 1 ? '' : 's'}, so `
+      + `${bad.length === 1 ? 'it' : 'they'} will not draw on a light canvas. Ship the light-background variant. `
+      + `Nothing written:\n  ${bad.join('\n  ')}`);
+  }
+}
+
 // Rebuilds every pack in memory and compares the result with what is committed.
 // A mismatch means the libraries and the manifest have drifted apart.
 export async function verify() {
@@ -659,6 +680,12 @@ export async function verify() {
     });
     ok(`${p.id}: every SVG payload is well-formed`, malformed.length === 0,
       malformed.length ? `${malformed.length} malformed - ${malformed.slice(0, 3).join('; ')}` : '');
+    const white = entries.filter((e) => {
+      const svg = e.dataUri && svgTextOf(e.dataUri);
+      return svg && paintsOnlyWhite(svg);
+    });
+    ok(`${p.id}: no mark paints only white`, white.length === 0,
+      white.length ? `${white.length} - ${white.slice(0, 3).map((e) => `${e.index} ${e.title}`).join('; ')}` : '');
   }
 
   const ids = catalog.icons.map((i) => i.id);

@@ -230,6 +230,70 @@ export function paintMark(svgText, hex, { size = 64, tileThreshold = 0.7 } = {})
   };
 }
 
+const DRAWN = new Set(['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'textPath', 'use']);
+const NEAR_WHITE = 240;
+
+function rgbOf(value) {
+  const v = value.toLowerCase();
+  if (v === 'white') return [255, 255, 255];
+  let m = /^#([0-9a-f]{3})[0-9a-f]?$/.exec(v);
+  if (m) return [...m[1]].map((h) => parseInt(h + h, 16));
+  m = /^#([0-9a-f]{6})(?:[0-9a-f]{2})?$/.exec(v);
+  if (m) return m[1].match(/../g).map((h) => parseInt(h, 16));
+  m = /^rgba?\(\s*([\d.]+%?)[\s,]+([\d.]+%?)[\s,]+([\d.]+%?)/.exec(v);
+  return m ? m.slice(1, 4).map((c) => (c.endsWith('%') ? parseFloat(c) * 2.55 : parseFloat(c))) : null;
+}
+
+// A style declaration wins over the presentation attribute, as in a browser.
+function paintOf(attrs, name) {
+  const style = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(attrs);
+  const css = style && new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+)`, 'i').exec(style[1] ?? style[2]);
+  if (css) return css[1].replace(/!important/i, '').trim();
+  return new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(attrs)?.slice(1).find((v) => v !== undefined)?.trim() ?? null;
+}
+
+// Every colour a mark paints with: fills and strokes as each drawn element
+// inherits them (an element with no fill anywhere above it draws black),
+// gradient stops, and whatever a <style> sheet declares. Clip paths and masks
+// draw nothing themselves, a gradient reference is counted through its stops,
+// and an embedded image or currentColor stays in the list as a colour that is
+// not white.
+function paintsOf(svgText) {
+  const found = [];
+  for (const m of svgText.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
+    for (const d of m[1].matchAll(/(?:^|[;{\s])(?:fill|stroke|stop-color)\s*:\s*([^;}]+)/gi)) found.push(d[1].trim());
+  }
+  const markup = svgText.replace(/<!--[\s\S]*?-->/g, '').replace(/<style\b[\s\S]*?<\/style>/gi, '');
+  const stack = [{ fill: 'black', stroke: 'none', hidden: false }];
+  for (const [, closing, qname, attrs, selfClosing] of markup.matchAll(/<(\/?)([\w:.-]+)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g)) {
+    if (closing) { if (stack.length > 1) stack.pop(); continue; }
+    const name = qname.split(':').pop();
+    const parent = stack[stack.length - 1];
+    const own = { hidden: parent.hidden || name === 'clipPath' || name === 'mask' };
+    for (const key of ['fill', 'stroke']) {
+      const value = paintOf(attrs, key);
+      own[key] = value && !/^inherit$/i.test(value) ? value : parent[key];
+    }
+    if (!own.hidden) {
+      if (name === 'stop') found.push(paintOf(attrs, 'stop-color') ?? 'black');
+      else if (name === 'image') found.push('image');
+      else if (DRAWN.has(name)) {
+        if (name !== 'line') found.push(own.fill);
+        found.push(own.stroke);
+      }
+    }
+    if (!selfClosing) stack.push(own);
+  }
+  return found.filter((p) => !/^(none|transparent)$|^url\(/i.test(p));
+}
+
+// True when every colour a mark paints with is white or nearly so: artwork
+// made for a dark background, which draws nothing on a light canvas (#85).
+export function paintsOnlyWhite(svgText) {
+  const paints = paintsOf(svgText);
+  return paints.length > 0 && paints.every((p) => rgbOf(p)?.every((c) => c >= NEAR_WHITE));
+}
+
 // A concept glyph on a solid rounded tile, so `agents/memory` carries the same
 // visual weight in a diagram as an AWS service icon.
 export function conceptTile(glyphSvg, { tileColour, glyphColour = '#FFFFFF', style = 'stroke', size = 64 }) {
