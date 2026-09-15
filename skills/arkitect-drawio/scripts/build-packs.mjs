@@ -489,27 +489,28 @@ function licenceOf(source, manifest) {
   return 'see sources.json';
 }
 
-function onDemandEntries(pack, manifest) {
-  return (pack.onDemand ?? []).map((o) => {
-    const cmd = o.upstreamUrl
-      ? `node scripts/fetch-logo.mjs --url ${o.upstreamUrl} --name ${o.slug}`
-      : `node scripts/fetch-logo.mjs --url <logo URL from ${o.brandUrl ?? 'the vendor brand page'}> --name ${o.slug}`;
-    return {
-      id: `${pack.id}/${o.slug}`,
-      pack: pack.id,
-      title: o.title,
-      aliases: o.aliases,
-      source: o.source,
-      upstreamId: o.slug,
-      ...(o.upstreamUrl ? { upstreamUrl: o.upstreamUrl } : {}),
-      ...(o.brandUrl ? { brandUrl: o.brandUrl } : {}),
-      licence: o.licence,
-      ...(o.licenceUrl ? { licenceUrl: o.licenceUrl } : {}),
-      bytes: 'on-demand',
-      reason: o.reason,
-      fetch: cmd,
-    };
-  });
+// Only an entry with a pinned artwork file gets a fetch command. The rest have
+// nothing a command can download - a press kit, a request form, no logo at all
+// - and say so, so an agent branches on `artwork` instead of running a
+// placeholder URL (#84).
+function onDemandEntries(pack) {
+  return (pack.onDemand ?? []).map((o) => ({
+    id: `${pack.id}/${o.slug}`,
+    pack: pack.id,
+    title: o.title,
+    aliases: o.aliases,
+    source: o.source,
+    upstreamId: o.slug,
+    ...(o.upstreamUrl ? { upstreamUrl: o.upstreamUrl } : {}),
+    ...(o.brandUrl ? { brandUrl: o.brandUrl } : {}),
+    licence: o.licence,
+    ...(o.licenceUrl ? { licenceUrl: o.licenceUrl } : {}),
+    bytes: 'on-demand',
+    reason: o.reason,
+    ...(o.upstreamUrl
+      ? { artwork: 'pinned', fetch: `node scripts/fetch-logo.mjs --url ${o.upstreamUrl} --name ${o.slug}` }
+      : { artwork: 'none pinned' }),
+  }));
 }
 
 export async function buildAll(only = null, { quiet = false } = {}) {
@@ -556,7 +557,7 @@ function writeCatalog(manifest, built, sourceHashes) {
   for (const pack of manifest.packs) {
     const b = byId.get(pack.id);
     if (!b) continue;
-    icons.push(...b.icons, ...onDemandEntries(pack, manifest));
+    icons.push(...b.icons, ...onDemandEntries(pack));
     packs.push({
       id: pack.id,
       title: pack.title,
@@ -565,6 +566,7 @@ function writeCatalog(manifest, built, sourceHashes) {
       file: `${pack.id}.drawio`,
       count: b.count,
       onDemand: (pack.onDemand ?? []).length,
+      onDemandPinned: (pack.onDemand ?? []).filter((o) => o.upstreamUrl).length,
       sha256: b.fileHash,
       ...(pack.note ? { note: pack.note } : {}),
     });

@@ -80,6 +80,11 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- An on-demand icon with no pinned artwork file no longer hands back a
+  `fetch-logo --url <logo URL from ...>` command no one can run: catalog rows
+  say `artwork: "pinned"` or `"none pinned"`, only the 36 pinned entries carry a
+  command, and `find-icon`, the build report, `--list-packs` and `pack-index.md`
+  tell the two apart (#84)
 - `build-packs` refuses a mark whose every fill, stroke and gradient stop is
   white, the dark-background half of a logo pair that draws an empty tile on a
   light canvas, and `--verify` checks every committed payload for it (#85)

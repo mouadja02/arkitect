@@ -140,7 +140,9 @@ languages, file types and agent concepts, not AWS alone). Most named
 products — Snowflake, Grafana, Databricks, Postgres included — are already
 bundled. Only for the minority the search reports as on-demand or unmatched,
 fetch the **real logo** and embed it (`drawio logo --url …`, or the exact
-`fetch-logo` command the search names). Last resort, and only then: a
+`fetch-logo` command the search names for an on-demand mark with
+`artwork: "pinned"`; one with `artwork: "none pinned"` has nothing to fetch and
+stays a named placeholder). Last resort, and only then: a
 built-in `mxgraph.aws4.*` shape, the Draw.io MCP `search_shapes` tool, or a
 plain labelled box named in the report. A grey box labelled "Snowflake" when a
 bundled mark existed is a regression, not a safe default.

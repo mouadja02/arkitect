@@ -25,7 +25,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
-import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
+import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
 import { engineStore } from './lib/store.mjs';
@@ -106,7 +106,8 @@ export function resolveIcon(node, catalog, report, contextPacks) {
   const take = (chosen) => {
     if (chosen.bytes === 'on-demand') {
       report.needsFetch.push({
-        query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, fetch: chosen.fetch,
+        query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, artwork: chosen.artwork,
+        ...(chosen.fetch ? { fetch: chosen.fetch } : { next: onDemandNext(chosen) }),
       });
       return null;
     }

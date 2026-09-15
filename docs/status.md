@@ -15,7 +15,8 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Diagram checks | Invalid-reference rejection, unknown-kind reports, caption routing and example freshness | [#36](https://github.com/mouadja02/arkitect/issues/36), [#48](https://github.com/mouadja02/arkitect/issues/48), [#45](https://github.com/mouadja02/arkitect/issues/45), [#50](https://github.com/mouadja02/arkitect/issues/50) |
 | Icon maintenance | Shared packs in Excalidraw, source pins, scheduled upstream checks, Azure review records | [#17](https://github.com/mouadja02/arkitect/issues/17), [#9](https://github.com/mouadja02/arkitect/issues/9), [#10](https://github.com/mouadja02/arkitect/issues/10), [#18](https://github.com/mouadja02/arkitect/issues/18) |
 | Icon correctness | An exact catalog id selects its own artwork; a fetched SVG is sized from its root element, identically in both engines | [#95](https://github.com/mouadja02/arkitect/issues/95), [#96](https://github.com/mouadja02/arkitect/issues/96), [PR #98](https://github.com/mouadja02/arkitect/pull/98) |
-| Icon validation | A mark that paints only in white is refused when a pack is built and reported by `--verify` | [#85](https://github.com/mouadja02/arkitect/issues/85) |
+| Icon validation | A mark that paints only in white is refused when a pack is built and reported by `--verify` | [#85](https://github.com/mouadja02/arkitect/issues/85), [PR #99](https://github.com/mouadja02/arkitect/pull/99) |
+| On-demand artwork | An on-demand entry says whether a pinned artwork file exists; only those carry a fetch command, the rest draw as a named placeholder | [#84](https://github.com/mouadja02/arkitect/issues/84) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -33,7 +34,6 @@ recommended priorities, not work already started or assigned.
 
 | Issue | Order | Remaining outcome |
 |---|---|---|
-| [#84](https://github.com/mouadja02/arkitect/issues/84) | Next | Distinguish fetchable on-demand artwork from manual discovery. |
 | [#75](https://github.com/mouadja02/arkitect/issues/75) | Then | Cover title ties in the resolver answer key; keep separate from exact IDs. |
 | [#78](https://github.com/mouadja02/arkitect/issues/78) | Then | Generate, check or reduce exact icon counts repeated across docs. |
 | [#76](https://github.com/mouadja02/arkitect/issues/76) | Then | Make wide wordmarks legible while preserving aspect and layout. |

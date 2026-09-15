@@ -409,7 +409,7 @@ OrientDB's own logo, OrientDB_logo.svg at the root of orientechnologies/orientdb
 
 ## What is deliberately not here
 
-158 products are catalogued with a URL and a fetch command but no bytes,
+158 products are catalogued with no bytes (36 of them with a pinned artwork file and a fetch command),
 because no permissively licensed mark for them exists, or because the brand owner asked
 for it to be removed from the source we would otherwise use. Shipping them anyway would
 contradict the reason the rest of this file can be written honestly.
