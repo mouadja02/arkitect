@@ -86,6 +86,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A wide wordmark is no longer drawn as a hairline. A lockup's short side now
+  clears a third of the 78px footprint and its long side never passes twice it,
+  so Metaflow's 6:1 mark is 156x26 instead of 78x13. Nine marks are redrawn;
+  no artwork byte and no payload digest changes (#76)
 - `docs/drawio-icons.md` no longer understates the Draw.io answer key: it holds
   471 queries with an expected answer and 21 that must come back flagged, not
   the 375 and 28 it claimed (#78)

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-15T22:23:04.558Z",
+  "generated": "2026-09-15T23:12:01.614Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
@@ -393,7 +393,7 @@
       "count": 31,
       "onDemand": 29,
       "onDemandPinned": 3,
-      "sha256": "5940605b3133e90ca31dae434a5106ede53a1a7bac7389aabdd1bc32d1a01e62"
+      "sha256": "caad18fc349ae779e627c46e685fe7ca4bb6d5961c12039d1b319ebf2935f4ff"
     },
     {
       "id": "databases",
@@ -415,7 +415,7 @@
       "count": 43,
       "onDemand": 28,
       "onDemandPinned": 1,
-      "sha256": "64f7803b0ad99bf07d7c0548ec793b9657c3b05e9cf968df66c81ca4eb8a45d1"
+      "sha256": "d835418de15629decc870866198862b371ff7b2f6aa1879de6e2b96314f032c0"
     },
     {
       "id": "ml-training",
@@ -426,7 +426,7 @@
       "count": 35,
       "onDemand": 14,
       "onDemandPinned": 4,
-      "sha256": "c78990fb309b3acfb0cbd5b6ee3b2a3d759419800d984462d7f41b3189032305"
+      "sha256": "01d78ae4011a2ca194456972d1da426fed27e01a7c63d139d5ae63ad0d4f348d"
     },
     {
       "id": "streaming-orchestration",
@@ -437,7 +437,7 @@
       "count": 23,
       "onDemand": 22,
       "onDemandPinned": 6,
-      "sha256": "74d6037dbdd7e99320fa797587d185d89af20e3bda9b18f57d6237cb83ae094f"
+      "sha256": "dfca98fc394e8ff32d44ac61ea1cc61f87e3de658388caea8ffaffc96cc2fe70"
     },
     {
       "id": "observability",
@@ -470,7 +470,7 @@
       "count": 32,
       "onDemand": 17,
       "onDemandPinned": 7,
-      "sha256": "ab75dc8b6e8e0506aa4ac0c8890bd42c3f81032caf2a1045313c47eacfb17c00"
+      "sha256": "94e71d2348384d0141ef8da8da042b924b064d7ccb7437407c26f3ad41da017c"
     },
     {
       "id": "github",

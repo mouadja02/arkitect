@@ -392,6 +392,34 @@ export function imageDimensions(mime, bytes) {
   return { width: null, height: null };
 }
 
+export const ICON_FOOTPRINT = 78; // the AWS palette's service-icon footprint; keeps packs interchangeable
+export const MIN_SIDE_SHARE = 1 / 3;
+export const MAX_SIDE_SHARE = 2;
+
+// The cell a mark is drawn in: its own aspect, fitted to `size` on the longest
+// side. Fitting by the longest side alone turns a wide lockup into a hairline -
+// Metaflow's 6:1 wordmark came out 78x13, its text a couple of pixels tall, and
+// eight more marks came out too short to read beside their square neighbours (#76).
+//
+// So the short side has a floor of a third of the footprint, and the long side a
+// ceiling of twice it. Both are proportions of the size asked for, not fixed
+// pixels, so `--size 40` is still honoured rather than inflated to a default.
+//
+// The two bounds meet at 6:1. Up to that the floor is reached; past it the
+// ceiling wins and the mark stays a little under the floor, because growing an
+// extreme lockup until its text is legible would make it wider than the diagram
+// column it sits in. Of the marks that ship, seven reach the floor and two -
+// Pydantic AI and Infisical, a shade wider than 6:1 - land a pixel below it.
+export function fitCell(width, height, size = ICON_FOOTPRINT) {
+  if (!(width > 0 && height > 0)) return { width: size, height: size };
+  const longest = Math.max(width, height);
+  const shortest = Math.min(width, height);
+  let scale = size / longest;
+  if (shortest * scale < size * MIN_SIDE_SHARE) scale = (size * MIN_SIDE_SHARE) / shortest;
+  if (longest * scale > size * MAX_SIDE_SHARE) scale = (size * MAX_SIDE_SHARE) / longest;
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
 // ---------------------------------------------------------------- mxlibrary
 
 // An .mxlibrary payload is a JSON array of entries:
