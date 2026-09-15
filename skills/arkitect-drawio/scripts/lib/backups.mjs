@@ -70,4 +70,3 @@ export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
   }
   return pruned;
 }
-
