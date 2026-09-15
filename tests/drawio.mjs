@@ -71,6 +71,9 @@ const logos = await import(`file://${join(SCRIPTS, 'fetch-logo.mjs').replace(/\\
 const validator = await import(`file://${join(SCRIPTS, 'validate-drawio.mjs').replace(/\\/g, '/')}`);
 const styleTokens = await import(`file://${join(SCRIPTS, 'lib', 'style-tokens.mjs').replace(/\\/g, '/')}`);
 const store = await import(`file://${join(SCRIPTS, 'lib', 'store.mjs').replace(/\\/g, '/')}`);
+// The Excalidraw icon builder, for one assertion only: both engines must read
+// an SVG's size the same way, and this suite owns the implementation (#96).
+const makeIcon = await import(`file://${join(ROOT, 'skills', 'arkitect-excalidraw', 'scripts', 'make-icon.mjs').replace(/\\/g, '/')}`);
 const findingsTool = await import(`file://${join(SCRIPTS, 'style-findings.mjs').replace(/\\/g, '/')}`);
 const applyTool = await import(`file://${join(SCRIPTS, 'apply-style.mjs').replace(/\\/g, '/')}`);
 const osHome = (await import('node:os')).homedir();
@@ -1416,6 +1419,64 @@ test('both SVG and PNG entries decode with real dimensions', () => {
   assert(png.intrinsic.width > 0 && png.intrinsic.height > 0, 'png dimensions');
 });
 
+// A size used to be whichever width came first in the document: a child <rect>,
+// a <symbol> in <defs>, or `stroke-width`, because `\b` matches after a hyphen.
+// A fetched logo sized from that is drawn at an aspect that is not its own, and
+// LOGO_STYLE sets imageAspect=0, so it stretches to fit. Both engines now read
+// the root <svg> element's own attributes, viewBox first (#96).
+test('SVG dimensions come from the root element only, in both engines (#96)', () => {
+  const ns = 'xmlns="http://www.w3.org/2000/svg"';
+  const cases = [
+    [`<svg ${ns} viewBox="0 0 283.5 283.5"><rect width="10" height="40"/></svg>`, '283.5x283.5', 'a child rect is not the mark'],
+    [`<svg ${ns} stroke-width="3" viewBox="0 0 18 18"><path d="M0 0h90v90"/></svg>`, '18x18', 'stroke-width is not a width'],
+    [`<svg ${ns} width="64" height="16"><defs><symbol viewBox="0 0 5 5"/></defs></svg>`, '64x16', 'a symbol in defs is not the root'],
+    [`<svg ${ns} width="200" height="100" viewBox="0 0 200 100"/>`, '200x100', 'a fully attributed root still reads as itself'],
+    [`<svg ${ns} width='48px' height='24px'/>`, '48x24', 'px lengths, single quotes, no viewBox'],
+    [`<svg ${ns} width="100%" height="100%"><rect width="7" height="9"/></svg>`, 'nullxnull', 'a percentage is relative to a viewport an image does not have'],
+    ['<p>not an SVG at all</p>', 'nullxnull', 'a document with no root svg'],
+  ];
+  for (const [svg, expect, what] of cases) {
+    const bytes = Buffer.from(svg);
+    const d = core.svgDimensions(bytes);
+    eq(`${d.width}x${d.height}`, expect, what);
+    // One rule, one implementation: the Excalidraw reader re-exports this one.
+    const e = makeIcon.svgDimensions(bytes);
+    eq(`${e.width}x${e.height}`, expect, `${what}, read by the Excalidraw engine`);
+  }
+
+  // What the misread cost: the cell a fetched logo is drawn in. logoBox fits
+  // the longest side, so a wrong aspect in means a wrong cell out.
+  const box = (w, h) => { const b = logos.logoBox({ width: w, height: h }, 78); return `${b.width}x${b.height}`; };
+  eq(box(200, 100), '78x39', 'a 2:1 logo gets a 2:1 cell');
+  eq(box(10, 40), '20x78', 'the child rect this used to read would have drawn it tall and narrow');
+});
+
+// The two marks the document-wide regex misread: ai-frameworks/axolotl read
+// 46.4x23.2 from a child <rect> against a 283.5x283.5 root viewBox, and
+// azure/intune-trends 2.17x7.32 against 18x18 (#96).
+test('every committed SVG entry reads the size its own root declares (#96)', () => {
+  const rootViewBox = (bytes) => {
+    const attrs = /<svg\b([^>]*)>/i.exec(bytes.toString('utf8'))?.[1] ?? '';
+    const vb = /(?:^|\s)viewBox\s*=\s*"([^"]*)"/i.exec(attrs)?.[1];
+    const n = vb ? vb.trim().split(/[\s,]+/).map(Number) : [];
+    return n.length === 4 && n.every(Number.isFinite) && n[2] > 0 && n[3] > 0 ? { width: n[2], height: n[3] } : null;
+  };
+  const misread = [];
+  let checked = 0;
+  for (const pack of finder.loadCatalog().packs) {
+    for (const e of core.readLibrary(join(LIB_DIR, pack.file))) {
+      if (e.mime !== 'image/svg+xml' || !e.dataUri) continue;
+      const vb = rootViewBox(core.parseDataUri(e.dataUri).bytes);
+      if (!vb) continue;
+      checked++;
+      const read = `${e.intrinsic.width}x${e.intrinsic.height}`;
+      if (read !== `${vb.width}x${vb.height}`) misread.push(`${pack.id}/${e.title}: read ${read}, its root viewBox is ${vb.width}x${vb.height}`);
+    }
+  }
+  assert(checked > 4000, `only ${checked} committed SVG entries examined`);
+  assert(!misread.length, `${misread.length} of ${checked} entries read a size their root does not declare:\n        ${misread.slice(0, 10).join('\n        ')}`);
+});
+
 test('duplicate titles are retained and disambiguated by id and hash', () => {
   const cat = finder.loadCatalog();
   const dupes = cat.icons.filter((i) => i.title === 'AWS Compute Optimizer');
@@ -1620,6 +1681,67 @@ test('icon resolution corpus: never confidently wrong, and precision at rank 1 h
   assert(!wrong.length, `confident and wrong: ${wrong.join('; ')}`);
   assert(m.top1 / m.answerable >= key.precisionFloor,
     `precision@1 ${pct(m.top1, m.answerable)} fell below the ${key.precisionFloor * 100}% floor`);
+});
+
+// A search prints `<pack>/<slug>` as the thing to put in a spec, and the skill
+// says to do exactly that - but the builder passed it to the text search like
+// any free-text query. 752 of the 4,843 committed ids embedded another
+// product's mark, 227 drew a plain box, and only 288 came back confidently
+// right (#95). An exact id is now an instruction: it selects that row or
+// nothing.
+test('every exact catalog id embeds its own artwork (#95)', () => {
+  const cat = finder.loadCatalog();
+  const wrong = [];
+  for (const icon of cat.icons) {
+    const report = { used: [], missing: [], ambiguous: [], needsFetch: [] };
+    const chosen = builder.resolveIcon({ kind: 'icon', icon: icon.id }, cat, report, null);
+    // An exact id on a mark that ships no bytes still goes to needsFetch: a
+    // licence we do not have is not fixed by drawing something else.
+    if (icon.bytes === 'on-demand') {
+      if (chosen) wrong.push(`${icon.id}: drew ${chosen.id} for a mark that ships no bytes`);
+      else if (report.needsFetch[0]?.id !== icon.id) wrong.push(`${icon.id}: not reported to fetch`);
+      continue;
+    }
+    if (!chosen) { wrong.push(`${icon.id}: drew a plain box`); continue; }
+    if (chosen.id !== icon.id) { wrong.push(`${icon.id}: drew ${chosen.id}`); continue; }
+    const uri = finder.styleSafeDataUri(chosen).replace(/^data:([^;,]+),/, 'data:$1;base64,');
+    const { hash } = core.parseDataUri(uri);
+    if (hash !== icon.sha256) wrong.push(`${icon.id}: embedded ${hash.slice(0, 12)}, catalog says ${icon.sha256.slice(0, 12)}`);
+  }
+  assert(cat.icons.length > 4000, `no catalog to check (${cat.icons.length} rows)`);
+  assert(!wrong.length, `${wrong.length} of ${cat.icons.length} ids resolve to the wrong artwork:\n        ${wrong.slice(0, 10).join('\n        ')}`);
+});
+
+test('a build draws the mark each exact id names, and says so (#95)', () => {
+  const cat = finder.loadCatalog();
+  const ids = ['azure/advisor', 'databases/postgresql', 'streaming-orchestration/restate'];
+  const { xml, report } = builder.buildDiagram({
+    title: 'exact ids',
+    nodes: [
+      ...ids.map((id, i) => ({ id: `n${i}`, kind: 'icon', icon: id, label: id, col: i, row: 0 })),
+      { id: 'od', kind: 'icon', icon: 'ai-frameworks/openai', label: 'OpenAI', col: 0, row: 1 },
+    ],
+  });
+  eq(report.used.map((u) => u.id).join(','), ids.join(','), 'the report names the ids the spec asked for');
+  eq(report.ambiguous.length, 0, 'an exact id is not ambiguous');
+  eq(report.missing.length, 0, 'an exact id is not missing');
+  for (const id of ids) {
+    const payload = finder.styleSafeDataUri(cat.icons.find((i) => i.id === id)).replace(/^data:[^,]+,/, '');
+    assert(xml.includes(payload), `${id}: its own artwork is not in the file`);
+  }
+  eq(report.needsFetch.map((f) => f.id).join(), 'ai-frameworks/openai', 'an exact on-demand id is reported to fetch');
+  assert(!report.used.some((u) => u.query === 'ai-frameworks/openai'), 'an on-demand id must not be drawn');
+
+  // A node that pins a pack the id does not belong to is a spec arguing with
+  // itself. Searching the pinned pack for it is the same bug in miniature:
+  // "aws" plus `databases/postgresql` scored Amazon RDS, confidently. It is
+  // reported and drawn as a box instead.
+  const clash = builder.buildDiagram({
+    nodes: [{ id: 'n0', kind: 'icon', icon: 'databases/postgresql', pack: 'aws', label: 'Postgres', col: 0, row: 0 }],
+  });
+  assert(!clash.report.used.length, `a contradicted id drew ${clash.report.used[0]?.id} unattended`);
+  eq(clash.report.missing.length, 1, 'a contradicted id is reported once');
+  assert(/pack/.test(clash.report.missing[0].reason ?? ''), 'the report names the pack the id really lives in');
 });
 
 test('an on-demand icon refuses to produce bytes and hands back the command', () => {

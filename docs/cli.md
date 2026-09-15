@@ -21,7 +21,7 @@ where to find it.
 
 ```bash
 arkitect drawio icon "bedrock"                        # search the AWS palette
-arkitect drawio icon --cell n1 --label "Amazon Bedrock" --x 0 --y 0
+arkitect drawio icon --cell aws/amazon-bedrock --label "Amazon Bedrock" --x 0 --y 0
 arkitect drawio logo --url https://.../logo.svg --name snowflake
 arkitect drawio logo --list
 arkitect drawio logo --inspect snowflake              # size, transparency, source

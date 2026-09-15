@@ -333,13 +333,51 @@ export function parseDataUri(uri) {
   return { mime, base64, bytes, hash: sha256(bytes), payloadLength: payload.length };
 }
 
+// Only the root <svg> element's own attributes describe the whole mark. A regex
+// over the document reads whichever width comes first, which can be a child
+// <rect>, a <symbol>, or `stroke-width`, since `\b` matches after a hyphen, and
+// sizes the cell to something that is not the artwork (#96).
+function rootSvgAttrs(bytes) {
+  // The root tag sits at the top of the file; 4 KB covers every mark we ship.
+  // Where it does not, read the whole document rather than guess a size.
+  let m = /<svg\b([^>]*)>/i.exec(bytes.subarray(0, 4096).toString('utf8'));
+  if (!m && bytes.length > 4096) m = /<svg\b([^>]*)>/i.exec(bytes.toString('utf8'));
+  return m ? m[1] : null;
+}
+
+const rootAttr = (attrs, name) => {
+  const m = new RegExp(`(?:^|\\s)${name}\\s*=\\s*("[^"]*"|'[^']*')`, 'i').exec(attrs);
+  return m ? m[1].slice(1, -1) : null;
+};
+
+// A length a cell can be sized from: a plain number, optionally in px. A
+// percentage or an em is relative to a viewport an embedded image does not have,
+// and `parseFloat` would silently read "100%" as 100.
+const absoluteLength = (value) => {
+  const m = /^\s*([\d.]+)\s*(?:px)?\s*$/i.exec(value ?? '');
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+// viewBox first, then the root's own width/height. An embedded SVG is rendered
+// into its cell as the viewport, so the viewBox and preserveAspectRatio decide
+// where the ink lands and the root width/height are ignored; fitting the cell to
+// the viewBox fills it with artwork instead of letterboxing it. Same precedence
+// as icon-build's viewBoxOf() and the Excalidraw reader, which re-exports this
+// so both engines size the same bytes identically (#96).
 export function svgDimensions(bytes) {
-  const head = bytes.subarray(0, 4096).toString('utf8');
-  const w = /\bwidth\s*=\s*"([\d.]+)/.exec(head);
-  const h = /\bheight\s*=\s*"([\d.]+)/.exec(head);
-  if (w && h) return { width: Number(w[1]), height: Number(h[1]) };
-  const vb = /viewBox\s*=\s*"\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(head);
-  if (vb) return { width: Number(vb[1]), height: Number(vb[2]) };
+  const attrs = rootSvgAttrs(bytes);
+  if (attrs === null) return { width: null, height: null };
+  const vb = rootAttr(attrs, 'viewBox');
+  if (vb) {
+    const n = vb.trim().split(/[\s,]+/).map(Number);
+    if (n.length === 4 && n.every(Number.isFinite) && n[2] > 0 && n[3] > 0) {
+      return { width: n[2], height: n[3] };
+    }
+  }
+  const width = absoluteLength(rootAttr(attrs, 'width'));
+  const height = absoluteLength(rootAttr(attrs, 'height'));
+  if (width && height) return { width, height };
   return { width: null, height: null };
 }
 

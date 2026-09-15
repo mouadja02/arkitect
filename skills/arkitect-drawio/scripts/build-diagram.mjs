@@ -25,7 +25,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
-import { resolve, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
+import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
 import { engineStore } from './lib/store.mjs';
@@ -96,10 +96,44 @@ const stylesFor = (T, EDGE_KINDS) => ({
 // stack being drawn, a node's own `pack` pins it outright, and anything the
 // resolver is not confident about is reported rather than silently drawn - a
 // GCP diagram must not quietly receive an Azure icon.
-function resolveIcon(node, catalog, report, contextPacks) {
+export function resolveIcon(node, catalog, report, contextPacks) {
   const query = typeof node === 'string' ? node : node.icon;
   if (!query) return null;
   const pinned = typeof node === 'object' ? node.pack ?? null : null;
+
+  // Whatever route chose the mark, an on-demand entry ships no bytes: it is
+  // reported to fetch, never swapped for something that does draw.
+  const take = (chosen) => {
+    if (chosen.bytes === 'on-demand') {
+      report.needsFetch.push({
+        query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, fetch: chosen.fetch,
+      });
+      return null;
+    }
+    report.used.push({ query, title: chosen.title, id: chosen.id, pack: chosen.pack });
+    return chosen;
+  };
+
+  // An exact catalog id is an instruction, not a search term. `<pack>/<slug>`
+  // is what a search prints and what the skill tells an agent to put in a
+  // spec; sending it through text search drew another product's mark for 752
+  // of the 4,843 committed ids and a plain box for 227 more (#95).
+  const exact = byExactId(catalog, query);
+  if (exact) {
+    // A node that pins a pack the id does not belong to is a spec arguing with
+    // itself, and neither half is safe to act on unattended. Searching the
+    // pinned pack for the id is the same bug in miniature: "aws" plus
+    // `databases/postgresql` scores Amazon RDS, confidently.
+    if (pinned && exact.pack !== pinned) {
+      report.missing.push({
+        query,
+        pack: pinned,
+        reason: `${query} is in the "${exact.pack}" pack, but this node pins "${pinned}"`,
+      });
+      return null;
+    }
+    return take(exact);
+  }
 
   const r = resolve(query, { catalog, limit: 3, packs: contextPacks, pack: pinned });
   if (!r.groups.length) {
@@ -121,15 +155,7 @@ function resolveIcon(node, catalog, report, contextPacks) {
     });
   }
 
-  if (chosen.bytes === 'on-demand') {
-    report.needsFetch.push({
-      query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, fetch: chosen.fetch,
-    });
-    return null;
-  }
-
-  report.used.push({ query, title: chosen.title, id: chosen.id, pack: chosen.pack });
-  return chosen;
+  return take(chosen);
 }
 
 // ---------------------------------------------------------------- spec checks
