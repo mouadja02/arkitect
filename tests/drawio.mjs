@@ -527,9 +527,9 @@ test('the PNG ink reader tells a drawn page from a blank one', () => {
 
 // #33: the export covers every committed mark, not the first of each pack.
 // Marks sit in 100px cells, 400 to a page, fitted to 78px with no caption or
-// border - in a column widened where a page holds a lockup drawn wider than
-// that (#76) - and two invisible corner cells pin each page's bounds so every
-// mark lands on known pixels. Ink is measured inside each mark's own box: a share
+// border - in a column widened, on every page alike, to hold the widest lockup
+// (#76) - and two invisible corner cells pin each page's bounds so every mark
+// lands on known pixels. Ink is measured inside each mark's own box: a share
 // taken over the whole page cannot see one blank mark among 399 drawn ones, and
 // a caption's text would pass for artwork.
 const TILE_GRID = { perRow: 20, perPage: 400, cell: 100, icon: 78 };
@@ -538,17 +538,19 @@ function tilePages(icons, { perRow, perPage, cell, icon: size } = TILE_GRID) {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const corner = (id, x, y) => `<mxCell id="${id}" value="" style="fillColor=none;strokeColor=none;" vertex="1" parent="1">`
     + `<mxGeometry x="${x}" y="${y}" width="1" height="1" as="geometry"/></mxCell>`;
+  const sizedAll = icons.map((icon) => ({ icon, ...finder.recommendedSize(icon, size) }));
+  // A wide lockup is drawn wider than the footprint (#76), so the column has to
+  // hold the widest tile: ink is measured inside each mark's own box, and boxes
+  // that overlapped would let a blank mark borrow the ink of the one beside it.
+  // One width serves every page, not one per page - the export renders all pages
+  // in a single call at a single --width, so a page laid out wider than that
+  // comes back scaled and its tiles are no longer where the measurement looks.
+  const colW = Math.max(cell, ...sizedAll.map((t) => t.width + 4));
   const pages = [];
   for (let start = 0; start < icons.length; start += perPage) {
     const n = pages.length;
-    const chunk = icons.slice(start, start + perPage);
-    const rows = Math.ceil(chunk.length / perRow);
-    const sized = chunk.map((icon) => ({ icon, ...finder.recommendedSize(icon, size) }));
-    // A wide lockup is drawn wider than the footprint (#76), so the column has
-    // to hold the widest tile on the page. Ink is measured inside each mark's
-    // own box, and boxes that overlapped would let a blank mark borrow the ink
-    // of the one beside it. A page of ordinary marks keeps the 100px column.
-    const colW = Math.max(cell, ...sized.map((t) => t.width + 4));
+    const sized = sizedAll.slice(start, start + perPage);
+    const rows = Math.ceil(sized.length / perRow);
     const tiles = sized.map((t, i) => ({
       ...t,
       x: (i % perRow) * colW + Math.round((colW - t.width) / 2),
@@ -595,7 +597,7 @@ if (smokeEnabled) test('every committed mark, the masked GCP marks among them, e
   writeFileSync(file, `<mxfile>${pages.map((p) => p.xml).join('')}</mxfile>`);
   const outDir = join(TMP, 'every-mark');
   const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'render', file, '--all',
-    '--width', String(TILE_GRID.perRow * TILE_GRID.cell), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
+    '--width', String(pages[0].width), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
   { encoding: 'utf8', timeout: 1200000 });
   eq(result.status, 0, `Desktop export: ${result.stdout} ${result.stderr}`);
   const problems = [];
