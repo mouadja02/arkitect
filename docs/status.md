@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-15, after [PR #97](https://github.com/mouadja02/arkitect/pull/97) merged into main.
+Status reviewed on 2026-09-15, after [PR #98](https://github.com/mouadja02/arkitect/pull/98) merged into main.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -14,26 +14,26 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Packaging and previews | Package-content checks, portable Excalidraw PNG output, Draw.io Desktop export checks | [#38](https://github.com/mouadja02/arkitect/issues/38), [#39](https://github.com/mouadja02/arkitect/issues/39), [#33](https://github.com/mouadja02/arkitect/issues/33) |
 | Diagram checks | Invalid-reference rejection, unknown-kind reports, caption routing and example freshness | [#36](https://github.com/mouadja02/arkitect/issues/36), [#48](https://github.com/mouadja02/arkitect/issues/48), [#45](https://github.com/mouadja02/arkitect/issues/45), [#50](https://github.com/mouadja02/arkitect/issues/50) |
 | Icon maintenance | Shared packs in Excalidraw, source pins, scheduled upstream checks, Azure review records | [#17](https://github.com/mouadja02/arkitect/issues/17), [#9](https://github.com/mouadja02/arkitect/issues/9), [#10](https://github.com/mouadja02/arkitect/issues/10), [#18](https://github.com/mouadja02/arkitect/issues/18) |
+| Icon correctness | An exact catalog id selects its own artwork; a fetched SVG is sized from its root element, identically in both engines | [#95](https://github.com/mouadja02/arkitect/issues/95), [#96](https://github.com/mouadja02/arkitect/issues/96), [PR #98](https://github.com/mouadja02/arkitect/pull/98) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
-PR #97 passed the full cross-platform CI matrix and the Draw.io Desktop export
-check. See [testing.md](testing.md) for the maintained test baseline and local
-verification commands. Passing those checks does not resolve the known bugs below.
+PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
+Desktop export check. See [testing.md](testing.md) for the maintained test
+baseline and local verification commands. Passing those checks does not close
+the work listed below.
 
 ## In progress
 
-No implementation PR remains open at this snapshot. The repository and issue
-status reconciliation is recorded in this update. The next two items below are
+No implementation PR remains open at this snapshot. The two diagram-correctness
+bugs this page listed as next are fixed on main by PR #98. The items below are
 recommended priorities, not work already started or assigned.
 
 ## Remaining work
 
 | Issue | Order | Remaining outcome |
 |---|---|---|
-| [#95](https://github.com/mouadja02/arkitect/issues/95) | Next | Exact catalog IDs must select their own artwork. |
-| [#96](https://github.com/mouadja02/arkitect/issues/96) | Next | Read fetched SVG dimensions from the root element. |
-| [#85](https://github.com/mouadja02/arkitect/issues/85) | Then | Detect artwork invisible on a light canvas during pack building. |
-| [#84](https://github.com/mouadja02/arkitect/issues/84) | Then | Distinguish fetchable on-demand artwork from manual discovery. |
+| [#85](https://github.com/mouadja02/arkitect/issues/85) | Next | Detect artwork invisible on a light canvas during pack building. |
+| [#84](https://github.com/mouadja02/arkitect/issues/84) | Next | Distinguish fetchable on-demand artwork from manual discovery. |
 | [#75](https://github.com/mouadja02/arkitect/issues/75) | Then | Cover title ties in the resolver answer key; keep separate from exact IDs. |
 | [#78](https://github.com/mouadja02/arkitect/issues/78) | Then | Generate, check or reduce exact icon counts repeated across docs. |
 | [#76](https://github.com/mouadja02/arkitect/issues/76) | Then | Make wide wordmarks legible while preserving aspect and layout. |
@@ -46,10 +46,14 @@ recommended priorities, not work already started or assigned.
 | [#83](https://github.com/mouadja02/arkitect/issues/83) | Maintenance backlog | Surface product lifecycle metadata; reverify historical research first. |
 | [#88](https://github.com/mouadja02/arkitect/issues/88) | Release backlog | Implement release preparation and publication; no npm publishing. |
 
-The first two issues affect diagram correctness. Exact Draw.io catalog IDs are
-currently passed through text search ([#95](https://github.com/mouadja02/arkitect/issues/95)), and SVG dimensions may come
-from a child element ([#96](https://github.com/mouadja02/arkitect/issues/96)). Review icon selections and fetched-logo aspect
-ratios until those fixes land. PR #97 did not change either path.
+The two issues that made a diagram draw the wrong thing are fixed: an exact
+Draw.io catalog ID is now looked up as an ID rather than passed through text
+search ([#95](https://github.com/mouadja02/arkitect/issues/95)), and an SVG's size is read from its root element in both
+engines ([#96](https://github.com/mouadja02/arkitect/issues/96)). Diagrams built before PR #98 may still carry a wrong mark
+or a stretched logo; rebuild them rather than trusting the old output. What
+remains at the top of the list is legibility rather than identity: a mark
+invisible on a light canvas ([#85](https://github.com/mouadja02/arkitect/issues/85)) and a wordmark drawn too short to read
+([#76](https://github.com/mouadja02/arkitect/issues/76)) are the right artwork, badly presented.
 
 The visual-review issues cover different packs; they are not duplicates. The
 upstream issues overlap in infrastructure: coordinate #74, #82 and #83 rather

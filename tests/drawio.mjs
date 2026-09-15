@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
+import { repoFiles } from './repo-files.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -3122,16 +3123,12 @@ timestream forecast bedrock agentcore veeam azure snowpark parquet delta iceberg
 const SALT = 'arkitect-drawio:v1:';
 const hashToken = (t) => createHash('sha256').update(SALT + t).digest('hex').slice(0, 24);
 
-function repoFiles(dir, acc = []) {
-  for (const name of readdirSync(dir)) {
-    if (['.git', 'node_modules', '.analysis', 'output', 'libraries'].includes(name)) continue;
-    const p = join(dir, name);
-    const st = statSync(p);
-    if (st.isDirectory()) repoFiles(p, acc);
-    else if (/\.(md|json|mjs|js|ps1|yaml|yml|drawio|xml|txt)$/i.test(name) && st.size < 8 * 1024 * 1024) acc.push(p);
-  }
-  return acc;
-}
+// The vendored libraries are other people's bytes, verified by digest
+// elsewhere, and too heavy to tokenize.
+const repoTextFiles = () => repoFiles(ROOT, ({ rel, name, size }) =>
+  !rel.split('/').includes('libraries')
+  && /\.(md|json|mjs|js|ps1|yaml|yml|drawio|xml|txt)$/i.test(name)
+  && size < 8 * 1024 * 1024);
 
 sourceTest('no sensitive string from the reference diagrams appears in the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.drawio.sha256');
@@ -3180,7 +3177,7 @@ sourceTest('no sensitive string from the reference diagrams appears in the repos
     // union with the digests already recorded, so a token once judged sensitive
     // stays guarded even if it turns up in the repo on a later run.
     const alreadyPublic = new Set();
-    for (const f of repoFiles(ROOT)) {
+    for (const f of repoTextFiles()) {
       if (f === hashFile) continue;
       for (const t of tokenize(readFileSync(f, 'utf8'))) alreadyPublic.add(t);
     }
@@ -3207,7 +3204,7 @@ sourceTest('no sensitive string from the reference diagrams appears in the repos
   assert(digests.size > 0, 'no sensitive tokens recorded');
 
   const hits = [];
-  for (const f of repoFiles(ROOT)) {
+  for (const f of repoTextFiles()) {
     if (f === hashFile) continue;
     for (const t of new Set(tokenize(readFileSync(f, 'utf8')))) {
       if (digests.has(hashToken(t))) hits.push(`${relative(ROOT, f)}: "${t}"`);

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
+import { repoFiles, trackedButIgnored } from './repo-files.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -53,21 +54,13 @@ const marketplace = JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'market
 // they are other people's bytes and are verified by digest elsewhere. Inside a
 // library folder only our own Markdown is read - its README and the generated
 // ATTRIBUTION.md files - so their links are checked like any other doc (#87).
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.analysis', 'output']);
 const LIBRARY_DIRS = new Set(['bundled', 'libraries']);
 const TEXT = /\.(md|mdc|json|mjs|js|ps1|ya?ml|txt)$/i;
 const MARKDOWN = /\.mdc?$/i;
-function textFiles(dir, acc = [], inLibrary = false) {
-  for (const name of readdirSync(dir)) {
-    if (SKIP_DIRS.has(name)) continue;
-    const p = join(dir, name);
-    const st = statSync(p);
-    if (st.isDirectory()) textFiles(p, acc, inLibrary || LIBRARY_DIRS.has(name));
-    else if ((inLibrary ? MARKDOWN : TEXT).test(name) && st.size < 4 * 1024 * 1024) acc.push(p);
-  }
-  return acc;
-}
-const FILES = textFiles(ROOT);
+const FILES = repoFiles(ROOT, ({ rel, name, size }) => {
+  const inLibrary = rel.split('/').some((d) => LIBRARY_DIRS.has(d));
+  return (inLibrary ? MARKDOWN : TEXT).test(name) && size < 4 * 1024 * 1024;
+});
 
 // ------------------------------------------------------------------ the CLI
 
@@ -502,6 +495,18 @@ test('gitignore keeps derived and third-party material out of the repository', (
   }
   assert(gi.includes('!skills/arkitect-excalidraw/assets/libraries/bundled/'),
     'the bundled libraries must stay committed - they are the offline icon source');
+});
+
+// An ignore rule does not untrack what is already committed. The rule that
+// excludes the review contact sheets landed first, and a later commit about
+// something else force-added 12 of them anyway: 6.3 MB that .gitignore,
+// package.json and two docs all described as not being in the repository.
+test('nothing git tracks is a file gitignore excludes', () => {
+  const both = trackedButIgnored(ROOT);
+  if (both === null) return 'skip'; // no checkout to ask
+  assert(both.length === 0,
+    'tracked although gitignored - either git rm --cached them or drop the rule:\n        '
+    + both.slice(0, 15).join('\n        '));
 });
 
 // -------------------------------------------------------- conflict markers

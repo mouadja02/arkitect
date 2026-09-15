@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `253 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `254 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -43,6 +43,7 @@ process, so they cannot tread on each other.
 | Committed examples | every documented command that rebuilds a Draw.io or an Excalidraw template passes `--defaults`, so a personal style override never reaches the repository; each engine must have at least one such command (#89, #90) |
 | Packaging | the real `npm pack` tarball, with a sentinel planted in every local-only location, ships every bundled asset and none of the caches, cached logos, built icons, downloaded libraries, contact-sheet HTML, browser profiles or backups, and unpacks under 60 MB; extracted outside the checkout its CLI runs `version`, `doctor`, both icon searches and a build and validate per engine, and `test` exits 2. Uses the npm beside Node, offline; skips only if there is none (#38) |
 | Redaction | no sensitive string from a reference diagram appears anywhere in the repository |
+| Repository contents | the repository-wide checks - broken docs links and both redaction guards - read the files git says are ours: tracked, plus new ones that are not ignored, so a local agent install or any other untracked directory in the checkout is not mistaken for our own text; nothing git tracks is a file `.gitignore` excludes, which an ignore rule written after a force-add cannot fix on its own |
 
 ### Draw.io
 

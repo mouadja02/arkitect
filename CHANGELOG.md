@@ -47,10 +47,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
-- Add a dated project-status page and reconcile issue outcomes, remaining scope and next priorities with main.
-
-- Both engines share one backup and retention implementation, preserving existing imports and generated output (#97).
-
+- `docs/status.md` records what is done on main, what is left and in what
+  order, dated, with every issue outcome reconciled against the repository
+- Both engines share one backup and retention implementation, keeping their
+  existing imports and generated output (#97)
 - The AWS pack is rebuilt from Amazon's official July 2026 icon package: 311
   icons, up from 243, embedded verbatim and pinned by sha256 (#8)
 - The AgentCore icon's five raster-only feature marks shrink from 4.65 MB to
@@ -80,15 +80,28 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The repository-wide checks read the files git says are ours - tracked, plus
+  new ones that are not ignored - instead of walking the working tree past
+  three hand-written skip lists, so a local agent install in the repository
+  root no longer fails the docs-link and redaction guards on a stranger's
+  Markdown
+- The 12 Azure review contact sheets are untracked: 6.3 MB that `.gitignore`,
+  `package.json` and two docs all described as not being in the repository,
+  and a check now fails on any tracked file gitignore excludes
+- `icon-build.mjs` no longer carries a raw NUL byte, which made every diff and
+  grep treat the file as binary; the two tar type bytes it compared against
+  were unreachable anyway
 - A spec naming an icon by its exact catalog id now draws that id's own mark:
   `<pack>/<slug>` is looked up as an id, not passed through text search, which
   drew another product's mark for 752 of the 4,843 committed ids (#95)
 - A fetched logo is sized from the root `<svg>` element's own attributes, so a
   child `<rect>` or a `stroke-width` can no longer set its aspect, and both
   engines now read the same bytes the same way (#96)
-- Reject invalid installer arguments before writing adapters, handle prototype-key commands as usage errors, and reject unknown test suites and flags (#97).
-- Correct stale CLI examples and preview requirements in the docs, and simplify the README introduction (#97).
-
+- An invalid installer argument is refused before any adapter is written, a
+  prototype-key command is a usage error rather than a crash, and an unknown
+  test suite or flag is rejected (#97)
+- The docs no longer show stale CLI examples or overstate what a preview
+  needs, and the README introduction is shorter (#97)
 - The Excalidraw library README links to `docs/excalidraw-libraries.md`
   instead of a page that no longer exists, and the docs link check now reads
   first-party Markdown inside library folders (#87)
@@ -249,6 +262,5 @@ First public release. Two diagram engines, one contract, no dependencies.
 - Agent adapters for Claude Code (a 4-skill plugin), Codex, Cursor, OpenCode,
   GitHub Copilot, Antigravity and Pi, generated with the install path baked in.
 - An offline test suite of 118 checks across both engines and the toolkit,
-  including a redaction
-  check that fails the build if anything from a reference diagram leaks into the
-  repository.
+  including a redaction check that fails the build if anything from a
+  reference diagram leaks into the repository.

@@ -41,8 +41,9 @@ say so in the report.
    the spec: `{ "kind": "icon", "icon": "<id>" }` — the builder embeds the artwork; do
    not fetch it into context yourself. An exact `<pack>/<slug>` is looked up as an id,
    never searched, so it draws that mark or nothing; a node that also pins a different
-   `pack` is a contradiction and is reported instead of resolved (#95). `--cell`/`--style`/`--data` print the raw XML
-   cell, style string or data URI for that icon and exist only for the hand-written
+   `pack` is a contradiction and is reported instead of resolved (#95).
+   `--cell`/`--style`/`--data` print the raw XML cell, style string or data URI
+   for that icon and exist only for the hand-written
    XML exception (step 4) — redirect their output straight to a file
    (`> cell.xml`), never read the bytes into the conversation.
 

@@ -58,3 +58,7 @@ skills/arkitect-drawio/assets/libraries/contact-sheets/.shot/
 skills/arkitect-drawio/assets/libraries/contact-sheets/review/
 
 *PLAN*.md
+
+# A local Claude Code install, unlike the .codex/, .cursor/ and .opencode/
+# adapters beside it, which are committed and ship with the plugin.
+.claude/

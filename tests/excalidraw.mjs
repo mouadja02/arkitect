@@ -19,6 +19,7 @@ import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
+import { repoFiles } from './repo-files.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -1476,15 +1477,13 @@ function sensitiveTokens(s) {
 const SALT = 'arkitect-excalidraw-redaction-v1';
 const hashToken = (t) => createHash('sha256').update(SALT + t).digest('hex').slice(0, 16);
 
-function repoFiles(dir, out = []) {
-  for (const name of readdirSync(dir, { withFileTypes: true })) {
-    if (['.git', 'node_modules', '.analysis', 'output', 'icons', 'libraries'].includes(name.name)) continue;
-    const p = join(dir, name.name);
-    if (name.isDirectory()) repoFiles(p, out);
-    else if (/\.(md|json|mjs|ps1|yaml|yml|txt|excalidraw|excalidrawlib)$/.test(name.name)) out.push(p);
-  }
-  return out;
-}
+// The icon and library folders are other people's bytes, verified by digest
+// elsewhere, and too heavy to tokenize.
+const repoTextFiles = () => repoFiles(ROOT, ({ rel, name }) => {
+  const dirs = rel.split('/');
+  return !dirs.includes('icons') && !dirs.includes('libraries')
+    && /\.(md|json|mjs|ps1|yaml|yml|txt|excalidraw|excalidrawlib)$/.test(name);
+});
 
 sourceTest('no string from a reference scene leaks into the repository', () => {
   const hashFile = join(HERE, 'sensitive-tokens.excalidraw.sha256');
@@ -1514,7 +1513,7 @@ sourceTest('no string from a reference scene leaks into the repository', () => {
     // union with the digests already recorded, so a token once judged sensitive
     // stays guarded even if it turns up in the repo on a later run.
     const alreadyPublic = new Set();
-    for (const f of repoFiles(ROOT)) {
+    for (const f of repoTextFiles()) {
       if (f === hashFile) continue;
       for (const t of tokenize(readFileSync(f, 'utf8'))) alreadyPublic.add(t);
     }
@@ -1537,7 +1536,7 @@ sourceTest('no string from a reference scene leaks into the repository', () => {
   if (!digests.size) return 'skip';
 
   const hits = [];
-  for (const f of repoFiles(ROOT)) {
+  for (const f of repoTextFiles()) {
     if (f === hashFile) continue;
     for (const t of new Set(tokenize(readFileSync(f, 'utf8')))) {
       if (digests.has(hashToken(t))) hits.push(`${relative(ROOT, f)}: "${t}"`);
