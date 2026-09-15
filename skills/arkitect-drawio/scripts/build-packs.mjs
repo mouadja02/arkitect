@@ -572,6 +572,18 @@ function writeCatalog(manifest, built, sourceHashes) {
     });
   }
 
+  // A vendor can ship one file under several names: azure/groups and
+  // azure/my-customers are the same picture. Every id stays, and each names
+  // the others, so two concepts are never drawn with one icon unnoticed (#77).
+  const byPayload = new Map();
+  for (const i of icons.filter((row) => row.bytes === 'committed')) {
+    byPayload.set(i.sha256, [...(byPayload.get(i.sha256) ?? []), i]);
+  }
+  for (const group of byPayload.values()) {
+    if (group.length < 2) continue;
+    for (const i of group) i.sameArtworkAs = group.filter((other) => other !== i).map((other) => other.id);
+  }
+
   const sources = {};
   for (const [key, src] of Object.entries(manifest.sources)) {
     sources[key] = {

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-15T22:16:52.788Z",
+  "generated": "2026-09-15T22:23:04.558Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
@@ -822,7 +822,10 @@
       "height": 78,
       "sha256": "09596bda3e7cd42288deec94d3b4647bcc951c3b8855236e8a88d31e1766636f",
       "bytes": "committed",
-      "libraryIndex": 7
+      "libraryIndex": 7,
+      "sameArtworkAs": [
+        "aws/amazon-bedrock-agentcore-2"
+      ]
     },
     {
       "ambiguousTitle": true,
@@ -861,7 +864,10 @@
       "height": 78,
       "sha256": "09596bda3e7cd42288deec94d3b4647bcc951c3b8855236e8a88d31e1766636f",
       "bytes": "committed",
-      "libraryIndex": 8
+      "libraryIndex": 8,
+      "sameArtworkAs": [
+        "aws/amazon-bedrock-agentcore"
+      ]
     },
     {
       "id": "aws/amazon-bedrock-agentcore-gateway",
@@ -10843,7 +10849,10 @@
       "height": 78,
       "sha256": "4b9a592f8d3cd019911334f33a371e9dcd2cd29765514b5cf29c27ac16ba94ad",
       "bytes": "committed",
-      "libraryIndex": 1
+      "libraryIndex": 1,
+      "sameArtworkAs": [
+        "azure/entra-connect-health"
+      ]
     },
     {
       "id": "azure/activity-log",
@@ -14468,7 +14477,10 @@
       "height": 78,
       "sha256": "cc9bc01d8cbe638e550f39b6cd23259b6f943d32ede85883112796d1b70e2a58",
       "bytes": "committed",
-      "libraryIndex": 127
+      "libraryIndex": 127,
+      "sameArtworkAs": [
+        "azure/sql-data-warehouses"
+      ]
     },
     {
       "id": "azure/azure-sql-vm",
@@ -16127,7 +16139,10 @@
       "height": 78,
       "sha256": "81954a481503057498d543a51863b2eb4673284e109662cdc421051d11dba25c",
       "bytes": "committed",
-      "libraryIndex": 192
+      "libraryIndex": 192,
+      "sameArtworkAs": [
+        "azure/kubernetes-services"
+      ]
     },
     {
       "id": "azure/content-moderators",
@@ -17905,7 +17920,10 @@
       "height": 78,
       "sha256": "7ab5cc684d995ff898448b32424a55bbb5c6669a83a0bb7c547047fec21f292f",
       "bytes": "committed",
-      "libraryIndex": 264
+      "libraryIndex": 264,
+      "sameArtworkAs": [
+        "azure/disks-classic"
+      ]
     },
     {
       "id": "azure/disks-classic",
@@ -17930,7 +17948,10 @@
       "height": 78,
       "sha256": "7ab5cc684d995ff898448b32424a55bbb5c6669a83a0bb7c547047fec21f292f",
       "bytes": "committed",
-      "libraryIndex": 265
+      "libraryIndex": 265,
+      "sameArtworkAs": [
+        "azure/disks"
+      ]
     },
     {
       "id": "azure/disks-snapshots",
@@ -18383,7 +18404,10 @@
       "height": 78,
       "sha256": "4b9a592f8d3cd019911334f33a371e9dcd2cd29765514b5cf29c27ac16ba94ad",
       "bytes": "committed",
-      "libraryIndex": 283
+      "libraryIndex": 283,
+      "sameArtworkAs": [
+        "azure/active-directory-connect-health"
+      ]
     },
     {
       "id": "azure/entra-connect-sync",
@@ -19698,7 +19722,10 @@
       "height": 78,
       "sha256": "87bcd25a5ea0f67237e4a92b05c852ece0a9aa2963c447b0cbfd9bbaabb9c652",
       "bytes": "committed",
-      "libraryIndex": 337
+      "libraryIndex": 337,
+      "sameArtworkAs": [
+        "azure/genomics-accounts"
+      ]
     },
     {
       "id": "azure/genomics-accounts",
@@ -19723,7 +19750,10 @@
       "height": 78,
       "sha256": "87bcd25a5ea0f67237e4a92b05c852ece0a9aa2963c447b0cbfd9bbaabb9c652",
       "bytes": "committed",
-      "libraryIndex": 338
+      "libraryIndex": 338,
+      "sameArtworkAs": [
+        "azure/genomics"
+      ]
     },
     {
       "id": "azure/globe-error",
@@ -19814,7 +19844,10 @@
       "height": 78,
       "sha256": "e9a41be8418dd01a39a810f2a1f7afec638171cc35f51dbeeeefa96d5e876564",
       "bytes": "committed",
-      "libraryIndex": 342
+      "libraryIndex": 342,
+      "sameArtworkAs": [
+        "azure/my-customers"
+      ]
     },
     {
       "id": "azure/guide",
@@ -20491,7 +20524,11 @@
       "height": 78,
       "sha256": "a90c553f57031340c6ef44e3773c0a49249f9783eb26d83a6590b95c5370fb04",
       "bytes": "committed",
-      "libraryIndex": 370
+      "libraryIndex": 370,
+      "sameArtworkAs": [
+        "azure/intune-app-protection",
+        "azure/intune-for-education"
+      ]
     },
     {
       "id": "azure/intune-app-protection",
@@ -20516,7 +20553,11 @@
       "height": 78,
       "sha256": "a90c553f57031340c6ef44e3773c0a49249f9783eb26d83a6590b95c5370fb04",
       "bytes": "committed",
-      "libraryIndex": 371
+      "libraryIndex": 371,
+      "sameArtworkAs": [
+        "azure/intune",
+        "azure/intune-for-education"
+      ]
     },
     {
       "id": "azure/intune-for-education",
@@ -20541,7 +20582,11 @@
       "height": 78,
       "sha256": "a90c553f57031340c6ef44e3773c0a49249f9783eb26d83a6590b95c5370fb04",
       "bytes": "committed",
-      "libraryIndex": 372
+      "libraryIndex": 372,
+      "sameArtworkAs": [
+        "azure/intune",
+        "azure/intune-app-protection"
+      ]
     },
     {
       "id": "azure/intune-trends",
@@ -20842,7 +20887,10 @@
       "height": 78,
       "sha256": "81954a481503057498d543a51863b2eb4673284e109662cdc421051d11dba25c",
       "bytes": "committed",
-      "libraryIndex": 384
+      "libraryIndex": 384,
+      "sameArtworkAs": [
+        "azure/container-services-deprecated"
+      ]
     },
     {
       "id": "azure/lab-accounts",
@@ -22380,7 +22428,10 @@
       "height": 78,
       "sha256": "e9a41be8418dd01a39a810f2a1f7afec638171cc35f51dbeeeefa96d5e876564",
       "bytes": "committed",
-      "libraryIndex": 446
+      "libraryIndex": 446,
+      "sameArtworkAs": [
+        "azure/groups"
+      ]
     },
     {
       "id": "azure/nat",
@@ -22750,7 +22801,10 @@
       "height": 78,
       "sha256": "85e1660984b32b6bc5e608fbf453c0cf98be7781e72c146d8f4ff6d18d776722",
       "bytes": "committed",
-      "libraryIndex": 461
+      "libraryIndex": 461,
+      "sameArtworkAs": [
+        "azure/vm-images-classic"
+      ]
     },
     {
       "id": "azure/osconfig",
@@ -23791,7 +23845,10 @@
       "height": 78,
       "sha256": "faef3c4e9db93f7db3e7507e03d0f15a5e145cc9e796edaf6aa79074e8a72a2a",
       "bytes": "committed",
-      "libraryIndex": 503
+      "libraryIndex": 503,
+      "sameArtworkAs": [
+        "azure/search-grid"
+      ]
     },
     {
       "id": "azure/resource-groups",
@@ -24228,7 +24285,10 @@
       "height": 78,
       "sha256": "faef3c4e9db93f7db3e7507e03d0f15a5e145cc9e796edaf6aa79074e8a72a2a",
       "bytes": "committed",
-      "libraryIndex": 521
+      "libraryIndex": 521,
+      "sameArtworkAs": [
+        "azure/resource-group-list"
+      ]
     },
     {
       "id": "azure/security",
@@ -24788,7 +24848,10 @@
       "height": 78,
       "sha256": "cc9bc01d8cbe638e550f39b6cd23259b6f943d32ede85883112796d1b70e2a58",
       "bytes": "committed",
-      "libraryIndex": 544
+      "libraryIndex": 544,
+      "sameArtworkAs": [
+        "azure/azure-sql-server-stretch-databases"
+      ]
     },
     {
       "id": "azure/sql-database",
@@ -25887,7 +25950,10 @@
       "height": 78,
       "sha256": "801b552e1b3c9486ebfb04568c57a2f67d0ae7370596e16f3361a40741ee9427",
       "bytes": "committed",
-      "libraryIndex": 588
+      "libraryIndex": 588,
+      "sameArtworkAs": [
+        "azure/workload-orchestration"
+      ]
     },
     {
       "id": "azure/traffic-manager-profiles",
@@ -26591,7 +26657,10 @@
       "height": 78,
       "sha256": "85e1660984b32b6bc5e608fbf453c0cf98be7781e72c146d8f4ff6d18d776722",
       "bytes": "committed",
-      "libraryIndex": 616
+      "libraryIndex": 616,
+      "sameArtworkAs": [
+        "azure/os-images-classic"
+      ]
     },
     {
       "id": "azure/vm-scale-sets",
@@ -27031,7 +27100,10 @@
       "height": 78,
       "sha256": "801b552e1b3c9486ebfb04568c57a2f67d0ae7370596e16f3361a40741ee9427",
       "bytes": "committed",
-      "libraryIndex": 634
+      "libraryIndex": 634,
+      "sameArtworkAs": [
+        "azure/toolchain-orchestrator"
+      ]
     },
     {
       "id": "azure/workspace-gateway",
@@ -41740,7 +41812,10 @@
       "height": 78,
       "sha256": "c185381f7690b05bc40336b1899c0a729396ca1a202859b67914a40ed763917f",
       "bytes": "committed",
-      "libraryIndex": 13
+      "libraryIndex": 13,
+      "sameArtworkAs": [
+        "github/check-circle"
+      ]
     },
     {
       "id": "github/issue-reopened",
@@ -42070,7 +42145,10 @@
       "height": 78,
       "sha256": "c185381f7690b05bc40336b1899c0a729396ca1a202859b67914a40ed763917f",
       "bytes": "committed",
-      "libraryIndex": 31
+      "libraryIndex": 31,
+      "sameArtworkAs": [
+        "github/issue-closed"
+      ]
     },
     {
       "id": "github/x-circle",
