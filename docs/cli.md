@@ -30,8 +30,8 @@ arkitect drawio validate docs/arch.drawio
 arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells
 arkitect drawio analyze docs/arch.drawio --page 0 --images
-arkitect drawio library --verify                      # 14 library invariants
-arkitect drawio library --build                       # merged library + icon catalog
+arkitect drawio packs --verify                        # verify committed packs against the manifest
+arkitect drawio packs --all                           # rebuild packs and icon catalog from pinned sources
 arkitect drawio build spec.json --out docs/arch.drawio --defaults   # the house style, ignoring your own
 arkitect drawio build --print-style                   # the style a build uses, and where it came from
 arkitect drawio learn --sources <files> --merge       # rebuild your style record
@@ -129,7 +129,7 @@ skills/arkitect-drawio/
   assets/logos/         product logo cache (gitignored)
   scripts/              analysis, icon lookup, generation, validation, rendering
   scripts/lib/          the .drawio parsing core, style tokens, and what both engines
-                        share: the style store, override layer and findings/apply workflow
+                        share: backups, the style store, override layer and findings/apply workflow
 skills/arkitect-excalidraw/
   SKILL.md              the Excalidraw workflow contract
   references/           style-guide.md, pattern-catalog.md, excalidraw-format.md,

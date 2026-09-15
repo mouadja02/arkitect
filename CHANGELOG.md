@@ -47,6 +47,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- Both engines share one backup and retention implementation, preserving existing imports and generated output.
+
 - The AWS pack is rebuilt from Amazon's official July 2026 icon package: 311
   icons, up from 243, embedded verbatim and pinned by sha256 (#8)
 - The AgentCore icon's five raster-only feature marks shrink from 4.65 MB to
@@ -75,6 +77,9 @@ separate file, no naming scheme, no required format beyond that.
   tool were more apparatus than a project this size needs.
 
 ### Fixed
+
+- Reject invalid installer arguments before writing adapters, handle prototype-key commands as usage errors, and reject unknown test suites and flags.
+- Correct stale CLI examples and preview requirements in the docs, and simplify the README introduction.
 
 - The Excalidraw library README links to `docs/excalidraw-libraries.md`
   instead of a page that no longer exists, and the docs link check now reads

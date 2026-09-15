@@ -135,7 +135,7 @@ async function doctor() {
 }
 
 const argv = process.argv.slice(2);
-const first = ALIASES[argv[0]] ?? argv[0];
+const first = Object.hasOwn(ALIASES, argv[0]) ? ALIASES[argv[0]] : argv[0];
 
 if (!first || first === '-h' || first === '--help' || first === 'help') { console.log(usage()); process.exit(0); }
 if (first === 'version' || first === '--version' || first === '-v') {
@@ -159,7 +159,7 @@ if (first === 'test') {
   run(suite, argv.slice(1), ROOT);
 }
 
-const engine = COMMANDS[first];
+const engine = Object.hasOwn(COMMANDS, first) ? COMMANDS[first] : null;
 if (!engine) {
   console.error(`unknown engine "${argv[0]}". Expected one of: ${Object.keys(COMMANDS).join(', ')}\n`);
   console.error(usage());
@@ -167,7 +167,7 @@ if (!engine) {
 }
 
 const verb = argv[1];
-const entry = engine[verb];
+const entry = Object.hasOwn(engine, verb) ? engine[verb] : null;
 if (!entry) {
   console.error(`unknown ${first} command "${verb ?? ''}". Expected one of: ${Object.keys(engine).join(', ')}\n`);
   console.error(usage());

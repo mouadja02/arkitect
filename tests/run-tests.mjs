@@ -25,15 +25,17 @@ const SUITES = [
   { name: 'toolkit', file: 'toolkit.mjs', key: 'toolkit' },
 ];
 
-const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const wanted = process.argv.slice(2);
+const usage = 'usage: node tests/run-tests.mjs [drawio|excalidraw|toolkit ...]';
+if (wanted.includes('--help') || wanted.includes('-h')) { console.log(usage); process.exit(0); }
+const unknown = wanted.filter((name) => !SUITES.some((suite) => suite.key === name));
+if (unknown.length) {
+  console.error('unknown suite or option: ' + unknown.join(', ') + '\n' + usage);
+  process.exit(2);
+}
 const suites = wanted.length
   ? SUITES.filter((s) => wanted.includes(s.key))
   : SUITES;
-
-if (!suites.length) {
-  console.error(`unknown suite. known: ${SUITES.map((s) => s.key).join(', ')}`);
-  process.exit(2);
-}
 
 const totals = { pass: 0, fail: 0, skip: 0 };
 let sourceDependent = 0;
