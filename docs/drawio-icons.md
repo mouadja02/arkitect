@@ -65,8 +65,8 @@ Neither rule changes a score, only whether the top result may be used without as
 Lowering the score instead would widen the margin over the runner-up and hand confidence
 to a *different* wrong answer — `delta` would become the airline.
 
-This is measured, not asserted. `tests/icon-queries.json` is an answer key of 375
-queries — the vocabulary of data, ML, platform and cloud engineers, plus 28 that must
+This is measured, not asserted. `tests/icon-queries.json` is an answer key of 471
+queries — the vocabulary of data, ML, platform and cloud engineers, plus 21 that must
 come back flagged — and the suite fails on any confident wrong answer, or if precision
 at rank 1 drops below its floor. Change a judgement row deliberately, never to make a
 tuning change pass.

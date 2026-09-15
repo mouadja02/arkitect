@@ -14,6 +14,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
+import { liveCounts, checkDocCounts } from './icon-count-guard.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -341,6 +342,53 @@ test('every advertised icon count agrees, so one cannot drift from the rest', ()
   eq(marketplace.plugins[0].description.includes(PHRASE), true, 'marketplace.json plugin description');
   eq(pkg.description.includes(PHRASE), true, 'package.json description');
   eq(adapters.ADAPTERS.agents.render('/opt/arkitect').includes(PHRASE), true, 'install-agent.mjs agents body');
+});
+
+// A rounded phrase cannot catch a stale exact number, and more than a dozen
+// docs quote one. Each is checked against the catalog, the Excalidraw library
+// index and the two answer keys, and the failure names the value to write (#78).
+const iconCounts = () => {
+  const json = (...p) => JSON.parse(readFileSync(join(ROOT, ...p), 'utf8'));
+  return liveCounts({
+    catalog: json('skills', 'arkitect-drawio', 'references', 'icon-catalog.json'),
+    libraries: json('skills', 'arkitect-excalidraw', 'assets', 'libraries', 'bundled', 'index.json'),
+    drawioQueries: json('tests', 'icon-queries.json'),
+    excalidrawQueries: json('tests', 'excalidraw-icon-queries.json'),
+  });
+};
+const docText = (rel) => {
+  const abs = join(ROOT, ...rel.split('/'));
+  return existsSync(abs) ? readFileSync(abs, 'utf8') : null;
+};
+
+test('every exact icon count a doc quotes matches what ships (#78)', () => {
+  const problems = checkDocCounts({ live: iconCounts(), read: docText });
+  assert(problems.length === 0, problems.join('\n        '));
+});
+
+// The two ways a quoted count goes wrong, on the real docs with one bent.
+test('the count guard catches a drifted number and a dropped sentence (#78)', () => {
+  const live = iconCounts();
+  const committed = live.committed.toLocaleString('en-US');
+
+  const drifted = checkDocCounts({
+    live,
+    read: (rel) => (rel === 'docs/icons.md'
+      ? docText(rel).replace(`# ${committed} marks in`, '# 4,000 marks in')
+      : docText(rel)),
+  });
+  assert(drifted.some((p) => p.startsWith('docs/icons.md: quotes 4,000 marks that ship their artwork')
+    && p.endsWith(`so write ${committed}`)), `a drifted number went unreported: ${drifted.join(' | ')}`);
+
+  // Rewording past the pattern hides the number instead of correcting it.
+  const dropped = checkDocCounts({
+    live,
+    read: (rel) => (rel === 'docs/drawio-icons.md'
+      ? docText(rel).replace('an answer key of', 'an answer key of about')
+      : docText(rel)),
+  });
+  assert(dropped.some((p) => p.startsWith('docs/drawio-icons.md: no longer says answer-key queries with an expected answer')),
+    `a dropped sentence went unreported: ${dropped.join(' | ')}`);
 });
 
 test('all six skills are well formed, and only the learning and apply ones are manual', () => {

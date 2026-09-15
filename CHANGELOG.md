@@ -13,6 +13,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Every exact icon count a doc quotes is checked against the catalog, the
+  Excalidraw library index and the two answer keys, and the failure names the
+  value to write (#78)
 - Draw.io ids that draw identical artwork name each other: the catalog's
   `sameArtworkAs`, shown by `find-icon`, and a build reports nodes that use
   different ids for the same picture under `sameArtwork` (#77)
@@ -83,6 +86,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- `docs/drawio-icons.md` no longer understates the Draw.io answer key: it holds
+  471 queries with an expected answer and 21 that must come back flagged, not
+  the 375 and 28 it claimed (#78)
 - An on-demand icon with no pinned artwork file no longer hands back a
   `fetch-logo --url <logo URL from ...>` command no one can run: catalog rows
   say `artwork: "pinned"` or `"none pinned"`, only the 36 pinned entries carry a
