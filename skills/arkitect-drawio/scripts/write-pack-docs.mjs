@@ -22,6 +22,7 @@ const ATTRIBUTION = join(SKILL_ROOT, 'assets', 'libraries', 'ATTRIBUTION.md');
 
 const iconsIn = (packId, kind) =>
   CATALOG.icons.filter((i) => i.pack === packId && i.bytes === kind);
+const PINNED = CATALOG.icons.filter((i) => i.bytes === 'on-demand' && i.artwork === 'pinned');
 
 // --------------------------------------------------------------- pack index
 
@@ -33,17 +34,18 @@ function packIndex() {
   out.push('packs and rerun it.');
   out.push('');
   out.push(`${CATALOG.counts.total} catalogued entries across ${CATALOG.counts.packs} packs: `
-    + `${CATALOG.counts.committed} ship their artwork, ${CATALOG.counts.onDemand} are catalogued `
-    + 'with a URL and a fetch command because their marks carry no redistribution licence.');
+    + `${CATALOG.counts.committed} ship their artwork and ${CATALOG.counts.onDemand} are catalogued without it. `
+    + `${PINNED.length} of those have a pinned artwork file and a fetch command; the other `
+    + `${CATALOG.counts.onDemand - PINNED.length} have nothing a command can download.`);
   out.push('');
   out.push('Search reaches every pack at once. A lower `rank` wins a tie, so a curated pack');
   out.push('always beats the catch-all, and `--context <pack,pack>` tips ties toward the stack');
   out.push('being drawn.');
   out.push('');
-  out.push('| Pack | Rank | Icons | On demand | About |');
+  out.push('| Pack | Rank | Icons | On demand (pinned) | About |');
   out.push('|---|---|---|---|---|');
   for (const p of CATALOG.packs) {
-    out.push(`| \`${p.id}\` | ${p.rank} | ${p.count} | ${p.onDemand || '-'} | ${p.description} |`);
+    out.push(`| \`${p.id}\` | ${p.rank} | ${p.count} | ${p.onDemand ? `${p.onDemand} (${p.onDemandPinned})` : '-'} | ${p.description} |`);
   }
   out.push('');
 
@@ -73,17 +75,29 @@ function packIndex() {
     out.push('');
 
     const onDemand = iconsIn(p.id, 'on-demand');
+    const pinned = onDemand.filter((i) => i.artwork === 'pinned');
+    const unpinned = onDemand.filter((i) => i.artwork !== 'pinned');
     if (onDemand.length) {
-      out.push(`**Catalogued without artwork (${onDemand.length}).** No bytes ship for these. `
-        + '`find-icon` returns the command; `build-diagram` refuses to draw them rather than');
-      out.push('substituting another product\'s mark.');
+      out.push(`**Catalogued without artwork (${onDemand.length}).** No bytes ship for these, and `
+        + '`build-diagram` refuses to draw them rather than substituting another product\'s mark.');
       out.push('');
-      out.push('| Product | Why | Where to get it |');
+    }
+    if (pinned.length) {
+      out.push(`*Fetchable with your own permission (${pinned.length}).* The artwork file is pinned, `
+        + 'so `find-icon` returns a `fetch-logo` command that downloads it.');
+      out.push('');
+      out.push('| Product | Why it does not ship | Artwork |');
       out.push('|---|---|---|');
-      for (const i of onDemand) {
-        const where = i.upstreamUrl ? `\`${i.upstreamUrl}\`` : (i.brandUrl ? `[brand page](${i.brandUrl})` : 'vendor brand page');
-        out.push(`| ${i.title} | ${i.reason} | ${where} |`);
-      }
+      for (const i of pinned) out.push(`| ${i.title} | ${i.reason} | \`${i.upstreamUrl}\` |`);
+      out.push('');
+    }
+    if (unpinned.length) {
+      out.push(`*Nothing to fetch (${unpinned.length}).* No file a command can download is pinned, so `
+        + 'these draw as a named placeholder.');
+      out.push('');
+      out.push('| Product | Why | Brand page |');
+      out.push('|---|---|---|');
+      for (const i of unpinned) out.push(`| ${i.title} | ${i.reason} | ${i.brandUrl ? `[brand page](${i.brandUrl})` : '-'} |`);
       out.push('');
     }
   }
@@ -155,7 +169,7 @@ function attribution() {
   out.push('## What is deliberately not here');
   out.push('');
   const onDemand = CATALOG.icons.filter((i) => i.bytes === 'on-demand');
-  out.push(`${onDemand.length} products are catalogued with a URL and a fetch command but no bytes,`);
+  out.push(`${onDemand.length} products are catalogued with no bytes (${PINNED.length} of them with a pinned artwork file and a fetch command),`);
   out.push('because no permissively licensed mark for them exists, or because the brand owner asked');
   out.push('for it to be removed from the source we would otherwise use. Shipping them anyway would');
   out.push('contradict the reason the rest of this file can be written honestly.');

@@ -78,13 +78,19 @@ use their icons in architecture diagrams and forbid altering the icon shape, so 
 no optimisation pass — and the untouched bytes keep the recorded SHA-256 meaningful.
 
 158 products (`node scripts/find-icon.mjs --stats` has the live count) are
-catalogued with a URL, a licence note and the exact `fetch-logo` command, but
-**no bytes**. For most, no permissively licensed mark exists. Seven were
-removed from Simple Icons 16 at the brand owner's request; shipping them from
-an older pin would have made the rest of `ATTRIBUTION.md` dishonest. A few
-Apache projects have a licensed logo whose official artwork does not draw
-correctly at icon size, and each entry says why. `find-icon` hands back the
-command; `build-diagram` refuses to draw them.
+catalogued with a licence note but **no bytes**. For most, no permissively
+licensed mark exists. Seven were removed from Simple Icons 16 at the brand
+owner's request; shipping them from an older pin would have made the rest of
+`ATTRIBUTION.md` dishonest. A few Apache projects have a licensed logo whose
+official artwork does not draw correctly at icon size, and each entry says why.
+`build-diagram` refuses to draw any of them.
+
+Each entry says whether there is anything to fetch (#84). `artwork: "pinned"`
+means the file is pinned, and `find-icon` hands back the `fetch-logo` command
+that downloads it, for someone with their own permission to use the mark.
+`artwork: "none pinned"` means the vendor publishes nothing a command can
+download: a press kit, a request form or no logo at all. Those draw as a named
+placeholder.
 
 A licence that covers the artwork, or a trademark policy that explicitly allows
 identifying use, is what lets a mark ship; a repository holding the file is not. The

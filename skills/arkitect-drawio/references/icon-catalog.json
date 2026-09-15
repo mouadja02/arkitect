@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-13T21:38:39.978Z",
+  "generated": "2026-09-15T22:16:52.788Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
@@ -357,6 +357,7 @@
       "file": "aws.drawio",
       "count": 311,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "377f0e08063cbd101b4b2b38f5df01dcb00d089affe165313e124da3812b765d",
       "note": "Built from Amazon's AWS Architecture Icons package (July 2026): every service icon at 64px, embedded verbatim. The five AgentCore feature marks the package does not carry come from aws-agentcore-extras. renames and duplicates keep every id the original 243-entry palette used, and legacyTitles keeps its captions searchable."
     },
@@ -368,6 +369,7 @@
       "file": "azure.drawio",
       "count": 638,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "4c4c31f02e9f8f46a8fa82b3c27d16e55d2851a7671c704d362f9841f6289b27"
     },
     {
@@ -378,6 +380,7 @@
       "file": "gcp.drawio",
       "count": 249,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "d6f58520d156f6e258d85ac049fd995a23c3c06bbeeaedd68c5297acaa547c6d",
       "note": "Google publishes 19 current \"core product\" icons, 26 category icons and a legacy archive of per-service marks. Current artwork wins on a name clash; supersedes covers the pairs Google renamed rather than repeated."
     },
@@ -389,6 +392,7 @@
       "file": "data-platforms.drawio",
       "count": 31,
       "onDemand": 29,
+      "onDemandPinned": 3,
       "sha256": "5940605b3133e90ca31dae434a5106ede53a1a7bac7389aabdd1bc32d1a01e62"
     },
     {
@@ -399,6 +403,7 @@
       "file": "databases.drawio",
       "count": 40,
       "onDemand": 5,
+      "onDemandPinned": 3,
       "sha256": "bf7971e9b3706d19e1f37f1ee1b0f5ada4e5c29384a85793603684922f822275"
     },
     {
@@ -409,6 +414,7 @@
       "file": "ai-frameworks.drawio",
       "count": 43,
       "onDemand": 28,
+      "onDemandPinned": 1,
       "sha256": "64f7803b0ad99bf07d7c0548ec793b9657c3b05e9cf968df66c81ca4eb8a45d1"
     },
     {
@@ -419,6 +425,7 @@
       "file": "ml-training.drawio",
       "count": 35,
       "onDemand": 14,
+      "onDemandPinned": 4,
       "sha256": "c78990fb309b3acfb0cbd5b6ee3b2a3d759419800d984462d7f41b3189032305"
     },
     {
@@ -429,6 +436,7 @@
       "file": "streaming-orchestration.drawio",
       "count": 23,
       "onDemand": 22,
+      "onDemandPinned": 6,
       "sha256": "74d6037dbdd7e99320fa797587d185d89af20e3bda9b18f57d6237cb83ae094f"
     },
     {
@@ -439,6 +447,7 @@
       "file": "observability.drawio",
       "count": 27,
       "onDemand": 11,
+      "onDemandPinned": 1,
       "sha256": "e59f62412762bdce21024e826ef7b57a3633a1ddb01bad33c46f7a0566a0fc0b"
     },
     {
@@ -449,6 +458,7 @@
       "file": "devops.drawio",
       "count": 60,
       "onDemand": 16,
+      "onDemandPinned": 6,
       "sha256": "fb6d0d24b7e0fcafe291254717efb6ef672b11404ff80a7c7cf94371d26ac0f9"
     },
     {
@@ -459,6 +469,7 @@
       "file": "security-identity.drawio",
       "count": 32,
       "onDemand": 17,
+      "onDemandPinned": 7,
       "sha256": "ab75dc8b6e8e0506aa4ac0c8890bd42c3f81032caf2a1045313c47eacfb17c00"
     },
     {
@@ -469,6 +480,7 @@
       "file": "github.drawio",
       "count": 38,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "46160e69a1762e6c166d8ba6aefb3b94919a09b3bdd324aab94583ebe96663c7"
     },
     {
@@ -479,6 +491,7 @@
       "file": "saas-collab.drawio",
       "count": 31,
       "onDemand": 15,
+      "onDemandPinned": 5,
       "sha256": "d3cfb2340be0bb1c946499059f2a00397291edf57d670117c2cc2816b092e425"
     },
     {
@@ -489,6 +502,7 @@
       "file": "languages-runtimes.drawio",
       "count": 84,
       "onDemand": 1,
+      "onDemandPinned": 0,
       "sha256": "bf74e76ead46c1d1d09a553338ce5eb65976c9a641c6d5534c7ecdbd1a244f78"
     },
     {
@@ -499,6 +513,7 @@
       "file": "agents.drawio",
       "count": 33,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "1fd1301438157e6207a0bcfdb6315b73ffb40d4ab7df8e1d85bd45813773eb4a"
     },
     {
@@ -509,6 +524,7 @@
       "file": "primitives.drawio",
       "count": 43,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "5388d4c81b0e657b70fb9746f795b31da875c8cf13daeda73d8a30d5823261a7"
     },
     {
@@ -519,6 +535,7 @@
       "file": "file-types.drawio",
       "count": 35,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "834463b44a17ea5398ea246e5e9611586c44aecd8bac6ad62ddb9bd80969a075",
       "note": "The Word, Excel and PowerPoint marks are trademarked and not licensed for redistribution, so .docx/.xlsx/.pptx use house sheets in the familiar colours rather than the product logos."
     },
@@ -530,6 +547,7 @@
       "file": "brands.drawio",
       "count": 3090,
       "onDemand": 0,
+      "onDemandPinned": 0,
       "sha256": "4dc2351c2144b68255aa9e2829b08f8ed94f51b88125560d8ef20d7e5be8508a",
       "note": "Every mark in simple-icons@16.30.0, minus any slug a curated pack already owns."
     }
@@ -34108,7 +34126,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://delta.io/> --name deltalake"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/tableau",
@@ -34123,7 +34141,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.tableau.com/about/media-kit> --name tableau"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/powerbi",
@@ -34139,7 +34157,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.microsoft.com/power-platform/products/power-bi> --name powerbi"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/dremio",
@@ -34154,7 +34172,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.dremio.com/> --name dremio"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/starrocks",
@@ -34169,7 +34187,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.starrocks.io/> --name starrocks"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/firebolt",
@@ -34184,7 +34202,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.firebolt.io/> --name firebolt"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/motherduck",
@@ -34199,7 +34217,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://motherduck.com/> --name motherduck"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/vertica",
@@ -34214,7 +34232,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.vertica.com/> --name vertica"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/greenplum",
@@ -34229,7 +34247,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://greenplum.org/> --name greenplum"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/apachehudi",
@@ -34247,6 +34265,7 @@
       "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
       "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 5446x3946 raster wrapped in SVG, 246 KB, several times larger than any mark the packs ship",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/hudi/hudi.png --name apachehudi"
     },
     {
@@ -34265,7 +34284,7 @@
       "licenceUrl": "https://learn.hex.tech/docs/legal/hex-website-terms-of-use",
       "bytes": "on-demand",
       "reason": "Hex's website terms state that the company name, logo and all related logos are trademarks of Hex Technologies and \"You must not use such marks without the prior written permission of the Company\"",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://hex.tech/> --name hex"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/sigma",
@@ -34282,7 +34301,7 @@
       "licenceUrl": "https://www.sigmacomputing.com/legal",
       "bytes": "on-demand",
       "reason": "Sigma lists its registered marks on its legal page but publishes no trademark usage or brand guidelines, leaving the logo available only as unlicensed marketing-site artwork",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.sigmacomputing.com/> --name sigma"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/preset",
@@ -34299,7 +34318,7 @@
       "licenceUrl": "https://preset.io/terms-of-service",
       "bytes": "on-demand",
       "reason": "Preset publishes no trademark policy, brand page or media kit for its own mark, and its terms attribute only the Apache Superset marks to the Apache Software Foundation",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://preset.io/> --name preset"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/hightouch",
@@ -34315,7 +34334,7 @@
       "licenceUrl": "https://hightouch.com/press",
       "bytes": "on-demand",
       "reason": "Hightouch distributes its logo only as a brand-assets archive from its press page, with no publicly stated permission to redistribute the mark",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://hightouch.com/> --name hightouch"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/census",
@@ -34332,7 +34351,7 @@
       "licenceUrl": "https://www.fivetran.com/press/fivetran-signs-agreement-to-acquire-census-delivering-the-first-end-to-end-data-movement-platform-for-the-ai-era",
       "bytes": "on-demand",
       "reason": "Fivetran acquired Census in May 2025 and folded it into Fivetran Activations, its domains now redirect to fivetran.com, and neither company published a logo usage policy for the Census mark",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.getcensus.com/> --name census"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/rudderstack",
@@ -34349,7 +34368,7 @@
       "licenceUrl": "https://github.com/rudderlabs/rudder-server/blob/14659bfe744940288c8afdd7c85243486319d92e/LICENSE",
       "bytes": "on-demand",
       "reason": "RudderStack's logo files ship only inside rudder-server, which is under the Elastic License 2.0, a non-OSI source-available licence that subjects any use of the licensor's trademarks to applicable law",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.rudderstack.com/> --name rudderstack"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/segment",
@@ -34366,7 +34385,7 @@
       "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
       "bytes": "on-demand",
       "reason": "Twilio's trademark usage guidelines list Segment among Twilio's marks and state that most uses require express written permission and that the corporate logo may not be used without it",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://segment.com/> --name segment"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/amplitude",
@@ -34382,7 +34401,7 @@
       "licenceUrl": "https://brand.amplitude.com/",
       "bytes": "on-demand",
       "reason": "Amplitude's brand portal publishes its logos behind a request form without granting any redistribution licence, and its terms reserve all rights in the registered mark",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://amplitude.com/> --name amplitude"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/amundsen",
@@ -34399,6 +34418,7 @@
       "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
       "bytes": "on-demand",
       "reason": "LF AI & Data publishes the Amundsen artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/amundsen/icon/color/amundsen-icon-color.svg --name amundsen"
     },
     {
@@ -34415,7 +34435,7 @@
       "licenceUrl": "https://atlan.com/brand/logo/",
       "bytes": "on-demand",
       "reason": "Atlan's brand hub publishes the logotype with presentation rules only and grants no licence to redistribute it, while its customer agreement reserves all trademark rights",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://atlan.com/> --name atlan"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/collibra",
@@ -34431,7 +34451,7 @@
       "licenceUrl": "https://www.collibra.com/legal/documents/collibra-website-terms-of-use",
       "bytes": "on-demand",
       "reason": "Collibra's website terms state that nothing on the site \"will be deemed to confer on any person any license or right\" with respect to its images, logos or names",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.collibra.com/> --name collibra"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/alation",
@@ -34447,7 +34467,7 @@
       "licenceUrl": "https://www.alation.com/legal/website-tc/",
       "bytes": "on-demand",
       "reason": "Alation's website terms state that nothing in them grants \"by implication, estoppel, or otherwise, any license or right to use any of Alation Trademarks displayed on the Sites, without our prior written permission in each instance\"",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.alation.com/> --name alation"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/greatexpectations",
@@ -34467,6 +34487,7 @@
       "licenceUrl": "https://greatexpectations.io/community-terms-of-use/",
       "bytes": "on-demand",
       "reason": "the GX mark sits in an Apache-2.0 repository, but Great Expectations Labs's community terms of use separately state that \"You may not use any of the Company's trademarks, logos, or other proprietary graphics without express written permission\"",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/great-expectations/great_expectations/3798c021bbfb0b13ff384b2238f643d04bdea5f2/docs/docusaurus/static/img/gx-mark.svg --name greatexpectations"
     },
     {
@@ -34485,7 +34506,7 @@
       "licenceUrl": "https://soda.io/terms-and-conditions",
       "bytes": "on-demand",
       "reason": "Soda publishes no logo file in any repository, its soda-core engine is under the non-OSI Elastic License 2.0 and holds no image assets, and its terms reserve exclusive ownership of the visual elements on its site",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.soda.io/> --name soda"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/montecarlo",
@@ -34503,7 +34524,7 @@
       "licenceUrl": "https://montecarlo.ai/terms-and-conditions/",
       "bytes": "on-demand",
       "reason": "Monte Carlo Data publishes no trademark policy, its terms forbid either party using the other's marks or logos \"without the prior written consent\", and the logo exists only as a marketing-site theme asset",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://montecarlo.ai/> --name montecarlo"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/datafold",
@@ -34519,7 +34540,7 @@
       "licenceUrl": "https://www.datafold.com/msa/",
       "bytes": "on-demand",
       "reason": "Datafold publishes no trademark or brand policy, its master service agreement grants no right to use its marks, and the logo exists only as an unlicensed marketing-site asset",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.datafold.com/> --name datafold"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/dune",
@@ -34536,7 +34557,7 @@
       "licenceUrl": "https://dune.com/terms",
       "bytes": "on-demand",
       "reason": "Dune's terms of service state that it \"retains all rights to all elements of the Service\" including its trademarks, and its brand hub distributes the icon as a file-sharing download with no licence attached",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://dune.com/> --name dune"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/mode",
@@ -34553,7 +34574,7 @@
       "licenceUrl": "https://mode.com/legal/tos/",
       "bytes": "on-demand",
       "reason": "Mode's terms of service, now issued by ThoughtSpot, state that its logos \"may not be copied, imitated, or used, in whole or in part, without the prior written permission of ThoughtSpot\", and mode.com publishes no downloadable asset",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://mode.com/> --name mode"
+      "artwork": "none pinned"
     },
     {
       "id": "data-platforms/thoughtspot",
@@ -34570,7 +34591,7 @@
       "licenceUrl": "https://www.thoughtspot.com/legal/trademarks",
       "bytes": "on-demand",
       "reason": "ThoughtSpot's trademark guidelines permit third-party use of its trademarks \"in word form only (but not logos, taglines, or icons)\" and state that its logos may only be used under express written permission",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.thoughtspot.com/> --name thoughtspot"
+      "artwork": "none pinned"
     },
     {
       "id": "databases/postgresql",
@@ -35360,7 +35381,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://questdb.com/> --name questdb"
+      "artwork": "none pinned"
     },
     {
       "id": "databases/libsql",
@@ -35377,7 +35398,7 @@
       "licenceUrl": "https://github.com/tursodatabase/libsql/blob/d6c75af6353bb1c34985399608e37cd272a35aa1/LICENSE.md",
       "bytes": "on-demand",
       "reason": "libSQL publishes no logo of its own: the MIT-licensed repository contains no logo file, libsql.org redirects to turso.tech, and the only marks in its documentation repository are Turso's",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://github.com/tursodatabase/libsql> --name libsql"
+      "artwork": "none pinned"
     },
     {
       "id": "databases/rethinkdb",
@@ -35395,6 +35416,7 @@
       "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
       "bytes": "on-demand",
       "reason": "RethinkDB is on the Linux Foundation trademark list, the CNCF having bought the copyright and contributed the project to the Foundation in 2017, and the Foundation's trademark usage guidelines require written permission to place its logos in third-party materials",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/rethinkdb/www/1be3fee3b171bbdba45e013001f9780b555c67bd/assets/images/logo.png --name rethinkdb"
     },
     {
@@ -35413,6 +35435,7 @@
       "licenceUrl": "https://github.com/ravendb/ravendb/blob/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/LICENSE.txt",
       "bytes": "on-demand",
       "reason": "the RavenDB repository ships under an end user licence agreement that licenses the server under AGPLv3 and expressly prohibits reproduction or redistribution it does not authorise, so the logo files inside it are not permissively licensed",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/ravendb/ravendb/6dc2da8d172aac2369d8ea6cfe7bfc3c4692a2bf/src/Raven.Studio/wwwroot/Content/img/ravendb_logo.svg --name ravendb"
     },
     {
@@ -35431,6 +35454,7 @@
       "licenceUrl": "https://github.com/lfai/artwork/blob/3e1b54db5614fd73dee0d76c9a04562aab20f96a/LICENSE.md",
       "bytes": "on-demand",
       "reason": "JanusGraph's official artwork lives in lfai/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and JanusGraph is a registered Linux Foundation trademark; the code repository being Apache-2.0 does not change the artwork terms",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/janusgraph/icon/color/janusgraph-icon-color.svg --name janusgraph"
     },
     {
@@ -36275,6 +36299,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/openai.svg --name openai"
     },
     {
@@ -36290,7 +36315,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.langchain.com/langsmith> --name langsmith"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/llamaindex",
@@ -36305,7 +36330,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.llamaindex.ai/> --name llamaindex"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/pinecone",
@@ -36320,7 +36345,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.pinecone.io/> --name pinecone"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/weaviate",
@@ -36335,7 +36360,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://weaviate.io/> --name weaviate"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/chroma",
@@ -36350,7 +36375,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.trychroma.com/> --name chroma"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/cohere",
@@ -36365,7 +36390,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://cohere.com/> --name cohere"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/groq",
@@ -36380,7 +36405,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://groq.com/> --name groq"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/flowise",
@@ -36395,7 +36420,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://flowiseai.com/> --name flowise"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/chainlit",
@@ -36410,7 +36435,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://chainlit.io/> --name chainlit"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/autogen",
@@ -36425,7 +36450,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://microsoft.github.io/autogen/> --name autogen"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/semantickernel",
@@ -36441,7 +36466,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://learn.microsoft.com/semantic-kernel/> --name semantickernel"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/xai",
@@ -36456,7 +36481,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://x.ai/> --name xai"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/together",
@@ -36473,7 +36498,7 @@
       "licenceUrl": "https://www.together.ai/brand",
       "bytes": "on-demand",
       "reason": "Together AI publishes its logo only as a marketing brand-kit download that grants no redistribution licence, and no logo file exists in any of its repositories",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.together.ai/> --name together"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/fireworks",
@@ -36490,7 +36515,7 @@
       "licenceUrl": "https://fireworks.ai/terms-of-service",
       "bytes": "on-demand",
       "reason": "Fireworks AI publishes no brand or press page and no logo file in any repository of its fw-ai organisation, so no artwork carrying a redistribution licence exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://fireworks.ai/> --name fireworks"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/baseten",
@@ -36506,7 +36531,7 @@
       "licenceUrl": "https://www.baseten.co/brand/",
       "bytes": "on-demand",
       "reason": "Baseten's brand page offers a media-kit download without granting any redistribution licence and directs external requests to its press address",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.baseten.co/> --name baseten"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/runpod",
@@ -36523,7 +36548,7 @@
       "licenceUrl": "https://www.runpod.io/legal/terms-of-service",
       "bytes": "on-demand",
       "reason": "Runpod's terms of service state that its stylizations, graphics, logos, service marks and trade names \"may not be used without permission in connection with your, or any third-party's, products or services\"",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.runpod.io/> --name runpod"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/lambdalabs",
@@ -36542,7 +36567,7 @@
       "licenceUrl": "https://lambda.ai/lambda-brand-use-policy",
       "bytes": "on-demand",
       "reason": "the Lambda brand use policy states that no reproduction, distribution or modification is permitted without prior written authorization, and restricts brand-element use to partners under an executed agreement",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://lambda.ai/> --name lambdalabs"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/litellm",
@@ -36559,7 +36584,7 @@
       "licenceUrl": "https://github.com/BerriAI/litellm/blob/30f33a949b8a2bb890a2baee18e2ab7ab015a4f7/LICENSE",
       "bytes": "on-demand",
       "reason": "LiteLLM publishes its mark only as a small opaque JPEG inside the MIT-licensed part of BerriAI/litellm, and that mark is composed on a third-party emoji glyph BerriAI did not author, so the MIT grant does not clearly reach the artwork",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.litellm.ai/> --name litellm"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/arize",
@@ -36577,7 +36602,7 @@
       "licenceUrl": "https://github.com/Arize-ai/phoenix/blob/e12748298b366605cc0e2aa60e659f473efbff99/LICENSE",
       "bytes": "on-demand",
       "reason": "Arize-ai/phoenix is under the Elastic License 2.0, which is not an open-source licence, the separate phoenix-assets repository holding the logo carries no LICENSE at all, and the corporate Arize mark is published only on its marketing site",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://arize.com/> --name arize"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/whylabs",
@@ -36593,7 +36618,7 @@
       "licenceUrl": "https://whylabs.ai/",
       "bytes": "on-demand",
       "reason": "WhyLabs publishes no brand or trademark policy and no company logo file in a licensed repository; only its whylogs project mark is licensed, and that ships as ai-frameworks/whylogs",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://whylabs.ai/> --name whylabs"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/galileo",
@@ -36611,7 +36636,7 @@
       "licenceUrl": "https://github.com/rungalileo/docs-official/tree/d9aaabb409eaaa61e57a6ab1a3dcce2020f9b4f1",
       "bytes": "on-demand",
       "reason": "Galileo's logo files live in rungalileo/docs-official, a repository with no LICENSE file, and no Galileo logo appears in its Apache-2.0 client libraries",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://galileo.ai/> --name galileo"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/instructor",
@@ -36627,7 +36652,7 @@
       "licenceUrl": "https://github.com/567-labs/instructor/blob/e12f8b49203b0c1f253d27c1e709d0a09b9fc5a8/LICENSE",
       "bytes": "on-demand",
       "reason": "567-labs/instructor contains no logo image of any kind, configures no documentation logo, and the project site renders its name as text, so there is no mark to fetch",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://python.useinstructor.com/> --name instructor"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/openwebui",
@@ -36644,7 +36669,7 @@
       "licenceUrl": "https://github.com/open-webui/open-webui/blob/0a7c15832fb30b1903753e83f81dc7d27e5b0944/LICENSE",
       "bytes": "on-demand",
       "reason": "clause 4 of the Open WebUI License prohibits altering, removing, obscuring or replacing any Open WebUI branding including the logo, except below a user threshold or with written permission, and the repository's BRANDING.md repeats that the logo is governed by that licence",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://openwebui.com/> --name openwebui"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/agno",
@@ -36662,7 +36687,7 @@
       "licenceUrl": "https://github.com/agno-agi/agno",
       "bytes": "on-demand",
       "reason": "Agno's logo is served only from the company's public asset bucket and from agno-agi/docs, which carries no LICENSE file, so no copyright licence permits redistribution; the entry also answers to Phidata, the project's former name",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://agno.com/> --name agno"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/letta",
@@ -36679,7 +36704,7 @@
       "licenceUrl": "https://github.com/letta-ai/letta/blob/5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a/LICENSE",
       "bytes": "on-demand",
       "reason": "neither letta-ai/letta nor letta-ai/letta-code contains any logo artwork, and letta.com publishes no brand or press page, so no officially licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.letta.com/> --name letta"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/smolagents",
@@ -36696,7 +36721,7 @@
       "licenceUrl": "https://github.com/huggingface/smolagents/blob/30bb1161095dbae2271e6bc3cc4c219cc3897a57/LICENSE",
       "bytes": "on-demand",
       "reason": "the Apache-2.0 huggingface/smolagents repository contains no logo file, and the only smolagents artwork is a mascot illustration published in a CC BY-NC-SA 4.0 dataset",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://huggingface.co/docs/smolagents> --name smolagents"
+      "artwork": "none pinned"
     },
     {
       "id": "ai-frameworks/unsloth",
@@ -36712,7 +36737,7 @@
       "licenceUrl": "https://github.com/unslothai/unsloth/blob/7bdace6155acbdc404e2c4e9a480b914fee4629f/LICENSE",
       "bytes": "on-demand",
       "reason": "unslothai/unsloth's LICENSE enumerates which directories are Apache-2.0 and which are AGPLv3 and images/ appears in neither list, so which licence covers the mark is unsettled; the only square variant is in an AGPLv3 tree designated an Appropriate Legal Notice",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://unsloth.ai/> --name unsloth"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/pytorch",
@@ -37397,7 +37422,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://xgboost.ai/> --name xgboost"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/openvino",
@@ -37412,7 +37437,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://docs.openvino.ai/> --name openvino"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/comet",
@@ -37429,7 +37454,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.comet.com/> --name comet"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/clearml",
@@ -37444,7 +37469,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://clear.ml/> --name clearml"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/tensorboard",
@@ -37459,7 +37484,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.tensorflow.org/tensorboard> --name tensorboard"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/langfuse",
@@ -37474,7 +37499,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://langfuse.com/> --name langfuse"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/flyte",
@@ -37491,6 +37516,7 @@
       "licenceUrl": "https://github.com/lfai/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "LF AI & Data publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/flyte/icon/color/flyte-icon-color.svg --name flyte"
     },
     {
@@ -37509,6 +37535,7 @@
       "licenceUrl": "https://github.com/lfai/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "LF AI & Data publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/feast/icon/color/feast-icon-color.svg --name feast"
     },
     {
@@ -37527,6 +37554,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/kserve/icon/color/k-serve-icon-color.svg --name kserve"
     },
     {
@@ -37545,6 +37573,7 @@
       "licenceUrl": "https://github.com/SeldonIO/seldon-core/blob/402619eb9064b2ced678539fa3c0a1a0bd8f723a/LICENSE",
       "bytes": "on-demand",
       "reason": "Seldon Core v2's repository, logo included, is under the Business Source License 1.1, which is not an open-source licence and grants no redistribution of the artwork for this use",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/SeldonIO/seldon-core/402619eb9064b2ced678539fa3c0a1a0bd8f723a/docs-gb/images/logo.svg --name seldon"
     },
     {
@@ -37563,7 +37592,7 @@
       "licenceUrl": "https://www.nvidia.com/en-us/about-nvidia/legal-info/logo-brand-usage/",
       "bytes": "on-demand",
       "reason": "NVIDIA's logo and brand usage policy states that its brand assets may not be used in any manner not expressly authorized in writing by NVIDIA, and the only mark in the Triton repository is the NVIDIA corporate logo rather than a Triton-specific one",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://developer.nvidia.com/triton-inference-server> --name triton"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/torchserve",
@@ -37580,7 +37609,7 @@
       "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
       "bytes": "on-demand",
       "reason": "the PyTorch Foundation publishes its artwork only under the Linux Foundation trademark usage guidelines and its brand guidelines require checking in before logo use, while pytorch/serve publishes no TorchServe-specific logo and is now archived",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://pytorch.org/serve/> --name torchserve"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/tecton",
@@ -37596,7 +37625,7 @@
       "licenceUrl": "https://www.tecton.ai/terms-of-use/",
       "bytes": "on-demand",
       "reason": "Tecton's terms of use reserve all rights in its trademarks, logos, images and artwork and prohibit any reproduction or redistribution; Tecton was acquired by Databricks and its home page now redirects there",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.tecton.ai/> --name tecton"
+      "artwork": "none pinned"
     },
     {
       "id": "ml-training/fastai",
@@ -37613,7 +37642,7 @@
       "licenceUrl": "https://github.com/fastai/fastai/blob/9d9f51f0e241a0d4348b88eb7588eb5c7c23b969/LICENSE",
       "bytes": "on-demand",
       "reason": "fastai publishes no logo: its repository holds only a favicon raster, and both the docs site and fast.ai render the project name as plain text",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.fast.ai/> --name fastai"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/apachekafka",
@@ -38080,6 +38109,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/dbt.svg --name dbt"
     },
     {
@@ -38095,7 +38125,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://redpanda.com/> --name redpanda"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/confluent",
@@ -38110,7 +38140,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.confluent.io/> --name confluent"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/debezium",
@@ -38125,7 +38155,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://debezium.io/> --name debezium"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/apachesamza",
@@ -38143,6 +38173,7 @@
       "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
       "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG sets its wordmark as live text in Myriad Pro, so it draws in whatever font the viewer happens to have",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/samza/samza.png --name apachesamza"
     },
     {
@@ -38158,7 +38189,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://zeromq.org/> --name zeromq"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/apacheactivemq",
@@ -38176,6 +38207,7 @@
       "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
       "reason": "the ASF licenses its graphic logos under Apache-2.0, but both official SVGs set the wordmark as live text, and without its font only \"MQ\" appears",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/activemq/activemq-1.png --name apacheactivemq"
     },
     {
@@ -38194,6 +38226,7 @@
       "licenceUrl": "https://www.apache.org/foundation/marks/",
       "bytes": "on-demand",
       "reason": "the ASF licenses its graphic logos under Apache-2.0, but the official SVG is a 725 KB illustrated mascot with live text, far larger than any mark the packs ship",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://www.apache.org/logos/res/zookeeper/zookeeper.png --name apachezookeeper"
     },
     {
@@ -38209,7 +38242,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.mage.ai/> --name mage"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/kestra",
@@ -38224,7 +38257,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://kestra.io/> --name kestra"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/dagster",
@@ -38239,7 +38272,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://dagster.io/> --name dagster"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/luigi",
@@ -38254,7 +38287,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://github.com/spotify/luigi> --name luigi"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/estuary",
@@ -38269,7 +38302,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://estuary.dev/> --name estuary"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/fivetran",
@@ -38284,7 +38317,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.fivetran.com/> --name fivetran"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/informatica",
@@ -38299,6 +38332,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/informatica.svg --name informatica"
     },
     {
@@ -38315,7 +38349,7 @@
       "licenceUrl": "https://github.com/inngest/inngest/blob/13197c74528b3153f0fdc6dddf158ef64ede5696/LICENSE.md",
       "bytes": "on-demand",
       "reason": "inngest/inngest is under the Server Side Public License 1.0, a non-OSI copyleft licence, the only Inngest logo in the repository sits under it, and inngest/website carries no LICENSE file",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.inngest.com/> --name inngest"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/windmill",
@@ -38332,7 +38366,7 @@
       "licenceUrl": "https://github.com/windmill-labs/windmill/blob/7b89e3732227e870405bd81641bd43381609996f/LICENSE",
       "bytes": "on-demand",
       "reason": "the Windmill LICENSE states that the files under frontend/ are AGPLv3 licensed and the only Windmill logo in the repository is frontend/static/logo.svg; the project's docs repository is CC-BY-SA-4.0, also copyleft",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.windmill.dev/> --name windmill"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/redpandaconnect",
@@ -38349,7 +38383,7 @@
       "licenceUrl": "https://github.com/redpanda-data/connect/blob/cf7df53656a062051a5a9edb45b83e0d3c984ed0/licenses/README.md",
       "bytes": "on-demand",
       "reason": "Benthos was acquired by Redpanda in May 2024 and is now Redpanda Connect, licensed Apache-2.0 plus the proprietary Redpanda Community Licence; that repository contains no artwork, Redpanda publishes no logo policy, and the only MIT-licensed mark available is the retired Benthos logo, which is not this product",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.redpanda.com/connect> --name redpandaconnect"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/vector",
@@ -38366,7 +38400,7 @@
       "licenceUrl": "https://github.com/vectordotdev/vector/blob/606b0667f5b6ebfaea3d2fe0aaf341a609cde262/LICENSE",
       "bytes": "on-demand",
       "reason": "vectordotdev/vector is under the Mozilla Public License 2.0, a copyleft licence this repository does not redistribute artwork under, and vectordotdev/docs carries no LICENSE file",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://vector.dev/> --name vector"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/cribl",
@@ -38383,7 +38417,7 @@
       "licenceUrl": "https://cribl.io/press-kit/",
       "bytes": "on-demand",
       "reason": "Cribl is proprietary with no public source repository, and its press kit publishes the corporate and product logos with no licence, attribution terms or permission grant",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://cribl.io/> --name cribl"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/singer",
@@ -38401,7 +38435,7 @@
       "licenceUrl": "https://github.com/singer-io/getting-started",
       "bytes": "on-demand",
       "reason": "the Singer logo is published only on its marketing site, which carries no licence; the spec repository has no LICENSE file and no repository in the singer-io organisation contains an SVG",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.singer.io/> --name singer"
+      "artwork": "none pinned"
     },
     {
       "id": "streaming-orchestration/openobserve",
@@ -38419,6 +38453,7 @@
       "licenceUrl": "https://github.com/openobserve/openobserve/blob/d52334f49d62fdf4f04d455cc0e6056e6439255f/LICENSE",
       "bytes": "on-demand",
       "reason": "openobserve/openobserve is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under; the MIT-licensed websitev3 repository that appears to carry the mark still holds the ZincSearch logo from before the product was renamed, so it is not OpenObserve artwork at all",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/openobserve/openobserve/d52334f49d62fdf4f04d455cc0e6056e6439255f/web/src/assets/images/common/open_observe_logo.svg --name openobserve"
     },
     {
@@ -38954,7 +38989,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.nagios.org/> --name nagios"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/zabbix",
@@ -38969,7 +39004,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.zabbix.com/> --name zabbix"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/honeycomb",
@@ -38984,7 +39019,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.honeycomb.io/> --name honeycomb"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/grafanaloki",
@@ -39000,7 +39035,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://grafana.com/oss/loki/> --name grafanaloki"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/chronosphere",
@@ -39016,7 +39051,7 @@
       "licenceUrl": "https://chronosphere.io/",
       "bytes": "on-demand",
       "reason": "Chronosphere publishes its logo only through a hosted media kit that states no licence or usage terms, publishes no trademark policy, and keeps no logo file in its GitHub organisation",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://chronosphere.io/> --name chronosphere"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/lightstep",
@@ -39033,7 +39068,7 @@
       "licenceUrl": "https://docs.lightstep.com/changelog/eol-notice",
       "bytes": "on-demand",
       "reason": "the Lightstep brand was retired when ServiceNow renamed the product in August 2023, ServiceNow's own notice ends support on 1 March 2026, and no ServiceNow logo licence permits redistribution",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://docs.lightstep.com/> --name lightstep"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/coralogix",
@@ -39049,7 +39084,7 @@
       "licenceUrl": "https://land.coralogix.com/brand/",
       "bytes": "on-demand",
       "reason": "Coralogix's brand page permits the logo only to link back to its own site or to illustrate posts about Coralogix products, which is nominative use and licenses no redistribution of the file",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://coralogix.com/> --name coralogix"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/logzio",
@@ -39066,7 +39101,7 @@
       "licenceUrl": "https://logz.io/about-us/terms-of-use/",
       "bytes": "on-demand",
       "reason": "an official Logz.io wordmark does sit in an Apache-2.0 documentation repository, but Logz.io's terms of use separately forbid use or display of its name, trademark or logo without express written consent, and a published policy decides before a repository licence",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://logz.io/> --name logzio"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/telegraf",
@@ -39082,7 +39117,7 @@
       "licenceUrl": "https://www.influxdata.com/legal/guidelines-for-using-influxdata-trademarks/",
       "bytes": "on-demand",
       "reason": "InfluxData's trademark guidelines require an express written logo licence before any third party uses an InfluxData logo in a product, publication or website, even though the Telegraf repository itself is MIT-licensed",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.influxdata.com/time-series-platform/telegraf/> --name telegraf"
+      "artwork": "none pinned"
     },
     {
       "id": "observability/cortex",
@@ -39100,6 +39135,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
       "bytes": "on-demand",
       "reason": "Cortex's official artwork lives in cncf/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and Cortex is on the Linux Foundation trademark list",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/cortex/icon/color/cortex-icon-color.svg --name cortex"
     },
     {
@@ -39117,7 +39153,7 @@
       "licenceUrl": "https://github.com/grafana/mimir/blob/b464e5d6656e8ff45bf2c9c8837ab9da5d56f382/LICENSE",
       "bytes": "on-demand",
       "reason": "grafana/mimir is AGPL-3.0, a copyleft licence this repository does not redistribute artwork under, and contains no logo file; the Mimir mark is published only on grafana.com under the Grafana Labs trademark policy",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://grafana.com/oss/mimir/> --name mimir"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/terraform",
@@ -40279,7 +40315,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.haproxy.org/> --name haproxy"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/crossplane",
@@ -40296,6 +40332,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/crossplane/icon/color/crossplane-icon-color.svg --name crossplane"
     },
     {
@@ -40314,6 +40351,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flux/icon/color/flux-icon-color.svg --name fluxcd"
     },
     {
@@ -40329,7 +40367,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.harness.io/> --name harness"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/minikube",
@@ -40344,7 +40382,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://minikube.sigs.k8s.io/> --name minikube"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/systemd",
@@ -40359,7 +40397,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://systemd.io/> --name systemd"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/kustomize",
@@ -40376,6 +40414,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "Kustomize is a Kubernetes SIG project with no published logo: the only image is its documentation site's favicon, and Kubernetes project artwork is published only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/kubernetes-sigs/kustomize/19002092f6df6a0bb602a5f241fba17bce74fe15/site/static/favicons/android-192x192.png --name kustomize"
     },
     {
@@ -40393,7 +40432,7 @@
       "licenceUrl": "https://dagger.io/legal_pages/trademark-guidelines/",
       "bytes": "on-demand",
       "reason": "Dagger's trademark guidelines require written permission to use the logo and forbid modifying or recombining it; no licence covers the artwork",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://dagger.io/brand/> --name dagger"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/earthly",
@@ -40409,7 +40448,7 @@
       "licenceUrl": "https://github.com/earthly/earthly/blob/6e641c15d3b4d7dd396363b61d2381faa2658f3d/LICENSE",
       "bytes": "on-demand",
       "reason": "earthly/earthly is MPL-2.0, a copyleft licence this repository does not redistribute artwork under, and Earthly Technologies asked forks to change the project's name and logo because it retains trademark rights",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://earthly.dev/> --name earthly"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/garden",
@@ -40426,7 +40465,7 @@
       "licenceUrl": "https://github.com/garden-io/garden/blob/4e7128de8dfb5f38f76a5d005a65a78110be7553/LICENSE.md",
       "bytes": "on-demand",
       "reason": "garden-io/garden is MPL-2.0, a copyleft licence this repository does not redistribute artwork under, and no logo file is published in any Garden repository",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://garden.io/> --name garden"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/werf",
@@ -40443,6 +40482,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
       "bytes": "on-demand",
       "reason": "werf is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/werf/icon/color/werf-icon-color.svg --name werf"
     },
     {
@@ -40460,7 +40500,7 @@
       "licenceUrl": "https://docs.orbstack.dev/legal/terms",
       "bytes": "on-demand",
       "reason": "OrbStack is proprietary software owned by Orbital Labs and publishes its logo only as a raster on its marketing site under terms that grant no redistribution",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://orbstack.dev/> --name orbstack"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/lima",
@@ -40478,6 +40518,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
       "bytes": "on-demand",
       "reason": "Lima is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/lima/horizontal/color/lima-horizontal-color.svg --name lima"
     },
     {
@@ -40497,6 +40538,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/LICENSE.md",
       "bytes": "on-demand",
       "reason": "Flatcar Container Linux is a CNCF project whose artwork is published in cncf/artwork, and that repository's LICENSE.md offers it only under the Linux Foundation trademark usage guidelines rather than a copyright licence permitting redistribution",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/flatcar/icon/color/flatcar-icon-color.svg --name flatcar"
     },
     {
@@ -40513,7 +40555,7 @@
       "licenceUrl": "https://github.com/TykTechnologies/tyk/blob/ea4d7f5d5f848c4b6c3f37d657ce04dec4a2a5a6/LICENSE.md",
       "bytes": "on-demand",
       "reason": "TykTechnologies/tyk is MPL-2.0 outside its commercially licensed ee/ folder, a copyleft licence this repository does not redistribute artwork under, and the Tyk logo itself appears only in unlicensed documentation repositories and on tyk.io",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://tyk.io/> --name tyk"
+      "artwork": "none pinned"
     },
     {
       "id": "devops/krakend",
@@ -40529,7 +40571,7 @@
       "licenceUrl": "https://www.krakend.io/terms/",
       "bytes": "on-demand",
       "reason": "the only official KrakenD logo lives in a repository with no LICENSE file, and krakend.io's terms prohibit reproducing or distributing the site's graphics without express authorisation",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.krakend.io/> --name krakend"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/vault",
@@ -41151,7 +41193,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.onelogin.com/> --name onelogin"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/openpolicyagent",
@@ -41169,6 +41211,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/open-policy-agent/icon/color/opa-icon-color.svg --name openpolicyagent"
     },
     {
@@ -41184,7 +41227,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.crowdstrike.com/> --name crowdstrike"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/sigstore",
@@ -41201,6 +41244,7 @@
       "licenceUrl": "https://github.com/sigstore/community/blob/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/Sigstore_BrandGuide_March2023.pdf",
       "bytes": "on-demand",
       "reason": "Sigstore's brand guide publishes the artwork as a Linux Foundation project, copyright The Linux Foundation with all rights reserved under its trademark usage terms; nothing licenses the logos beyond a link to the project",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/sigstore/icons/color/sigstore_icon-color.svg --name sigstore"
     },
     {
@@ -41219,6 +41263,7 @@
       "licenceUrl": "https://github.com/sigstore/community/blob/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/Sigstore_BrandGuide_March2023.pdf",
       "bytes": "on-demand",
       "reason": "Sigstore's brand guide publishes the artwork as a Linux Foundation project, copyright The Linux Foundation with all rights reserved under its trademark usage terms; nothing licenses the logos beyond a link to the project",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/sigstore/community/0902dbeb6cc40c62d1246acdbd5b5794d397adda/artwork/cosign/icons/color/sigstore_cosign-icon-color.svg --name cosign"
     },
     {
@@ -41236,6 +41281,7 @@
       "licenceUrl": "https://github.com/cncf/artwork/blob/main/LICENSE.md",
       "bytes": "on-demand",
       "reason": "CNCF publishes the artwork only under the Linux Foundation trademark guidelines, which allow a logo as a link to its project and nothing broader without written permission",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/cncf/artwork/6b497fdc3ab16cefaffa16b537c736ef5cf78f0b/projects/spiffe/icon/color/spiffe-icon-color.svg --name spiffe"
     },
     {
@@ -41253,7 +41299,7 @@
       "licenceUrl": "https://legal.wiz.io/legal",
       "bytes": "on-demand",
       "reason": "Wiz's terms of use state that the logos on its site are its property and that the content \"may not be used, modified, copied, distributed, transmitted\" without its prior written consent, and no logo is published under any licence",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.wiz.io/> --name wiz"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/orca",
@@ -41270,7 +41316,7 @@
       "licenceUrl": "https://orca.security/resources/media-kit/",
       "bytes": "on-demand",
       "reason": "Orca Security publishes its logo only through a media kit governed by a brand guide marked all rights reserved, which restricts use to approved unmodified files and grants no redistribution licence",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://orca.security/> --name orca"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/semgrep",
@@ -41287,6 +41333,7 @@
       "licenceUrl": "https://github.com/semgrep/semgrep/blob/0516c0f23a3dceac5c8f5ff3fecd402af4450182/LICENSE",
       "bytes": "on-demand",
       "reason": "Semgrep does publish logo SVGs, but the repository holding them is LGPL-2.1, a copyleft licence this repository does not redistribute artwork under, and Semgrep's website terms separately require prior written permission to display or use its trademarks",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/semgrep/semgrep/0516c0f23a3dceac5c8f5ff3fecd402af4450182/semgrep.svg --name semgrep"
     },
     {
@@ -41303,7 +41350,7 @@
       "licenceUrl": "https://github.com/gitleaks/gitleaks/blob/master/LICENSE",
       "bytes": "on-demand",
       "reason": "the MIT-licensed gitleaks repository publishes no logo file at all, its README using only ASCII art, and the only mark is an unlicensed raster on the project marketing site",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://gitleaks.io/> --name gitleaks"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/vanta",
@@ -41319,7 +41366,7 @@
       "licenceUrl": "https://www.vanta.com/company/press",
       "bytes": "on-demand",
       "reason": "Vanta publishes its logo only through a press-page asset download, with no trademark policy, brand guidelines or licence terms stated anywhere",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.vanta.com/> --name vanta"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/drata",
@@ -41335,7 +41382,7 @@
       "licenceUrl": "https://drata.com/about/news",
       "bytes": "on-demand",
       "reason": "Drata publishes a downloadable logo kit on its newsroom page with no licence or usage grant beyond asking that the brand be used responsibly",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://drata.com/> --name drata"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/stepsecurity",
@@ -41353,6 +41400,7 @@
       "licenceUrl": "https://github.com/step-security/.github",
       "bytes": "on-demand",
       "reason": "the only StepSecurity logo on GitHub sits in its .github repository, which contains no LICENSE file, and its own site publishes no brand-asset or trademark page",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/step-security/.github/b649665c7ec6e925962cb7d7b6081b07820fb9bc/profile/step-security-logo.png --name stepsecurity"
     },
     {
@@ -41370,7 +41418,7 @@
       "licenceUrl": "https://github.com/hashicorp/boundary/blob/01cd5c86e8602aa9babc54b07e51ef7b8445e0b6/LICENSE",
       "bytes": "on-demand",
       "reason": "HashiCorp's trademark policy permits its project logos only to identify and hyperlink to the project's own website and requires written approval for all other uses, and the Boundary repository is additionally under the Business Source License 1.1",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.boundaryproject.io/> --name boundary"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/doppler",
@@ -41386,7 +41434,7 @@
       "licenceUrl": "https://www.doppler.com/",
       "bytes": "on-demand",
       "reason": "Doppler publishes no logo file in any of its licensed repositories and no brand-asset or trademark page; its mark appears only on the marketing site",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.doppler.com/> --name doppler"
+      "artwork": "none pinned"
     },
     {
       "id": "security-identity/supertokens",
@@ -41404,6 +41452,7 @@
       "licenceUrl": "https://github.com/supertokens/supertokens-logo",
       "bytes": "on-demand",
       "reason": "the SuperTokens logo files are published only in a dedicated logo repository that carries no LICENSE file, and the Apache-2.0 supertokens-core repository contains no logo",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/supertokens/supertokens-logo/796112db2f60bbced7521f30d5b3cecc40069788/logo/ST_icon_light_theme.svg --name supertokens"
     },
     {
@@ -41420,7 +41469,7 @@
       "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
       "bytes": "on-demand",
       "reason": "Stytch is now owned by Twilio and its legal terms redirect to Twilio's, whose trademark usage guidelines require express written permission for any use of a Twilio mark outside those guidelines",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://stytch.com/> --name stytch"
+      "artwork": "none pinned"
     },
     {
       "id": "github/github",
@@ -42736,6 +42785,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/slack.svg --name slack"
     },
     {
@@ -42752,7 +42802,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.microsoft.com/microsoft-teams> --name microsoftteams"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/servicenow",
@@ -42767,7 +42817,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.servicenow.com/> --name servicenow"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/salesforce",
@@ -42782,6 +42832,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/salesforce.svg --name salesforce"
     },
     {
@@ -42797,6 +42848,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/twilio.svg --name twilio"
     },
     {
@@ -42812,6 +42864,7 @@
       "licence": "CC0-1.0",
       "bytes": "on-demand",
       "reason": "removed from Simple Icons 16 at the brand owner request",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://cdn.jsdelivr.net/npm/simple-icons@15.22.0/icons/sendgrid.svg --name sendgrid"
     },
     {
@@ -42829,7 +42882,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://monday.com/> --name monday"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/slab",
@@ -42845,7 +42898,7 @@
       "licenceUrl": "https://slab.com/terms/",
       "bytes": "on-demand",
       "reason": "Slab publishes no trademark or logo policy, distributes its mark only inside a press-kit archive, and its terms of use claim all right, title and interest in Slab-supplied content",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://slab.com/> --name slab"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/craft",
@@ -42862,7 +42915,7 @@
       "licenceUrl": "https://www.craft.do/brand",
       "bytes": "on-demand",
       "reason": "Craft's brand-assets page grants no redistribution licence and requires written consent from the Craft team before its graphics may be combined with any other graphics",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.craft.do/> --name craft"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/height",
@@ -42879,7 +42932,7 @@
       "licenceUrl": "https://height.app/terms",
       "bytes": "on-demand",
       "reason": "Height shut down on 24 September 2025, published no logo or trademark policy, and its terms required express advance written permission to copy or distribute its content",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://height.app/> --name height"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/productboard",
@@ -42896,7 +42949,7 @@
       "licenceUrl": "https://www.productboard.com/website-terms-of-use/",
       "bytes": "on-demand",
       "reason": "Productboard publishes no brand or trademark page, and its website terms claim ownership of all its logos while permitting copies for personal and internal use only, not republication",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.productboard.com/> --name productboard"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/aha",
@@ -42915,7 +42968,7 @@
       "licenceUrl": "https://www.aha.io/legal/trademark_notice",
       "bytes": "on-demand",
       "reason": "Aha! publishes only a trademark notice, with no logo usage grant and no brand or press page publishing the mark under any licence",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.aha.io/> --name aha"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/launchdarkly",
@@ -42932,7 +42985,7 @@
       "licenceUrl": "https://launchdarkly.com/press-and-analysts/",
       "bytes": "on-demand",
       "reason": "LaunchDarkly publishes no logo or trademark policy on its policies index and offers the mark only as an unlicensed brand-assets archive on its press page",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://launchdarkly.com/> --name launchdarkly"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/statsig",
@@ -42948,7 +43001,7 @@
       "licenceUrl": "https://www.statsig.com/terms",
       "bytes": "on-demand",
       "reason": "Statsig publishes no brand, press or trademark page and no logo file beyond a site favicon, and its terms retain all right, title and interest in its intellectual property",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://www.statsig.com/> --name statsig"
+      "artwork": "none pinned"
     },
     {
       "id": "saas-collab/unleash",
@@ -42966,6 +43019,7 @@
       "licenceUrl": "https://github.com/Unleash/unleash/blob/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/LICENSE",
       "bytes": "on-demand",
       "reason": "the Unleash logo is committed only inside the Unleash/unleash monorepo, which is AGPL-3.0-or-later, a copyleft licence this repository does not redistribute artwork under, and its brand guidelines state no permission either way",
+      "artwork": "pinned",
       "fetch": "node scripts/fetch-logo.mjs --url https://raw.githubusercontent.com/Unleash/unleash/a193ba1ffafa86f38283d46ce29dbb1f0dff1c2b/.github/unleash-logo.svg --name unleash"
     },
     {
@@ -44598,7 +44652,7 @@
       "licence": "none - nominative use only",
       "bytes": "on-demand",
       "reason": "no permissively licensed mark exists",
-      "fetch": "node scripts/fetch-logo.mjs --url <logo URL from https://micronaut.io/> --name micronaut"
+      "artwork": "none pinned"
     },
     {
       "id": "agents/agent",

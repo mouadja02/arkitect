@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `255 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `256 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -65,6 +65,7 @@ process, so they cannot tread on each other.
 | Icon lookup | exact and fuzzy matches; an ambiguous query returns every variant; an unknown service returns no match; a fragment of a different product's name (`tempo`, `cube`) is flagged, not resolved; the 66 products promoted from the catch-all resolve from their curated packs with no copy left in `brands`; Teleport, Argo CD and Playwright ship as devicon's full-colour originals and dlt leaves the catch-all, each resolving confidently by name, while `argo` and `argo workflows` stay on the Argo mark; QuickSight resolves to `aws/amazon-quick` after Amazon's rename and Aqua Security is promoted out of the catch-all, neither needing new artwork (#20) |
 | Resolution accuracy | the answer key in `tests/icon-queries.json`: zero confident wrong answers, precision at rank 1 above its floor, and the numbers printed on every run |
 | Exact ids | every one of the catalog's ids selects its own row: each committed id embeds the payload its `sha256` names, each on-demand id is reported to fetch rather than drawn, a build says which id it used, and a node pinning a pack the id does not belong to is reported instead of text-searched into another product's mark (#95) |
+| On-demand artwork | every on-demand row with a pinned `upstreamUrl` says `artwork: "pinned"` and carries the one runnable `fetch-logo` command for it, every other row says `"none pinned"` and carries no command; each pack's pinned count matches its rows; for one entry of each kind, the refusal to produce bytes, the `find-icon` CLI output, the build report and `--list-packs` agree, and `pack-index.md` lists the two kinds apart with no placeholder URL (#84) |
 | Cell styles | the comma-only data URI form; the embedded payload matches the catalog hash |
 | Logos | transparency read from the IHDR; an opaque PNG flagged; sizing fits the longest side and preserves aspect; non-images refused |
 | Validator | rejects duplicate ids, missing parents, broken edge endpoints; `--page 0` through the dispatcher validates that page, before or after the files, and `--strict` still fails on a warning; a page the file lacks fails, in the CLI and the API, without claiming a page was checked; a missing, negative, fractional, exponent, empty or non-numeric page value, a repeated `--page` and an unknown flag exit 2 with no stack trace; the API throws on a malformed index (#37) |

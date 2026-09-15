@@ -1066,8 +1066,10 @@ test('the #20 projects whose artwork no licence covers stay on-demand, each with
     assert(licence.test(icon.licence) && why.test(icon.reason) && /^https:\/\//.test(icon.licenceUrl ?? ''),
       `${id} records its finding: ${icon.licence} / ${icon.reason}`);
     // Dagger publishes no artwork file to point at, only a brand page.
-    if (id === 'devops/dagger') assert(icon.brandUrl === 'https://dagger.io/brand/', `${id} points at the brand page`);
-    else assert(pinned.test(icon.upstreamUrl ?? '') && icon.fetch.includes(icon.upstreamUrl), `${id} fetches pinned artwork: ${icon.upstreamUrl}`);
+    if (id === 'devops/dagger') {
+      assert(icon.brandUrl === 'https://dagger.io/brand/' && icon.artwork === 'none pinned' && !icon.fetch,
+        `${id} points at the brand page and offers nothing to fetch`);
+    } else assert(pinned.test(icon.upstreamUrl ?? '') && icon.fetch.includes(icon.upstreamUrl), `${id} fetches pinned artwork: ${icon.upstreamUrl}`);
   }
   for (const [q, id] of [['jax', 'ml-training/jax'], ['flax', 'ml-training/flax'], ['lightgbm', 'ml-training/lightgbm'],
     ['catboost', 'ml-training/catboost'], ['metaflow', 'ml-training/metaflow'], ['signoz', 'observability/signoz']]) {
@@ -1571,10 +1573,7 @@ test('nothing ships bytes for a mark we lack permission to redistribute', () => 
   const cat = finder.loadCatalog();
   const onDemand = cat.icons.filter((i) => i.bytes === 'on-demand');
   assert(onDemand.length > 0, 'expected on-demand entries');
-  for (const i of onDemand) {
-    assert(i.libraryIndex === undefined, `${i.id} has a library index`);
-    assert(i.fetch && i.fetch.includes('fetch-logo'), `${i.id} has no fetch command`);
-  }
+  for (const i of onDemand) assert(i.libraryIndex === undefined, `${i.id} has a library index`);
   // ...and the library genuinely does not contain them.
   const lib = core.readLibrary(join(LIB_DIR, 'ai-frameworks.drawio'));
   assert(!lib.some((e) => e.title === 'OpenAI'), 'an on-demand mark leaked into a library');
@@ -1803,7 +1802,64 @@ test('an on-demand icon refuses to produce bytes and hands back the command', ()
   let threw = null;
   try { finder.dataUriFor(icon); } catch (e) { threw = e; }
   assert(threw, 'expected dataUriFor to refuse');
-  assert(threw.message.includes('fetch-logo'), 'error should name the fetch command');
+  assert(threw.message.includes(icon.fetch), 'error should name the fetch command');
+});
+
+// 122 of 158 on-demand entries once carried `--url <logo URL from ...>`, a
+// sentence an agent cannot run. Only a pinned artwork file gets a command (#84).
+test('only an on-demand entry with pinned artwork offers a fetch command; the rest say there is nothing to fetch (#84)', () => {
+  const cat = finder.loadCatalog();
+  const onDemand = cat.icons.filter((i) => i.bytes === 'on-demand');
+  for (const i of onDemand) {
+    const slug = i.id.slice(i.pack.length + 1);
+    if (i.upstreamUrl) {
+      eq(i.artwork, 'pinned', i.id);
+      eq(i.fetch, `node scripts/fetch-logo.mjs --url ${i.upstreamUrl} --name ${slug}`, `${i.id} fetch`);
+    } else {
+      eq(i.artwork, 'none pinned', i.id);
+      assert(i.fetch === undefined, `${i.id} offers a command with nothing to download: ${i.fetch}`);
+    }
+  }
+  for (const p of cat.packs) {
+    const mine = onDemand.filter((i) => i.pack === p.id);
+    eq(`${p.onDemand}/${p.onDemandPinned}`, `${mine.length}/${mine.filter((i) => i.artwork === 'pinned').length}`, `${p.id} on-demand/pinned`);
+  }
+
+  const pinned = cat.icons.find((i) => i.id === 'ai-frameworks/openai');
+  const unpinned = cat.icons.find((i) => i.id === 'data-platforms/deltalake');
+  assert(pinned.artwork === 'pinned' && unpinned.artwork === 'none pinned', 'fixture rows changed');
+  let threw = null;
+  try { finder.dataUriFor(unpinned); } catch (e) { threw = e; }
+  assert(threw && /nothing to fetch/.test(threw.message) && threw.message.includes('https://delta.io/')
+    && threw.message.includes('--file <path> --name deltalake') && !threw.message.includes('--url'), threw?.message);
+
+  const variant = (query, id) => JSON.parse(node('find-icon.mjs', [query])).matches.flatMap((m) => m.variants).find((v) => v.id === id);
+  const shownPinned = variant('openai', pinned.id);
+  assert(shownPinned?.artwork === 'pinned' && shownPinned.fetch === pinned.fetch && !shownPinned.next, JSON.stringify(shownPinned));
+  const shownUnpinned = variant('delta lake', unpinned.id);
+  assert(shownUnpinned?.artwork === 'none pinned' && !shownUnpinned.fetch && /placeholder/.test(shownUnpinned.next), JSON.stringify(shownUnpinned));
+
+  const { report } = builder.buildDiagram({
+    nodes: [
+      { id: 'a', kind: 'icon', icon: pinned.id, label: 'OpenAI', col: 0, row: 0 },
+      { id: 'b', kind: 'icon', icon: unpinned.id, label: 'Delta Lake', col: 1, row: 0 },
+    ],
+  });
+  const [a, b] = report.needsFetch;
+  assert(a?.id === pinned.id && a.artwork === 'pinned' && a.fetch === pinned.fetch && !a.next, JSON.stringify(a));
+  assert(b?.id === unpinned.id && b.artwork === 'none pinned' && !b.fetch && /nothing to fetch/.test(b.next), JSON.stringify(b));
+
+  const listed = JSON.parse(node('find-icon.mjs', ['--list-packs'])).packs.find((p) => p.id === 'data-platforms');
+  eq(`${listed.onDemand}/${listed.onDemandPinned}`, `${cat.packs.find((p) => p.id === 'data-platforms').onDemand}/`
+    + `${cat.packs.find((p) => p.id === 'data-platforms').onDemandPinned}`, '--list-packs shows the pinned count');
+  const index = readFileSync(join(SKILL, 'references', 'pack-index.md'), 'utf8');
+  assert(!index.includes('<logo URL'), 'pack-index still offers a placeholder URL');
+  const heading = `## ${cat.packs.find((p) => p.id === 'data-platforms').title}\n`;
+  const start = index.indexOf(heading);
+  const section = index.slice(start, index.indexOf('\n## ', start + 1));
+  assert(start >= 0, `pack-index has no "${heading.trim()}" section`);
+  assert(/\*Fetchable with your own permission \(\d+\)\.\*/.test(section) && /\*Nothing to fetch \(\d+\)\.\*/.test(section)
+    && section.indexOf('Delta Lake') > section.indexOf('*Nothing to fetch'), 'pack-index separates the two kinds');
 });
 
 test('cell styles use the comma-only data URI form draw.io can parse', () => {

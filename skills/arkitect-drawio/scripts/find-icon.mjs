@@ -19,7 +19,8 @@
 //
 // Some products ship as catalogue entries without bytes, because their marks
 // carry no redistribution licence (see --stats for the live count). Those
-// resolve to a fetch-logo command, never to a substitute icon.
+// resolve to a fetch-logo command when an artwork file is pinned, and to a
+// named placeholder when none is - never to a substitute icon.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -155,11 +156,20 @@ function libraryFor(pack, catalog = loadCatalog()) {
   return entries;
 }
 
+// What to do about a mark that ships no bytes, in one line an agent can act on.
+export function onDemandNext(icon) {
+  if (icon.fetch) return `Fetch it first:  ${icon.fetch}`;
+  const slug = icon.id.slice(icon.id.indexOf('/') + 1);
+  return `No artwork file is pinned${icon.brandUrl ? ` (brand page: ${icon.brandUrl})` : ''}, so there is `
+    + 'nothing to fetch. Draw a named placeholder, or, with the vendor\'s own file and permission to use it, '
+    + `run node scripts/fetch-logo.mjs --file <path> --name ${slug}`;
+}
+
 export function dataUriFor(icon) {
   if (icon.bytes === 'on-demand') {
     throw new Error(
       `${icon.id} ships no bytes: ${icon.reason}.\n`
-      + `  Fetch it first:  ${icon.fetch}\n`
+      + `  ${onDemandNext(icon)}\n`
       + '  Do not substitute a different product\'s mark.',
     );
   }
@@ -243,7 +253,11 @@ function describe(icon, catalog) {
     licence: icon.licence,
   };
   if (icon.bytes === 'on-demand') {
-    return { ...base, bytes: 'on-demand', reason: icon.reason, fetch: icon.fetch, ...(icon.brandUrl ? { brandUrl: icon.brandUrl } : {}) };
+    return {
+      ...base, bytes: 'on-demand', reason: icon.reason, artwork: icon.artwork,
+      ...(icon.fetch ? { fetch: icon.fetch } : { next: onDemandNext(icon) }),
+      ...(icon.brandUrl ? { brandUrl: icon.brandUrl } : {}),
+    };
   }
   return {
     ...base,
@@ -267,8 +281,11 @@ function main(argv) {
   if (argv[0] === '--list-packs') {
     console.log(JSON.stringify({
       packs: catalog.packs.map((p) => ({
-        id: p.id, title: p.title, icons: p.count, onDemand: p.onDemand, rank: p.rank, about: p.description,
+        id: p.id, title: p.title, icons: p.count, onDemand: p.onDemand, onDemandPinned: p.onDemandPinned,
+        rank: p.rank, about: p.description,
       })),
+      onDemand: 'catalogued without bytes; onDemandPinned of them have an artwork file fetch-logo can download, '
+        + 'the rest have nothing to fetch and draw as a named placeholder',
       resolutionOrder: 'lower rank wins at equal match strength; rank 90 is the catch-all',
       usage: 'node find-icon.mjs <query> [--pack <id>] [--context <id,id>]',
     }, null, 2));

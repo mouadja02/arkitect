@@ -49,8 +49,10 @@ say so in the report.
 
    Some catalogued products carry no bundled artwork, because their marks carry no
    redistribution licence or their licensed artwork does not draw at icon size (see
-   `--stats` for the live count). Those come back as `bytes: "on-demand"` with the exact
-   `fetch-logo` command to run. Run it, then use the cached logo.
+   `--stats` for the live count). Those come back as `bytes: "on-demand"`. With
+   `artwork: "pinned"` they carry the exact `fetch-logo` command: run it, then use the
+   cached logo. With `artwork: "none pinned"` there is nothing to fetch: draw a
+   labelled placeholder and name it in the report.
 
    If nothing matches, fall back to a built-in `mxgraph.aws4.*` shape, then to the MCP
    `search_shapes` tool, then to a plain labelled box that you call out in the report.
