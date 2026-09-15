@@ -21,7 +21,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
-import { readLibrary, titleAliases } from './lib/drawio-core.mjs';
+import { readLibrary, titleAliases, fitCell, ICON_FOOTPRINT as ICON_SIZE } from './lib/drawio-core.mjs';
 import {
   sha256, download, readZip, readTgz, viewBoxOf, sizedSvg, tintUnpaintedMark, paintMark, conceptTile,
   fileSheet, dataUri, writeLibrary, prettyTitle, slugify, aliasSet, withPlurals, withShortName,
@@ -38,7 +38,6 @@ export const CACHE_DIR = join(SKILL_ROOT, '.cache');
 export const MANIFEST_FILE = join(LIB_DIR, 'sources.json');
 export const CATALOG_FILE = join(REF_DIR, 'icon-catalog.json');
 
-const ICON_SIZE = 78; // the AWS palette's service-icon footprint; keeps packs interchangeable
 // Renders where the builder chose the colour, so the catalog row records it.
 const PAINTED = new Set(['tinted', 'tile-bright']);
 
@@ -101,13 +100,14 @@ export const localFilesDigest = (files) => sha256(Buffer.concat(
 ));
 
 // A raster keeps its own aspect: the library and cell sizes fit the 78px
-// footprint on the longest side, and draw.io is told the aspect is fixed.
+// footprint, floored so a wide lockup is not drawn as a hairline (#76), and
+// draw.io is told the aspect is fixed.
 function pngArt(buf) {
   const { width, height } = pngSize(buf);
-  const scale = ICON_SIZE / Math.max(width, height);
+  const cell = fitCell(width, height, ICON_SIZE);
   return {
     data: `data:image/png;base64,${buf.toString('base64')}`, mime: 'image/png', width, height,
-    w: Math.round(width * scale), h: Math.round(height * scale), aspect: 'fixed',
+    w: cell.width, h: cell.height, aspect: 'fixed',
   };
 }
 
@@ -272,13 +272,13 @@ async function buildBrandEntries(icons, manifest, cache) {
       }
       const svg = readText(opened, icon.file);
       const [, , width, height] = viewBoxOf(svg);
-      const scale = ICON_SIZE / Math.max(width, height);
+      const cell = fitCell(width, height, ICON_SIZE);
       out.push({
         slug: icon.slug, title: icon.title, svg,
         aliases: withShortName(icon.aliases, icon.title),
         source: icon.source, upstreamId: icon.upstreamUrl ?? icon.file, render: 'verbatim',
         width: Math.round(width), height: Math.round(height),
-        w: Math.round(width * scale), h: Math.round(height * scale), aspect: 'fixed',
+        w: cell.width, h: cell.height, aspect: 'fixed',
       });
       continue;
     }

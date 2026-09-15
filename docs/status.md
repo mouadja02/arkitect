@@ -19,6 +19,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | On-demand artwork | An on-demand entry says whether a pinned artwork file exists; only those carry a fetch command, the rest draw as a named placeholder | [#84](https://github.com/mouadja02/arkitect/issues/84), [PR #100](https://github.com/mouadja02/arkitect/pull/100) |
 | Identical artwork | Ids that draw the same picture name each other in the catalog and search, and a build reports two such ids used together | [#77](https://github.com/mouadja02/arkitect/issues/77) |
 | Documentation counts | Every exact icon count a doc quotes is checked against the catalog, the Excalidraw library index and the two answer keys, and the failure names the value to write | [#78](https://github.com/mouadja02/arkitect/issues/78), [PR #102](https://github.com/mouadja02/arkitect/pull/102) |
+| Wordmark legibility | A wide lockup's short side is floored at a third of the icon footprint and its long side held to twice it, so a 6:1 wordmark is drawn 156x26 rather than 78x13, with no artwork byte changed | [#76](https://github.com/mouadja02/arkitect/issues/76), [PR #103](https://github.com/mouadja02/arkitect/pull/103) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -37,7 +38,6 @@ recommended priorities, not work already started or assigned.
 | Issue | Order | Remaining outcome |
 |---|---|---|
 | [#75](https://github.com/mouadja02/arkitect/issues/75) | Then | Cover title ties in the resolver answer key; keep separate from exact IDs. |
-| [#76](https://github.com/mouadja02/arkitect/issues/76) | Then | Make wide wordmarks legible while preserving aspect and layout. |
 | [#81](https://github.com/mouadja02/arkitect/issues/81) | Review backlog | Record curated-pack reviews at the exact shipped payload hashes. |
 | [#73](https://github.com/mouadja02/arkitect/issues/73) | Review backlog | Record AWS/GCP reviews and audit captions. |
 | [#72](https://github.com/mouadja02/arkitect/issues/72) | Review backlog | Complete the brands review split from the Azure work. |
@@ -52,8 +52,8 @@ search ([#95](https://github.com/mouadja02/arkitect/issues/95)), and an SVG's si
 engines ([#96](https://github.com/mouadja02/arkitect/issues/96)). Diagrams built before PR #98 may still carry a wrong mark
 or a stretched logo; rebuild them rather than trusting the old output. What
 remains is legibility rather than identity. A mark invisible on a light canvas is now
-refused at build time ([#85](https://github.com/mouadja02/arkitect/issues/85)); a wordmark drawn too short to read
-([#76](https://github.com/mouadja02/arkitect/issues/76)) is still the right artwork, badly presented.
+refused at build time ([#85](https://github.com/mouadja02/arkitect/issues/85)), and a wordmark once drawn too
+short to read ([#76](https://github.com/mouadja02/arkitect/issues/76)) is now grown until its text carries.
 
 The visual-review issues cover different packs; they are not duplicates. The
 upstream issues overlap in infrastructure: coordinate #74, #82 and #83 rather

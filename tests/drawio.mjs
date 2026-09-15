@@ -527,7 +527,8 @@ test('the PNG ink reader tells a drawn page from a blank one', () => {
 
 // #33: the export covers every committed mark, not the first of each pack.
 // Marks sit in 100px cells, 400 to a page, fitted to 78px with no caption or
-// border, and two invisible corner cells pin each page's bounds so every mark
+// border - in a column widened, on every page alike, to hold the widest lockup
+// (#76) - and two invisible corner cells pin each page's bounds so every mark
 // lands on known pixels. Ink is measured inside each mark's own box: a share
 // taken over the whole page cannot see one blank mark among 399 drawn ones, and
 // a caption's text would pass for artwork.
@@ -537,24 +538,29 @@ function tilePages(icons, { perRow, perPage, cell, icon: size } = TILE_GRID) {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const corner = (id, x, y) => `<mxCell id="${id}" value="" style="fillColor=none;strokeColor=none;" vertex="1" parent="1">`
     + `<mxGeometry x="${x}" y="${y}" width="1" height="1" as="geometry"/></mxCell>`;
+  const sizedAll = icons.map((icon) => ({ icon, ...finder.recommendedSize(icon, size) }));
+  // A wide lockup is drawn wider than the footprint (#76), so the column has to
+  // hold the widest tile: ink is measured inside each mark's own box, and boxes
+  // that overlapped would let a blank mark borrow the ink of the one beside it.
+  // One width serves every page, not one per page - the export renders all pages
+  // in a single call at a single --width, so a page laid out wider than that
+  // comes back scaled and its tiles are no longer where the measurement looks.
+  const colW = Math.max(cell, ...sizedAll.map((t) => t.width + 4));
   const pages = [];
   for (let start = 0; start < icons.length; start += perPage) {
     const n = pages.length;
-    const chunk = icons.slice(start, start + perPage);
-    const rows = Math.ceil(chunk.length / perRow);
-    const tiles = chunk.map((icon, i) => {
-      const { width, height } = finder.recommendedSize(icon, size);
-      return {
-        icon, width, height,
-        x: (i % perRow) * cell + Math.round((cell - width) / 2),
-        y: Math.floor(i / perRow) * cell + Math.round((cell - height) / 2),
-      };
-    });
+    const sized = sizedAll.slice(start, start + perPage);
+    const rows = Math.ceil(sized.length / perRow);
+    const tiles = sized.map((t, i) => ({
+      ...t,
+      x: (i % perRow) * colW + Math.round((colW - t.width) / 2),
+      y: Math.floor(i / perRow) * cell + Math.round((cell - t.height) / 2),
+    }));
     const cells = tiles.map((t, i) => `<mxCell id="i${i}" value="" style="${esc(finder.styleFor(t.icon))}" vertex="1" parent="1">`
       + `<mxGeometry x="${t.x}" y="${t.y}" width="${t.width}" height="${t.height}" as="geometry"/></mxCell>`).join('')
-      + corner('top-left', 0, 0) + corner('bottom-right', perRow * cell - 1, rows * cell - 1);
+      + corner('top-left', 0, 0) + corner('bottom-right', perRow * colW - 1, rows * cell - 1);
     pages.push({
-      tiles, width: perRow * cell, height: rows * cell,
+      tiles, width: perRow * colW, height: rows * cell,
       xml: `<diagram id="p${n}" name="p${n}"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells}</root></mxGraphModel></diagram>`,
     });
   }
@@ -591,7 +597,7 @@ if (smokeEnabled) test('every committed mark, the masked GCP marks among them, e
   writeFileSync(file, `<mxfile>${pages.map((p) => p.xml).join('')}</mxfile>`);
   const outDir = join(TMP, 'every-mark');
   const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'render', file, '--all',
-    '--width', String(TILE_GRID.perRow * TILE_GRID.cell), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
+    '--width', String(pages[0].width), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
   { encoding: 'utf8', timeout: 1200000 });
   eq(result.status, 0, `Desktop export: ${result.stdout} ${result.stderr}`);
   const problems = [];
@@ -1000,7 +1006,7 @@ test('Apache Iceberg, Pinot, Beam and APISIX ship byte-for-byte from the pinned 
     eq(`${entry.w}x${entry.h} ${entry.aspect}`, `${fitted.width}x${fitted.height} fixed`, `${id} library cell keeps the artwork's aspect`);
   }
   const iceberg = finder.recommendedSize(cat.icons.find((i) => i.id === 'data-platforms/apacheiceberg'));
-  eq(`${iceberg.width}x${iceberg.height}`, '78x21', 'the Iceberg lockup is drawn wide, not squashed into a square');
+  eq(`${iceberg.width}x${iceberg.height}`, '95x26', 'the Iceberg lockup is drawn wide and legible, not squashed into a square nor left a hairline');
 });
 
 // #20: a logo the project itself authored and ships in its own repository,
@@ -1140,17 +1146,19 @@ test('the modern-stack marks that ship are pinned to a commit and committed byte
     assert(/^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[0-9a-f]{40}\//.test(icon.upstreamId)
       || icon.upstreamId.startsWith('https://www.apache.org/logos/originals/'), `${id} pins its upstream: ${icon.upstreamId}`);
     const entry = core.readLibrary(join(LIB_DIR, `${icon.pack}.drawio`))[icon.libraryIndex];
-    // The cell fits 78px on the longest side and keeps the artwork's own
-    // aspect, both sides checked against the committed original's own size, the
-    // one build-packs fits - Restate's 34.46 by 30.52, not the 34 by 31 the
-    // catalog rounds it to - and recommendedSize hands back that same cell (#80).
+    // The cell is the footprint fit, floored so a wide lockup stays legible
+    // (#76), and keeps the artwork's own aspect - both sides checked against the
+    // committed original's own size, the one build-packs fits: Restate's 34.46
+    // by 30.52, not the 34 by 31 the catalog rounds it to. recommendedSize hands
+    // back that same cell (#80). The rule itself is tested on its own; here it
+    // is the builder having applied it that is under test.
     const original = files.get(file);
     const png = file.endsWith('.png') ? iconBuild.pngSize(original) : null;
     const [width, height] = png ? [png.width, png.height] : iconBuild.viewBoxOf(original.toString('utf8')).slice(2);
-    const scale = 78 / Math.max(width, height);
+    const fit = core.fitCell(width, height);
     eq(`${entry.w}x${entry.h} ${entry.aspect} ${entry.mime}`,
-      `${Math.round(width * scale)}x${Math.round(height * scale)} fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
-      `${id} library cell is its artwork fitted to 78px, in its own format`);
+      `${fit.width}x${fit.height} fixed ${file.endsWith('.png') ? 'image/png' : 'image/svg+xml'}`,
+      `${id} library cell is its artwork fitted to the footprint, in its own format`);
     const fitted = finder.recommendedSize(icon);
     eq(`${fitted.width}x${fitted.height}`, `${entry.w}x${entry.h}`, `${id} recommendedSize is its library cell`);
   }
@@ -1435,6 +1443,29 @@ test('an icon cell is fitted to its image, never stretched square', () => {
   eq(size(156, 147, 78), JSON.stringify({ width: 78, height: 74 }), 'a requested size is the longest side');
   eq(size(78, 78), JSON.stringify({ width: 78, height: 78 }), 'a square mark stays square');
   eq(size(1024, 512), JSON.stringify({ width: 78, height: 39 }), 'the default footprint is fitted too');
+  // Fitting the longest side alone drew a 6:1 wordmark 78x13, a hairline with
+  // its text a couple of pixels tall. The short side has a floor of a third of
+  // the footprint, the long side a ceiling of twice it, and both are shares of
+  // the size asked for rather than fixed pixels (#76).
+  eq(size(600, 100), JSON.stringify({ width: 156, height: 26 }), 'a 6:1 lockup is grown until it is legible');
+  eq(size(800, 100), JSON.stringify({ width: 156, height: 20 }), 'past 6:1 the width ceiling wins over the floor');
+  eq(size(600, 100, 40), JSON.stringify({ width: 80, height: 13 }), 'both bounds scale with the size asked for');
+  eq(size(0, 0), JSON.stringify({ width: 78, height: 78 }), 'a mark with no usable size falls back to the footprint');
+});
+
+// A mark may sit below the floor only because the width ceiling stopped it
+// growing; anything else short is the hairline this fixed (#76).
+test('no committed mark is drawn as a hairline (#76)', () => {
+  const floor = core.ICON_FOOTPRINT * core.MIN_SIDE_SHARE;
+  const ceiling = core.ICON_FOOTPRINT * core.MAX_SIDE_SHARE;
+  const thin = [];
+  for (const icon of finder.loadCatalog().icons.filter((i) => i.bytes === 'committed')) {
+    const { width, height } = finder.recommendedSize(icon);
+    if (Math.min(width, height) < floor && Math.max(width, height) < ceiling) {
+      thin.push(`${icon.id} ${width}x${height}`);
+    }
+  }
+  assert(!thin.length, `${thin.length} marks are drawn under the floor with room to grow:\n        ${thin.join('\n        ')}`);
 });
 
 // The size the resolver hands back is the cell the library ships (#80). The

@@ -144,7 +144,9 @@ payloads are **not** duplicated there; they are read from the pack library by
 `libraryIndex` when a style is actually requested, so a search never drags base64 into
 context. The dimensions are the artwork's own, rounded to integers, so the size a
 search, `--cell` or a build recommends at the 78px footprint is read from the mark's
-library cell instead, which was fitted from the artwork's exact size.
+library cell instead, which was fitted from the artwork's exact size. A wide lockup is
+grown until its short side clears a third of the footprint, so its text is legible
+rather than a hairline, and nothing is drawn wider than twice the footprint (#76).
 
 ## Rebuilding
 

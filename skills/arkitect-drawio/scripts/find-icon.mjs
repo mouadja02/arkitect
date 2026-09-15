@@ -25,7 +25,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
-import { readLibrary, normalizeTitle } from './lib/drawio-core.mjs';
+import { readLibrary, normalizeTitle, fitCell, ICON_FOOTPRINT } from './lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -194,22 +194,21 @@ export function styleFor(icon) {
 }
 
 // An icon is fitted, never stretched: the requested size - by default the
-// observed 78px service-icon footprint - becomes its longest side, and the other
-// side follows the image. Cell styles set imageAspect=0, so a square cell would
-// squash a raster like the 156x147 AgentCore Identity mark.
+// observed 78px service-icon footprint - sets the scale and the other side
+// follows the image. A wide lockup is then grown until its short side clears a
+// third of that size, and held to twice it, so its text reads rather than
+// thinning to a hairline (#76). Cell styles set imageAspect=0, so a square cell
+// would squash a raster like the 156x147 AgentCore Identity mark.
 //
 // At the size its library cell was built for, a shipped mark gets that cell.
 // The catalog keeps the artwork's size rounded to integers, which can fit a
 // pixel away from the cell build-packs fitted from the real size: Restate's
 // 34.46x30.52 artwork is 34x31 in the catalog, 78x71 fitted, in a 78x69 cell (#80).
 export function recommendedSize(icon, requested) {
-  const size = requested ?? 78;
+  const size = requested ?? ICON_FOOTPRINT;
   const cell = libraryCell(icon);
-  if (cell && Math.max(cell.w, cell.h) === size) return { width: cell.w, height: cell.h };
-  const w = icon.width ?? 78;
-  const h = icon.height ?? 78;
-  const scale = size / Math.max(w, h);
-  return { width: Math.round(w * scale), height: Math.round(h * scale) };
+  if (cell && size === ICON_FOOTPRINT) return { width: cell.w, height: cell.h };
+  return fitCell(icon.width ?? ICON_FOOTPRINT, icon.height ?? ICON_FOOTPRINT, size);
 }
 
 // The cell a committed mark ships in; null for a mark with no bytes, for an
