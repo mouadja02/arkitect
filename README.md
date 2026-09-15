@@ -19,7 +19,7 @@ by your coding agent, entirely on your machine.
 
 Arkitect turns a JSON spec into an editable **source file**, `.drawio` XML or
 `.excalidraw` JSON, with embedded product icons and connected edges. You can move
-components, change labels and edit connections in the corresponding editor.
+components, change labels and edit connections in Draw.io or Excalidraw.
 
 The agent workflow includes validation and visual review of a local render.
 
@@ -162,6 +162,12 @@ claude mcp add --scope user drawio -- npx --yes --ignore-scripts @drawio/mcp
 
 → **[docs/excalidraw-docker.md](docs/excalidraw-docker.md)** ·
 **[docs/drawio-mcp.md](docs/drawio-mcp.md)**
+
+## Project status
+
+See [completed work, known issues and next priorities](docs/status.md).
+Known Draw.io icon-selection and SVG-sizing bugs remain open; the status page
+links their scope and the planned fixes.
 
 ## Documentation
 

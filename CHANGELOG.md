@@ -47,7 +47,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
-- Both engines share one backup and retention implementation, preserving existing imports and generated output.
+- Add a dated project-status page and reconcile issue outcomes, remaining scope and next priorities with main.
+
+- Both engines share one backup and retention implementation, preserving existing imports and generated output (#97).
 
 - The AWS pack is rebuilt from Amazon's official July 2026 icon package: 311
   icons, up from 243, embedded verbatim and pinned by sha256 (#8)
@@ -78,8 +80,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
-- Reject invalid installer arguments before writing adapters, handle prototype-key commands as usage errors, and reject unknown test suites and flags.
-- Correct stale CLI examples and preview requirements in the docs, and simplify the README introduction.
+- Reject invalid installer arguments before writing adapters, handle prototype-key commands as usage errors, and reject unknown test suites and flags (#97).
+- Correct stale CLI examples and preview requirements in the docs, and simplify the README introduction (#97).
 
 - The Excalidraw library README links to `docs/excalidraw-libraries.md`
   instead of a page that no longer exists, and the docs link check now reads

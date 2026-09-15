@@ -271,6 +271,16 @@ matter again, revisit this — but as its own deliberate change, not a default.
 The suite still fails on a conflict marker left in any tracked text file
 (`tests/toolkit.mjs`).
 
+## Issue and project status
+
+After a merge, update the issue with the implementing PR and verify its acceptance
+criteria before checking them off. If only part of the work landed, link the
+remaining issue explicitly. Preserve the original report as history; put current
+status above it. A decision to defer or replace a proposal is different from an
+implementation. Keep the dated [project status](status.md) snapshot aligned with
+main when priorities or completed scope change. GitHub issue and PR state remain
+the live record.
+
 ## Version bumps
 
 `package.json` `version` and `.claude-plugin/plugin.json` `version` move
