@@ -17,13 +17,11 @@ by your coding agent, entirely on your machine.
 
 ---
 
-Most agents answer "draw me an architecture" with a Mermaid block or a picture. Neither
-survives contact with reality: you cannot nudge a box, recolour a boundary, or hand it to
-a colleague who needs to change one arrow.
+Arkitect turns a JSON spec into an editable **source file**, `.drawio` XML or
+`.excalidraw` JSON, with embedded product icons and connected edges. You can move
+components, change labels and edit connections in the corresponding editor.
 
-Arkitect produces **the source file** — `.drawio` XML or `.excalidraw` JSON — with real
-product icons embedded, a consistent style applied, every edge connected, and a render the
-agent actually looked at before saying it was done.
+The agent workflow includes validation and visual review of a local render.
 
 <div align="center">
 
@@ -35,9 +33,8 @@ agent actually looked at before saying it was done.
 
 ## What you get
 
-- **Two engines, one contract.** Draw.io when it has to look formal; Excalidraw when it
-  should look thought-through rather than filed. Same workflow, same spec idea, same
-  honesty rules.
+- **Two engines, one workflow.** Draw.io for formal architecture diagrams;
+  Excalidraw for sketches and whiteboard diagrams. Both build from JSON specs.
 - **6,005 icons bundled.** 4,843 marks in 18 shared packs — AWS, Azure, Google Cloud,
   data platforms, databases, AI frameworks, ML, streaming, observability, DevOps,
   security, GitHub, SaaS, languages, file types, and agent concepts — plus 1,162 items
@@ -50,11 +47,12 @@ agent actually looked at before saying it was done.
   the mark takes the hand-drawn stroke and stays editable.
 - **An honest placeholder** when nothing matches: a dotted slot with a `?`, named in the
   build report. Never one product's mark standing in for another.
-- **A style with receipts.** Every rule in the style guide carries the evidence count
+- **Documented style rules.** Every rule in the style guide carries the evidence count
   behind it, and the ones that are just sensible defaults say so. Point the learning skill
   at your own diagrams and it becomes *your* style, merged rather than overwritten.
 - **Nothing is uploaded.** Ever. Your architecture stays on your disk.
-- **Zero dependencies.** Node 20+, that is the whole install.
+- **No npm dependencies.** Generation and validation need Node 20+. PNG previews
+  also need Draw.io Desktop or a supported browser, depending on the engine.
 
 ## Quick start
 
@@ -118,7 +116,7 @@ Then ask for a diagram in plain language:
 | reach for it when | a client, a review board or an RFC will see it; the design is AWS-heavy; you need multiple pages or an as-is/to-be comparison | it is system design, a component or block diagram, a flow, or art for a README |
 | icons | 18 packs, 4,843 marks + built-in `mxgraph.aws4.*` + fetched product logos | 1,162 native items across 36 libraries + 4,843 shared marks embedded as original artwork |
 | edit it in | Draw.io Desktop, the VS Code extension, app.diagrams.net | the Excalidraw container this repo ships, or excalidraw.com |
-| local viewer | Draw.io Desktop (optional) | `docker compose up -d` (optional) |
+| local viewer | Draw.io Desktop (optional) | `npm run excalidraw:up` (optional) |
 
 <div align="center">
 
@@ -150,7 +148,9 @@ these: **[docs/agents.md](docs/agents.md)**.
 
 ## The local apps
 
-Both are **optional** — generation, validation and preview work without either.
+Generation and validation need neither app. Draw.io PNG previews require Draw.io
+Desktop. Excalidraw SVG previews need only Node; PNG previews need Edge, Chrome or
+Chromium. The Docker app is optional and provides a local Excalidraw editor.
 
 ```bash
 # Excalidraw, the real app, no backend, nothing uploaded

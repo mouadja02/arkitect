@@ -232,3 +232,9 @@ commands. The full contract stays in one place —
 [`AGENTS.md`](../AGENTS.md) in the Arkitect repository — and every adapter points
 at it. Update Arkitect and the adapters keep pointing at the new contract; only
 re-run `install` if the path changed.
+
+## Installer arguments
+
+Use `arkitect install --help` to list adapters without writing files. Unknown
+adapters or options and missing or repeated `--dir` values exit with code 2
+before any adapter is written. This also applies when using `--all`.

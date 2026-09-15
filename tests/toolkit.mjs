@@ -71,7 +71,7 @@ const FILES = textFiles(ROOT);
 
 // ------------------------------------------------------------------ the CLI
 
-test('the dispatcher points every command at a script that exists', async () => {
+test('the dispatcher points every command at a script that exists', () => {
   const src = readFileSync(CLI, 'utf8');
   const refs = [...src.matchAll(/\[(DRAWIO|EXCALI), '([^']+\.mjs)'/g)];
   assert(refs.length >= 15, `expected the full command table, found ${refs.length}`);
@@ -251,6 +251,79 @@ test('this repository ships the adapters it advertises', () => {
     'AGENTS.md',
   ]) {
     assert(existsSync(join(ROOT, p)), `missing committed adapter: ${p}`);
+  }
+});
+
+
+// Invalid CLI requests must fail before changing the user's project.
+test('prototype names are usage errors at each dispatcher level', () => {
+  for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    for (const args of [[name], ['drawio', name], ['excalidraw', name]]) {
+      const result = spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
+      eq(result.status, 2, args.join(' '));
+      assert(result.stderr.includes('unknown'), 'missing usage error');
+      assert(!result.stderr.includes('TypeError'), 'leaked stack trace');
+    }
+  }
+});
+
+test('install rejects malformed requests before writing any adapter', () => {
+  const dir = join(TMP, 'invalid-install');
+  mkdirSync(dir, { recursive: true });
+  const own = '# Existing project rules\n';
+  const target = join(dir, 'AGENTS.md');
+  writeFileSync(target, own);
+  const badArgs = [
+    ['agents', '--prnit'], ['agents', '--dir'], ['agents', '--dir', '--print'],
+    ['agents', '--dir', '-h'], ['agents', '--dir', ''],
+    ['agents', '--dir', dir, '--dir', dir], ['agents', 'missing'],
+    ['--all', 'missing'], ['agents', 'constructor'], ['__proto__'], ['toString'],
+  ];
+  for (const args of badArgs) {
+    const result = spawnSync(process.execPath, [CLI, 'install', ...args], { cwd: dir, encoding: 'utf8' });
+    eq(result.status, 2, args.join(' '));
+    assert(result.stderr.length > 0 && !result.stderr.includes('TypeError'), 'expected a usage error');
+    eq(readFileSync(target, 'utf8'), own, 'invalid install changed project rules');
+    eq(readdirSync(dir).join(','), 'AGENTS.md', 'invalid install created files');
+  }
+});
+
+test('install help never writes even when adapters were selected', () => {
+  const dir = join(TMP, 'install-help');
+  mkdirSync(dir, { recursive: true });
+  for (const flag of ['--help', '-h']) {
+    const out = cli(['install', 'agents', '--all', flag], { cwd: dir });
+    assert(out.includes('usage: arkitect install'), 'missing installer usage');
+    eq(readdirSync(dir).length, 0, 'help wrote adapters');
+  }
+});
+
+test('install deduplicates adapter aliases and supports options before names', () => {
+  const dir = join(TMP, 'install-aliases');
+  const out = cli(['install', '--dir', dir, 'agents', 'codex', 'pi']);
+  eq(out.split('write ').length - 1, 1, 'same adapter written more than once');
+  assert(!out.includes('update '), 'aliases triggered duplicate updates');
+  assert(readFileSync(join(dir, 'AGENTS.md'), 'utf8').includes('Arkitect'), 'adapter missing');
+});
+
+test('test runner refuses unknown selections before running a suite', () => {
+  for (const args of [['drawio', 'typo'], ['toolkit', '--typo'], ['--typo']]) {
+    const result = spawnSync(process.execPath, [join(HERE, 'run-tests.mjs'), ...args], { encoding: 'utf8' });
+    eq(result.status, 2, args.join(' '));
+    assert(result.stderr.includes('unknown suite or option'), 'missing diagnostic');
+    assert(!result.stdout.includes('==='), 'ran a suite before rejecting arguments');
+  }
+  assert(cli(['test', '--help']).includes('usage:'), 'missing runner help');
+});
+
+test('CLI guide names commands that the dispatcher supports', () => {
+  const src = readFileSync(CLI, 'utf8');
+  const commands = new Set([...src.matchAll(/([\w-]+): \[(DRAWIO|EXCALI),/g)]
+    .map(([, verb, engine]) => (engine === 'DRAWIO' ? 'drawio' : 'excalidraw') + ' ' + verb));
+  for (const [, engine, verb] of readFileSync(join(ROOT, 'docs', 'cli.md'), 'utf8')
+    .matchAll(/^arkitect (drawio|excalidraw) ([a-z-]+)/gm)) {
+    assert(commands.has(engine + ' ' + verb) || src.includes("'" + verb + "': [" + (engine === 'drawio' ? 'DRAWIO' : 'EXCALI')),
+      'undispatchable documented command: ' + engine + ' ' + verb);
   }
 });
 

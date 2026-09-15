@@ -16,6 +16,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
 
 const BEGIN = '<!-- arkitect:begin -->';
 const END = '<!-- arkitect:end -->';
@@ -128,16 +129,31 @@ function upsert(existing, block) {
 }
 
 export function install(root, argv) {
-  const flags = new Set();
-  const names = [];
-  let target = process.cwd();
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '--dir') { target = resolve(argv[++i] ?? '.'); continue; }
-    if (a.startsWith('-')) { flags.add(a); continue; }
-    names.push(ALIASES[a] ?? a);
+  let parsed;
+  try {
+    parsed = parseCli(argv, {
+      switches: ['--all', '--print', '--force'],
+      values: { '--dir': (value) => {
+        if (!value.trim() || value.startsWith('-')) throw new UsageError('--dir needs a path');
+        return resolve(value);
+      } },
+    });
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    console.error(error.message + '\nRun arkitect install --help for usage.');
+    return 2;
   }
-  const chosen = flags.has('--all') || names.includes('--all') ? Object.keys(ADAPTERS) : names;
+  const target = parsed.options.dir ?? process.cwd();
+  const names = parsed.positionals.map((name) => Object.hasOwn(ALIASES, name) ? ALIASES[name] : name);
+  // Validate the whole request before writing even the first adapter.
+  const unknown = names.filter((name) => name !== '--all' && !Object.hasOwn(ADAPTERS, name));
+  if (!parsed.help && unknown.length) {
+    console.error('unknown adapter(s) ' + unknown.map((name) => JSON.stringify(name)).join(', ')
+      + '. Known: ' + Object.keys(ADAPTERS).join(', '));
+    return 2;
+  }
+  const chosen = parsed.help ? [] : parsed.options.all || names.includes('--all')
+    ? Object.keys(ADAPTERS) : [...new Set(names)];
 
   if (!chosen.length) {
     console.log('usage: arkitect install <adapter...> [--all] [--print] [--force] [--dir <path>]\n');
@@ -155,7 +171,7 @@ export function install(root, argv) {
 
   // Writing the pointer block into Arkitect's own checkout would append a copy
   // of itself - with an absolute local path - to the contract file it points at.
-  if (resolve(target) === resolve(root) && !flags.has('--print')) {
+  if (resolve(target) === resolve(root) && !parsed.options.print) {
     console.error('refusing to install into the Arkitect checkout itself.');
     console.error('Run this from the project you want diagrams in:');
     console.error(`  cd ~/my-project && node ${join(root, 'bin', 'arkitect.mjs')} install --all`);
@@ -163,23 +179,17 @@ export function install(root, argv) {
     return 2;
   }
 
-  let bad = 0;
   for (const name of chosen) {
     const adapter = ADAPTERS[name];
-    if (!adapter) {
-      console.error(`unknown adapter "${name}". Known: ${Object.keys(ADAPTERS).join(', ')}`);
-      bad = 2;
-      continue;
-    }
     const block = adapter.render(root);
-    if (flags.has('--print')) {
+    if (parsed.options.print) {
       console.log(`----- ${adapter.file} -----\n${block}`);
       continue;
     }
     const path = join(target, adapter.file);
     const exists = existsSync(path);
 
-    if (exists && !adapter.merge && !flags.has('--force')) {
+    if (exists && !adapter.merge && !parsed.options.force) {
       console.log(`skip   ${relative(target, path) || adapter.file}  (exists - pass --force to replace)`);
       continue;
     }
@@ -194,9 +204,9 @@ export function install(root, argv) {
     console.log(`${verb} ${relative(target, path) || adapter.file}   (${adapter.hosts})`);
   }
 
-  if (!flags.has('--print') && chosen.includes('agents')) {
+  if (!parsed.options.print && chosen.includes('agents')) {
     console.log('\nCodex also reads ~/.codex/prompts/*.md for slash commands, and Antigravity');
     console.log('and Pi read AGENTS.md from the project root - which is what was just written.');
   }
-  return bad;
+  return 0;
 }
