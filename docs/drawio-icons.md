@@ -127,6 +127,15 @@ and decoded-image hash, never by title alone:
 node skills/arkitect-drawio/scripts/find-icon.mjs "compute optimizer"
 ```
 
+## Identical artwork is flagged, not merged
+
+Vendors sometimes ship one file under several names: `azure/groups` and
+`azure/my-customers` draw the same picture, and so do three Intune ids. Every id
+stays, so a spec naming either still draws, but each catalog row lists the others
+under `sameArtworkAs`, `find-icon` shows them, and `build-diagram` reports any
+nodes that use different ids for the same picture under `sameArtwork`, so two
+concepts are never drawn with one icon unnoticed (#77).
+
 ## The catalog
 
 `references/icon-catalog.json` holds metadata only — namespaced id, pack, title,

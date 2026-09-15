@@ -261,9 +261,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
+  const drawnIcons = [];
   // Packs named by the spec win ties, so a diagram declared as GCP resolves
   // "cloud run" inside GCP rather than wherever the string happens to match.
   const contextPacks = spec.context?.packs ?? null;
@@ -340,6 +341,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     else if (n.kind === 'icon') {
       const icon = resolveIcon(n.icon ? n : { ...n, icon: n.label }, catalog, report, contextPacks);
       if (icon) {
+        drawnIcons.push({ node: n.id, id: icon.id, sha256: icon.sha256 });
         const dim = recommendedSize(icon, n.width ?? T.iconSize);
         style = STYLE.icon(styleSafeDataUri(icon));
         nodeBox.set(n.id, { w: dim.width, h: dim.height });
@@ -441,6 +443,15 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     });
   }
 
+  // Different ids that draw the same picture, e.g. azure/groups beside
+  // azure/my-customers: two concepts a reader cannot tell apart (#77).
+  const byPayload = new Map();
+  for (const d of drawnIcons) byPayload.set(d.sha256, [...(byPayload.get(d.sha256) ?? []), d]);
+  for (const group of byPayload.values()) {
+    const ids = [...new Set(group.map((d) => d.id))].sort();
+    if (ids.length > 1) report.sameArtwork.push({ ids, nodes: group.map((d) => d.node) });
+  }
+
   const model = `<mxGraphModel dx="1400" dy="800" grid="0" gridSize="10" guides="1" tooltips="1" `
     + `connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="${Math.max(850, Math.round(pageW + 120))}" `
     + `pageHeight="${Math.max(1100, Math.round(pageH + 120))}" math="0" shadow="0">\n`
@@ -515,6 +526,7 @@ function main(argv) {
       missing: report.missing,
       ambiguous: report.ambiguous,
       needsFetch: report.needsFetch,
+      sameArtwork: report.sameArtwork,
       ...(spec.context?.packs ? { contextPacks: spec.context.packs } : {}),
     },
     logos: { embedded: report.logos.length, missing: report.missingLogos, opaqueBackground: report.opaqueLogos },

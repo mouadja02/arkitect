@@ -265,6 +265,7 @@ function describe(icon, catalog) {
     mime: icon.mime,
     recommended: `${dim.width}x${dim.height}`,
     sha256: String(icon.sha256).slice(0, 16),
+    ...(icon.sameArtworkAs ? { sameArtworkAs: icon.sameArtworkAs } : {}),
     ...(catalog.packs.find((p) => p.id === icon.pack)?.rank >= 90 ? { note: 'catch-all pack - confirm this is the right product' } : {}),
   };
 }

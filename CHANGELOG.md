@@ -13,6 +13,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Draw.io ids that draw identical artwork name each other: the catalog's
+  `sameArtworkAs`, shown by `find-icon`, and a build reports nodes that use
+  different ids for the same picture under `sameArtwork` (#77)
 - Learned Draw.io style can change what gets drawn: `/apply-drawio-style` turns
   findings into a per-install override of named tokens and edge kinds that
   every CLI build merges in, `--defaults` ignores and `--print-style` shows (#89)

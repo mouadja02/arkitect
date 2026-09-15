@@ -1541,6 +1541,35 @@ test('duplicate titles are retained and disambiguated by id and hash', () => {
   assert(dupes.every((d) => d.ambiguousTitle === true), 'both flagged ambiguous');
 });
 
+test('ids that draw identical artwork name each other in the catalog, the search and the build report (#77)', () => {
+  const cat = finder.loadCatalog();
+  const byPayload = new Map();
+  for (const i of cat.icons.filter((row) => row.bytes === 'committed')) {
+    byPayload.set(i.sha256, [...(byPayload.get(i.sha256) ?? []), i.id]);
+  }
+  for (const i of cat.icons) {
+    const twins = i.bytes === 'committed' ? byPayload.get(i.sha256).filter((id) => id !== i.id) : [];
+    eq((i.sameArtworkAs ?? []).join(' '), twins.join(' '), `${i.id} sameArtworkAs`);
+  }
+  const byId = (id) => cat.icons.find((i) => i.id === id);
+  eq(byId('azure/my-customers').sameArtworkAs.join(' '), 'azure/groups', 'Groups and My Customers are one picture');
+  eq(byId('azure/intune').sameArtworkAs.join(' '), 'azure/intune-app-protection azure/intune-for-education', 'the Intune trio');
+  assert(!byId('aws/aws-compute-optimizer').sameArtworkAs, 'a shared title with different artwork is not a twin');
+
+  const shown = JSON.parse(node('find-icon.mjs', ['my customers', '--pack', 'azure'])).matches
+    .flatMap((m) => m.variants).find((v) => v.id === 'azure/my-customers');
+  eq(shown?.sameArtworkAs?.join(' '), 'azure/groups', 'find-icon shows the twin');
+
+  const at = (id, icon, col) => ({ id, kind: 'icon', icon, label: id, col, row: 0 });
+  const { report } = builder.buildDiagram({
+    nodes: [at('a', 'azure/groups', 0), at('b', 'aws/aws-lambda', 1), at('c', 'azure/my-customers', 2), at('d', 'azure/groups', 3)],
+  });
+  eq(JSON.stringify(report.sameArtwork), JSON.stringify([{ ids: ['azure/groups', 'azure/my-customers'], nodes: ['a', 'c', 'd'] }]),
+    'the report names both ids and every node drawing that picture');
+  const repeated = builder.buildDiagram({ nodes: [at('a', 'azure/groups', 0), at('b', 'azure/groups', 1)] });
+  eq(repeated.report.sameArtwork.length, 0, 'one id used twice is not a finding');
+});
+
 test('the old palette captions still resolve as aliases', () => {
   const cases = [
     ['Arch Amazon-Bedrock 64', 'Amazon Bedrock'],
