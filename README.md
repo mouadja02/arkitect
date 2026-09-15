@@ -1,8 +1,9 @@
 <div align="center">
 
-# Arkitect
-
-**Your agent draws the architecture.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/arkitect-banner-dark.svg">
+  <img src="docs/brand/arkitect-banner.svg" width="880" alt="Arkitect — your agent draws the architecture">
+</picture>
 
 Editable **Draw.io** and **Excalidraw** diagrams — cloud architectures, system designs,
 data pipelines, agentic systems, network views and flow diagrams — generated and edited
@@ -181,6 +182,7 @@ links their scope and the planned fixes.
 | [docs/excalidraw-docker.md](docs/excalidraw-docker.md) | the local Excalidraw container, and what it can and cannot do |
 | [docs/icons.md](docs/icons.md) | the bundled icon sets, placeholders, logos, tracing |
 | [docs/style.md](docs/style.md) | the house style, and how to replace it with your own |
+| [docs/brand.md](docs/brand.md) | the banner and mark, and the geometry they borrow from the generators |
 | [docs/testing.md](docs/testing.md) | the offline suite, the redaction check, the evals |
 | [docs/maintenance.md](docs/maintenance.md) | the contract for changing this repo — invariants, and what is never automated |
 | [docs/privacy.md](docs/privacy.md) | exactly what touches the network, and what never does |

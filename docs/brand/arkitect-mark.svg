@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Arkitect">
+  <title>Arkitect</title>
+  <!--
+    The banner's idea in a square: the same 78px node drawn twice, ruled above
+    and freehand below, on a diagonal, joined by one orthogonal connector. The
+    two forms and the 44px margin are symmetrical about that diagonal. Heavier
+    strokes than the banner so the form survives reduction; it holds to about
+    32px and no smaller. Self-contained ink ground, for an avatar or a favicon.
+    See docs/brand.md.
+  -->
+  <rect width="256" height="256" fill="#1e1e1e"/>
+  <g fill="none" stroke="#ffffff">
+
+    <!-- ruled -->
+    <rect x="44" y="44" width="78" height="78" stroke-width="12"/>
+
+    <!-- the connector, out of the ruled node and down at a right angle -->
+    <path d="M83 122 V173 H134" stroke-width="12"/>
+
+    <!-- freehand: the same square in the other hand. One pass, not the
+         banner's two - at this weight the passes fuse and read as lumpiness
+         rather than as roughness. -->
+    <path d="M135 136 Q174 132 213 133 Q216 173 211 213 Q172 209 133 210 Q131 173 135 136 Z"
+          stroke-width="12" stroke-linejoin="miter" stroke-miterlimit="6"/>
+  </g>
+</svg>
