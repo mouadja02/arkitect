@@ -80,6 +80,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A spec naming an icon by its exact catalog id now draws that id's own mark:
+  `<pack>/<slug>` is looked up as an id, not passed through text search, which
+  drew another product's mark for 752 of the 4,843 committed ids (#95)
+- A fetched logo is sized from the root `<svg>` element's own attributes, so a
+  child `<rect>` or a `stroke-width` can no longer set its aspect, and both
+  engines now read the same bytes the same way (#96)
 - Reject invalid installer arguments before writing adapters, handle prototype-key commands as usage errors, and reject unknown test suites and flags (#97).
 - Correct stale CLI examples and preview requirements in the docs, and simplify the README introduction (#97).
 

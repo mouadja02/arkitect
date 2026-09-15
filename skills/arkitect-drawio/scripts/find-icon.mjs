@@ -213,8 +213,24 @@ function libraryCell(icon) {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Exact catalog ids only: no normalisation, no fuzzy matching, no library
+// index. `<pack>/<slug>` is what a search prints as the thing to put in a spec,
+// so it has to select that row and nothing else - passing it through text
+// search sent 752 of the 4,843 ids to another product's mark (#95). Indexed
+// per catalog object the way the Excalidraw side indexes shared refs.
+const idIndex = new WeakMap();
+export function byExactId(catalog, id) {
+  if (typeof id !== 'string' || !catalog?.icons) return null;
+  let map = idIndex.get(catalog);
+  if (!map) {
+    map = new Map(catalog.icons.map((i) => [i.id, i]));
+    idIndex.set(catalog, map);
+  }
+  return map.get(id) ?? null;
+}
+
 function byId(catalog, id) {
-  return catalog.icons.find((i) => i.id === id)
+  return byExactId(catalog, id)
     ?? catalog.icons.find((i) => String(i.libraryIndex) === String(id));
 }
 

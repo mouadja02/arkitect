@@ -32,6 +32,10 @@ import {
   PALETTE, FONT, FONT_FAMILY, ROUGHNESS, STROKE_WIDTH, normalizeName, measureText,
 } from './lib/excalidraw-core.mjs';
 import { parseSvg, simplify, signedArea } from './lib/svg-path.mjs';
+// Both engines read the same bytes the same way: the root <svg> element's own
+// attributes, viewBox first. Reading a width from anywhere in the document
+// picks up a child's, or `stroke-width`, and sizes the mark wrong (#96).
+import { svgDimensions } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -63,15 +67,7 @@ export function pngDimensions(bytes) {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
-export function svgDimensions(bytes) {
-  const head = bytes.subarray(0, 4096).toString('utf8');
-  const vb = /viewBox\s*=\s*["']\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(head);
-  if (vb) return { width: Number(vb[1]), height: Number(vb[2]) };
-  const w = /\bwidth\s*=\s*["']([\d.]+)/.exec(head);
-  const h = /\bheight\s*=\s*["']([\d.]+)/.exec(head);
-  if (w && h) return { width: Number(w[1]), height: Number(h[1]) };
-  return { width: null, height: null };
-}
+export { svgDimensions };
 
 export function dimensions(mime, bytes) {
   if (mime === 'image/png') return pngDimensions(bytes);
