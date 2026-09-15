@@ -15,6 +15,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Diagram checks | Invalid-reference rejection, unknown-kind reports, caption routing and example freshness | [#36](https://github.com/mouadja02/arkitect/issues/36), [#48](https://github.com/mouadja02/arkitect/issues/48), [#45](https://github.com/mouadja02/arkitect/issues/45), [#50](https://github.com/mouadja02/arkitect/issues/50) |
 | Icon maintenance | Shared packs in Excalidraw, source pins, scheduled upstream checks, Azure review records | [#17](https://github.com/mouadja02/arkitect/issues/17), [#9](https://github.com/mouadja02/arkitect/issues/9), [#10](https://github.com/mouadja02/arkitect/issues/10), [#18](https://github.com/mouadja02/arkitect/issues/18) |
 | Icon correctness | An exact catalog id selects its own artwork; a fetched SVG is sized from its root element, identically in both engines | [#95](https://github.com/mouadja02/arkitect/issues/95), [#96](https://github.com/mouadja02/arkitect/issues/96), [PR #98](https://github.com/mouadja02/arkitect/pull/98) |
+| Icon validation | A mark that paints only in white is refused when a pack is built and reported by `--verify` | [#85](https://github.com/mouadja02/arkitect/issues/85) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -32,7 +33,6 @@ recommended priorities, not work already started or assigned.
 
 | Issue | Order | Remaining outcome |
 |---|---|---|
-| [#85](https://github.com/mouadja02/arkitect/issues/85) | Next | Detect artwork invisible on a light canvas during pack building. |
 | [#84](https://github.com/mouadja02/arkitect/issues/84) | Next | Distinguish fetchable on-demand artwork from manual discovery. |
 | [#75](https://github.com/mouadja02/arkitect/issues/75) | Then | Cover title ties in the resolver answer key; keep separate from exact IDs. |
 | [#78](https://github.com/mouadja02/arkitect/issues/78) | Then | Generate, check or reduce exact icon counts repeated across docs. |
@@ -51,9 +51,9 @@ Draw.io catalog ID is now looked up as an ID rather than passed through text
 search ([#95](https://github.com/mouadja02/arkitect/issues/95)), and an SVG's size is read from its root element in both
 engines ([#96](https://github.com/mouadja02/arkitect/issues/96)). Diagrams built before PR #98 may still carry a wrong mark
 or a stretched logo; rebuild them rather than trusting the old output. What
-remains at the top of the list is legibility rather than identity: a mark
-invisible on a light canvas ([#85](https://github.com/mouadja02/arkitect/issues/85)) and a wordmark drawn too short to read
-([#76](https://github.com/mouadja02/arkitect/issues/76)) are the right artwork, badly presented.
+remains is legibility rather than identity. A mark invisible on a light canvas is now
+refused at build time ([#85](https://github.com/mouadja02/arkitect/issues/85)); a wordmark drawn too short to read
+([#76](https://github.com/mouadja02/arkitect/issues/76)) is still the right artwork, badly presented.
 
 The visual-review issues cover different packs; they are not duplicates. The
 upstream issues overlap in infrastructure: coordinate #74, #82 and #83 rather

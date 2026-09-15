@@ -80,6 +80,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- `build-packs` refuses a mark whose every fill, stroke and gradient stop is
+  white, the dark-background half of a logo pair that draws an empty tile on a
+  light canvas, and `--verify` checks every committed payload for it (#85)
 - The repository-wide checks read the files git says are ours - tracked, plus
   new ones that are not ignored - instead of walking the working tree past
   three hand-written skip lists, so a local agent install in the repository

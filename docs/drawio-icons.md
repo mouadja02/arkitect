@@ -159,12 +159,15 @@ absorbing the change. Re-pin deliberately, after looking at what changed.
 node skills/arkitect-drawio/scripts/build-packs.mjs --verify
 ```
 
-Seventy-six checks: every committed library matches the sha256 the catalog recorded,
+Ninety-four checks: every committed library matches the sha256 the catalog recorded,
 every pack has the entry count the catalog claims, every catalog index still points at
 the title it names, every SVG payload in every pack is well-formed XML with an `<svg>`
-root in the SVG namespace, every id is unique, and nothing marked on-demand carries
-bytes. `build-packs` refuses to write a pack holding a malformed payload in the first
-place, and names every one (#33).
+root in the SVG namespace, no mark paints only in white, every id is unique, and
+nothing marked on-demand carries bytes. `build-packs` refuses to write a pack holding a
+malformed payload in the first place, and names every one (#33). It refuses a mark
+whose every fill, stroke and gradient stop is white or nearly so the same way: that is
+the dark-background half of a light/dark logo pair, and it draws an empty tile on
+Draw.io's white canvas (#85).
 
 None of that proves Draw.io can open the file, so the suite checks that too. Every
 library is loaded the way Draw.io's own `EditorUi.loadLibrary` reads one — a strict XML

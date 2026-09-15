@@ -848,6 +848,57 @@ test('build-packs refuses to write a pack holding a malformed SVG, naming every 
     && !error.message.includes('test-pack/fine'), error.message);
 });
 
+test('build-packs refuses a mark whose every paint is white, and nothing that also draws in a colour (#85)', () => {
+  const svg = (inner, root = '') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"${root}>${inner}</svg>`;
+  const shape = (attrs = '') => `<path d="M0 0h24v24z"${attrs}/>`;
+  const refused = {
+    'white fills': svg(shape(' fill="white"') + shape(' fill="#FFF"')),
+    'a white root fill': svg(shape(), ' fill="#ffffff"'),
+    'a near-white style fill and a white stroke': svg(shape(' style="fill: rgb(250, 250, 250)" stroke="#fefefe"')),
+    'a gradient with only white stops': svg('<defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset="1" style="stop-color:white"/></linearGradient></defs>'
+      + shape(' fill="url(#g)"')),
+    'a white class in a style sheet': svg(`<style>.a{fill:#fff}</style>${shape(' class="a" fill="#fff"')}`),
+    'a white shape under a clip path drawn with the default black': svg(`<clipPath id="c">${shape()}</clipPath>${shape(' fill="#fff" clip-path="url(#c)"')}`),
+  };
+  for (const [what, text] of Object.entries(refused)) assert(iconBuild.paintsOnlyWhite(text), `accepted ${what}`);
+
+  const accepted = {
+    'an implicit black fill': svg(shape()),
+    'an implicit black fill beside a white one': svg(shape() + shape(' fill="white"')),
+    'a stroke-only mark': svg(shape(' fill="none" stroke="#1B1F23"')),
+    'white ink on a coloured plate': svg(`<rect width="24" height="24" fill="#E11D48"/>${shape(' fill="#fff"')}`),
+    'a gradient with one dark stop': svg('<linearGradient id="g"><stop stop-color="#fff"/><stop offset="1" stop-color="#312e81"/></linearGradient>'
+      + shape(' fill="url(#g)"')),
+    'currentColor': svg(shape(' fill="currentColor"')),
+    'an embedded raster': svg(`<image href="data:image/png;base64,iVBORw0KGgo="/>${shape(' fill="#fff"')}`),
+    'a group fill overridden by its child': svg(`<g fill="#fff">${shape(' fill="#0f172a"')}</g>`),
+    'nothing drawn at all': svg(''),
+  };
+  for (const [what, text] of Object.entries(accepted)) assert(!iconBuild.paintsOnlyWhite(text), `refused ${what}`);
+
+  packs.refuseWhiteMarks('test-pack', [
+    { slug: 'dark', title: 'Dark', svg: accepted['a stroke-only mark'] },
+    { slug: 'raster', title: 'Raster', data: 'data:image/png;base64,iVBORw0KGgo=' },
+  ]);
+  let error;
+  try {
+    packs.refuseWhiteMarks('test-pack', [
+      { slug: 'dark', title: 'Dark', svg: accepted['an implicit black fill'] },
+      { slug: 'mem0', title: 'Mem0', svg: refused['white fills'], upstreamId: 'mem0-logo.svg' },
+      { slug: 'plate', title: 'Plate', data: iconBuild.dataUri(refused['a white root fill']) },
+    ]);
+  } catch (e) { error = e; }
+  assert(error, 'a pack with white-only marks was accepted');
+  assert(/every paint is white in 2 marks/.test(error.message) && error.message.includes('test-pack/mem0 (mem0-logo.svg)')
+    && error.message.includes('test-pack/plate') && !error.message.includes('test-pack/dark'), error.message);
+
+  const shipped = JSON.parse(readFileSync(join(SKILL, 'references', 'icon-catalog.json'), 'utf8')).packs
+    .flatMap((p) => core.readLibrary(join(SKILL, 'assets', 'libraries', p.file)).map((e) => ({ ...e, pack: p.id })))
+    .filter((e) => /^data:image\/svg\+xml;base64,/.test(e.dataUri ?? ''))
+    .filter((e) => iconBuild.paintsOnlyWhite(Buffer.from(e.dataUri.slice(e.dataUri.indexOf(',') + 1), 'base64').toString('utf8')));
+  eq(shipped.map((e) => `${e.pack}[${e.index}] ${e.title}`).join(', '), '', 'shipped marks that paint only white');
+});
+
 // #31: a devicon mark with no paint of its own draws black. One flagged
 // "paint": "tint" is filled with its brand colour through the root, keeping
 // every namespace and its viewBox; artwork that already carries paint is
