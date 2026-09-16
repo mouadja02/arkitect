@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-16T13:43:24.936Z",
+  "generated": "2026-09-16T13:52:34.333Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "e03595695318dfdb42d3d4c9d73fc1bdf94ab82222bdd93275d4808b62b0acb4"
+    "sha256": "87c1fa665215fd38537bbc1120108e97cdcf8984a815d68e6ae1cd3a2840a54e"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -358,7 +358,7 @@
       "count": 311,
       "onDemand": 0,
       "onDemandPinned": 0,
-      "sha256": "377f0e08063cbd101b4b2b38f5df01dcb00d089affe165313e124da3812b765d",
+      "sha256": "bf8761186a843ec7eeceefc94e1278d54950e874cb40dcba451629bcb726ff43",
       "note": "Built from Amazon's AWS Architecture Icons package (July 2026): every service icon at 64px, embedded verbatim. The five AgentCore feature marks the package does not carry come from aws-agentcore-extras. renames and duplicates keep every id the original 243-entry palette used, and legacyTitles keeps its captions searchable."
     },
     {
@@ -381,7 +381,7 @@
       "count": 249,
       "onDemand": 0,
       "onDemandPinned": 0,
-      "sha256": "d6f58520d156f6e258d85ac049fd995a23c3c06bbeeaedd68c5297acaa547c6d",
+      "sha256": "4ff070d239e5a527f6161995e8175dee7161dc6f847fc3eeafda9aa2d496cb88",
       "note": "Google publishes 19 current \"core product\" icons, 26 category icons and a legacy archive of per-service marks. Current artwork wins on a name clash; supersedes covers the pairs Google renamed rather than repeated."
     },
     {
@@ -694,7 +694,7 @@
     {
       "id": "aws/amazon-augmented-ai-a2i",
       "pack": "aws",
-      "title": "Amazon Augmented AI A2I",
+      "title": "Amazon Augmented AI (A2I)",
       "aliases": [
         "amazon augmented ai a2i",
         "amazonaugmentedaia2i",
@@ -2632,20 +2632,32 @@
     {
       "id": "aws/amazon-fsx-for-wfs",
       "pack": "aws",
-      "title": "Amazon FSx for WFS",
+      "title": "Amazon FSx for Windows File Server",
       "aliases": [
+        "amazon fsx for windows file server",
+        "amazonfsxforwindowsfileserver",
         "amazon fsx for wfs",
         "amazonfsxforwfs",
-        "fsx for wfs",
-        "fsxforwfs",
+        "fsx for windows file server",
+        "fsxforwindowsfileserver",
         "arch amazon fsx for wfs 64",
         "archamazonfsxforwfs64",
+        "fsx for wfs",
+        "fsxforwfs",
         "f sx for wfs",
+        "amazon fsx for windows file servers",
+        "amazonfsxforwindowsfileservers",
         "amazonfsxforwf",
+        "fsx for windows file servers",
+        "fsxforwindowsfileservers",
         "fsxforwf"
       ],
       "generatedAliases": [
+        "amazon fsx for windows file servers",
+        "amazonfsxforwindowsfileservers",
         "amazonfsxforwf",
+        "fsx for windows file servers",
+        "fsxforwindowsfileservers",
         "fsxforwf"
       ],
       "source": "aws-icons-2026-07",
@@ -8452,7 +8464,7 @@
     {
       "id": "aws/aws-marketplace-dark",
       "pack": "aws",
-      "title": "AWS Marketplace Dark",
+      "title": "AWS Marketplace (Dark)",
       "aliases": [
         "aws marketplace dark",
         "awsmarketplacedark",
@@ -8485,7 +8497,7 @@
     {
       "id": "aws/aws-marketplace-light",
       "pack": "aws",
-      "title": "AWS Marketplace Light",
+      "title": "AWS Marketplace (Light)",
       "aliases": [
         "aws marketplace light",
         "awsmarketplacelight",
@@ -8804,24 +8816,27 @@
     {
       "id": "aws/aws-parallel-cluster",
       "pack": "aws",
-      "title": "AWS Parallel Cluster",
+      "title": "AWS ParallelCluster",
       "aliases": [
-        "aws parallel cluster",
+        "aws parallelcluster",
         "awsparallelcluster",
-        "parallel cluster",
+        "aws parallel cluster",
         "parallelcluster",
         "arch aws parallel cluster 64",
         "archawsparallelcluster64",
-        "aws parallel clusters",
+        "parallel cluster",
+        "aws parallelclusters",
         "awsparallelclusters",
-        "parallel clusters",
-        "parallelclusters"
+        "aws parallel clusters",
+        "parallelclusters",
+        "parallel clusters"
       ],
       "generatedAliases": [
-        "aws parallel clusters",
+        "aws parallelclusters",
         "awsparallelclusters",
-        "parallel clusters",
-        "parallelclusters"
+        "aws parallel clusters",
+        "parallelclusters",
+        "parallel clusters"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Compute/64/Arch_AWS-Parallel-Cluster_64.svg",
@@ -9065,24 +9080,27 @@
     {
       "id": "aws/aws-repost",
       "pack": "aws",
-      "title": "AWS rePost",
+      "title": "AWS re:Post",
       "aliases": [
-        "aws repost",
+        "aws re post",
         "awsrepost",
+        "aws repost",
+        "re post",
         "repost",
         "arch aws repost 64",
         "archawsrepost64",
-        "re post",
-        "aws reposts",
+        "aws re posts",
         "awsreposts",
-        "reposts",
-        "re posts"
+        "aws reposts",
+        "re posts",
+        "reposts"
       ],
       "generatedAliases": [
-        "aws reposts",
+        "aws re posts",
         "awsreposts",
-        "reposts",
-        "re posts"
+        "aws reposts",
+        "re posts",
+        "reposts"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Customer-Enablement/64/Arch_AWS-rePost_64.svg",
@@ -9098,27 +9116,30 @@
     {
       "id": "aws/aws-repost-private",
       "pack": "aws",
-      "title": "AWS rePost Private",
+      "title": "AWS re:Post Private",
       "aliases": [
-        "aws repost private",
+        "aws re post private",
         "awsrepostprivate",
-        "repost private",
+        "aws repost private",
+        "re post private",
         "repostprivate",
         "arch aws repost private 64",
         "archawsrepostprivate64",
-        "re post private",
-        "aws repost privates",
+        "repost private",
+        "aws re post privates",
         "awsrepostprivates",
-        "repost privates",
+        "aws repost privates",
+        "re post privates",
         "repostprivates",
-        "re post privates"
+        "repost privates"
       ],
       "generatedAliases": [
-        "aws repost privates",
+        "aws re post privates",
         "awsrepostprivates",
-        "repost privates",
+        "aws repost privates",
+        "re post privates",
         "repostprivates",
-        "re post privates"
+        "repost privates"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Customer-Enablement/64/Arch_AWS-rePost-Private_64.svg",
@@ -9593,7 +9614,7 @@
     {
       "id": "aws/aws-site-to-site-vpn",
       "pack": "aws",
-      "title": "AWS Site to Site VPN",
+      "title": "AWS Site-to-Site VPN",
       "aliases": [
         "aws site to site vpn",
         "awssitetositevpn",
@@ -10101,22 +10122,34 @@
     {
       "id": "aws/aws-training-certification",
       "pack": "aws",
-      "title": "AWS Training Certification",
+      "title": "AWS Training and Certification",
       "aliases": [
+        "aws training and certification",
+        "awstrainingandcertification",
         "aws training certification",
         "awstrainingcertification",
-        "training certification",
-        "trainingcertification",
+        "training and certification",
+        "trainingandcertification",
         "arch aws training certification 64",
         "archawstrainingcertification64",
+        "training certification",
+        "trainingcertification",
+        "aws training and certifications",
+        "awstrainingandcertifications",
         "aws training certifications",
         "awstrainingcertifications",
+        "training and certifications",
+        "trainingandcertifications",
         "training certifications",
         "trainingcertifications"
       ],
       "generatedAliases": [
+        "aws training and certifications",
+        "awstrainingandcertifications",
         "aws training certifications",
         "awstrainingcertifications",
+        "training and certifications",
+        "trainingandcertifications",
         "training certifications",
         "trainingcertifications"
       ],
@@ -10381,7 +10414,7 @@
     {
       "id": "aws/aws-well-architected-tool",
       "pack": "aws",
-      "title": "AWS Well Architected Tool",
+      "title": "AWS Well-Architected Tool",
       "aliases": [
         "aws well architected tool",
         "awswellarchitectedtool",
@@ -10442,7 +10475,7 @@
     {
       "id": "aws/aws-x-ray",
       "pack": "aws",
-      "title": "AWS X Ray",
+      "title": "AWS X-Ray",
       "aliases": [
         "aws x ray",
         "awsxray",
@@ -10621,19 +10654,23 @@
     {
       "id": "aws/oracle-database-at-aws",
       "pack": "aws",
-      "title": "Oracle Database at AWS",
+      "title": "Oracle Database@AWS",
       "aliases": [
+        "oracle database aws",
+        "oracledatabaseaws",
         "oracle database at aws",
         "oracledatabaseataws",
         "arch oracle database at aws 64",
         "archoracledatabaseataws64",
         "oracle database at",
         "oracledatabaseat",
+        "oracledatabaseaw",
         "oracledatabaseataw",
         "oracle database ats",
         "oracledatabaseats"
       ],
       "generatedAliases": [
+        "oracledatabaseaw",
         "oracledatabaseataw",
         "oracle database ats",
         "oracledatabaseats"
@@ -27376,7 +27413,7 @@
     {
       "id": "gcp/ai-machine-learning",
       "pack": "gcp",
-      "title": "AI Machine Learning",
+      "title": "AI & Machine Learning",
       "aliases": [
         "ai machine learning",
         "aimachinelearning",
@@ -27945,16 +27982,12 @@
     {
       "id": "gcp/bare-metal-solutions",
       "pack": "gcp",
-      "title": "Bare Metal Solutions",
+      "title": "Bare Metal Solution",
       "aliases": [
+        "bare metal solution",
+        "baremetalsolution",
         "bare metal solutions",
-        "baremetalsolutions",
-        "bare metal solution",
-        "baremetalsolution"
-      ],
-      "generatedAliases": [
-        "bare metal solution",
-        "baremetalsolution"
+        "baremetalsolutions"
       ],
       "source": "gcp-legacy",
       "upstreamId": "bare_metal_solutions/bare_metal_solutions.svg",
@@ -27992,7 +28025,7 @@
     {
       "id": "gcp/beyondcorp",
       "pack": "gcp",
-      "title": "Beyondcorp",
+      "title": "BeyondCorp",
       "aliases": [
         "beyondcorp",
         "beyondcorps"
@@ -30018,7 +30051,7 @@
     {
       "id": "gcp/container-optimized-os",
       "pack": "gcp",
-      "title": "Container Optimized OS",
+      "title": "Container-Optimized OS",
       "aliases": [
         "container optimized os",
         "containeroptimizedos",
@@ -31083,7 +31116,7 @@
     {
       "id": "gcp/gke-on-prem",
       "pack": "gcp",
-      "title": "GKE on Prem",
+      "title": "GKE On-Prem",
       "aliases": [
         "gke on prem",
         "gkeonprem",
@@ -31298,7 +31331,7 @@
     {
       "id": "gcp/identity-aware-proxy",
       "pack": "gcp",
-      "title": "Identity Aware Proxy",
+      "title": "Identity-Aware Proxy",
       "aliases": [
         "identity aware proxy",
         "identityawareproxy",
@@ -32565,7 +32598,7 @@
     {
       "id": "gcp/real-world-insights",
       "pack": "gcp",
-      "title": "Real World Insights",
+      "title": "Real-World Insights",
       "aliases": [
         "real world insights",
         "realworldinsights",
@@ -32943,7 +32976,7 @@
     {
       "id": "gcp/speech-to-text",
       "pack": "gcp",
-      "title": "Speech to Text",
+      "title": "Speech-to-Text",
       "aliases": [
         "speech to text",
         "speechtotext",
@@ -33084,7 +33117,7 @@
     {
       "id": "gcp/tensorflow-enterprise",
       "pack": "gcp",
-      "title": "Tensorflow Enterprise",
+      "title": "TensorFlow Enterprise",
       "aliases": [
         "tensorflow enterprise",
         "tensorflowenterprise",
@@ -33109,7 +33142,7 @@
     {
       "id": "gcp/text-to-speech",
       "pack": "gcp",
-      "title": "Text to Speech",
+      "title": "Text-to-Speech",
       "aliases": [
         "text to speech",
         "texttospeech",

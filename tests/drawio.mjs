@@ -2279,15 +2279,49 @@ test('Azure captions Microsoft misspelled or ran together are corrected, and the
   }
 });
 
-test('every shipped Azure mark has been reviewed at the artwork that ships (#18)', () => {
-  const s = sheets.reviewStatus('azure');
-  const open = [
-    ...s.unchecked.map((id) => `${id}: unchecked`), ...s.stale.map((id) => `${id}: artwork changed since review`),
-    ...s.mismatch.map((id) => `${id}: recorded mismatch`), ...s.unknown.map((id) => `${id}: unknown verdict`),
-    ...s.orphaned.map((id) => `${id}: record row for an id that no longer ships`),
-  ];
-  assert(s.rows.length > 0 && s.ok.length === s.rows.length && open.length === 0,
-    `${open.length} open (contact-sheet.mjs --pack azure --review):\n        ${open.slice(0, 20).join('\n        ')}`);
+// A pack with a record is a reviewed pack: a new or changed mark cannot ship
+// into it unreviewed. The three vendor packs must each have one (#18, #73).
+test('every shipped mark in a reviewed pack has been reviewed at the artwork that ships (#18, #73)', () => {
+  const recordDir = join(SKILL, 'assets', 'libraries', 'reviews');
+  const reviewed = readdirSync(recordDir).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, '')).sort();
+  for (const pack of ['aws', 'azure', 'gcp']) assert(reviewed.includes(pack), `${pack} has no review record`);
+  for (const pack of reviewed) {
+    const s = sheets.reviewStatus(pack);
+    const open = [
+      ...s.unchecked.map((id) => `${id}: unchecked`), ...s.stale.map((id) => `${id}: artwork changed since review`),
+      ...s.mismatch.map((id) => `${id}: recorded mismatch`), ...s.unknown.map((id) => `${id}: unknown verdict`),
+      ...s.orphaned.map((id) => `${id}: record row for an id that no longer ships`),
+    ];
+    assert(s.rows.length > 0 && s.ok.length === s.rows.length && open.length === 0,
+      `${pack}: ${open.length} open (contact-sheet.mjs --pack ${pack} --review):\n        ${open.slice(0, 20).join('\n        ')}`);
+  }
+});
+
+// Amazon's and Google's file names drop the punctuation their product names
+// carry ("AWS X Ray", "Speech to Text"). The corrected caption resolves, the
+// upstream spelling still does, and neither moves to another mark (#73).
+test('AWS and Google Cloud captions their file names mangled are corrected, and the upstream spelling still resolves (#73)', () => {
+  const cat = finder.loadCatalog();
+  const title = (id) => cat.icons.find((i) => i.id === id)?.title;
+  for (const [id, caption, upstream] of [
+    ['aws/aws-x-ray', 'AWS X-Ray', 'aws x ray'], ['aws/aws-repost', 'AWS re:Post', 'aws repost'],
+    ['aws/aws-site-to-site-vpn', 'AWS Site-to-Site VPN', 'aws site to site vpn'],
+    ['aws/amazon-fsx-for-wfs', 'Amazon FSx for Windows File Server', 'fsx for wfs'],
+    ['aws/aws-parallel-cluster', 'AWS ParallelCluster', 'aws parallel cluster'],
+    ['gcp/identity-aware-proxy', 'Identity-Aware Proxy', 'identity aware proxy'],
+    ['gcp/beyondcorp', 'BeyondCorp', 'beyondcorp'], ['gcp/speech-to-text', 'Speech-to-Text', 'speech to text'],
+  ]) {
+    eq(title(id), caption, id);
+    for (const q of [caption, upstream]) {
+      const r = finder.resolve(q);
+      assert(r.confident && r.icon.id === id, `"${q}" should resolve to ${id}, got ${r.icon?.id} (${r.reason})`);
+    }
+  }
+  // Oracle's own spelling now ranks Amazon's mark first rather than Azure's, but
+  // "Oracle Database" scores too close behind for it to resolve on its own.
+  eq(title('aws/oracle-database-at-aws'), 'Oracle Database@AWS', 'aws/oracle-database-at-aws');
+  eq(finder.resolve('Oracle Database@AWS').icon?.id, 'aws/oracle-database-at-aws', 'Oracle Database@AWS ranks first');
+  assert(finder.resolve('oracle database at aws').confident, 'the upstream spelling still resolves');
 });
 
 // ------------------------------------------------------------- generation

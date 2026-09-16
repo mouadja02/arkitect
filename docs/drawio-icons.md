@@ -233,9 +233,11 @@ node $S/contact-sheet.mjs --pack azure --review --page 3  # one page
 
 Review pages show 54 marks at 120px, each captioned with its title, id, upstream file,
 library index, short hash and review state, with unchecked and stale tiles highlighted.
-They are written to the gitignored `contact-sheets/review/`. The suite fails if any
-shipped Azure mark is unchecked, stale, recorded as a mismatch or carries an unknown
-verdict, or if the record names an id that no longer ships (#18).
+They are written to the gitignored `contact-sheets/review/`. AWS, Azure and Google Cloud
+each have a record. The suite fails if any shipped mark in a pack with a record is
+unchecked, stale, recorded as a mismatch or carries an unknown verdict, or if the record
+names an id that no longer ships (#18, #73). A new mark cannot ship into a reviewed pack
+without a row.
 
 Two Azure pairs share a name *and* a folder — Microsoft ships two different `Workspaces`
 marks in `compute` and two `Load Balancer Hub` marks in `networking`. The second of each
@@ -250,6 +252,17 @@ capital (`Azure a`, the Azure logo) or run the words together (`AzureAttestation
 Services`, `Web Application Firewall Policies(WAF)`). The corrections live in the azure
 pack's `titles` map in `sources.json`; ids are unchanged and the upstream spelling stays
 a search alias.
+
+AWS and Google Cloud use the same map for the punctuation their file names drop. Twelve
+AWS captions: `AWS X-Ray`, `AWS re:Post` and `AWS re:Post Private`, `AWS Site-to-Site VPN`,
+`AWS Well-Architected Tool`, `AWS ParallelCluster`, `AWS Training and Certification`,
+`Amazon Augmented AI (A2I)`, `Amazon FSx for Windows File Server` (Amazon's file says
+`WFS`), `Oracle Database@AWS`, and `AWS Marketplace (Dark)`/`(Light)`. Ten Google Cloud
+captions: `BeyondCorp`, `TensorFlow Enterprise`, `GKE On-Prem`, `Identity-Aware Proxy`,
+`Speech-to-Text`, `Text-to-Speech`, `Container-Optimized OS`, `Real-World Insights`,
+`Bare Metal Solution` and `AI & Machine Learning`. The two `AWS Compute Optimizer` marks
+are one glyph in two category colours and keep one caption on purpose, so a bare
+"compute optimizer" asks which (#73).
 
 ## Coverage, honestly
 

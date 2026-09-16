@@ -13,6 +13,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Every shipped AWS and Google Cloud mark is reviewed on record in
+  `reviews/aws.json` and `reviews/gcp.json`, and the review test covers every
+  pack with a record (#73)
 - The quarterly drift check now covers the 45 `local-files` sources: a
   project logo redrawn or gone upstream, a changed licence file, and a
   repository newly archived, dormant or moved are reported, against the
@@ -97,6 +100,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Twelve AWS and ten Google Cloud captions their file names mangled read as
+  the product is named: `AWS X-Ray`, `AWS re:Post`, `Identity-Aware Proxy`
+  and the rest; ids and upstream spellings still resolve (#73)
 - A wide wordmark is no longer drawn as a hairline. A lockup's short side now
   clears a third of the 78px footprint and its long side never passes twice it,
   so Metaflow's 6:1 mark is 156x26 instead of 78x13. Nine marks are redrawn;

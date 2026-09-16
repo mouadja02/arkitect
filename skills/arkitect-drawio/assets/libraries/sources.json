@@ -726,6 +726,20 @@
       "rank": 10,
       "kind": "vendor",
       "builder": "zip-tree",
+      "titles": {
+        "amazon-augmented-ai-a2i": "Amazon Augmented AI (A2I)",
+        "amazon-fsx-for-wfs": "Amazon FSx for Windows File Server",
+        "aws-marketplace-dark": "AWS Marketplace (Dark)",
+        "aws-marketplace-light": "AWS Marketplace (Light)",
+        "aws-parallel-cluster": "AWS ParallelCluster",
+        "aws-repost": "AWS re:Post",
+        "aws-repost-private": "AWS re:Post Private",
+        "aws-site-to-site-vpn": "AWS Site-to-Site VPN",
+        "aws-training-certification": "AWS Training and Certification",
+        "aws-well-architected-tool": "AWS Well-Architected Tool",
+        "aws-x-ray": "AWS X-Ray",
+        "oracle-database-at-aws": "Oracle Database@AWS"
+      },
       "sources": [
         {
           "source": "aws-icons-2026-07",
@@ -1344,6 +1358,18 @@
       "rank": 10,
       "kind": "vendor",
       "builder": "zip-tree",
+      "titles": {
+        "ai-machine-learning": "AI & Machine Learning",
+        "bare-metal-solutions": "Bare Metal Solution",
+        "beyondcorp": "BeyondCorp",
+        "container-optimized-os": "Container-Optimized OS",
+        "gke-on-prem": "GKE On-Prem",
+        "identity-aware-proxy": "Identity-Aware Proxy",
+        "real-world-insights": "Real-World Insights",
+        "speech-to-text": "Speech-to-Text",
+        "tensorflow-enterprise": "TensorFlow Enterprise",
+        "text-to-speech": "Text-to-Speech"
+      },
       "sources": [
         {
           "source": "gcp-core",
