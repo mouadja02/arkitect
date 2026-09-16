@@ -13,6 +13,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- The quarterly drift check now covers the 45 `local-files` sources: a
+  project logo redrawn or gone upstream, a changed licence file, and a
+  repository newly archived, dormant or moved are reported, against the
+  `upstreamRepo` state each source now records (#74, #82)
 - Every set of packs sharing one exact icon title carries a judgement row
   in the resolver answer key, and a test fails when a new tie appears that no
   row covers (#75)

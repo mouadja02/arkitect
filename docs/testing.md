@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `261 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `263 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -70,6 +70,7 @@ process, so they cannot tread on each other.
 | Title ties | every set of packs sharing one exact title has a judgement row in the answer key and comes back flagged with no stack named; naming a pack’s stack settles the tie on that pack’s mark, except where the runner-up sits in the named pack too — Azure’s File beside its Files, and the primitives Monitor beside its Desktop — which stays flagged and is recorded as an exception (#75) |
 | Exact ids | every one of the catalog's ids selects its own row: each committed id embeds the payload its `sha256` names, each on-demand id is reported to fetch rather than drawn, a build says which id it used, and a node pinning a pack the id does not belong to is reported instead of text-searched into another product's mark (#95) |
 | On-demand artwork | every on-demand row with a pinned `upstreamUrl` says `artwork: "pinned"` and carries the one runnable `fetch-logo` command for it, every other row says `"none pinned"` and carries no command; each pack's pinned count matches its rows; for one entry of each kind, the refusal to produce bytes, the `find-icon` CLI output, the build report and `--list-packs` agree, and `pack-index.md` lists the two kinds apart with no placeholder URL (#84) |
+| Upstream watch | a Simple Icons slug missing upstream is told apart as a removal or a rename, and only marks that ship bytes count (#10); a newer npm release or a changed archive hash is drift, and a source nothing ships from is skipped (#9); a committed project logo is compared at the default branch with its pinned commit - a redrawn or vanished file, a changed licence file, a policy page that is gone, and a repository newly archived, dormant for a year or answering under another name are each reported, while a repository already recorded as archived stays quiet and an upstream that cannot be read fails the check (#74, #82); every GitHub-backed logo source records `upstreamRepo`, with a note wherever it is archived or dormant; the workflow can open issues and nothing else |
 | Cell styles | the comma-only data URI form; the embedded payload matches the catalog hash |
 | Logos | transparency read from the IHDR; an opaque PNG flagged; sizing fits the longest side and preserves aspect; non-images refused |
 | Validator | rejects duplicate ids, missing parents, broken edge endpoints; `--page 0` through the dispatcher validates that page, before or after the files, and `--strict` still fails on a warning; a page the file lacks fails, in the CLI and the API, without claiming a page was checked; a missing, negative, fractional, exponent, empty or non-numeric page value, a repeated `--page` and an unknown flag exit 2 with no stack trace; the API throws on a malformed index (#37) |
