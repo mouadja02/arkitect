@@ -22,6 +22,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Wordmark legibility | A wide lockup's short side is floored at a third of the icon footprint and its long side held to twice it, so a 6:1 wordmark is drawn 156x26 rather than 78x13, with no artwork byte changed | [#76](https://github.com/mouadja02/arkitect/issues/76), [PR #103](https://github.com/mouadja02/arkitect/pull/103) |
 | Title ties | Every set of packs sharing one exact icon title carries a judgement row, a stack named in the spec settles the tie, and a test fails when a new tie appears that no row covers | [#75](https://github.com/mouadja02/arkitect/issues/75), [PR #104](https://github.com/mouadja02/arkitect/pull/104) |
 | Logo upstream watch | The quarterly drift check compares every committed project logo's artwork, licence file and repository state with its pin, and each GitHub-backed source records the repository state it was reviewed at | [#74](https://github.com/mouadja02/arkitect/issues/74), [#82](https://github.com/mouadja02/arkitect/issues/82), [PR #105](https://github.com/mouadja02/arkitect/pull/105) |
+| Vendor reviews | Every AWS and Google Cloud mark is reviewed on record at the payload that ships, the review test covers every pack with a record, and twenty-two captions whose file names dropped punctuation are corrected | [#73](https://github.com/mouadja02/arkitect/issues/73), [PR #106](https://github.com/mouadja02/arkitect/pull/106) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -39,8 +40,7 @@ recommended priorities, not work already started or assigned.
 
 | Issue | Order | Remaining outcome |
 |---|---|---|
-| [#81](https://github.com/mouadja02/arkitect/issues/81) | Review backlog | Record curated-pack reviews at the exact shipped payload hashes. |
-| [#73](https://github.com/mouadja02/arkitect/issues/73) | Review backlog | Record AWS/GCP reviews and audit captions. |
+| [#81](https://github.com/mouadja02/arkitect/issues/81) | Review backlog | Record curated-pack reviews at the exact shipped payload hashes; the review test already picks up a new record file. |
 | [#72](https://github.com/mouadja02/arkitect/issues/72) | Review backlog | Complete the brands review split from the Azure work. |
 | [#83](https://github.com/mouadja02/arkitect/issues/83) | Maintenance backlog | Surface product lifecycle metadata; reverify historical research first, and re-check it through the drift pass #74 built. |
 | [#88](https://github.com/mouadja02/arkitect/issues/88) | Release backlog | Implement release preparation and publication; no npm publishing. |
