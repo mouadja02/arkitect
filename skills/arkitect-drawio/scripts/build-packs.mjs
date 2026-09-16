@@ -28,6 +28,7 @@ import {
   normalise, pngSize, downscalePng, paintsOnlyWhite,
 } from './lib/icon-build.mjs';
 import { checkSimpleIcons, checkDrift, removalReport, driftReport } from './lib/upstream.mjs';
+import { statusProblems } from './lib/lifecycle.mjs';
 import { svgBytesProblem } from './lib/xml-check.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -572,6 +573,26 @@ function writeCatalog(manifest, built, sourceHashes) {
     });
   }
 
+  // A discontinued, renamed or absorbed product still resolves by its name; the
+  // catalog carries the fact so a search can say so (#83). A status naming a
+  // successor id that is not catalogued is refused, not left to dangle.
+  const ids = new Set(icons.map((i) => i.id));
+  const lifecycle = [];
+  for (const pack of manifest.packs) {
+    for (const entry of [...(pack.icons ?? []), ...(pack.onDemand ?? [])]) {
+      if (!entry.status) continue;
+      const id = `${pack.id}/${entry.slug}`;
+      lifecycle.push(...statusProblems(id, entry.status));
+      if (entry.status.successorId && !ids.has(entry.status.successorId)) {
+        lifecycle.push(`${id}: status.successorId "${entry.status.successorId}" is not in the catalog`);
+      }
+      const row = icons.find((i) => i.id === id);
+      if (row) row.status = entry.status;
+      else lifecycle.push(`${id}: has a status but did not build`);
+    }
+  }
+  if (lifecycle.length) throw new Error(`lifecycle status problems, nothing written:\n  ${lifecycle.join('\n  ')}`);
+
   // A vendor can ship one file under several names: azure/groups and
   // azure/my-customers are the same picture. Every id stays, and each names
   // the others, so two concepts are never drawn with one icon unnoticed (#77).
@@ -798,6 +819,7 @@ async function main(argv) {
         for (const row of rows) {
           const state = row.note ? 'skip ' : row.drifted ? 'DRIFT' : 'ok   ';
           const detail = row.note
+            ?? (row.kind === 'lifecycle' ? `${row.recorded} product statuses, ${row.stale.length} due for a re-check` : null)
             ?? (row.checks ? row.checks.map((c) => (c.state === 'ok' ? c.what : `${c.what} ${c.state.toUpperCase()}`)).join(', ')
               : `pinned ${String(row.pinned).slice(0, 12)}  upstream ${String(row.current).slice(0, 12)}`);
           console.log(`  ${state}  ${row.key.padEnd(20)} ${detail}`);

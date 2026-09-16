@@ -13,6 +13,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- A discontinued, renamed, absorbed, acquired or archived product carries a
+  `status`: `find-icon` shows its caveat and successor, a build lists it under
+  `icons.lifecycle`, and the drift check lists facts a year old; twelve
+  products are recorded as of 2026-09-16 (#83)
 - Every shipped mark in the 14 curated packs is reviewed on record, and every
   pack but the `brands` catch-all must now have a review record (#81)
 - Every shipped AWS and Google Cloud mark is reviewed on record in

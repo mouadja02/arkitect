@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './icon-build.mjs';
+import { RECHECK_DAYS, staleStatus } from './lifecycle.mjs';
 
 export const REGISTRY = 'https://registry.npmjs.org';
 export const GITHUB_API = 'https://api.github.com';
@@ -221,6 +222,18 @@ export async function checkDrift({ catalog, manifest, get = fetchJson, hash = fe
       rows.push({ key, kind: src.type, drifted: false, note: 'no upstream to compare against' });
     }
   }
+  // A product's lifecycle cannot be fetched, only re-read by a person. What the
+  // check can do is say which recorded facts are old enough to have moved (#83).
+  const statuses = (manifest.packs ?? []).flatMap((pack) => [...(pack.icons ?? []), ...(pack.onDemand ?? [])]
+    .filter((entry) => entry.status)
+    .map((entry) => ({ id: `${pack.id}/${entry.slug}`, title: entry.title, status: entry.status })));
+  if (statuses.length) {
+    const stale = statuses.filter((s) => staleStatus(s.status, now));
+    rows.push({
+      key: 'lifecycle', kind: 'lifecycle', drifted: stale.length > 0, recorded: statuses.length,
+      stale: stale.map((s) => ({ id: s.id, title: s.title, state: s.status.state, checked: s.status.checked })),
+    });
+  }
   return rows;
 }
 
@@ -259,8 +272,9 @@ const FINDING = {
 
 export function driftReport(rows) {
   const drifted = rows.filter((row) => row.drifted);
-  const archives = drifted.filter((row) => row.kind !== 'local-files');
+  const archives = drifted.filter((row) => !['local-files', 'lifecycle'].includes(row.kind));
   const logos = drifted.filter((row) => row.kind === 'local-files');
+  const lifecycle = drifted.find((row) => row.kind === 'lifecycle');
   const out = [];
   if (archives.length) {
     out.push(`${archives.length === 1 ? 'One pinned icon source has' : `${archives.length} pinned icon sources have`} moved on `
@@ -298,6 +312,18 @@ export function driftReport(rows) {
       + 'still goes by this name and that no livelier repository of its own carries a newer mark (#82), then record '
       + 'what you found in the source\'s `upstreamRepo` so the next run is quiet.');
     out.push('');
+  }
+  if (lifecycle) {
+    if (archives.length || logos.length) out.push('## Product lifecycle', '');
+    const n = lifecycle.stale.length;
+    out.push(`${n === 1 ? 'One product lifecycle fact was' : `${n} product lifecycle facts were`} last confirmed `
+      + `${RECHECK_DAYS} days ago or more. Products get renamed, sold and shut down again, and a caveat that has `
+      + 'since moved on misleads the next diagram.', '');
+    out.push('| entry | recorded as | last checked |', '|---|---|---|');
+    for (const s of lifecycle.stale) out.push(`| \`${s.id}\` (${s.title}) | ${s.state} | ${s.checked} |`);
+    out.push('', '### What to do', '');
+    out.push('Re-read what has happened to each product since, update its `status` in `assets/libraries/sources.json` '
+      + '(state, date, successor), set `checked` to today, and rebuild with `build-packs.mjs --all`.', '');
   }
   out.push(FOOTER, '');
   return out.join('\n');
