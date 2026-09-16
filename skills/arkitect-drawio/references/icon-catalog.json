@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-15T23:12:01.614Z",
+  "generated": "2026-09-16T13:43:24.936Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "ff2d0eec1ac3920eb65aa84e0680b80fcd8547bb07d553fc314f81dede88a17b"
+    "sha256": "e03595695318dfdb42d3d4c9d73fc1bdf94ab82222bdd93275d4808b62b0acb4"
   },
   "sources": {
     "aws-icons-2026-07": {
