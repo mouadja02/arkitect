@@ -217,7 +217,7 @@ assumption nobody can correct.
 ## The icon packs
 
 One search covers all of them; `--pack` narrows to one, `--context` biases toward
-several. Lower rank wins a tie, so a curated pack always beats the catch-all.
+several and settles a tie between packs that ship one exact title. Lower rank wins a tie, so a curated pack always beats the catch-all.
 
 | Pack | Icons | What is in it |
 |---|---|---|

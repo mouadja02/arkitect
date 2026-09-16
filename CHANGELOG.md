@@ -13,6 +13,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Every set of packs sharing one exact icon title carries a judgement row
+  in the resolver answer key, and a test fails when a new tie appears that no
+  row covers (#75)
 - Every exact icon count a doc quotes is checked against the catalog, the
   Excalidraw library index and the two answer keys, and the failure names the
   value to write (#78)
@@ -53,6 +56,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- Naming a stack in a spec’s `context.packs` now settles an exact-title tie.
+  Azure and `primitives` both ship a mark titled Monitor, and neither could be
+  drawn unattended, because the context bonus sat below the margin a tie needs.
+  A runner-up inside the named packs still settles nothing (#75)
 - `docs/status.md` records what is done on main, what is left and in what
   order, dated, with every issue outcome reconciled against the repository
 - Both engines share one backup and retention implementation, keeping their
@@ -90,9 +97,9 @@ separate file, no naming scheme, no required format beyond that.
   clears a third of the 78px footprint and its long side never passes twice it,
   so Metaflow's 6:1 mark is 156x26 instead of 78x13. Nine marks are redrawn;
   no artwork byte and no payload digest changes (#76)
-- `docs/drawio-icons.md` no longer understates the Draw.io answer key: it holds
-  471 queries with an expected answer and 21 that must come back flagged, not
-  the 375 and 28 it claimed (#78)
+- `docs/drawio-icons.md` no longer understates the Draw.io answer key: it
+  claimed 375 queries and 28 that must come back flagged, where the file held
+  neither number, and a test now keeps the sentence honest (#78)
 - An on-demand icon with no pinned artwork file no longer hands back a
   `fetch-logo --url <logo URL from ...>` command no one can run: catalog rows
   say `artwork: "pinned"` or `"none pinned"`, only the 36 pinned entries carry a

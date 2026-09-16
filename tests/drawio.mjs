@@ -1794,6 +1794,48 @@ test('icon resolution corpus: never confidently wrong, and precision at rank 1 h
     `precision@1 ${pct(m.top1, m.answerable)} fell below the ${key.precisionFloor * 100}% floor`);
 });
 
+// Two packs can ship marks with exactly the same title, and both then score 105,
+// so the margin is nil and nothing is drawn. Every such tie needs a recorded
+// judgement, and a new one must not appear unnoticed the way Azure's corrected
+// Prometheus caption once did. `brands` is left out: it is the catch-all, ranked
+// last by design, and the issue scopes it out (#75).
+test('every exact-title tie is judged, and naming the stack settles it (#75)', () => {
+  const key = JSON.parse(readFileSync(join(HERE, 'icon-queries.json'), 'utf8'));
+  const judged = new Set(key.queries.map((r) => String(r[0]).toLowerCase()));
+  const byTitle = new Map();
+  for (const icon of finder.loadCatalog().icons.filter((i) => i.bytes === 'committed')) {
+    const title = String(icon.title).toLowerCase();
+    byTitle.set(title, [...(byTitle.get(title) ?? []), icon]);
+  }
+  const ties = [...byTitle].filter(([, g]) => new Set(g.map((i) => i.pack)).size > 1
+    && !g.some((i) => i.pack === 'brands'));
+  assert(ties.length > 0, 'no cross-pack title ties found, so this test proves nothing');
+
+  // Naming a stack cannot settle a tie whose runner-up sits in that same pack:
+  // Azure ships File beside Files, and primitives ships Monitor beside Desktop.
+  const RUNNER_UP_IN_SAME_PACK = new Set(['file::azure', 'monitor::primitives']);
+
+  const problems = [];
+  for (const [title, group] of ties) {
+    if (!judged.has(title)) {
+      problems.push(`"${title}" ties ${group.map((i) => i.id).join(' and ')}, with no row in icon-queries.json`);
+    }
+    if (finder.resolve(title).confident) {
+      problems.push(`"${title}" is confident with no stack named, although ${group.length} packs share the title`);
+    }
+    for (const icon of group) {
+      const r = finder.resolve(title, { packs: [icon.pack] });
+      const settled = r.confident && r.icon.id === icon.id;
+      const exception = RUNNER_UP_IN_SAME_PACK.has(`${title}::${icon.pack}`);
+      if (exception && settled) problems.push(`"${title}" [${icon.pack}] settles now, so it is no longer an exception`);
+      if (!exception && !settled) {
+        problems.push(`"${title}" [${icon.pack}] does not settle on ${icon.id}: ${r.confident ? r.icon.id : r.reason}`);
+      }
+    }
+  }
+  assert(!problems.length, `${problems.length} problems:\n        ${problems.join('\n        ')}`);
+});
+
 // A search prints `<pack>/<slug>` as the thing to put in a spec, and the skill
 // says to do exactly that - but the builder passed it to the text search like
 // any free-text query. 752 of the 4,843 committed ids embedded another
