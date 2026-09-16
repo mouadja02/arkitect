@@ -2373,11 +2373,11 @@ test('Azure captions Microsoft misspelled or ran together are corrected, and the
 });
 
 // A pack with a record is a reviewed pack: a new or changed mark cannot ship
-// into it unreviewed. Every pack but the catch-all must have one (#18, #73, #81).
-test('every shipped mark in a reviewed pack has been reviewed at the artwork that ships (#18, #73, #81)', () => {
+// into it unreviewed. Every pack must have one, the catch-all included (#18, #73, #81, #72).
+test('every shipped mark in every pack has been reviewed at the artwork that ships (#18, #72, #73, #81)', () => {
   const recordDir = join(SKILL, 'assets', 'libraries', 'reviews');
   const reviewed = readdirSync(recordDir).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, '')).sort();
-  for (const { id } of finder.loadCatalog().packs.filter((p) => p.id !== 'brands')) {
+  for (const { id } of finder.loadCatalog().packs) {
     assert(reviewed.includes(id), `${id} has no review record`);
   }
   for (const pack of reviewed) {

@@ -25,6 +25,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Vendor reviews | Every AWS and Google Cloud mark is reviewed on record at the payload that ships, the review test covers every pack with a record, and twenty-two captions whose file names dropped punctuation are corrected | [#73](https://github.com/mouadja02/arkitect/issues/73), [PR #106](https://github.com/mouadja02/arkitect/pull/106) |
 | Curated reviews | Every mark in the 14 curated packs is reviewed on record, every pack but `brands` must carry a record, and the two marks promoted by slug that drew the wrong product (Vespa, Nebula) are on-demand entries for Vespa.ai and NebulaGraph | [#81](https://github.com/mouadja02/arkitect/issues/81), [PR #107](https://github.com/mouadja02/arkitect/pull/107) |
 | Product lifecycle | Twelve discontinued, renamed, absorbed, acquired or archived products carry a verified `status` that search and build reports surface as a caveat with a successor, and the drift check lists statuses due for a re-check | [#83](https://github.com/mouadja02/arkitect/issues/83), [PR #108](https://github.com/mouadja02/arkitect/pull/108) |
+| Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), PR pending |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -42,7 +43,6 @@ recommended priorities, not work already started or assigned.
 
 | Issue | Order | Remaining outcome |
 |---|---|---|
-| [#72](https://github.com/mouadja02/arkitect/issues/72) | Review backlog | Complete the brands review split from the Azure work. |
 | [#88](https://github.com/mouadja02/arkitect/issues/88) | Release backlog | Implement release preparation and publication; no npm publishing. |
 
 The two issues that made a diagram draw the wrong thing are fixed: an exact

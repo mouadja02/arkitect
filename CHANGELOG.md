@@ -13,6 +13,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- The 3,092 `brands` marks are reviewed on record, with a record that states
+  what a catch-all review can confirm, and every pack must now have one (#72)
 - A discontinued, renamed, absorbed, acquired or archived product carries a
   `status`: `find-icon` shows its caveat and successor, a build lists it under
   `icons.lifecycle`, and the drift check lists facts a year old; twelve
