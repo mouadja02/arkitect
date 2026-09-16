@@ -226,7 +226,7 @@ A pin stays honest only while someone checks it, so
 | check | when | opens | why it matters |
 |---|---|---|---|
 | `build-packs.mjs --check-upstream` | weekly | `A mark we ship has been removed from Simple Icons` (`licensing`) | Simple Icons removes a brand when its owner asks; shipping it anyway redistributes a mark we were asked not to |
-| `build-packs.mjs --check-drift` | quarterly | `Pinned icon sources have moved on upstream` (`upstream`) | vendors rev their sets without notice, and the packs fall behind; a project logo committed as a local file can be redrawn, relicensed or left in an archived repository |
+| `build-packs.mjs --check-drift` | quarterly | `Pinned icon sources have moved on upstream` (`upstream`) | vendors rev their sets without notice, and the packs fall behind; a project logo committed as a local file can be redrawn, relicensed or left in an archived repository; a product `status` confirmed a year ago may have moved again |
 
 For a `local-files` source, the drift check looks at three things, each
 against the pin. The **artwork**: the file at the pinned path on the default

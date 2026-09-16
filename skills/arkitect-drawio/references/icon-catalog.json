@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-16T14:02:00.331Z",
+  "generated": "2026-09-16T14:13:45.855Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "50c6d114dffef44ce4482d6b13007bd0f565deb87c8fe8a068811306638dd864"
+    "sha256": "c8808f99ccb99a2e255306c83d25c55f147d0c12a9fa7b96b3e225c13fc48a2e"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -34456,7 +34456,14 @@
       "licenceUrl": "https://www.fivetran.com/press/fivetran-signs-agreement-to-acquire-census-delivering-the-first-end-to-end-data-movement-platform-for-the-ai-era",
       "bytes": "on-demand",
       "reason": "Fivetran acquired Census in May 2025 and folded it into Fivetran Activations, its domains now redirect to fivetran.com, and neither company published a logo usage policy for the Census mark",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "absorbed",
+        "on": "2025-05",
+        "successor": "Fivetran Activations",
+        "successorId": "streaming-orchestration/fivetran",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "data-platforms/rudderstack",
@@ -34679,7 +34686,15 @@
       "licenceUrl": "https://mode.com/legal/tos/",
       "bytes": "on-demand",
       "reason": "Mode's terms of service, now issued by ThoughtSpot, state that its logos \"may not be copied, imitated, or used, in whole or in part, without the prior written permission of ThoughtSpot\", and mode.com publishes no downloadable asset",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "absorbed",
+        "on": "2023-07",
+        "successor": "ThoughtSpot Analyst Studio",
+        "successorId": "data-platforms/thoughtspot",
+        "note": "Mode is no longer sold to new customers.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "data-platforms/thoughtspot",
@@ -36704,7 +36719,14 @@
       "licenceUrl": "https://github.com/Arize-ai/phoenix/blob/e12748298b366605cc0e2aa60e659f473efbff99/LICENSE",
       "bytes": "on-demand",
       "reason": "Arize-ai/phoenix is under the Elastic License 2.0, which is not an open-source licence, the separate phoenix-assets repository holding the logo carries no LICENSE at all, and the corporate Arize mark is published only on its marketing site",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "acquired",
+        "on": "2026-08-13",
+        "by": "Dynatrace",
+        "pending": true,
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "ai-frameworks/whylabs",
@@ -36738,7 +36760,14 @@
       "licenceUrl": "https://github.com/rungalileo/docs-official/tree/d9aaabb409eaaa61e57a6ab1a3dcce2020f9b4f1",
       "bytes": "on-demand",
       "reason": "Galileo's logo files live in rungalileo/docs-official, a repository with no LICENSE file, and no Galileo logo appears in its Apache-2.0 client libraries",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "acquired",
+        "on": "2026-05-22",
+        "by": "Cisco",
+        "note": "Galileo joins Splunk Observability.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "ai-frameworks/instructor",
@@ -37711,7 +37740,13 @@
       "licenceUrl": "https://www.linuxfoundation.org/legal/trademark-usage",
       "bytes": "on-demand",
       "reason": "the PyTorch Foundation publishes its artwork only under the Linux Foundation trademark usage guidelines and its brand guidelines require checking in before logo use, while pytorch/serve publishes no TorchServe-specific logo and is now archived",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "archived",
+        "on": "2025-08-07",
+        "note": "pytorch/serve is read-only.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "ml-training/tecton",
@@ -37727,7 +37762,15 @@
       "licenceUrl": "https://www.tecton.ai/terms-of-use/",
       "bytes": "on-demand",
       "reason": "Tecton's terms of use reserve all rights in its trademarks, logos, images and artwork and prohibit any reproduction or redistribution; Tecton was acquired by Databricks and its home page now redirects there",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "absorbed",
+        "on": "2025-08",
+        "successor": "Databricks",
+        "successorId": "data-platforms/databricks",
+        "note": "tecton.ai redirects to Databricks.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "ml-training/fastai",
@@ -38485,7 +38528,14 @@
       "licenceUrl": "https://github.com/redpanda-data/connect/blob/cf7df53656a062051a5a9edb45b83e0d3c984ed0/licenses/README.md",
       "bytes": "on-demand",
       "reason": "Benthos was acquired by Redpanda in May 2024 and is now Redpanda Connect, licensed Apache-2.0 plus the proprietary Redpanda Community Licence; that repository contains no artwork, Redpanda publishes no logo policy, and the only MIT-licensed mark available is the retired Benthos logo, which is not this product",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "renamed",
+        "on": "2024-05-30",
+        "from": "Benthos",
+        "note": "The WarpStream fork keeps the old code as Bento.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "streaming-orchestration/vector",
@@ -39170,7 +39220,14 @@
       "licenceUrl": "https://docs.lightstep.com/changelog/eol-notice",
       "bytes": "on-demand",
       "reason": "the Lightstep brand was retired when ServiceNow renamed the product in August 2023, ServiceNow's own notice ends support on 1 March 2026, and no ServiceNow logo licence permits redistribution",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "discontinued",
+        "on": "2026-03-01",
+        "from": "Lightstep",
+        "note": "Renamed from Lightstep in 2023, then retired by ServiceNow with no equivalent product.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "observability/coralogix",
@@ -40550,7 +40607,13 @@
       "licenceUrl": "https://github.com/earthly/earthly/blob/6e641c15d3b4d7dd396363b61d2381faa2658f3d/LICENSE",
       "bytes": "on-demand",
       "reason": "earthly/earthly is MPL-2.0, a copyleft licence this repository does not redistribute artwork under, and Earthly Technologies asked forks to change the project's name and logo because it retains trademark rights",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "discontinued",
+        "on": "2025-07-16",
+        "note": "Earthly Cloud and Satellites stopped, and the company ended active maintenance of the open-source project.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "devops/garden",
@@ -41571,7 +41634,14 @@
       "licenceUrl": "https://www.twilio.com/en-us/legal/trademark",
       "bytes": "on-demand",
       "reason": "Stytch is now owned by Twilio and its legal terms redirect to Twilio's, whose trademark usage guidelines require express written permission for any use of a Twilio mark outside those guidelines",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "acquired",
+        "on": "2025-11-14",
+        "by": "Twilio",
+        "note": "Stytch still operates under its own name.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "github/github",
@@ -43040,7 +43110,13 @@
       "licenceUrl": "https://height.app/terms",
       "bytes": "on-demand",
       "reason": "Height shut down on 24 September 2025, published no logo or trademark policy, and its terms required express advance written permission to copy or distribute its content",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "discontinued",
+        "on": "2025-09-24",
+        "note": "Height went offline after six months' notice.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "saas-collab/productboard",
@@ -43109,7 +43185,14 @@
       "licenceUrl": "https://www.statsig.com/terms",
       "bytes": "on-demand",
       "reason": "Statsig publishes no brand, press or trademark page and no logo file beyond a site favicon, and its terms retain all right, title and interest in its intellectual property",
-      "artwork": "none pinned"
+      "artwork": "none pinned",
+      "status": {
+        "state": "acquired",
+        "on": "2026-05-05",
+        "by": "Amplitude",
+        "note": "OpenAI bought the company in September 2025 and kept the team; Amplitude took over the Statsig product, brand and customers.",
+        "checked": "2026-09-16"
+      }
     },
     {
       "id": "saas-collab/unleash",

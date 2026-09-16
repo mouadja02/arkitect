@@ -1693,6 +1693,80 @@ test('ids that draw identical artwork name each other in the catalog, the search
   eq(repeated.report.sameArtwork.length, 0, 'one id used twice is not a finding');
 });
 
+const lifecycle = await import(`file://${join(SCRIPTS, 'lib', 'lifecycle.mjs').replace(/\\/g, '/')}`);
+
+test('a product status is refused unless its state, dates and successor say something checkable (#83)', () => {
+  const ok = { state: 'absorbed', on: '2025-05', successor: 'Fivetran Activations', checked: '2026-09-16' };
+  eq(lifecycle.statusProblems('p/x', ok).join(), '', 'a well-formed status');
+  eq(lifecycle.statusProblems('p/x', undefined).join(), '', 'no status is fine');
+  const problems = (s) => lifecycle.statusProblems('p/x', s).join(' | ');
+  assert(/not one of/.test(problems({ ...ok, state: 'dead' })), 'an unknown state');
+  assert(/status.on/.test(problems({ ...ok, on: 'May 2025' })), 'a date that is not ISO');
+  assert(/status.checked/.test(problems({ ...ok, checked: '2026-09' })), 'checked is a day');
+  assert(/names its successor/.test(problems({ state: 'renamed', on: '2024', checked: '2026-09-16' })), 'a rename to nothing');
+  assert(/not a known field/.test(problems({ ...ok, sucessor: 'typo' })), 'a misspelt field');
+  assert(/needs a successor name/.test(problems({ state: 'acquired', on: '2025', successorId: 'a/b', checked: '2026-09-16' })), 'an id with no name');
+
+  const warn = /check before drawing it into a target state/;
+  assert(warn.test(lifecycle.caveat('Height', { state: 'discontinued', on: '2025-09-24' })), 'a dead product warns');
+  assert(!warn.test(lifecycle.caveat('Redpanda Connect', { state: 'renamed', on: '2024', from: 'Benthos' })), 'the current name of a renamed product does not');
+  assert(!warn.test(lifecycle.caveat('Stytch', { state: 'acquired', on: '2025', by: 'Twilio' })), 'a brand still operating does not');
+  assert(/not closed/.test(lifecycle.caveat('Arize AI', { state: 'acquired', on: '2026-08-13', by: 'Dynatrace', pending: true })), 'a pending deal says so');
+  assert(lifecycle.staleStatus({ checked: '2025-01-01' }, Date.parse('2026-09-16')), 'a year-old fact is stale');
+  assert(!lifecycle.staleStatus({ checked: '2026-09-01' }, Date.parse('2026-09-16')), 'a fresh one is not');
+});
+
+test('a discontinued, renamed or absorbed product still resolves, and says so in the search and the build (#83)', () => {
+  const cat = finder.loadCatalog();
+  const withStatus = cat.icons.filter((i) => i.status);
+  for (const id of ['saas-collab/height', 'observability/lightstep', 'ml-training/tecton', 'data-platforms/census',
+    'streaming-orchestration/redpandaconnect', 'devops/earthly', 'data-platforms/mode', 'security-identity/stytch',
+    'saas-collab/statsig', 'ai-frameworks/arize', 'ai-frameworks/galileo', 'ml-training/torchserve']) {
+    assert(withStatus.some((i) => i.id === id), `${id} carries no status`);
+  }
+  const manifest = packs.loadManifest();
+  const invalid = manifest.packs.flatMap((p) => [...(p.icons ?? []), ...(p.onDemand ?? [])]
+    .flatMap((e) => lifecycle.statusProblems(`${p.id}/${e.slug}`, e.status)));
+  eq(invalid.join('; '), '', 'every recorded status is well-formed');
+  for (const i of withStatus.filter((row) => row.status.successorId)) {
+    assert(finder.byExactId(cat, i.status.successorId), `${i.id} names a successor id that is not catalogued`);
+  }
+
+  // The mark is still the right mark for that name: confidence is unchanged.
+  const r = finder.resolve('height');
+  assert(r.confident && r.icon.id === 'saas-collab/height', `"height" -> ${r.icon?.id} (${r.reason})`);
+
+  const shown = JSON.parse(node('find-icon.mjs', ['census'])).matches.flatMap((m) => m.variants)
+    .find((v) => v.id === 'data-platforms/census');
+  eq(shown?.lifecycle?.state, 'absorbed', 'find-icon shows the state');
+  assert(/Fivetran Activations/.test(shown.lifecycle.caveat), 'and the caveat names the successor');
+  eq(shown.lifecycle.successor?.id, 'streaming-orchestration/fivetran', 'and the successor id to offer');
+
+  const at = (id, icon, col) => ({ id, kind: 'icon', icon, label: id, col, row: 0 });
+  const { report } = builder.buildDiagram({ nodes: [at('a', 'saas-collab/height', 0), at('b', 'aws/aws-lambda', 1)] });
+  eq(report.lifecycle.map((l) => `${l.id}:${l.state}`).join(), 'saas-collab/height:discontinued', 'the build report names it');
+  eq(report.needsFetch.map((n) => n.id).join(), 'saas-collab/height', 'and still reports it as needing artwork');
+});
+
+const lifecycleDrift = await settle(upstream.checkDrift({
+  catalog: { icons: [] },
+  manifest: { sources: {}, packs: [{ id: 'p', icons: [], onDemand: [
+    { slug: 'old', title: 'Old Co', status: { state: 'acquired', on: '2024', by: 'Big Co', checked: '2025-06-01' } },
+    { slug: 'new', title: 'New Co', status: { state: 'discontinued', on: '2026-01', checked: '2026-09-01' } },
+  ] }] },
+  now: Date.parse('2026-09-16T00:00:00Z'),
+}));
+
+test('the drift pass reports product statuses last confirmed a year ago or more (#83)', () => {
+  assert(!lifecycleDrift.error, `check threw: ${lifecycleDrift.error?.message}`);
+  const row = lifecycleDrift.value.find((r) => r.kind === 'lifecycle');
+  assert(row?.drifted, 'a stale fact is a finding');
+  eq(`${row.recorded} ${row.stale.map((s) => s.id).join()}`, '2 p/old', 'only the stale one is listed');
+  const report = upstream.driftReport(lifecycleDrift.value);
+  assert(report.includes('`p/old` (Old Co) | acquired | 2025-06-01') && !report.includes('p/new'), 'the report names it and nothing else');
+  assert(!report.includes('| pinned | upstream now |') && !report.includes('Project logos'), 'no other section');
+});
+
 test('the old palette captions still resolve as aliases', () => {
   const cases = [
     ['Arch Amazon-Bedrock 64', 'Amazon Bedrock'],

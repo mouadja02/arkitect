@@ -25,7 +25,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
-import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext } from './find-icon.mjs';
+import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
 import { engineStore } from './lib/store.mjs';
@@ -104,6 +104,10 @@ export function resolveIcon(node, catalog, report, contextPacks) {
   // Whatever route chose the mark, an on-demand entry ships no bytes: it is
   // reported to fetch, never swapped for something that does draw.
   const take = (chosen) => {
+    // Drawn or not, a product that was discontinued, renamed or absorbed is
+    // named in the report, so the person reading the diagram hears it (#83).
+    const lifecycle = lifecycleOf(chosen, catalog);
+    if (lifecycle) (report.lifecycle ??= []).push({ query, id: chosen.id, ...lifecycle });
     if (chosen.bytes === 'on-demand') {
       report.needsFetch.push({
         query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, artwork: chosen.artwork,
@@ -261,7 +265,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const drawnIcons = [];
@@ -527,6 +531,7 @@ function main(argv) {
       ambiguous: report.ambiguous,
       needsFetch: report.needsFetch,
       sameArtwork: report.sameArtwork,
+      lifecycle: report.lifecycle,
       ...(spec.context?.packs ? { contextPacks: spec.context.packs } : {}),
     },
     logos: { embedded: report.logos.length, missing: report.missingLogos, opaqueBackground: report.opaqueLogos },

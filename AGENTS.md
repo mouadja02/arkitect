@@ -145,7 +145,9 @@ fetch the **real logo** and embed it (`drawio logo --url …`, or the exact
 stays a named placeholder). Last resort, and only then: a
 built-in `mxgraph.aws4.*` shape, the Draw.io MCP `search_shapes` tool, or a
 plain labelled box named in the report. A grey box labelled "Snowflake" when a
-bundled mark existed is a regression, not a safe default.
+bundled mark existed is a regression, not a safe default. A match that carries
+`lifecycle` names a product that was discontinued, renamed, absorbed or acquired:
+draw it if that is what the system runs, and repeat its caveat in your report.
 
 **Excalidraw:** the 36 bundled libraries first (`excalidraw icon`). 239 items
 carry no name; find those by reading the numbered contact sheets in

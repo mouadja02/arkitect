@@ -26,6 +26,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { readLibrary, normalizeTitle, fitCell, ICON_FOOTPRINT } from './lib/drawio-core.mjs';
+import { caveat } from './lib/lifecycle.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -253,13 +254,30 @@ function byId(catalog, id) {
     ?? catalog.icons.find((i) => String(i.libraryIndex) === String(id));
 }
 
+// The mark stays the right mark for its name, so a resolution stays confident;
+// the answer carries the caveat, and the successor when the catalog has one (#83).
+export function lifecycleOf(icon, catalog = loadCatalog()) {
+  if (!icon?.status) return null;
+  const s = icon.status;
+  const next = s.successorId ? byExactId(catalog, s.successorId) : null;
+  return {
+    state: s.state,
+    ...(s.on ? { on: s.on } : {}),
+    caveat: caveat(icon.title, s),
+    ...(s.successor ? { successor: next ? { name: s.successor, id: next.id, bytes: next.bytes } : { name: s.successor } } : {}),
+    checked: s.checked,
+  };
+}
+
 function describe(icon, catalog) {
   const dim = recommendedSize(icon, null);
+  const lifecycle = lifecycleOf(icon, catalog);
   const base = {
     id: icon.id,
     pack: icon.pack,
     source: icon.source,
     licence: icon.licence,
+    ...(lifecycle ? { lifecycle } : {}),
   };
   if (icon.bytes === 'on-demand') {
     return {

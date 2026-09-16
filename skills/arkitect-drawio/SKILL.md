@@ -54,6 +54,12 @@ say so in the report.
    cached logo. With `artwork: "none pinned"` there is nothing to fetch: draw a
    labelled placeholder and name it in the report.
 
+   A match with a `lifecycle` block names a product that was discontinued, renamed,
+   absorbed or acquired. It still resolves, because it is still that product's entry.
+   Draw it if the system runs it, repeat the `caveat` in your report, and offer the
+   `successor` when the diagram is a target state. The build report lists these under
+   `icons.lifecycle`.
+
    If nothing matches, fall back to a built-in `mxgraph.aws4.*` shape, then to the MCP
    `search_shapes` tool, then to a plain labelled box that you call out in the report.
    **Never** swap in a different product's icon to fill a gap.

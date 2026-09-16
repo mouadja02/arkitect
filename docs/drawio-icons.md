@@ -143,6 +143,25 @@ under `sameArtworkAs`, `find-icon` shows them, and `build-diagram` reports any
 nodes that use different ids for the same picture under `sameArtwork`, so two
 concepts are never drawn with one icon unnoticed (#77).
 
+## A product that changed is flagged, not hidden
+
+A name can outlive its product. Height shut down, Lightstep was renamed and then
+retired, and Census became Fivetran Activations. Each still resolves confidently,
+because the entry is still the right entry for that name. What changes is whether it
+belongs in a target-state diagram.
+
+Such an entry carries a `status` in `sources.json`: `state` (`discontinued`,
+`renamed`, `absorbed`, `acquired` or `archived`), `on` (a year, month or day),
+optionally `successor` and the `successorId` it has in the catalog, `by`, `from`,
+`pending` and `note`, and `checked`, the day someone last confirmed it. The catalog
+carries it. `find-icon` shows it under `lifecycle`, with a one-sentence caveat and the
+successor's id when it has one, and `build-diagram` lists every node that drew such an
+entry under `icons.lifecycle`. Resolution is unchanged: the caveat rides along.
+
+`build-packs.mjs --all` refuses a malformed status or a `successorId` that is not
+catalogued. Because a product can move again, the quarterly `--check-drift` lists every
+status whose `checked` date is a year old or more (#83).
+
 ## The catalog
 
 `references/icon-catalog.json` holds metadata only — namespaced id, pack, title,
