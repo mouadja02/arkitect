@@ -65,8 +65,15 @@ Neither rule changes a score, only whether the top result may be used without as
 Lowering the score instead would widen the margin over the runner-up and hand confidence
 to a *different* wrong answer — `delta` would become the airline.
 
+Two packs can also ship marks with exactly the same title — Azure and `primitives` both
+call one **Monitor** — and an exact title scores the same either way, so neither leads
+and both come back flagged. Naming the stack settles it: with `--context azure` the tie
+goes to Azure's mark, because the spec has already said which one it means. It stays
+flagged when the runner-up sits in the named pack too, as Azure's `File` does beside its
+`Files`.
+
 This is measured, not asserted. `tests/icon-queries.json` is an answer key of 471
-queries — the vocabulary of data, ML, platform and cloud engineers, plus 21 that must
+queries — the vocabulary of data, ML, platform and cloud engineers, plus 43 that must
 come back flagged — and the suite fails on any confident wrong answer, or if precision
 at rank 1 drops below its floor. Change a judgement row deliberately, never to make a
 tuning change pass.

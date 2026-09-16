@@ -134,9 +134,19 @@ export function resolve(query, opts = {}) {
   if (!groups.length) return { query, confident: false, reason: 'no match', groups: [] };
   const [top, next] = groups;
   const margin = next ? top.best - next.best : Infinity;
+  // A stack the spec named settles a tie the scores cannot. Two packs can ship
+  // marks with exactly the same title - Azure and primitives both call one
+  // "Monitor" - and both then score 105, so the margin is 0 and nothing is
+  // drawn. CONTEXT_BONUS is below CLEAR_MARGIN, so naming the stack could not
+  // decide it either. When the whole of the leader's margin is that bonus and
+  // the runner-up sits outside the named packs, the spec has already said which
+  // one it means (#75). A runner-up inside those packs still decides nothing.
+  const decidedByContext = Boolean(next && opts.packs?.length
+    && opts.packs.includes(top.pack) && !opts.packs.includes(next.pack)
+    && margin >= CONTEXT_BONUS);
   const confident = top.best >= CONFIDENT_AT
     && !top.doubt
-    && (margin >= CLEAR_MARGIN || groups.length === 1)
+    && (margin >= CLEAR_MARGIN || groups.length === 1 || decidedByContext)
     && top.variants.length === 1;
   const reason = confident ? null
     : top.best < CONFIDENT_AT ? 'weak match'
