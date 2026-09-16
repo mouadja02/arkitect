@@ -302,11 +302,40 @@ the live record.
 ## Version bumps
 
 `package.json` `version` and `.claude-plugin/plugin.json` `version` move
-together, always. The release process renames `[Unreleased]` to the version
-being cut, with today's date, and opens a fresh empty `[Unreleased]` above it.
-[SemVer](https://semver.org): a new capability is a minor, a fix is a patch, and
-anything that changes the shape of generated output or removes a command is a
-major.
+together, always. [SemVer](https://semver.org): a new capability is a minor, a
+fix is a patch, and anything that changes the shape of generated output or
+removes a command is a major.
+
+A release is two workflows and one merge (#88):
+
+1. **Actions → release prepare → Run workflow**, choosing the bump. It runs the
+   suite, then `scripts/release.mjs prepare`: both manifests move to the new
+   version, `[Unreleased]` becomes `## [X.Y.Z] — <today, UTC>`, and a fresh empty
+   `[Unreleased]` opens above it. The change goes to a `release/vX.Y.Z` branch and a
+   pull request that runs CI like any other. A failing suite stops the run before
+   anything is written.
+2. **Review and merge that pull request.** Merging is the approval.
+   `release publish` then checks that the branch name and both manifests agree, tags
+   the merge commit `vX.Y.Z`, and publishes a GitHub Release whose body is that
+   version's `CHANGELOG.md` section, verbatim. Closing it unmerged does nothing.
+
+If `[Unreleased]` is empty when the release is prepared, one OpenAI-compatible chat
+completion drafts it from the commit log since the last tag (or, before the first
+tag, since the newest dated section). The draft must use the four headings and
+bullets or it is refused. The pull request then opens as a **draft**, flagged as
+model-written: correct `CHANGELOG.md` on the branch, then mark it ready. A missing
+key or a failed call fails the run; nothing ships with an invented or empty section.
+
+Nothing is published to npm. Setup, once, in the repository settings:
+
+| name | kind | what |
+|---|---|---|
+| `RELEASE_TOKEN` | secret | fine-grained token for this repository with Contents and Pull requests write; a pull request opened with the default Actions token runs no CI, and this repository does not let Actions open one |
+| `RELEASE_LLM_BASE_URL` | variable | e.g. `https://api.deepseek.com/v1` or `https://openrouter.ai/api/v1` |
+| `RELEASE_LLM_MODEL` | variable | the model name that endpoint expects |
+| `RELEASE_LLM_API_KEY` | secret | only needed when `[Unreleased]` can be empty |
+
+The same steps run locally: `node scripts/release.mjs empty | draft | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`.
 
 ## What is never automated
 
@@ -316,7 +345,8 @@ must not:
 - merge, approve or close a pull request, or push to `main`
 - force-push, rewrite history, or delete a branch it did not create
 - change the licence, the repository visibility, its settings or its topics
-- publish a release or a package
+- publish a release or a package (the release workflows publish only when a
+  person merges a `release/v*` pull request)
 - add a runtime dependency, or commit a binary over 2 MB, without being asked
 - weaken or delete a test to make a change pass
 - commit anything derived from a real diagram

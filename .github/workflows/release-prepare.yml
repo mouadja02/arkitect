@@ -1,0 +1,115 @@
+name: release prepare
+
+# Started by hand, never on a schedule (#88). Turns [Unreleased] into a dated
+# release section, bumps both manifests together, and opens a release/vX.Y.Z
+# pull request. That pull request is the approval gate: merging it is what tags
+# and publishes the release, in release-publish.yml. Nothing is published to npm.
+#
+# Needs a RELEASE_TOKEN secret: a fine-grained token with contents and pull
+# requests write on this repository. A pull request opened with the default
+# Actions token runs no CI, and this repository does not let Actions open one.
+#
+# An empty [Unreleased] is drafted from the commit log by one OpenAI-compatible
+# chat completion (RELEASE_LLM_BASE_URL and RELEASE_LLM_MODEL variables,
+# RELEASE_LLM_API_KEY secret); the pull request is then opened as a draft that a
+# person has to read and mark ready. A failed model call fails the run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        options: [patch, minor, major]
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: A token that can open a pull request CI will run on
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::RELEASE_TOKEN is not set. See the comment at the top of release-prepare.yml."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # A backstop behind the maintainer's own testing, not a replacement for it.
+      # Any failure stops the run before a single file changes.
+      - name: Suite
+        run: node tests/run-tests.mjs
+
+      - name: Draft an empty [Unreleased] from the commit log
+        id: draft
+        env:
+          RELEASE_LLM_BASE_URL: ${{ vars.RELEASE_LLM_BASE_URL }}
+          RELEASE_LLM_MODEL: ${{ vars.RELEASE_LLM_MODEL }}
+          RELEASE_LLM_API_KEY: ${{ secrets.RELEASE_LLM_API_KEY }}
+        run: |
+          if node scripts/release.mjs empty; then
+            node scripts/release.mjs draft
+            echo "drafted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "drafted=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump both manifests and date the section
+        id: version
+        run: |
+          version=$(node scripts/release.mjs prepare "${{ inputs.bump }}")
+          node scripts/release.mjs check "$version"
+          if git ls-remote --exit-code --heads origin "release/v$version" >/dev/null; then
+            echo "::error::release/v$version already exists"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "v$version" >/dev/null; then
+            echo "::error::tag v$version already exists"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Open the release pull request
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DRAFTED: ${{ steps.draft.outputs.drafted }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git switch -c "release/v$VERSION"
+          git add package.json .claude-plugin/plugin.json CHANGELOG.md
+          git commit -m "Release $VERSION"
+          git push origin "release/v$VERSION"
+          {
+            if [ "$DRAFTED" = "true" ]; then
+              echo "> [!WARNING]"
+              echo "> [Unreleased] was empty, so the notes below were **drafted by a model** from the commit log."
+              echo "> Read and correct them in CHANGELOG.md before marking this ready. Merging publishes them verbatim."
+              echo
+            fi
+            echo "Merging this tags \`v$VERSION\` and publishes a GitHub Release whose body is exactly this section:"
+            echo
+            node scripts/release.mjs notes "$VERSION"
+          } > body.md
+          draft_flag=""
+          if [ "$DRAFTED" = "true" ]; then draft_flag="--draft"; fi
+          gh pr create --base main --head "release/v$VERSION" --title "Release $VERSION" --body-file body.md $draft_flag

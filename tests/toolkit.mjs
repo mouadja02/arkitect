@@ -837,6 +837,97 @@ test('the packed CLI works from outside the checkout (#38)', () => {
 
 if (packResult?.value) rmSync(packResult.value.tmp, { recursive: true, force: true });
 
+// ------------------------------------------------------------- releases (#88)
+
+const release = await import(pathToFileURL(join(ROOT, 'scripts', 'release.mjs')).href);
+const CL = `# Changelog\n\nPreamble.\n\n## [Unreleased]\n\n### Added\n\n- A thing (#1)\n- A longer thing that\n  wraps (#2)\n\n### Fixed\n\n- A bug\n\n## [1.1.0] — 2026-09-12\n\n### Added\n\n- Old thing\n`;
+const EMPTY = CL.replace(/## \[Unreleased\][\s\S]*?(?=## \[1\.1\.0\])/, '## [Unreleased]\n\n### Added\n\n');
+
+test('a release bumps the version, dates [Unreleased] verbatim and opens a fresh one (#88)', () => {
+  eq(`${release.nextVersion('1.1.0', 'patch')} ${release.nextVersion('1.1.0', 'minor')} ${release.nextVersion('1.9.3', 'major')}`,
+    '1.1.1 1.2.0 2.0.0', 'bumps');
+  for (const bad of [['1.1', 'patch'], ['1.1.0', 'huge']]) {
+    let threw = false; try { release.nextVersion(...bad); } catch { threw = true; }
+    assert(threw, `nextVersion(${bad}) should refuse`);
+  }
+  const rolled = release.rollChangelog(CL, '1.2.0', '2026-09-16');
+  assert(rolled.startsWith('# Changelog\n\nPreamble.\n\n## [Unreleased]\n\n## [1.2.0] — 2026-09-16\n'), 'fresh [Unreleased] above the dated section');
+  eq(release.sectionFor(rolled, '1.2.0'), release.unreleasedBody(CL).trim(), 'the section is the old [Unreleased], word for word');
+  assert(rolled.includes('## [1.1.0] — 2026-09-12\n\n### Added\n\n- Old thing'), 'older releases untouched');
+  assert(release.isEmpty(rolled) && !release.isEmpty(CL), 'the new [Unreleased] is empty');
+  assert(release.isEmpty(EMPTY), 'bare headings count as empty');
+  const refuses = (fn, pattern, what) => {
+    let err; try { fn(); } catch (e) { err = e; }
+    assert(err && pattern.test(err.message), `${what}: ${err?.message ?? 'did not throw'}`);
+  };
+  refuses(() => release.rollChangelog(EMPTY, '1.2.0', '2026-09-16'), /no entries/, 'an empty release');
+  refuses(() => release.rollChangelog(CL, '1.1.0', '2026-09-16'), /already has/, 'a version that exists');
+  refuses(() => release.rollChangelog(CL, '1.2.0', 'today'), /ISO date/, 'a non-ISO date');
+  eq(release.lastReleaseDate(CL), '2026-09-12', 'the first-run anchor');
+});
+
+// test() is synchronous: the model calls are settled first, asserted afterwards.
+const settleRelease = async (p) => { try { return { value: await p }; } catch (error) { return { error }; } };
+const goodDraft = '### Added\n\n- New command (#9)\n\n### Fixed\n\n- A crash on\n  empty input';
+const draftMessages = release.draftMessages('Fix thing (#3)', '### Added\n\n- Example');
+const sentToModel = [];
+const modelOk = await settleRelease(release.callModel({
+  baseUrl: 'https://llm.example/v1/', model: 'm', apiKey: 'k', messages: draftMessages,
+  fetchImpl: async (url, init) => {
+    sentToModel.push({ url, init });
+    return { ok: true, json: async () => ({ choices: [{ message: { content: `\`\`\`markdown\n${goodDraft}\n\`\`\`` } }] }) };
+  },
+}));
+const modelUnset = await settleRelease(release.callModel({ baseUrl: '', model: 'm', apiKey: '', messages: draftMessages,
+  fetchImpl: async () => { throw new Error('should not be called'); } }));
+const modelDown = await settleRelease(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
+  fetchImpl: async () => ({ ok: false, status: 429, statusText: 'Too Many Requests' }) }));
+const modelBlank = await settleRelease(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
+  fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: '  ' } }] }) }) }));
+
+test('a model-drafted changelog fills only an empty [Unreleased], in the house shape, and a failed call fails (#88)', () => {
+  const good = goodDraft;
+  const filled = release.insertDraft(EMPTY, good);
+  assert(!release.isEmpty(filled) && release.unreleasedBody(filled).includes('- New command (#9)'), 'draft inserted');
+  const refuses = (fn, pattern, what) => {
+    let err; try { fn(); } catch (e) { err = e; }
+    assert(err && pattern.test(err.message), `${what}: ${err?.message ?? 'did not throw'}`);
+  };
+  refuses(() => release.insertDraft(CL, good), /already has entries/, 'overwriting real entries');
+  refuses(() => release.insertDraft(EMPTY, '### Highlights\n\n- Big news'), /unknown heading/, 'an invented heading');
+  refuses(() => release.insertDraft(EMPTY, 'We are thrilled to announce...'), /not a heading or a bullet/, 'prose');
+  refuses(() => release.insertDraft(EMPTY, '- orphan bullet'), /before any heading/, 'a bullet with no heading');
+
+  assert(draftMessages[0].content.includes('### Added') && draftMessages[1].content.includes('Fix thing (#3)'), 'prompt carries style and commits');
+  eq(modelOk.value, good, 'fences stripped');
+  eq(sentToModel[0]?.url, 'https://llm.example/v1/chat/completions', 'one POST to chat/completions');
+  eq(sentToModel[0]?.init.headers.authorization, 'Bearer k', 'key sent as a bearer token');
+  assert(/RELEASE_LLM_BASE_URL, RELEASE_LLM_API_KEY not set/.test(modelUnset.error?.message), `missing config: ${modelUnset.error?.message}`);
+  assert(/429/.test(modelDown.error?.message), 'a failed call throws');
+  assert(/no text/.test(modelBlank.error?.message), 'an empty answer throws');
+});
+
+test('the release workflows are started by a person, gated by a merged pull request, and never publish to npm (#88)', () => {
+  const read = (f) => readFileSync(join(ROOT, '.github', 'workflows', f), 'utf8');
+  const prepare = read('release-prepare.yml');
+  const publish = read('release-publish.yml');
+  assert(/^on:\s*\n\s*workflow_dispatch:/m.test(prepare) && !/schedule:|push:|pull_request:/.test(prepare), 'prepare runs only by hand');
+  assert(/options: \[patch, minor, major\]/.test(prepare), 'prepare takes the bump');
+  const suite = prepare.indexOf('node tests/run-tests.mjs');
+  assert(suite > 0 && suite < prepare.indexOf('release.mjs draft') && suite < prepare.indexOf('release.mjs prepare'), 'the suite runs before any file changes');
+  assert(prepare.includes('RELEASE_TOKEN is not set'), 'a missing token fails loudly');
+  assert(/--draft/.test(prepare) && /drafted by a model/.test(prepare), 'a drafted changelog opens a draft pull request that says so');
+  assert(!/git push origin main|git push\s*$/m.test(prepare), 'prepare never pushes to main');
+  assert(/types: \[closed\]/.test(publish), 'publish runs on a closed pull request');
+  assert(publish.includes("github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/v')"), 'only a merged release branch publishes');
+  assert(publish.includes('release.mjs check') && publish.indexOf('release.mjs check') < publish.indexOf('git tag'), 'the version is checked before tagging');
+  assert(publish.includes('--notes-file notes.md') && !/generate-notes/.test(publish), 'release notes are the changelog section, not generated');
+  for (const [name, yml] of [['prepare', prepare], ['publish', publish]]) {
+    const steps = yml.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n');
+    assert(!/npm publish|npm_token|NODE_AUTH_TOKEN|registry-url/i.test(steps), `${name} must not publish to npm`);
+  }
+});
+
 // -------------------------------------------------------------
 
 console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
