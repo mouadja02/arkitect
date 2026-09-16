@@ -84,7 +84,7 @@ Vendor artwork is embedded **byte-for-byte**. Microsoft and Google grant permiss
 use their icons in architecture diagrams and forbid altering the icon shape, so there is
 no optimisation pass — and the untouched bytes keep the recorded SHA-256 meaningful.
 
-158 products (`node scripts/find-icon.mjs --stats` has the live count) are
+160 products (`node scripts/find-icon.mjs --stats` has the live count) are
 catalogued with a licence note but **no bytes**. For most, no permissively
 licensed mark exists. Seven were removed from Simple Icons 16 at the brand
 owner's request; shipping them from an older pin would have made the rest of
@@ -233,11 +233,19 @@ node $S/contact-sheet.mjs --pack azure --review --page 3  # one page
 
 Review pages show 54 marks at 120px, each captioned with its title, id, upstream file,
 library index, short hash and review state, with unchecked and stale tiles highlighted.
-They are written to the gitignored `contact-sheets/review/`. AWS, Azure and Google Cloud
-each have a record. The suite fails if any shipped mark in a pack with a record is
-unchecked, stale, recorded as a mismatch or carries an unknown verdict, or if the record
-names an id that no longer ships (#18, #73). A new mark cannot ship into a reviewed pack
-without a row.
+They are written to the gitignored `contact-sheets/review/`. Every pack except the
+`brands` catch-all has a record, and the suite requires one. It fails if any shipped mark
+in a pack with a record is unchecked, stale, recorded as a mismatch or carries an unknown
+verdict, or if the record names an id that no longer ships (#18, #73, #81). A new mark
+cannot ship into a reviewed pack without a row.
+
+The curated-pack review caught two marks promoted out of the catch-all by slug alone that
+were never the products they were filed under: Simple Icons' `vespa` is Piaggio's scooter
+and its `nebula` is the nebula.tv streaming service. `databases/vespa` and
+`databases/nebula` are now on-demand entries for Vespa.ai and NebulaGraph, and the two
+marks sit back in `brands`, where they name what they draw. Before promoting a Simple Icons
+slug, check its `source` URL in `data/simple-icons.json`: it names the brand the mark
+belongs to.
 
 Two Azure pairs share a name *and* a folder — Microsoft ships two different `Workspaces`
 marks in `compute` and two `Load Balancer Hub` marks in `networking`. The second of each

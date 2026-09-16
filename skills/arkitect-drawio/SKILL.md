@@ -225,7 +225,7 @@ several and settles a tie between packs that ship one exact title. Lower rank wi
 | `azure` | 638 | Azure service icons, V24 |
 | `gcp` | 249 | Google Cloud products and categories |
 | `data-platforms` | 31 | Warehouses, lakehouses, query engines, BI, product analytics |
-| `databases` | 40 | Relational, document, key-value, graph, vector |
+| `databases` | 38 | Relational, document, key-value, graph, vector |
 | `ai-frameworks` | 43 | LLM orchestration, agent frameworks, providers |
 | `ml-training` | 35 | Training, experiment tracking, the numeric stack |
 | `streaming-orchestration` | 23 | Brokers, stream processors, schedulers |
@@ -238,7 +238,7 @@ several and settles a tie between packs that ship one exact title. Lower rank wi
 | `file-types` | 35 | Document sheets badged with an extension |
 | `agents` | 33 | Agent concepts — memory, tracing, RAG, guardrail |
 | `primitives` | 43 | Generic concepts — queue, cache, load balancer |
-| `brands` | 3,090 | Every other Simple Icons mark; ranked last |
+| `brands` | 3,092 | Every other Simple Icons mark; ranked last |
 
 `node scripts/find-icon.mjs --list-packs` prints this live.
 `references/pack-index.md` lists what each curated pack contains, and which products
@@ -257,7 +257,7 @@ node scripts/contact-sheet.mjs --all --png   # regenerate the review sheets
 ## Third-party product logos
 
 The packs cover most things. Everything else — a niche vendor, an internal product,
-one of the 158 on-demand marks — gets its real logo, downloaded and embedded.
+one of the 160 on-demand marks — gets its real logo, downloaded and embedded.
 In the reference corpus 77 of 97 embedded images are exactly this. A generic box where
 a recognisable logo belongs is a regression, not a safe default.
 

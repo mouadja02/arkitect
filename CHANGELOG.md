@@ -13,6 +13,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Every shipped mark in the 14 curated packs is reviewed on record, and every
+  pack but the `brands` catch-all must now have a review record (#81)
 - Every shipped AWS and Google Cloud mark is reviewed on record in
   `reviews/aws.json` and `reviews/gcp.json`, and the review test covers every
   pack with a record (#73)
@@ -100,6 +102,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- `databases/vespa` and `databases/nebula` no longer draw Piaggio's Vespa
+  scooter and the nebula.tv streaming service; both are on-demand Vespa.ai and
+  NebulaGraph entries, and `Red Hat OpenShift` and `Mailchimp` are spelled as
+  their owners spell them (#81)
 - Twelve AWS and ten Google Cloud captions their file names mangled read as
   the product is named: `AWS X-Ray`, `AWS re:Post`, `Identity-Aware Proxy`
   and the rest; ids and upstream spellings still resolve (#73)

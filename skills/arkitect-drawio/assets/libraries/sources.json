@@ -2467,15 +2467,6 @@
           "hex": "ff5f3b"
         },
         {
-          "slug": "vespa",
-          "title": "Vespa",
-          "hex": "85B09A",
-          "aliases": [
-            "vespa"
-          ],
-          "source": "simple-icons@16.30.0"
-        },
-        {
           "slug": "pocketbase",
           "title": "PocketBase",
           "hex": "B8DBE4",
@@ -2499,15 +2490,6 @@
           "hex": "4FF8D2",
           "aliases": [
             "turso"
-          ],
-          "source": "simple-icons@16.30.0"
-        },
-        {
-          "slug": "nebula",
-          "title": "Nebula",
-          "hex": "2CADFE",
-          "aliases": [
-            "nebula"
           ],
           "source": "simple-icons@16.30.0"
         },
@@ -2610,6 +2592,33 @@
           "reason": "JanusGraph's official artwork lives in lfai/artwork, whose LICENSE.md offers it only under the Linux Foundation trademark usage guidelines, and JanusGraph is a registered Linux Foundation trademark; the code repository being Apache-2.0 does not change the artwork terms",
           "upstreamUrl": "https://raw.githubusercontent.com/lfai/artwork/3e1b54db5614fd73dee0d76c9a04562aab20f96a/projects/janusgraph/icon/color/janusgraph-icon-color.svg",
           "brandUrl": "https://janusgraph.org/"
+        },
+        {
+          "slug": "vespa",
+          "title": "Vespa",
+          "aliases": [
+            "vespa",
+            "vespa.ai",
+            "vespa ai",
+            "vespa engine"
+          ],
+          "source": "vendor",
+          "licence": "none - licence not yet researched",
+          "reason": "Simple Icons' vespa mark is Piaggio's Vespa scooter brand, not the Vespa.ai search engine; it shipped here by slug from #19 until the #81 review caught it, and Vespa.ai's own logo has not been researched",
+          "brandUrl": "https://vespa.ai/"
+        },
+        {
+          "slug": "nebula",
+          "title": "NebulaGraph",
+          "aliases": [
+            "nebulagraph",
+            "nebula graph",
+            "nebula"
+          ],
+          "source": "vendor",
+          "licence": "none - licence not yet researched",
+          "reason": "Simple Icons' nebula mark is the Nebula streaming service (nebula.tv), not the NebulaGraph database; it shipped here by slug from #19 until the #81 review caught it, and NebulaGraph's own logo has not been researched",
+          "brandUrl": "https://www.nebula-graph.io/"
         }
       ]
     },
@@ -4993,9 +5002,10 @@
         },
         {
           "slug": "redhatopenshift",
-          "title": "Red Hat Open Shift",
+          "title": "Red Hat OpenShift",
           "hex": "EE0000",
           "aliases": [
+            "red hat openshift",
             "red hat open shift",
             "redhatopenshift"
           ],
@@ -6386,7 +6396,7 @@
         },
         {
           "slug": "mailchimp",
-          "title": "MailChimp",
+          "title": "Mailchimp",
           "hex": "FFE01B",
           "aliases": [
             "mailchimp"

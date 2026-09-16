@@ -38,7 +38,7 @@ Search lists shared candidates with their pack, source, licence, MIME type,
 dimensions and digest. `--resolve` and build reports identify the embedded
 representation and provenance. Searches never print image payloads.
 
-The 158 on-demand entries have no committed artwork and cannot be used through
+The 160 on-demand entries have no committed artwork and cannot be used through
 this path. Unknown, misspelled, ambiguous and on-demand references become the
 usual reported placeholders. No download is attempted. A missing pack file,
 malformed catalog or digest mismatch is an installation/integrity error and
