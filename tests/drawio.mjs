@@ -1758,11 +1758,13 @@ test('a curated pack outranks the catch-all', () => {
   }
 });
 
-test('the 66 products promoted out of the catch-all now live in curated packs (#19)', () => {
+// Vespa and Nebula were promoted too, by slug, and were the wrong products:
+// Simple Icons' marks are Piaggio's scooter and the nebula.tv streaming service (#81).
+test('the 64 products promoted out of the catch-all now live in curated packs (#19)', () => {
   const cat = finder.loadCatalog();
   const promoted = {
     'data-platforms': 'mixpanel posthog elementary',
-    databases: 'vespa pocketbase appwrite turso nebula',
+    databases: 'pocketbase appwrite turso',
     'ai-frameworks': 'modal braintrust langflow openaigym',
     'ml-training': 'deepnote lightning',
     observability: 'checkmk icinga netdata thanos',
@@ -1781,7 +1783,7 @@ test('the 66 products promoted out of the catch-all now live in curated packs (#
       assert(!ids.has(`brands/${slug}`), `brands/${slug} still ships a second copy`);
     }
   }
-  eq(count, 66, 'promoted products');
+  eq(count, 64, 'promoted products');
   // Named exactly, each now answers from its curated pack without the catch-all caveat.
   for (const [q, id] of [['kong', 'devops/kong'], ['posthog', 'data-platforms/posthog'], ['thanos', 'observability/thanos'],
     ['vite', 'languages-runtimes/vite'], ['pytest', 'languages-runtimes/pytest'], ['f#', 'languages-runtimes/fsharp']]) {
@@ -1789,6 +1791,23 @@ test('the 66 products promoted out of the catch-all now live in curated packs (#
     assert(r.confident, `"${q}" is not confident: ${r.reason}`);
     eq(r.icon.id, id, `"${q}"`);
   }
+});
+
+test('Vespa and NebulaGraph never draw the scooter or the streaming service Simple Icons names alike (#81)', () => {
+  const cat = finder.loadCatalog();
+  const row = (id) => cat.icons.find((i) => i.id === id);
+  for (const [id, title, wrong] of [['databases/vespa', 'Vespa', 'brands/vespa'], ['databases/nebula', 'NebulaGraph', 'brands/nebula']]) {
+    eq(`${row(id)?.bytes} ${row(id)?.title}`, `on-demand ${title}`, id);
+    assert(/not the/.test(row(id).reason), `${id} records why its Simple Icons mark is the wrong product`);
+    eq(row(wrong)?.bytes, 'committed', `${wrong} stays in the catch-all, where it names what it is`);
+  }
+  for (const q of ['vespa', 'nebula']) {
+    const r = finder.resolve(q);
+    assert(!r.confident, `"${q}" resolved confidently to ${r.icon?.id}`);
+    eq(r.icon?.id, `databases/${q}`, `"${q}" ranks the database first`);
+  }
+  const graph = finder.resolve('nebulagraph');
+  assert(graph.confident && graph.icon.id === 'databases/nebula', `"nebulagraph" -> ${graph.icon?.id}`);
 });
 
 test('Teleport, Argo CD, Playwright and dlt ship from sources already pinned (#20)', () => {
@@ -2280,11 +2299,13 @@ test('Azure captions Microsoft misspelled or ran together are corrected, and the
 });
 
 // A pack with a record is a reviewed pack: a new or changed mark cannot ship
-// into it unreviewed. The three vendor packs must each have one (#18, #73).
-test('every shipped mark in a reviewed pack has been reviewed at the artwork that ships (#18, #73)', () => {
+// into it unreviewed. Every pack but the catch-all must have one (#18, #73, #81).
+test('every shipped mark in a reviewed pack has been reviewed at the artwork that ships (#18, #73, #81)', () => {
   const recordDir = join(SKILL, 'assets', 'libraries', 'reviews');
   const reviewed = readdirSync(recordDir).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, '')).sort();
-  for (const pack of ['aws', 'azure', 'gcp']) assert(reviewed.includes(pack), `${pack} has no review record`);
+  for (const { id } of finder.loadCatalog().packs.filter((p) => p.id !== 'brands')) {
+    assert(reviewed.includes(id), `${id} has no review record`);
+  }
   for (const pack of reviewed) {
     const s = sheets.reviewStatus(pack);
     const open = [
