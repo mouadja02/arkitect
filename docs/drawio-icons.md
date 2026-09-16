@@ -252,11 +252,16 @@ node $S/contact-sheet.mjs --pack azure --review --page 3  # one page
 
 Review pages show 54 marks at 120px, each captioned with its title, id, upstream file,
 library index, short hash and review state, with unchecked and stale tiles highlighted.
-They are written to the gitignored `contact-sheets/review/`. Every pack except the
-`brands` catch-all has a record, and the suite requires one. It fails if any shipped mark
+They are written to the gitignored `contact-sheets/review/`. Every pack has a record,
+the `brands` catch-all included, and the suite requires one. It fails if any shipped mark
 in a pack with a record is unchecked, stale, recorded as a mismatch or carries an unknown
 verdict, or if the record names an id that no longer ships (#18, #73, #81). A new mark
 cannot ship into a reviewed pack without a row.
+
+The `brands` record claims less than the others, and says so in its `about`: most of
+its 3,092 brands cannot be recognised by eye. A row there means nothing on the review
+pages contradicted the caption, and the source domain Simple Icons records belongs to
+the brand, its owner or its press kit (#72).
 
 The curated-pack review caught two marks promoted out of the catch-all by slug alone that
 were never the products they were filed under: Simple Icons' `vespa` is Piaggio's scooter
