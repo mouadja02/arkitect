@@ -797,7 +797,10 @@ async function main(argv) {
         const rows = await checkDrift({ catalog, manifest });
         for (const row of rows) {
           const state = row.note ? 'skip ' : row.drifted ? 'DRIFT' : 'ok   ';
-          console.log(`  ${state}  ${row.key.padEnd(16)} ${row.note ?? `pinned ${String(row.pinned).slice(0, 12)}  upstream ${String(row.current).slice(0, 12)}`}`);
+          const detail = row.note
+            ?? (row.checks ? row.checks.map((c) => (c.state === 'ok' ? c.what : `${c.what} ${c.state.toUpperCase()}`)).join(', ')
+              : `pinned ${String(row.pinned).slice(0, 12)}  upstream ${String(row.current).slice(0, 12)}`);
+          console.log(`  ${state}  ${row.key.padEnd(20)} ${detail}`);
         }
         findings = rows.some((row) => row.drifted);
         report = driftReport(rows);

@@ -1366,6 +1366,98 @@ test('the drift check flags moved pins and skips sources nothing ships from (#9)
   assert(report.includes('`vendor-zip`') && !report.includes('unused-zip'), 'report lists only what drifted');
 });
 
+// Seven committed project logos, each wrong in one way, and one that is fine.
+const pinUrl = (repo, sha, path) => `https://raw.githubusercontent.com/${repo}/${sha}/${path}`;
+const blobUrl = (repo, sha, path) => `https://github.com/${repo}/blob/${sha}/${path}`;
+const SHA = '1'.repeat(40);
+const logoSources = {
+  fine: ['o/fine', {}], redrawn: ['o/redrawn', {}], vanished: ['o/vanished', {}], relicensed: ['o/relicensed', {}],
+  archived: ['o/archived', {}], known: ['o/known', { archived: true, dormant: false, checked: '2026-01-01' }],
+  sleepy: ['o/sleepy', {}], renamed: ['o/renamed', {}],
+};
+const logoManifest = { sources: {
+  asf: { type: 'local-files', dir: 'asf', licenceUrl: 'https://foundation.example/marks/' },
+  unused: { type: 'local-files', dir: 'unused', licenceUrl: blobUrl('o/unused', SHA, 'LICENSE') },
+  ...Object.fromEntries(Object.entries(logoSources).map(([key, [repo, recorded]]) => [key, {
+    type: 'local-files', dir: key, licenceUrl: blobUrl(repo, SHA, 'LICENSE'), upstreamRepo: recorded,
+  }])),
+}, packs: [{ id: 'p', icons: [
+  { slug: 'asf', source: 'asf', file: 'asf.svg', upstreamUrl: 'https://foundation.example/logos/asf.svg' },
+  ...Object.entries(logoSources).map(([key, [repo]]) => ({ slug: key, source: key, file: `${key}.svg`,
+    upstreamUrl: pinUrl(repo, SHA, `img/${key}.svg`) })),
+] }] };
+const logoCatalog = { icons: Object.keys(logoManifest.sources).filter((k) => k !== 'unused')
+  .map((key) => ({ id: `p/${key}`, bytes: 'committed', source: key })) };
+const NOW = Date.parse('2026-09-16T00:00:00Z');
+const probed = [];
+const logoProbe = async (url) => {
+  probed.push(url);
+  if (url === 'https://foundation.example/marks/') return { status: 200, sha256: 'policy' };
+  if (url === 'https://foundation.example/logos/asf.svg') return { status: 200, sha256: 'asf-bytes' };
+  if (url.includes('/o/vanished/HEAD/img/')) return { status: 404 };
+  if (url.includes('/o/redrawn/HEAD/img/')) return { status: 200, sha256: 'redrawn' };
+  if (url.includes('/o/relicensed/HEAD/LICENSE')) return { status: 200, sha256: 'BUSL' };
+  return { status: 200, sha256: url.replace(/\/(HEAD|1{40})\//, '/@/') };
+};
+const logoGet = async (url) => {
+  const repo = url.replace(`${upstream.GITHUB_API}/repos/`, '');
+  const days = { 'o/sleepy': 400, 'o/archived': 10, 'o/known': 900 }[repo] ?? 1;
+  return { full_name: repo === 'o/renamed' ? 'neworg/renamed' : repo, archived: repo === 'o/archived' || repo === 'o/known',
+    pushed_at: new Date(NOW - days * 86_400_000).toISOString() };
+};
+const logoDrift = await settle(upstream.checkDrift({ catalog: logoCatalog, manifest: logoManifest, get: logoGet,
+  probe: logoProbe, committed: (src, file) => (file === 'asf.svg' ? 'asf-bytes' : 'unexpected'), now: NOW }));
+const logoOffline = await settle(upstream.checkDrift({ catalog: logoCatalog, manifest: logoManifest, get: logoGet,
+  probe: async () => { throw new Error('503 Service Unavailable'); }, committed: () => 'x', now: NOW }));
+
+test('the drift check compares each committed project logo, its licence and its repository with the pin (#74, #82)', () => {
+  assert(!logoDrift.error, `check threw: ${logoDrift.error?.message}`);
+  const row = (key) => logoDrift.value.find((r) => r.key === key);
+  const found = (key) => row(key).checks.filter((c) => c.state !== 'ok').map((c) => `${c.what} ${c.state}`).join();
+  eq(found('fine'), '', 'unchanged artwork, licence and live repository');
+  assert(!row('fine').drifted, 'a clean source is not drift');
+  eq(row('fine').checks.map((c) => c.what).join(), 'artwork,licence,repo', 'all three checked');
+  eq(found('redrawn'), 'artwork changed', 'a redrawn logo');
+  eq(found('vanished'), 'artwork gone', 'a logo no longer at its path');
+  eq(found('relicensed'), 'licence changed', 'a relicensed repository');
+  eq(found('archived'), 'repo archived', 'a repository archived since it was recorded');
+  eq(found('known'), '', 'an archived, long-dormant repository already recorded as archived stays quiet');
+  eq(found('sleepy'), 'repo dormant', `no push in ${upstream.DORMANT_DAYS} days`);
+  eq(found('renamed'), 'repo moved', 'a repository that answers under another name');
+  eq(found('asf'), '', 'an unpinned URL is compared with the committed bytes, a policy page only for existing');
+  eq(row('unused').note, 'ships no bytes', 'a source nothing ships from is skipped');
+  assert(probed.includes('https://raw.githubusercontent.com/o/redrawn/HEAD/img/redrawn.svg'), 'artwork read at HEAD');
+  assert(probed.includes(`https://raw.githubusercontent.com/o/redrawn/${SHA}/img/redrawn.svg`), 'and at the pinned commit, not our own bytes, which may be downscaled');
+  assert(!probed.some((u) => u.includes('/o/unused/')), 'nothing fetched for an unshipped source');
+  assert(logoOffline.error && /503/.test(logoOffline.error.message), 'an upstream that cannot be read fails the check, never reports clean');
+
+  const report = upstream.driftReport(logoDrift.value);
+  for (const needle of ['`redrawn` | artwork changed', '`vanished` | artwork gone', '`relicensed` | licence changed',
+    '`archived` | repo archived', '`sleepy` | repo dormant', 'now `neworg/renamed`', 'onDemand', 'upstreamRepo']) {
+    assert(report.includes(needle), `report is missing ${needle}`);
+  }
+  assert(!report.includes('`fine`') && !report.includes('`known`'), 'report lists only what drifted');
+  assert(!report.includes('| pinned | upstream now |'), 'no archive table when no archive drifted');
+});
+
+test('every committed project logo on GitHub records its repository state, so the drift check can tell news (#82)', () => {
+  const manifest = packs.loadManifest();
+  const committed = new Set(finder.loadCatalog().icons.filter((i) => i.bytes === 'committed').map((i) => i.source));
+  const unrecorded = [];
+  let watched = 0;
+  for (const [key, src] of Object.entries(manifest.sources)) {
+    if (src.type !== 'local-files' || !committed.has(key)) continue;
+    const icons = upstream.localFileIcons(manifest, key);
+    if (!upstream.sourceRepo(src, icons)) continue;
+    watched++;
+    const r = src.upstreamRepo;
+    if (!r || typeof r.archived !== 'boolean' || typeof r.dormant !== 'boolean' || !/^\d{4}-\d{2}-\d{2}$/.test(r.checked ?? '')) unrecorded.push(key);
+    else if ((r.archived || r.dormant) && !r.note) unrecorded.push(`${key} (archived or dormant with no note saying why it still ships)`);
+  }
+  assert(watched >= 40, `only ${watched} GitHub-backed logo sources found`);
+  eq(unrecorded.join(', '), '', 'sources missing upstreamRepo { archived, dormant, checked }');
+});
+
 test('the upstream workflow can open issues and nothing else', () => {
   const yml = readFileSync(join(ROOT, '.github', 'workflows', 'upstream-watch.yml'), 'utf8');
   assert(/permissions:\s*\n\s*contents: read\s*\n\s*issues: write/.test(yml), 'expected contents: read, issues: write');

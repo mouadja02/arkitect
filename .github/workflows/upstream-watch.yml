@@ -5,7 +5,9 @@ name: upstream watch
 # to the on-demand tier or re-pinning a source is a reviewed pull request.
 #
 #   removals  weekly     Simple Icons removed a mark we still ship (#10) - licensing
-#   drift     quarterly  a pinned source has moved on upstream (#9) - staleness
+#   drift     quarterly  a pinned source has moved on upstream (#9) - staleness, and
+#                        a committed project logo's artwork, licence or repository
+#                        no longer matches its pin (#74, #82) - licensing
 
 on:
   schedule:

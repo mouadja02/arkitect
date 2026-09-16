@@ -226,7 +226,25 @@ A pin stays honest only while someone checks it, so
 | check | when | opens | why it matters |
 |---|---|---|---|
 | `build-packs.mjs --check-upstream` | weekly | `A mark we ship has been removed from Simple Icons` (`licensing`) | Simple Icons removes a brand when its owner asks; shipping it anyway redistributes a mark we were asked not to |
-| `build-packs.mjs --check-drift` | quarterly | `Pinned icon sources have moved on upstream` (`upstream`) | vendors rev their sets without notice, and the packs fall behind |
+| `build-packs.mjs --check-drift` | quarterly | `Pinned icon sources have moved on upstream` (`upstream`) | vendors rev their sets without notice, and the packs fall behind; a project logo committed as a local file can be redrawn, relicensed or left in an archived repository |
+
+For a `local-files` source, the drift check looks at three things, each
+against the pin. The **artwork**: the file at the pinned path on the default
+branch, compared with the pinned commit (a URL that pins no commit, like the ASF
+originals, is compared with the committed bytes). The **licence**: the licence
+file on the default branch, compared with the one linked at the pinned commit;
+a policy page that is not a file is only checked for still existing. The
+**repository**: archived, dormant (no push in 365 days) or answering under
+another name. It needs `GITHUB_TOKEN` set locally to stay inside the API's rate
+limit.
+
+A repository finding is a prompt to look, not proof of a wrong mark. Record what
+you found in the source's `upstreamRepo` - `archived`, `dormant`, the
+`checked` date, and a `note` saying why the mark still ships if it is either -
+and the next run stays quiet until the state changes again. A new
+`local-files` source records `upstreamRepo` when it is pinned; a test fails
+without it. Prefer pinning into the repository the product is named after over
+a website or UI subtree: both wrong-product marks #79 caught came from one.
 
 A rename upstream is reported but opens nothing. A slug that moved is not a
 licensing problem. If an issue is already open, the workflow comments on it
