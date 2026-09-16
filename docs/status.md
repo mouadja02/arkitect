@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-15, after [PR #98](https://github.com/mouadja02/arkitect/pull/98) merged into main.
+Status reviewed on 2026-09-16, after the release tooling for [#88](https://github.com/mouadja02/arkitect/issues/88) was proposed.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -26,6 +26,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Curated reviews | Every mark in the 14 curated packs is reviewed on record, every pack but `brands` must carry a record, and the two marks promoted by slug that drew the wrong product (Vespa, Nebula) are on-demand entries for Vespa.ai and NebulaGraph | [#81](https://github.com/mouadja02/arkitect/issues/81), [PR #107](https://github.com/mouadja02/arkitect/pull/107) |
 | Product lifecycle | Twelve discontinued, renamed, absorbed, acquired or archived products carry a verified `status` that search and build reports surface as a caveat with a successor, and the drift check lists statuses due for a re-check | [#83](https://github.com/mouadja02/arkitect/issues/83), [PR #108](https://github.com/mouadja02/arkitect/pull/108) |
 | Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), [PR #109](https://github.com/mouadja02/arkitect/pull/109) |
+| Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release; no npm publish | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -41,9 +42,9 @@ recommended priorities, not work already started or assigned.
 
 ## Remaining work
 
-| Issue | Order | Remaining outcome |
-|---|---|---|
-| [#88](https://github.com/mouadja02/arkitect/issues/88) | Release backlog | Implement release preparation and publication; no npm publishing. |
+Every issue this page listed is closed on main: the upstream checks (#74, #82, #83),
+the visual reviews of every pack (#72, #73, #81) and the release workflows (#88).
+New work starts from the [open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen).
 
 The two issues that made a diagram draw the wrong thing are fixed: an exact
 Draw.io catalog ID is now looked up as an ID rather than passed through text

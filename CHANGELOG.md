@@ -13,6 +13,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Releases are cut by two workflows: `release prepare` bumps both manifests,
+  dates `[Unreleased]` (drafting it with a model only when empty) and opens a
+  `release/vX.Y.Z` pull request; merging it tags and publishes a GitHub Release
+  with that section as its notes (#88)
 - The 3,092 `brands` marks are reviewed on record, with a record that states
   what a catch-all review can confirm, and every pack must now have one (#72)
 - A discontinued, renamed, absorbed, acquired or archived product carries a
