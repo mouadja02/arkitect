@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-18
+
 ### Added
 
 - The Excalidraw validator warns when an arrow runs through a node it does not
