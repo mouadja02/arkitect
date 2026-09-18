@@ -215,6 +215,7 @@ followed the file.
 |---|---|
 | `skills/arkitect-drawio/SKILL.md` | the full Draw.io workflow |
 | `skills/arkitect-excalidraw/SKILL.md` | the full Excalidraw workflow |
+| `skills/*/references/{editing,icons,rendering}.md` | editing an existing file, icons beyond the first search, render troubleshooting |
 | `skills/*/references/style-guide.md` | the style rules and the evidence behind each |
 | `skills/*/references/pattern-catalog.md` | the reusable layouts |
 | `skills/arkitect-excalidraw/references/excalidraw-format.md` | the scene format, for hand-editing |

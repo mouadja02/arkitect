@@ -129,9 +129,10 @@ bin/
 docker/
   docker-compose.yml    the local Excalidraw app
 skills/arkitect-drawio/
-  SKILL.md              the Draw.io workflow contract
-  references/           style-guide.md, pattern-catalog.md, icon-catalog.json,
-                        source-analysis.json
+  SKILL.md              the Draw.io workflow contract, and which file to read when
+  references/           editing.md, icons.md, rendering.md (read on condition),
+                        style-guide.md, pattern-catalog.md, pack-index.md,
+                        icon-catalog.json, source-analysis.json
   assets/libraries/     the AWS palette, the explicit export, the merge
   assets/templates/     starter spec, the built diagram, its PNG, pattern fragments
   assets/logos/         product logo cache (gitignored)
@@ -139,8 +140,9 @@ skills/arkitect-drawio/
   scripts/lib/          the .drawio parsing core, style tokens, and what both engines
                         share: backups, the style store, override layer and findings/apply workflow
 skills/arkitect-excalidraw/
-  SKILL.md              the Excalidraw workflow contract
-  references/           style-guide.md, pattern-catalog.md, excalidraw-format.md,
+  SKILL.md              the Excalidraw workflow contract, and which file to read when
+  references/           editing.md, icons.md, rendering.md (read on condition),
+                        style-guide.md, pattern-catalog.md, excalidraw-format.md,
                         source-analysis.json
   assets/libraries/bundled/   36 committed libraries, 1,162 items, contact sheets
   assets/icons/         icons built from logos (gitignored)

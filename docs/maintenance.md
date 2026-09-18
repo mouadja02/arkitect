@@ -61,7 +61,24 @@ This is what makes the toolkit auditable and installable by `git clone`.
 **2. Both engines keep working.** A change to shared thinking must be applied to
 both `skills/arkitect-drawio` and `skills/arkitect-excalidraw`, or explicitly
 scoped to one and said so. Neither engine may lose a capability listed in its
-`SKILL.md`.
+`SKILL.md` or in a reference it sends the agent to.
+
+**2a. The default path fits a small window.** Each drawing `SKILL.md` holds one
+short ordered workflow; editing, icons beyond the first search, logos,
+libraries, rendering internals and maintainer work live behind a named condition
+in `references/`. `SKILL.md` plus the one pattern section it points to stays at
+or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
+
+| skill | `SKILL.md` | largest pattern section | total |
+|---|---|---|---|
+| `arkitect-drawio` | 8,875 | 862 | 9,737 |
+| `arkitect-excalidraw` | 10,260 | 806 | 11,066 |
+
+The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
+Excalidraw's starter is 3,472 and the large AWS example 14,080. Before #113 the
+mandatory reading was 34,621 bytes for Draw.io and 46,646 for Excalidraw. A
+rule that has to hold on every drawing stays in `SKILL.md`; a rule that holds
+for one situation moves beside that situation.
 
 **3. Output stays native and editable.** `.drawio` XML and `.excalidraw` JSON,
 with icons and images **embedded**, never linked. No change may make the
@@ -210,8 +227,8 @@ What one install learns is kept apart from what the repository ships (#89, #90):
 
 Never edit a bundled library's or a generated doc's bytes by hand — rerun the
 generator instead. After either engine's icon count moves, check whether it is
-quoted in `README.md`, `docs/icons.md`, `docs/drawio-icons.md` and both
-`SKILL.md` files, and update it there. The exact-total figures in
+quoted in `README.md`, `docs/icons.md`, `docs/drawio-icons.md` and each
+engine's `references/icons.md`, and update it there. The exact-total figures in
 `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
 `package.json`'s description and `bin/lib/install-agent.mjs`'s adapter body
 are deliberately a rounded `6,000+` instead — `tests/toolkit.mjs` checks that

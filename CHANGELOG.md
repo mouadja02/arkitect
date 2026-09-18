@@ -11,6 +11,13 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- Both drawing skills read at most 12,000 bytes before the chosen example,
+  down from 34,621 (Draw.io) and 46,646 (Excalidraw): `SKILL.md` keeps one
+  short workflow and a pattern selector, and editing, icons, logos, libraries
+  and rendering move to `references/` behind a named condition (#113)
+
 ## [1.2.1] — 2026-09-18
 
 ### Fixed
