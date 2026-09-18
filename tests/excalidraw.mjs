@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { repoFiles } from './repo-files.mjs';
+import { createHarness } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -32,28 +33,8 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 // (#89); every process a test spawns inherits this.
 process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
 
-let pass = 0; let fail = 0; let skip = 0;
-const failures = [];
-
-// Tests that need reference scenes of your own. They skip on a clone without
-// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
-// in docs/testing.md against how many are declared this way (#47).
-let sourceDependent = 0;
-function sourceTest(name, fn) {
-  sourceDependent++;
-  test(name, fn);
-}
-
-function test(name, fn) {
-  try {
-    const r = fn();
-    if (r === 'skip') { skip++; console.log(`skip  ${name}`); return; }
-    pass++; console.log(`ok    ${name}`);
-  } catch (e) {
-    fail++; failures.push(`${name}: ${e.message}`);
-    console.log(`FAIL  ${name}\n        ${e.message}`);
-  }
-}
+// test() is synchronous; a callback that returns a promise fails (#114).
+const { test, sourceTest, finish } = createHarness();
 
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function eq(a, b, msg) { if (a !== b) throw new Error(`${msg} (expected ${JSON.stringify(b)}, got ${JSON.stringify(a)})`); }
@@ -2065,7 +2046,4 @@ test('the docker compose file pins the official image and a port', () => {
 
 cleanTestIcons();
 
-console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
-console.log(`source-dependent: ${sourceDependent}`);
-if (!haveSources) console.log('(reference-scene tests skipped: .analysis/sources.local.json not present)');
-if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }
+finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');

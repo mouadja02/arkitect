@@ -83,8 +83,10 @@ and look at both PNGs. A change that suits the small example can wreck the large
    sources present.
 2. **Add a test** for anything you fixed. The suites live in `tests/drawio.mjs`,
    `tests/excalidraw.mjs` and `tests/toolkit.mjs`; they are plain assertions,
-   no framework. Then update the count in [docs/testing.md](docs/testing.md);
-   the runner prints the line to use when it no longer matches.
+   no framework, sharing the synchronous `test()` in `tests/harness.mjs` —
+   settle a promise first, then assert on its result. Then update the count
+   in [docs/testing.md](docs/testing.md); the runner prints the line to use
+   when it no longer matches.
 3. **Add a one-line entry to `CHANGELOG.md`'s `[Unreleased]` section** — what
    changed, and the issue/PR it came from where one exists. No separate file,
    no enforced format.

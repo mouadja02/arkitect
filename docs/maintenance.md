@@ -117,7 +117,8 @@ reformat, re-indent or "clean up" those files.
 - **Additive before destructive.** Add the new path, keep the old one working,
   deprecate in a later release.
 - **Tested.** Anything fixed gets a test in `tests/drawio.mjs`,
-  `tests/excalidraw.mjs` or `tests/toolkit.mjs`. Plain assertions, no framework.
+  `tests/excalidraw.mjs` or `tests/toolkit.mjs`. Plain assertions, no framework;
+  `test()` is synchronous, so settle a promise before asserting on it.
 - **Described.** The pull request says what changed, why, what could break, and
   exactly what was run to verify it. If generated output changed, it shows the
   before and after render.
