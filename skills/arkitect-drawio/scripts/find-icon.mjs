@@ -8,6 +8,7 @@
 //   node find-icon.mjs bedrock                     rank matches (metadata only)
 //   node find-icon.mjs kafka --pack streaming-orchestration
 //   node find-icon.mjs "cloud run" --context gcp,devops    bias toward a stack
+//   node find-icon.mjs bedrock --compact           the verdict and a spec node, under 1KB
 //   node find-icon.mjs --list-packs
 //   node find-icon.mjs --stats
 //
@@ -297,6 +298,38 @@ function describe(icon, catalog) {
   };
 }
 
+// The answer an agent acts on, in well under 1KB (#117): the verdict, a spec
+// node when there is one, the caveats that change what gets drawn, and a few
+// ids to choose between when there is not. Uncertainty is kept, never settled
+// by taking the first hit; the full output is one flag away.
+export const COMPACT_CHOICES = 4;
+export function compactAnswer(r, catalog = loadCatalog()) {
+  const notes = (icon) => {
+    const life = lifecycleOf(icon, catalog);
+    return {
+      ...(life ? { lifecycle: life.caveat, ...(life.successor?.id ? { successor: life.successor.id } : {}) } : {}),
+      ...(icon.bytes === 'on-demand' ? { onDemand: onDemandNext(icon) } : {}),
+    };
+  };
+  if (!r.groups.length) {
+    return { query: r.query, confident: false, found: 0,
+      next: 'No pack has it. Try --list-packs or the formal name; else draw a labelled box and say so. Never another product’s mark.' };
+  }
+  if (r.confident) {
+    return { query: r.query, confident: true, resolved: r.icon.id, title: r.groups[0].title, ...notes(r.icon),
+      node: { kind: 'icon', icon: r.icon.id } };
+  }
+  const all = r.groups.flatMap((g) => g.variants.map((v) => ({ v, g })));
+  const choices = all.slice(0, COMPACT_CHOICES).map(({ v, g }) => ({
+    id: v.id, title: g.title, strength: g.best,
+    ...(v.bytes === 'on-demand' ? { onDemand: true } : {}),
+    ...(v.status ? { lifecycle: v.status.state } : {}),
+  }));
+  return { query: r.query, confident: false, needsAChoice: r.reason, choices,
+    ...(all.length > choices.length ? { more: all.length - choices.length } : {}),
+    next: 'Pick one id deliberately, or narrow with --pack / --context; drop --compact for detail.' };
+}
+
 function main(argv) {
   const catalog = loadCatalog();
   const flag = (name) => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
@@ -344,12 +377,16 @@ function main(argv) {
   const query = argv.filter((a, i) => !a.startsWith('--') && !skip.has(argv[i - 1])).join(' ');
 
   if (!query) {
-    console.error('usage: find-icon.mjs <product name> [--pack <id>] [--context <id,id>]');
+    console.error('usage: find-icon.mjs <product name> [--pack <id>] [--context <id,id>] [--compact]');
     console.error('       find-icon.mjs --list-packs | --style <id> | --cell <id> | --stats');
     process.exit(2);
   }
 
   const r = resolve(query, { catalog, packs, pack });
+  if (argv.includes('--compact')) {
+    console.log(JSON.stringify(compactAnswer(r, catalog)));
+    return;
+  }
   if (!r.groups.length) {
     console.log(JSON.stringify({
       query, matches: [], confident: false,

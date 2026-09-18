@@ -9,6 +9,7 @@ you need the list of packs. Paths are relative to the skill; scripts are in
 
 ```bash
 node scripts/find-icon.mjs "bedrock"                    # rank matches, metadata only
+node scripts/find-icon.mjs "bedrock" --compact          # the verdict alone, under 1KB
 node scripts/find-icon.mjs "cloud run" --context gcp    # bias toward the stack in play
 node scripts/find-icon.mjs kafka --pack streaming-orchestration
 node scripts/find-icon.mjs --list-packs
@@ -19,6 +20,11 @@ alternatives, and never prints icon bytes. Do not take the first row because it
 was first. An exact `<pack>/<slug>` is looked up as an id, never searched, so it
 draws that mark or nothing; a node that also pins a different `pack` is a
 contradiction and is reported instead of resolved (#95).
+
+`--compact` prints one line: a confident answer as its id and a spec `node`,
+with an `onDemand` next step or a `lifecycle` caveat when the mark has one; an
+unsure one as `needsAChoice` and at most four `choices`, counting the rest
+under `more` (#117). The rest of the detail is the same search without it.
 
 `--cell`/`--style`/`--data` print the raw XML cell, style string or data URI for
 an icon and exist only for hand-written XML (see `editing.md`). Redirect their

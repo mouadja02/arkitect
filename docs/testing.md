@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `286 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `287 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -40,6 +40,7 @@ process, so they cannot tread on each other.
 | Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35); after a successful write each builder keeps the oldest backup of that target and the newest five, counting `-10` as newer than `-2` and any later second as newer than every counter, never reusing a counter that pruning freed, and never touches another file's backups, a lookalike stem, another extension or a hand-named copy; `--keep-backups N` sets the count, `0` keeps all, and a malformed value exits 2 before any backup is written or deleted (#49) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |
+| Compact icon search | `icon --compact` in both engines prints one line of at most 1,000 bytes with the full search's verdict and a spec node; an ambiguous query keeps four bounded choices and no node; a lifecycle caveat, its successor and an on-demand next step survive; a miss says what to do; the full output is unchanged (#117) |
 | Plugin shape | the manifest is valid, all six skills are well formed, the learning and apply skills are user-invoked only, CI expects the same skill count, no hard-coded install paths |
 | Context budget | each drawing `SKILL.md` plus its largest pattern section is at most 12,000 bytes; every file its reading table names exists, editing, icons, rendering and the style guide each have a reading path, the pattern selector offers exactly the catalog's sections, and the privacy, icon-honesty and render rules are still in `SKILL.md` (#113) |
 | Headless runs | a local `DISPLAY` counts only when its X socket exists, so a sandbox that hides it gets `xvfb-run` and the log says why; a failed Draw.io export names its exit code or signal and first error line; on Linux a packaged Chrome or Edge is chosen before Chromium and the snap `chromium-browser` wrapper last, and a failed PNG render drops Chromium's start-up chatter and names `--no-sandbox` when the browser could not nest its sandbox; both builders create a missing output folder (#113) |
