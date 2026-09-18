@@ -17,6 +17,11 @@ separate file, no naming scheme, no required format beyond that.
   whole repository, so `claude plugin eval` no longer warns that `evals/`
   overlaps it (#138).
 
+### Fixed
+
+- `release.mjs draft` accepts a model answer with CRLF line endings, fenced or
+  not, and writes it to the changelog as LF (#121).
+
 ## [1.3.0] — 2026-09-18
 
 ### Fixed

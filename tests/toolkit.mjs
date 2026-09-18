@@ -930,6 +930,9 @@ const modelUnset = await settle(release.callModel({ baseUrl: '', model: 'm', api
   fetchImpl: async () => { throw new Error('should not be called'); } }));
 const modelDown = await settle(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
   fetchImpl: async () => ({ ok: false, status: 429, statusText: 'Too Many Requests' }) }));
+const modelCrlf = await settle(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
+  fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: {
+    content: `\`\`\`markdown\r\n${goodDraft.replace(/\n/g, '\r\n')}\r\n\`\`\`\r\n` } }] }) }) }));
 const modelBlank = await settle(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
   fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: '  ' } }] }) }) }));
 
@@ -953,6 +956,23 @@ test('a model-drafted changelog fills only an empty [Unreleased], in the house s
   assert(/RELEASE_LLM_BASE_URL, RELEASE_LLM_API_KEY not set/.test(modelUnset.error?.message), `missing config: ${modelUnset.error?.message}`);
   assert(/429/.test(modelDown.error?.message), 'a failed call throws');
   assert(/no text/.test(modelBlank.error?.message), 'an empty answer throws');
+});
+
+test('a CRLF draft validates and inserts exactly like its LF twin (#121)', () => {
+  const crlf = (s) => s.replace(/\n/g, '\r\n');
+  eq(modelCrlf.value, goodDraft, 'a CRLF fenced answer comes back as the LF draft');
+  for (const draft of [goodDraft, `\`\`\`markdown\n${goodDraft}\n\`\`\``]) {
+    eq(JSON.stringify(release.draftProblems(crlf(draft))), JSON.stringify(release.draftProblems(draft)), `same verdict for ${JSON.stringify(draft.slice(0, 12))}`);
+  }
+  eq(release.draftProblems(crlf(goodDraft)).length, 0, 'a CRLF draft is clean');
+  eq(release.draftProblems('### Fixed\r\n\r\n- Fix the bug (#1).\r\n').length, 0, 'the reported draft');
+  const filled = release.insertDraft(EMPTY, crlf(goodDraft));
+  eq(filled, release.insertDraft(EMPTY, goodDraft), 'inserted as LF');
+  assert(!filled.includes('\r'), 'no carriage return reaches the changelog');
+  const [before, after] = EMPTY.split('## [Unreleased]\n');
+  assert(filled.startsWith(`${before}## [Unreleased]\n`) && filled.endsWith(after.slice(after.indexOf('## [1.1.0]'))), 'the rest of the changelog untouched');
+  let err; try { release.insertDraft(EMPTY, crlf('### Highlights\n\n- Big news')); } catch (e) { err = e; }
+  assert(/unknown heading "Highlights"/.test(err?.message), `a bad CRLF heading still fails: ${err?.message}`);
 });
 
 test('the release workflows are started by a person, gated by a merged pull request, and never publish to npm (#88)', () => {

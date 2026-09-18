@@ -88,10 +88,13 @@ export function lastReleaseDate(changelog) {
   return m ? m[1] : null;
 }
 
+// Models answer with LF or CRLF; the changelog is LF.
+const lf = (text) => text.replace(/\r\n?/g, '\n');
+
 // A draft is accepted only in the house shape: known headings, one-line bullets.
 export function draftProblems(draft) {
   const problems = [];
-  const lines = draft.trim().split('\n');
+  const lines = lf(draft).trim().split('\n');
   let heading = null;
   let bullets = 0;
   for (const [i, line] of lines.entries()) {
@@ -119,7 +122,7 @@ export function insertDraft(changelog, draft) {
   const problems = draftProblems(draft);
   if (problems.length) throw new Error(`the drafted changelog is not in the house style:\n  ${problems.join('\n  ')}`);
   const { start, end } = unreleasedSpan(changelog);
-  return `${changelog.slice(0, start)}\n${draft.trim()}\n\n${changelog.slice(end)}`;
+  return `${changelog.slice(0, start)}\n${lf(draft).trim()}\n\n${changelog.slice(end)}`;
 }
 
 export function draftMessages(commits, examples) {
@@ -151,7 +154,7 @@ export async function callModel({ baseUrl, model, apiKey, messages, fetchImpl = 
   if (!res.ok) throw new Error(`the model call failed: ${res.status} ${res.statusText}`);
   const text = (await res.json())?.choices?.[0]?.message?.content;
   if (!text?.trim()) throw new Error('the model returned no text');
-  return text.replace(/^```\w*\n|\n```\s*$/g, '').trim();
+  return lf(text).replace(/^```\w*\n|\n```\s*$/g, '').trim();
 }
 
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
