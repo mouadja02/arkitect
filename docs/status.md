@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-16, after the release tooling for [#88](https://github.com/mouadja02/arkitect/issues/88) was proposed.
+Status reviewed on 2026-09-19, after the 1.3.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -26,7 +26,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Curated reviews | Every mark in the 14 curated packs is reviewed on record, every pack but `brands` must carry a record, and the two marks promoted by slug that drew the wrong product (Vespa, Nebula) are on-demand entries for Vespa.ai and NebulaGraph | [#81](https://github.com/mouadja02/arkitect/issues/81), [PR #107](https://github.com/mouadja02/arkitect/pull/107) |
 | Product lifecycle | Twelve discontinued, renamed, absorbed, acquired or archived products carry a verified `status` that search and build reports surface as a caveat with a successor, and the drift check lists statuses due for a re-check | [#83](https://github.com/mouadja02/arkitect/issues/83), [PR #108](https://github.com/mouadja02/arkitect/pull/108) |
 | Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), [PR #109](https://github.com/mouadja02/arkitect/pull/109) |
-| Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release; no npm publish | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110) |
+| Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release; no npm publish. Used for v1.2.0, v1.2.1 and v1.3.0 | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110), [v1.3.0](https://github.com/mouadja02/arkitect/releases/tag/v1.3.0) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -64,7 +64,8 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
 - **Changelog fragments:** [#32](https://github.com/mouadja02/arkitect/issues/32) originally landed as [PR #55](https://github.com/mouadja02/arkitect/pull/55). Commit
   [5ad8eb0](https://github.com/mouadja02/arkitect/commit/5ad8eb0) deliberately removed the fragment system.
   Current policy is one-line edits to CHANGELOG.md under Unreleased, with a
-  conflict-marker guard. Release tooling remains [#88](https://github.com/mouadja02/arkitect/issues/88).
+  conflict-marker guard. The release workflow dates that section; it does not
+  collect fragments.
 - **Catalog performance:** [#16](https://github.com/mouadja02/arkitect/issues/16) was closed after measurements supported
   keeping the existing in-process cache. A new index or per-pack split was not built.
 - **Visual reviews:** [#18](https://github.com/mouadja02/arkitect/issues/18) completed Azure. Brands, AWS/GCP and curated-pack
@@ -76,7 +77,9 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   ARKITECT_HOME, using sources.json and style-overrides.json. Earlier proposed
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
-  release. No tags or GitHub Releases existed at this snapshot; #88 remains planned.
+  release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
+  first tagged GitHub Release and v1.3.0 the latest at this snapshot. Nothing is
+  published to npm.
 
 ## Keeping this accurate
 
