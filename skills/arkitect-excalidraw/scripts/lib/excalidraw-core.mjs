@@ -74,14 +74,56 @@ const ID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456
 // Excalidraw ids are 21-character nanoid strings. Nothing depends on the exact
 // alphabet, but matching it keeps hand-edited and generated scenes uniform.
 export function newId(len = 21) {
-  const bytes = randomBytes(len);
+  const bytes = seeded ? Array.from({ length: len }, () => seeded.next() * 64) : randomBytes(len);
   let s = '';
   for (let i = 0; i < len; i++) s += ID_ALPHABET[bytes[i] & 63];
   return s;
 }
 
+// Never 0: a zero seed makes the preview's stroke generator fall back to
+// Math.random, so the same scene would draw differently each time.
 export function newSeed() {
-  return Math.floor(Math.random() * 2 ** 31);
+  return 1 + Math.floor((seeded ? seeded.next() : Math.random()) * (2 ** 31 - 1));
+}
+
+// The time stamped on elements and embedded files.
+export function now() {
+  return seeded ? SEEDED_TIME : Date.now();
+}
+
+// Reproducible builds (#119). Inside withSeed(), ids, stroke seeds, nonces and
+// timestamps come from the seed rather than from chance and the clock, so the
+// same spec, style, seed and assets give byte-identical scenes. Outside it
+// nothing changes. Synchronous only: the seed is scoped to fn's call.
+export const SEEDED_TIME = Date.UTC(2024, 0, 1);
+let seeded = null;
+
+// mulberry32: small, fast and good enough to keep 21-character ids unique.
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return {
+    next() {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32;
+    },
+  };
+}
+
+export function parseSeed(value) {
+  const n = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+  return Number.isSafeInteger(n) && n >= 0 && n <= 0xffffffff ? n : null;
+}
+
+export function withSeed(seed, fn) {
+  if (seed == null) return fn();
+  const n = parseSeed(seed);
+  if (n === null) throw new Error(`seed must be a whole number from 0 to 4294967295, got ${seed}`);
+  const outer = seeded;
+  seeded = seededRandom(n);
+  try { return fn(); } finally { seeded = outer; }
 }
 
 // Fractional index keys, in the `fractional-indexing` format Excalidraw uses.
@@ -136,7 +178,7 @@ function base(overrides = {}) {
     versionNonce: newSeed(),
     isDeleted: false,
     boundElements: null,
-    updated: Date.now(),
+    updated: now(),
     link: null,
     locked: false,
     ...overrides,
@@ -531,8 +573,8 @@ export function dataUrl(mime, bytes) {
 
 export function addFile(scene, mime, bytes) {
   const id = fileIdFor(bytes);
-  const now = Date.now();
-  scene.files[id] = { mimeType: mime, id, dataURL: dataUrl(mime, bytes), created: now, lastRetrieved: now };
+  const at = now();
+  scene.files[id] = { mimeType: mime, id, dataURL: dataUrl(mime, bytes), created: at, lastRetrieved: at };
   return id;
 }
 
@@ -597,7 +639,7 @@ export function writeLibrary(path, items, files = null) {
     libraryItems: items.map((it) => ({
       id: it.id ?? newId(),
       status: it.status ?? 'unpublished',
-      created: it.created ?? Date.now(),
+      created: it.created ?? now(),
       name: it.name ?? '',
       elements: it.elements,
     })),

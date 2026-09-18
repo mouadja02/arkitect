@@ -28,7 +28,7 @@ import {
   bindLabel, bindArrow, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
-  normalizeName, parseCliOrExit, exitUsage, readProblem,
+  normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon } from './find-icon.mjs';
 import { connectorCrossings } from './validate-excalidraw.mjs';
@@ -357,9 +357,19 @@ export function validateSpec(spec) {
 // `style` is a resolved style: the house style, or this install's override
 // merged into it, which only the CLI loads. A spec's own `style`, `layout` and
 // per-node values still win over either.
-export function buildDiagram(spec, { style = resolveStyle() } = {}) {
+//
+// With a `seed` (#119) the same spec, style and assets build the same scene
+// byte for byte; without one, ids and stroke seeds are random as before.
+export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {}) {
   const problems = validateSpec(spec);
   if (problems.length) throw new SpecError(problems);
+  if (seed != null && parseSeed(seed) === null) {
+    throw new SpecError([`seed must be a whole number from 0 to 4294967295, got ${seed}`]);
+  }
+  return withSeed(seed, () => assemble(spec, style));
+}
+
+function assemble(spec, style) {
   const EDGE_KINDS = style.edgeKinds;
   const S = { ...style.tokens, ...(spec.style ?? {}) };
   const L = {
@@ -835,17 +845,17 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   return { scene, report };
 }
 
-const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N] [--defaults]\n'
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
 function main(argv) {
   const { options, positionals } = parseCliOrExit(argv, {
-    values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style'],
+    values: { '--out': null, '--keep-backups': null, '--seed': null }, switches: ['--defaults', '--print-style'],
   }, USAGE);
   const defaults = Boolean(options.defaults);
   if (options['print-style']) {
-    if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined) {
-      exitUsage('--print-style builds nothing, so it takes no spec, --out or --keep-backups', USAGE);
+    if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined || options.seed !== undefined) {
+      exitUsage('--print-style builds nothing, so it takes no spec, --out, --seed or --keep-backups', USAGE);
     }
     const style = loadStyleOrWarn(defaults);
     console.log(JSON.stringify({ store: engineStore('excalidraw'), ...styleSummary(style, { full: true }) }, null, 2));
@@ -862,6 +872,11 @@ function main(argv) {
     exitUsage(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}`, USAGE);
   }
 
+  const seed = options.seed === undefined ? null : parseSeed(options.seed);
+  if (options.seed !== undefined && seed === null) {
+    exitUsage(`--seed expects a whole number from 0 to 4294967295, got ${options.seed}`, USAGE);
+  }
+
   // One line, not a stack trace: the message never quotes the spec's content.
   let spec;
   try {
@@ -872,7 +887,7 @@ function main(argv) {
   const style = loadStyleOrWarn(defaults);
   let built;
   try {
-    built = buildDiagram(spec, { style });
+    built = buildDiagram(spec, { style, seed });
   } catch (error) {
     if (!(error instanceof SpecError)) throw error;
     // Refused before the backup and the write, so an existing file is untouched.
@@ -894,6 +909,8 @@ function main(argv) {
     pruned,
     elements: scene.elements.length,
     embeddedFiles: Object.keys(scene.files).length,
+    // Rebuilding with the same seed, spec, style and assets gives the same bytes.
+    seed,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
     icons: {
       resolved: report.icons.length,

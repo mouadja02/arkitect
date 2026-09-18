@@ -2260,6 +2260,49 @@ test('a connector drawn through a node it does not connect is a warning that nam
   eq(JSON.stringify(printed.crossings), JSON.stringify(built.report.crossings), 'build-diagram prints it');
 });
 
+test('a seeded build is byte-identical across processes, and unseeded builds stay random (#119)', () => {
+  const dir = join(TMP, 'seeded');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  // One template with library icons and embedded files, one plain.
+  for (const name of ['aws-data-platform', 'starter-architecture']) {
+    const spec = join(SKILL, 'assets', 'templates', `${name}.spec.json`);
+    const out = (tag) => join(dir, `${name}-${tag}.excalidraw`);
+    for (const tag of ['a', 'b']) {
+      const r = buildCli(spec, '--out', out(tag), '--seed', '119', '--defaults');
+      eq(r.status, 0, `${name} ${tag} builds: ${r.stderr}`);
+      if (tag === 'a') eq(JSON.parse(r.stdout).seed, 119, 'the seed is printed');
+    }
+    const a = readFileSync(out('a'), 'utf8');
+    eq(a, readFileSync(out('b'), 'utf8'), `${name}: same seed, same bytes`);
+    const scene = JSON.parse(a);
+    eq(renderer.sceneToSvg(scene), renderer.sceneToSvg(JSON.parse(readFileSync(out('b'), 'utf8'))), `${name}: same SVG`);
+    const ids = scene.elements.map((el) => el.id);
+    eq(new Set(ids).size, ids.length, `${name}: ids are unique`);
+    assert(scene.elements.every((el) => el.seed > 0), `${name}: no zero seed, which would draw at random`);
+    eq(validator.validateScene(scene).errors.length, 0, `${name}: bindings stay valid`);
+
+    eq(buildCli(spec, '--out', out('c'), '--seed', '120', '--defaults').status, 0, 'another seed builds');
+    assert(readFileSync(out('c'), 'utf8') !== a, `${name}: another seed, another scene`);
+    eq(buildCli(spec, '--out', out('u'), '--defaults').status, 0, 'an unseeded build');
+    assert(readFileSync(out('u'), 'utf8') !== a, `${name}: no seed, random as before`);
+  }
+
+  const spec = { nodes: [{ id: 'a', label: 'A', col: 0, row: 0 }] };
+  eq(JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene), JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene), 'the API takes a seed');
+  assert(JSON.stringify(builder.buildDiagram(spec).scene) !== JSON.stringify(builder.buildDiagram(spec).scene), 'the API is random without one');
+  eq(builder.buildDiagram(spec, { seed: 7 }).scene.elements[0].updated, core.SEEDED_TIME, 'a seeded build does not read the clock');
+  assert(builder.buildDiagram(spec).scene.elements[0].updated > core.SEEDED_TIME, 'an unseeded one does');
+  for (const bad of ['-1', 'abc', '4294967296', '1.5']) {
+    const r = buildCli(join(dir, 'none.json'), '--out', join(dir, 'none.excalidraw'), '--seed', bad);
+    eq(r.status, 2, `--seed ${bad} is a usage error`);
+    assert(r.stderr.includes('--seed expects a whole number'), `--seed ${bad} says why`);
+  }
+  let threw = null;
+  try { builder.buildDiagram(spec, { seed: -1 }); } catch (error) { threw = error; }
+  assert(threw instanceof builder.SpecError, 'the API refuses a bad seed');
+});
+
 test('the docker compose file pins the official image and a port', () => {
   const compose = readFileSync(join(ROOT, 'docker', 'docker-compose.yml'), 'utf8');
   assert(/image:\s*excalidraw\/excalidraw/.test(compose), 'official image');
