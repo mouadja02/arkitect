@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-09-18
+
 ### Fixed
 
 - A test callback that returns a promise fails instead of counting as passed
