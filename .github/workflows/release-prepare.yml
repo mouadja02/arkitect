@@ -56,6 +56,10 @@ jobs:
       # A backstop behind the maintainer's own testing, not a replacement for it.
       # Any failure stops the run before a single file changes.
       - name: Suite
+        # The runner's Chromium snapshot hangs on a headless screenshot; ci.yml
+        # pins the installed stable Chrome for the same reason.
+        env:
+          ARKITECT_BROWSER: /usr/bin/google-chrome
         run: node tests/run-tests.mjs
 
       - name: Draft an empty [Unreleased] from the commit log
