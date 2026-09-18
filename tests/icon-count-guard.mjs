@@ -30,8 +30,10 @@ const LABEL = {
 };
 
 const AGENT_RULES = ['.cursor/rules/arkitect.mdc', '.github/copilot-instructions.md'];
-const DRAWIO_SKILL = 'skills/arkitect-drawio/SKILL.md';
-const EXCALIDRAW_SKILL = 'skills/arkitect-excalidraw/SKILL.md';
+// Each engine's icon reference, which SKILL.md sends an agent to when it needs
+// the counts (#113).
+const DRAWIO_ICONS = 'skills/arkitect-drawio/references/icons.md';
+const EXCALIDRAW_ICONS = 'skills/arkitect-excalidraw/references/icons.md';
 
 // facts[i] is what capture group i + 1 must equal. `pack:<id>` is that pack's
 // committed count; everything else is a key of the object liveCounts returns.
@@ -99,13 +101,13 @@ const CLAIMS = [
 
   { files: ['docs/excalidraw-libraries.md'], facts: ['committed'],
     re: /also provide ([\d,]+) original\s+SVG\/PNG marks/ },
-  { files: ['docs/excalidraw-libraries.md', EXCALIDRAW_SKILL, 'skills/arkitect-excalidraw/assets/libraries/README.md'],
+  { files: ['docs/excalidraw-libraries.md', EXCALIDRAW_ICONS, 'skills/arkitect-excalidraw/assets/libraries/README.md'],
     facts: ['excalidrawLibraries', 'excalidrawItems'],
     re: /([\d,]+) libraries, ([\d,]+) items/ },
-  { files: [EXCALIDRAW_SKILL], facts: ['committed'],
+  { files: [EXCALIDRAW_ICONS], facts: ['committed'],
     re: /fill coverage gaps with ([\d,]+) original SVG\/PNG marks/ },
 
-  { files: [DRAWIO_SKILL], facts: ['onDemand'],
+  { files: [DRAWIO_ICONS], facts: ['onDemand'],
     re: /one of the ([\d,]+) on-demand marks/ },
 
   { files: ['bin/lib/install-agent.mjs'], facts: ['excalidrawItems'],
@@ -195,21 +197,21 @@ export function checkDocCounts({ live, read }) {
     }
   }
 
-  const skill = read(DRAWIO_SKILL);
+  const skill = read(DRAWIO_ICONS);
   const rows = skill === null ? null : packTableRows(skill);
   if (rows === null) {
-    problems.push(`${DRAWIO_SKILL}: no "${PACK_TABLE_HEAD}" table, so no per-pack count is checked`);
+    problems.push(`${DRAWIO_ICONS}: no "${PACK_TABLE_HEAD}" table, so no per-pack count is checked`);
   } else {
     for (const { pack, found } of rows) {
       const want = live.perPack[pack];
-      if (want === undefined) problems.push(`${DRAWIO_SKILL}: the pack table has a row for \`${pack}\`, which ships no marks`);
+      if (want === undefined) problems.push(`${DRAWIO_ICONS}: the pack table has a row for \`${pack}\`, which ships no marks`);
       else if (num(found) !== want) {
-        problems.push(`${DRAWIO_SKILL}: the pack table quotes ${found} for \`${pack}\`; `
+        problems.push(`${DRAWIO_ICONS}: the pack table quotes ${found} for \`${pack}\`; `
           + `${want} ship, so write ${like(want, found)}`);
       }
     }
     for (const pack of Object.keys(live.perPack)) {
-      if (!rows.some((r) => r.pack === pack)) problems.push(`${DRAWIO_SKILL}: the pack table has no row for \`${pack}\``);
+      if (!rows.some((r) => r.pack === pack)) problems.push(`${DRAWIO_ICONS}: the pack table has no row for \`${pack}\``);
     }
   }
   return problems;

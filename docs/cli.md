@@ -129,9 +129,10 @@ bin/
 docker/
   docker-compose.yml    the local Excalidraw app
 skills/arkitect-drawio/
-  SKILL.md              the Draw.io workflow contract
-  references/           style-guide.md, pattern-catalog.md, icon-catalog.json,
-                        source-analysis.json
+  SKILL.md              the Draw.io workflow contract, and which file to read when
+  references/           editing.md, icons.md, rendering.md (read on condition),
+                        style-guide.md, pattern-catalog.md, pack-index.md,
+                        icon-catalog.json, source-analysis.json
   assets/libraries/     the AWS palette, the explicit export, the merge
   assets/templates/     starter spec, the built diagram, its PNG, pattern fragments
   assets/logos/         product logo cache (gitignored)
@@ -139,8 +140,9 @@ skills/arkitect-drawio/
   scripts/lib/          the .drawio parsing core, style tokens, and what both engines
                         share: backups, the style store, override layer and findings/apply workflow
 skills/arkitect-excalidraw/
-  SKILL.md              the Excalidraw workflow contract
-  references/           style-guide.md, pattern-catalog.md, excalidraw-format.md,
+  SKILL.md              the Excalidraw workflow contract, and which file to read when
+  references/           editing.md, icons.md, rendering.md (read on condition),
+                        style-guide.md, pattern-catalog.md, excalidraw-format.md,
                         source-analysis.json
   assets/libraries/bundled/   36 committed libraries, 1,162 items, contact sheets
   assets/icons/         icons built from logos (gitignored)
@@ -346,8 +348,10 @@ nothing is found, how many PATH directories it searched and every install
 location it tried; and a warning when `DRAWIO_EXE` is set to something `render`
 would refuse. Rendering is local; never use the hosted editor.
 
-On Linux without `DISPLAY`, the helper announces and uses `xvfb-run -a` if
-available. Install Xvfb separately when needed, and set `HOME` under cron/ssh.
+On Linux without a usable `DISPLAY` — none set, or a local `:N` whose X socket
+is not there, as inside a sandbox or container — the helper announces and uses
+`xvfb-run -a` if available. A failed page names why: the exit code or signal
+and Draw.io's first error line. Install Xvfb separately when needed, and set `HOME` under cron/ssh.
 Only add `--disable-gpu` for observed GPU failures, or `--no-sandbox` for a
 diagnosed sandbox/user-namespace failure; neither is enabled blindly.
 
@@ -385,7 +389,8 @@ chooses the format; any other extension, or a directory, exits `2`.
 `--out-dir DIR` writes `DIR/<scene>.png`, or `.svg` with `--format svg`, the way
 `drawio render --out-dir` does. A PNG takes `--width` pixels (default 2200) and
 uses a local Edge, Chrome or Chromium, found on `PATH` or where each OS installs
-it; `--browser PATH` or `ARKITECT_BROWSER` pins one, and an unusable pin fails
+it — on Linux Chrome and Edge first, then Chromium, and Ubuntu's snap wrapper
+last, since the snap cannot start inside a sandbox or container; `--browser PATH` or `ARKITECT_BROWSER` pins one, and an unusable pin fails
 instead of falling back to another browser. Ubuntu's snap-packaged Chromium
 (also behind `/usr/bin/chromium-browser`) cannot see the host's `/tmp`, so for a
 snap the page and screenshot are staged in `~/snap/chromium/common` and removed

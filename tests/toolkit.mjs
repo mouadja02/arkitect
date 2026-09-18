@@ -143,6 +143,18 @@ test('doctor finds Draw.io Desktop where render does, and says how (#46)', () =>
   for (const p of installs) assert(out.includes(`tried ${p}`), `doctor does not list ${p}:\n${out}`);
 });
 
+test('both builders create a missing output folder instead of failing with a stack trace (#113)', () => {
+  for (const [engine, spec, ext] of [
+    ['drawio', join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', 'starter-architecture.spec.json'), 'drawio'],
+    ['excalidraw', join(ROOT, 'skills', 'arkitect-excalidraw', 'assets', 'templates', 'starter-architecture.spec.json'), 'excalidraw'],
+  ]) {
+    const out = join(TMP, 'new-folder', engine, 'deeper', `arch.${ext}`);
+    const report = JSON.parse(cli([engine, 'build', spec, '--out', out, '--defaults']));
+    eq(report.wrote, out, `${engine} reports the file it wrote`);
+    assert(statSync(out).size > 0, `${engine} wrote into the new folder`);
+  }
+});
+
 test('both engines dispatch through to a real search', () => {
   const drawio = JSON.parse(cli(['drawio', 'icon', 'bedrock']));
   assert(drawio.matches?.length > 0, 'no draw.io icon match for "bedrock"');
@@ -395,6 +407,46 @@ test('all six skills are well formed, and only the learning and apply ones are m
   }
   const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
   assert(ci.includes(`skills.length !== ${skills.length}`), `ci.yml's plugin job still expects a different skill count than ${skills.length}`);
+});
+
+// The default drawing path has to fit a small model's window before it has read
+// the user's architecture (#113): SKILL.md plus the one pattern section it sends
+// the agent to, measured in bytes. Everything else sits behind a named condition.
+const CONTEXT_BUDGET = 12000;
+const skillReading = (engine) => {
+  const dir = join(ROOT, 'skills', engine);
+  const skill = readFileSync(join(dir, 'SKILL.md'), 'utf8');
+  const catalog = readFileSync(join(dir, 'references', 'pattern-catalog.md'), 'utf8');
+  const sections = new Map(catalog.split(/\n(?=## \d+\.)/).slice(1)
+    .map((s) => [Number(s.match(/^## (\d+)\./)[1]), Buffer.byteLength(s.split(/\n(?=# )/)[0])]));
+  return { dir, skill, sections, skillBytes: Buffer.byteLength(skill), largest: Math.max(...sections.values()) };
+};
+
+test('each drawing skill reads at most 12,000 bytes before its example, and names one path per task (#113)', () => {
+  const measured = [];
+  for (const [engine, mustKeep] of [
+    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style']],
+    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style']],
+  ]) {
+    const { dir, skill, sections, skillBytes, largest } = skillReading(engine);
+    measured.push(`${engine} ${skillBytes} + ${largest} = ${skillBytes + largest}`);
+    assert(skillBytes + largest <= CONTEXT_BUDGET,
+      `${engine}: SKILL.md (${skillBytes}) plus its largest pattern (${largest}) is over ${CONTEXT_BUDGET} bytes`);
+
+    // Every file the reading table or the workflow names exists.
+    for (const [, path] of skill.matchAll(/`((?:references|assets\/templates)\/[\w./-]+)`/g)) {
+      assert(existsSync(join(dir, path)), `${engine}: SKILL.md names ${path}, which does not exist`);
+    }
+    for (const path of ['references/editing.md', 'references/icons.md', 'references/rendering.md', 'references/style-guide.md']) {
+      assert(skill.includes(`\`${path}\``), `${engine}: SKILL.md has no reading path to ${path}`);
+    }
+    // The selector offers exactly the patterns the catalog has.
+    const selector = skill.slice(skill.indexOf('pattern-catalog.md`:'), skill.indexOf('Write every architectural assumption'));
+    const offered = [...selector.matchAll(/\|\s*(\d+)\s*\|/g)].map((m) => Number(m[1])).sort((a, b) => a - b);
+    eq(offered.join(','), [...sections.keys()].sort((a, b) => a - b).join(','), `${engine}: selector rows vs catalog sections`);
+    for (const rule of mustKeep) assert(skill.includes(rule), `${engine}: SKILL.md no longer says "${rule}"`);
+  }
+  console.log(`      (context budget: ${measured.join('; ')})`);
 });
 
 // A committed example must build the same on every machine, so a documented

@@ -13,7 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 export function render(options, { platform = process.platform, env = process.env,
-  isExecutable = executable, runner = spawnSync, log = console.log } = {}) {
+  isExecutable = executable, runner = spawnSync, log = console.log, displayUp = displayReachable } = {}) {
   const source = resolve(options.file);
   let mx;
   try { mx = readMxfile(source); }
@@ -30,9 +30,12 @@ export function render(options, { platform = process.platform, env = process.env
     throw new Error(`Page index ${options.pageIndex} is out of range: "${basename(source)}" has ${count} page${count === 1 ? '' : 's'} (0-${count - 1}).`);
   }
   const exe = discoverDrawio(options.drawioExe, { platform, env, isExecutable });
-  const xvfb = platform === 'linux' && !env.DISPLAY
+  const xvfb = platform === 'linux' && !displayUp(env.DISPLAY)
     ? pathCandidates('xvfb-run', platform, env).find(isExecutable) : undefined;
-  if (xvfb) log('No DISPLAY; using xvfb-run -a for local Draw.io export.');
+  if (xvfb) {
+    log(env.DISPLAY ? `DISPLAY ${env.DISPLAY} has no X server here; using xvfb-run -a for local Draw.io export.`
+      : 'No DISPLAY; using xvfb-run -a for local Draw.io export.');
+  }
   const outDir = resolve(options.outDir);
   mkdirSync(outDir, { recursive: true });
 
@@ -60,9 +63,10 @@ export function render(options, { platform = process.platform, env = process.env
       try { const stat = statSync(output); if (stat.isFile()) size = stat.size; } catch {}
       const ok = size > 0;
       if (!ok && backup) copyFileSync(backup, output);
-      // Surface spawn errors (missing xvfb-run, unlaunchable exe) but keep Chromium
-      // stderr as noise: a fresh nonempty export is still the only success signal.
-      const reason = !ok && result?.error ? ` (${result.error.message})` : '';
+      // A fresh nonempty export is still the only success signal; stderr is
+      // read only on failure, so the log can say why instead of just FAILED.
+      const why = ok ? '' : exportFailure(result);
+      const reason = why ? ` (${why})` : '';
       log(`${ok ? `rendered page ${index}` : `page ${index} FAILED`} -> ${output} (${size} bytes)${reason}`);
       pages.push({ index, output, size, ok, backup, status: result.status });
     } finally {
@@ -72,6 +76,28 @@ export function render(options, { platform = process.platform, env = process.env
   return { ok: pages.every(p => p.ok), pages };
 }
 
+
+// DISPLAY names a local X server by number. One whose socket is not there - a
+// sandbox or container that hides /tmp/.X11-unix, WSLg's :0 inside such a
+// sandbox, a stale SSH variable - makes Draw.io exit with "Missing X server",
+// so it counts as no display. A remote host:N display is trusted.
+export function displayReachable(display, { exists = existsSync } = {}) {
+  if (!display) return false;
+  const local = /^(?:unix)?:(\d+)(?:\.\d+)?$/.exec(display);
+  return local ? exists(`/tmp/.X11-unix/X${local[1]}`) : true;
+}
+
+// Why an export produced nothing, in one line: the spawn error, or how the
+// process ended and the first thing Draw.io printed that is not D-Bus chatter.
+export function exportFailure(result) {
+  if (result?.error) return result.error.message;
+  const said = String(result?.stderr ?? '').split('\n')
+    .map((line) => line.replace(/^\[[^\]]*\]\s*/, '').trim())
+    .find((line) => line && !/dbus|StartTransientUnit/i.test(line));
+  const ended = result?.signal ? `killed by ${result.signal}`
+    : Number.isInteger(result?.status) && result.status !== 0 ? `exit ${result.status}` : '';
+  return [ended, said?.slice(0, 200)].filter(Boolean).join(': ');
+}
 
 function backupOutput(output) {
   if (!existsSync(output)) return undefined;

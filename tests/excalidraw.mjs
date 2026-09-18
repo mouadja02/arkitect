@@ -1240,11 +1240,26 @@ test('a PNG render proves a real PNG before replacing the previous preview (#39)
       e.status = 1;
       throw e;
     }],
+    // Chromium's start-up chatter is dropped, so the reason stays in view, and
+    // a sandbox that cannot nest gets the specific way out (#113).
+    ['browser said: setuid sandbox: clone() failed: Operation not permitted', (exe, args, { log }) => {
+      writeFileSync(log, 'setuid sandbox: clone() failed: Operation not permitted\n'
+        + '[0918/203806.293876:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq: No such file or directory (2)\n'
+        + '[0918/203806.293940:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:145] open /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq: No such file or directory (2)\n');
+      const e = new Error('crashed');
+      e.status = 1;
+      throw e;
+    }],
   ]) {
     errors.length = 0;
     eq(renderer.run([scenePath, '--out', out], deps(runner)), 1, `"${why}" exits 1`);
     assert(errors.join(' ').includes(why), `says "${why}": ${errors.join(' | ')}`);
     assert(readFileSync(out).equals(previous), `"${why}" left the previous preview untouched`);
+    if (why.includes('Operation not permitted')) {
+      assert(!errors.join(' ').includes('cpufreq'), `start-up chatter is dropped: ${errors.join(' | ')}`);
+      assert(errors.join(' ').includes('could not start its own sandbox') && errors.join(' ').includes('retry with --no-sandbox'),
+        `a sandbox that cannot nest is named, with the way out: ${errors.join(' | ')}`);
+    }
   }
   eq(readdirSync(dir).join(','), 'preview.png', 'no temporary file is left beside the preview');
 
@@ -1279,6 +1294,12 @@ test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH
   eq(at('darwin', { PATH: '' }, '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge').source, 'install location', 'macOS Edge');
   eq(at('linux', { PATH: '/usr/local/bin' }, '/usr/local/bin/google-chrome').source, 'PATH', 'a Chrome on the Linux PATH');
   eq(at('linux', { PATH: '' }, '/snap/bin/chromium').path, '/snap/bin/chromium', 'snap Chromium');
+  // A packaged Chrome or Edge beats Chromium, and Ubuntu's snap wrapper comes
+  // last: the snap cannot start inside a sandbox or container (#113).
+  const both = (...present) => browserLib.locateBrowser(undefined, { platform: 'linux', env: { PATH: '/usr/bin' }, isExecutable: (p) => present.includes(p) }).path;
+  eq(both('/usr/bin/chromium-browser', '/usr/bin/google-chrome'), '/usr/bin/google-chrome', 'Chrome before the chromium-browser wrapper');
+  eq(both('/usr/bin/chromium', '/usr/bin/microsoft-edge'), '/usr/bin/microsoft-edge', 'Edge before Chromium');
+  eq(both('/usr/bin/chromium-browser', '/usr/bin/chromium'), '/usr/bin/chromium', 'a real Chromium before the snap wrapper');
   const none = at('linux', { PATH: '/a' }, null);
   eq(JSON.stringify([none.path, none.source]), JSON.stringify([null, null]), 'nothing found');
   assert(none.tried.includes('/a/chromium') && none.tried.includes('/opt/google/chrome/chrome'), 'every candidate tried');

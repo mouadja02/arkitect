@@ -14,28 +14,34 @@ evals/
     apply-skill-stays-manual/       talking about style must not apply it
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
-    icon-from-logo/                 an icon is built from the real logo, not faked
+    icon-from-logo/                 "proper icons" get each real mark, honestly sourced
     learning-skill-stays-manual/    same rule, other engine
     apply-skill-stays-manual/       same rule, other engine
 ```
 
+Case names carry the engine (`drawio-generate-architecture`), so `--case` and
+the report tell the two apart. `--tag generation icons` selects the four
+generation and icon cases.
+
 ```bash
-claude plugin eval --allow-tools Bash Write Edit WebSearch WebFetch <path to this repo>
-claude plugin eval --case generate-architecture --runs 1 <path>
+claude plugin eval <path> --allow-tools Bash Write Edit WebSearch WebFetch --trust-plugin
+claude plugin eval <path> --tag generation icons --runs 1 --model haiku --ablation none \
+  --allow-tools Bash Write Edit WebSearch WebFetch --trust-plugin --no-publish
 ```
 
 **They are not run by default — they cost money.** They spawn real agent runs and
 LLM graders. Run them when you want the spend.
 
-Three caveats:
+Caveats:
 
-- `claude plugin eval` is early access and may not be enabled on your account,
-  in which case the grader schema in these files is unverified. Treat the
-  `graders:` blocks as a first draft and expect to adjust field names once the
-  command is available to you.
-- `icon-from-logo` reaches the network to fetch a real logo. It is the only case
-  that does, and it is the point of that case — a run without network fails it
-  for the wrong reason.
+- The case files follow `schema_version: "1.1"` as `claude plugin eval` loads
+  it in Claude Code 2.1.276. There is no `command` grader: a case checks that the
+  agent ran the validator (`tool_used` with `input_match`), and a file's content
+  with a `regex` grader on `target: { source: file, path }`.
+- Every case grants Bash, because the skills run Node scripts, and an eval run
+  refuses a shell it cannot sandbox. On Windows, run the suite from Linux (WSL) or
+  macOS instead, with the sandbox backend installed (`bubblewrap` and `socat`
+  on Linux).
 - `learning-skill-stays-manual` and `apply-skill-stays-manual` use `scaffold_script`, which only runs under
   `--scaffold`. Without that flag, create the `eval-input/` fixture by hand
   first; the script in each case file shows what it needs.

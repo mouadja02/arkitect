@@ -11,6 +11,25 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- Draw.io rendering on Linux uses `xvfb-run` when `DISPLAY` names a local X
+  server whose socket is not there, as inside a sandbox or container, instead
+  of exporting nothing; a failed page now says why (#113)
+- Excalidraw PNG rendering on Linux prefers a packaged Chrome or Edge to
+  Chromium, and Ubuntu's snap `chromium-browser` wrapper comes last; a failed
+  render drops Chromium's start-up chatter from its message and, when the
+  browser could not nest its own sandbox, says to retry with `--no-sandbox` (#113)
+- Both builders create a missing output folder instead of failing with a stack
+  trace (#113)
+
+### Changed
+
+- Both drawing skills read at most 12,000 bytes before the chosen example,
+  down from 34,621 (Draw.io) and 46,646 (Excalidraw): `SKILL.md` keeps one
+  short workflow and a pattern selector, and editing, icons, logos, libraries
+  and rendering move to `references/` behind a named condition (#113)
+
 ## [1.2.1] — 2026-09-18
 
 ### Fixed

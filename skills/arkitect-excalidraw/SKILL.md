@@ -6,454 +6,186 @@ description: Create or edit editable Excalidraw (.excalidraw) diagrams — syste
 # Architecture diagrams in Excalidraw
 
 Produces native, editable `.excalidraw` JSON — never a flattened image, never
-Mermaid as the final artifact. General purpose: any cloud, any stack, any kind
-of system.
-
+Mermaid as the final artifact. Any cloud, any stack. The builder applies the
+house style, binds the arrows and embeds the icons; you write a small JSON spec.
 Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw/scripts`.
-Read `references/style-guide.md` before laying anything out and
-`references/pattern-catalog.md` to pick a starting shape.
-`references/excalidraw-format.md` is the schema reference for hand-editing.
-Then, if they exist, read the user's own `style-notes.md` and `patterns.md` in
-`~/.arkitect/excalidraw/` (`$ARKITECT_HOME/excalidraw/` when that is set) — what
-`/learn-excalidraw-style` found in their scenes. Where those conflict with the
-shipped guide, the user's notes win; say so in the report.
 
-**The style is learned, and the guide says from what.** It rests on a corpus of
-9 designated real-world scenes (3,270 elements), analysed 2026-09-08; every rule
-carries its count and `source-analysis.json` version 1 holds the full
-distributions. A few rules the corpus does not settle are still marked
-`default` there — say which is which if asked, rather than presenting a default
-as an observation. `/learn-excalidraw-style` folds in further examples.
+## What to read
 
-Four findings contradict what a generator would do by default. They are already
-the generator's defaults; do not undo them by hand. An install's applied style
-override can change some of them — `build-diagram.mjs --print-style` shows what
-is in effect:
+Read only what the task needs. Every path is relative to this skill.
 
-- **Connectors are elbow arrows** (`elbowed: true`, 70% of 165), stroke width 4.
-- **Edge captions are free text beside the line** — not one arrow in the corpus
-  carries a bound label.
-- **Regions are dashed rectangles, not frames** — 21 of them, zero frames.
-- **Captions sit below the shape** as free text at size 20; labels are free
-  text 91% of the time.
+| Task | Read |
+|---|---|
+| Draw a new scene | this file, the one pattern you pick in step 2, and one worked example (step 4) |
+| Edit an existing `.excalidraw` | `references/editing.md` |
+| An item the search cannot find, an unnamed library item, a logo, a public library | `references/icons.md` |
+| Rendering fails, or the user wants the real app | `references/rendering.md` |
+| Hand-written scene JSON | `references/excalidraw-format.md` |
+| A deliberate deviation from the house style, or its evidence | `references/style-guide.md` |
+
+If `~/.arkitect/excalidraw/style-notes.md` or `patterns.md` exist
+(`$ARKITECT_HOME/excalidraw/` when set), read them too: they are what
+`/learn-excalidraw-style` found in the user's own scenes, and they win over the
+shipped guide. Say so in the report.
+
+The builder already draws what the corpus does and a generator would not:
+elbow arrows at stroke width 4, edge captions as free text beside the line,
+regions as dashed rectangles rather than frames, and captions below the shape.
+Do not undo them by hand.
 
 ## Workflow
 
-1. **Interview until you both mean the same thing.** One question at a time,
-   each carrying your recommended answer, walking the design tree in dependency
-   order. See [Interview first](#interview-first). Never ask about styling —
-   that is this skill's job. Do not start drawing while a branch that would
-   change the drawing is unresolved.
+1. **Decide whether to ask** — see Interview first, below. Most requests are
+   drawn straight away, with the assumptions stated.
 
-2. **Pick a pattern and state assumptions.** Choose the nearest entry in
-   `references/pattern-catalog.md`. Write every architectural assumption down;
-   they go in the final report and, where they matter, in a note on the canvas.
+2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
+   only that `## N.` section of `references/pattern-catalog.md`:
 
-3. **Resolve icons from the bundled libraries.** 36 Excalidraw libraries ship
-   with the plugin — 1,162 items covering AWS, Azure, GCP, Snowflake, the data
-   platform stack, DevOps tooling and general IT logos. This is the primary
-   source; search it for every named product:
+   | # | Use for | # | Use for |
+   |---|---|---|---|
+   | 1 | a source → sink pipeline | 10 | legend and annotation |
+   | 2 | a scope, trust or bounded-context box | 11 | several sources converging on one store |
+   | 3 | tiered frames: frontend / backend / data | 12 | tables or topics inside one product |
+   | 4 | a request path with a decision | 13 | two or three big phases (CI and CD) |
+   | 5 | current vs proposed | 14 | one tool fanning out to many artefacts |
+   | 6 | external systems you do not own | 15 | a naming convention beside the architecture |
+   | 7 | the inside of one service, block diagram | 16 | two diagrams sharing one canvas |
+   | 8 | an agentic or LLM system | 17 | components collected, not yet wired |
+   | 9 | a protocol where order is the point | | |
+
+   Patterns 11–17 are the shapes the reference corpus repeats: prefer one when
+   the system fits it. Spec fragments are in `assets/templates/patterns.json`.
+   Write every architectural assumption down; it goes in the report and, where
+   it matters, in a note on the canvas.
+
+3. **Resolve icons — bundled libraries first.**
    ```bash
    node scripts/find-icon.mjs "postgres"
-   node scripts/find-icon.mjs --stats
    ```
+   Put the ref from a match in the spec: `"icon": "data-platform:9"`. A node
+   that only names its component is resolved by product name alone, never by a
+   name that merely appears inside another product's; the search says up front
+   what a node would draw (`"draws"`) or why it gets a placeholder. Shared packs
+   fill gaps with embedded original artwork (`"icon": "drawio:databases/postgresql"`).
+   Still short? Some library items carry no name — `references/icons.md` says how
+   to find them. **Otherwise use a placeholder and move on**: `kind: "placeholder"`,
+   or an unresolvable `icon`, draws a dotted `?` slot captioned with the
+   component and listed under `placeholders` in the build report. Do not fetch a
+   logo unless the user asks, and **never** use one product's mark for another.
 
-   Put the ref from a match (`"icon": "data-platform:9"`) in the spec. A node
-   that only names the component is resolved for you, but only to the product
-   by name — an exact match, a leading Azure/AWS/Google word aside, or a prefix
-   like `dynamo` for DynamoDB. A name that merely appears inside a different
-   product's (`postgres` inside "Azure Database for Postgres") never selects
-   that product. Shared packs may supply the correct mark; otherwise it gets a
-   placeholder. The search says which up front: `"draws": "<ref>"`, or
-   `"placeholder": "<why>"`.
-
-   Shared packs fill coverage gaps with 4,843 original SVG/PNG marks from the
-   sibling Draw.io skill. Existing successful resolutions keep their artwork;
-   use `"icon": "drawio:databases/postgresql"` to choose a shared mark exactly.
-   Search and build reports identify these as **embedded**, with source and
-   licence metadata. They keep captions and arrow bindings editable, but the
-   logo paths are not Excalidraw strokes. No tracing, recolouring or download
-   occurs. On-demand entries stay placeholders; integrity failures stop the
-   build. See `../../docs/shared-icons.md` for source terms and examples.
-
-   239 of those items carry no name and cannot be found by searching. When a
-   search comes up short, check whether the product is sitting in one of those
-   libraries unnamed — the numbered contact sheets are committed, so read the
-   PNG and reference the item by number:
-   ```bash
-   node scripts/index-libraries.mjs --unnamed
-   # then look at assets/libraries/bundled/sheets/<slug>.png and use "<slug>:<n>"
-   ```
-
-   **Still nothing? Use a placeholder and move on.** Set the node's `kind` to
-   `placeholder`, or leave `kind: "icon"` with an unresolvable name — either
-   way the generator draws a dotted violet square with a `?`, captioned with
-   the component name, and lists it under `placeholders` in the build report.
-   Say in your report which slots are empty so they can be filled by hand.
-
-   Do **not** go and fetch a logo off the web unless the user asks for it. And
-   never use one product's mark for another — a placeholder is honest, a wrong
-   logo is not.
-
-   Two routes exist for when the user does want one built:
-   - **The public catalogue** — the same one the app's "Browse libraries"
-     button opens. See [Libraries](#the-public-library-catalogue).
-   - **Trace it from the real logo.** See [Icons](#building-an-icon-from-a-logo).
-
-4. **Generate.** First check which style this install draws with:
+4. **Build from a spec.** First see which style this install draws with:
    ```bash
    node scripts/build-diagram.mjs --print-style
-   ```
-   With `"source": "override"` the user chose some of their own conventions with
-   `/apply-excalidraw-style`. Pick each edge `kind` by its `meaning` in that
-   list — a kind can mean something different on this install, and there may be
-   extra kinds — and do not fight the tokens it changed. The build report repeats
-   the active kinds under `style`; a non-empty `style.errors` means the override
-   was ignored, so tell the user. Never pass `--defaults` for a user's scene: it
-   exists for committed examples.
-
-   Write a spec and build it. This applies the style tokens,
-   binds every arrow to its shapes, sizes boundaries from their contents and
-   keeps the layout collision-free:
-   ```bash
    node scripts/build-diagram.mjs my-spec.json --out "path/to/architecture.excalidraw"
    ```
-   Two worked examples ship, both committed with the scene and a PNG beside the
-   spec. **Look at the PNG before writing a spec** — it is faster than reasoning
-   about the rules, and it is what the output is supposed to look like.
+   Write the spec next to the output file, never inside this skill's folder.
+   With `"source": "override"` the user applied their own conventions: pick each
+   edge `kind` by its `meaning` there, and do not fight the tokens it changed. A
+   non-empty `style.errors` in the build report means the override was ignored:
+   tell the user. Never pass `--defaults` for a user's scene.
 
-   - `assets/templates/starter-architecture.spec.json` — the small tour: every
-     node kind, every connector kind, the generated legend. Read this first for
-     the *vocabulary*.
-   - `assets/templates/aws-data-platform.spec.json` — a large, detailed cloud
-     architecture, 48 nodes from one bundled library. Read this for the *shape*
-     of a real answer: column-per-phase regions, a role caption under an icon
-     that already draws its own product name, a sublabel carrying the scaling or
-     availability fact, an error lane along the bottom whose recovery loop
-     closes back into the flow, a cross-cutting band that is labelled rather
-     than wired to everything, assumptions in a note on the canvas, and
-     fractional `col`/`row` values for anything off the main grid.
+   **Look at one worked example's PNG before writing a spec**, then read its spec:
+   `assets/templates/starter-architecture.spec.json` for the vocabulary (every
+   node and connector kind), or `assets/templates/aws-data-platform.spec.json`
+   for the shape of a large real answer (regions per phase, sublabels, an error
+   lane, assumptions on the canvas, fractional `col`/`row`).
 
-   A spec whose edges or parents name something that does not exist is refused
-   before anything is written, with every problem listed (exit 1). Edges connect
-   nodes, not boundaries. Fix the spec; never drop the edge to make it build.
-   So is a number that is not one: a string `col`, a size of 0 or less. A
-   missing `col` or `row` is 0.
+   The build refuses, before writing anything and listing every problem
+   (exit 1), a spec whose edges or parents name something that does not exist,
+   or whose numbers are not numbers (a string `col`, a size of 0 or less). Edges
+   connect nodes, not boundaries. Fix the spec; never drop the edge. A missing
+   `col` or `row` is 0. An unknown node or edge `kind` still builds and is listed
+   under `unknownKinds`: fix it or report it. Hand-written JSON is only for what
+   the spec cannot express — see `references/editing.md`.
 
-   A node or edge `kind` the builder does not know still builds (a node as a
-   rectangle, an edge as a flow) and is listed under `unknownKinds` in the build
-   report, with the field, the value, what it was drawn as and the valid kinds.
-   Treat a non-empty `unknownKinds` like an unresolved icon: fix the spec and
-   rebuild, or name it in your report.
-
-   Hand-written JSON is a narrow exception — only when the spec format genuinely
-   cannot express what you need, or for a targeted edit to an existing file (see
-   "Editing an existing scene" below) — never the way a new scene gets built. When
-   you do, read `references/excalidraw-format.md` first, particularly the parts
-   about relative arrow points and two-sided bindings.
-
-5. **Never overwrite blind.** `build-diagram.mjs` writes a timestamped sibling
-   backup before replacing an existing file. Once the new scene is written it
-   keeps the oldest backup and the newest five of that file, deletes the rest and
-   lists them under `pruned` (`--keep-backups N`; `0` keeps all). Suggest
-   `*.backup-*` for the user's `.gitignore`. Editing by any other route means
-   calling `backupExisting()` or copying the file yourself first.
+5. **Never overwrite blind.** The builder backs up an existing file first and
+   keeps the oldest backup plus the newest five (`--keep-backups N`; `0` keeps
+   all). Suggest `*.backup-*` for the user's `.gitignore`.
 
 6. **Validate.**
    ```bash
    node scripts/validate-excalidraw.mjs "path/to/architecture.excalidraw"
    ```
-   Errors block delivery — they are the things that make Excalidraw drop an
-   element or show an empty image box. Warnings about overlaps and tight labels
-   are judgement calls; check them against the render.
+   Errors block delivery. Overlap and tight-label warnings are judgement calls:
+   check them against the render.
 
-7. **Render and actually look at it.**
+7. **Render and look at it.**
    ```bash
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
-   That writes `architecture.png` with a local Edge, Chrome or Chromium, on any
-   OS; pin one with `--browser` or `ARKITECT_BROWSER`. With none installed it
-   says so and exits 1: install one, or fall back to `--format svg` and say that
-   you could not look at a PNG. `--out preview.png` names the file instead. The
-   Windows helper `./scripts/render-excalidraw.ps1 -Path … -OutDir …` still works.
-   Read the PNG back as an image. Iterate until spacing, hierarchy, routing and
-   label legibility hold up. A scene that validates but reads badly is not done.
+   Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
+   `--format svg` and say you could not look at a PNG. If the error says to
+   retry with `--no-sandbox`, do so once. Read the PNG back and
+   iterate; a scene that validates but reads badly is not done. The preview is
+   geometry-faithful, not font-faithful: judge layout, not typography. Three
+   things the first render nearly always shows, each fixed in the spec:
+   - a one-column region's long label runs into the next: name it in one or two
+     words and let sublabels carry detail;
+   - an elbow route drawn straight through a third icon: `"route": "straight"`
+     on that edge;
+   - adjacent elbows stacking into one phantom line: `"route": "straight"` on
+     one of them.
 
-   The preview is geometry-faithful, not pixel-faithful: Excalidraw's fonts are
-   not installed outside the app, so text is substituted and runs a little wide,
-   and fills are flat. Judge layout from it, not typography. `--style clean`
-   (`-Style clean` in the PowerShell helper) drops the hand-drawn stroke and is easier to read when the question is
-   whether something collides.
+8. **Open it in the real app** when the user wants to see or edit it, and before
+   claiming it looks right in Excalidraw itself: `references/rendering.md`.
 
-   Three things the first render nearly always shows, all fixed in the spec:
-
-   - **A one-column region cannot hold a long label.** The label is free text at
-     the box's top-left and is not clipped, so it runs into the next region's
-     label. Name a narrow region in one or two words and let the node sublabels
-     carry the detail.
-   - **The generated elbow route ignores obstacles.** It leaves at the midpoint
-     between the two shapes, so a two-row jump in the same column, or any hop
-     over a third icon, is drawn straight through it. `"route": "straight"` on
-     that one edge is usually the fix; a short diagonal reads better than a line
-     through a logo.
-   - **Adjacent elbows stack into one line.** Several edges crossing the same
-     gutter put their vertical legs at the same midpoint x; if their spans touch,
-     they render as a single long line and the diagram grows a phantom bus. Give
-     one of them `"route": "straight"`.
-
-8. **Open it in the container** when the user wants to see or edit the real
-   thing — and always before claiming it looks right in Excalidraw itself:
-   ```powershell
-   ./scripts/excalidraw-docker.ps1 -Open -Path "path/to/architecture.excalidraw"
-   ```
-   The app has no backend and cannot read the disk, so this starts the
-   container, opens the browser and reveals the file in Explorer to drag onto
-   the canvas. See [The local container](#the-local-container).
-
-9. **Report.** File path, assumptions made, validation and render results, which
-   icons came from where, anything that could not be resolved, and any
-   deliberate deviation from the style guide.
+9. **Report** under these headings, every one, even when it is short:
+   **File** · **Assumptions** (every one, asked or not, and any product the
+   user did not name) · **Icons** (each ref and where it came from: bundled
+   library, shared pack, a logo you built; every placeholder) · **Validation**
+   · **Render** (you looked at the PNG, or it failed and why — never
+   "rendered" for a render that failed) · **Deviations** from the style guide.
 
 ## Interview first
 
-A diagram is a claim about someone's system. Drawing the wrong claim beautifully is
-worse than drawing nothing, and every wrong assumption survives into a slide deck and
-gets believed. So before laying anything out, **interview the user until you both mean
-the same thing** — then draw once.
+**Ask only what would change the drawing, and only someone who can answer.**
+A request that names its components and flows is drawn, not questioned — even
+with a product or a source left unnamed: pick the common choice, draw, and list
+it under Assumptions.
 
-**How to ask.**
+A diagram is a claim about someone's system; a wrong claim drawn well gets
+believed. Ask **one question at a time**, each with your **recommended answer**
+and a one-line reason, in dependency order, feeding answers forward. **Never ask
+about styling** — that is this skill's job. Skip a branch the request already
+answers or that cannot change the drawing:
 
-- **One question at a time.** A wall of six questions gets one answer and five shrugs.
-- **Always carry a recommendation.** Give your recommended answer with each question so
-  "yes" is a complete reply. Say why in one line — a recommendation without a reason is
-  just a guess with confidence.
-- **Walk the tree in dependency order.** Answers that constrain later questions come
-  first. Do not ask about failure paths before you know whether this is a context
-  diagram or a component diagram.
-- **Never interview about style.** Colours, fonts, spacing, connector shapes, icon
-  choice, legend — those are this skill's job. Asking is an admission it is not doing it.
-- **Feed answers forward.** Do not re-ask what an earlier answer already settled, and say
-  when an answer changes something you had already agreed.
+1. **Purpose and audience** — who reads it, what decision it supports. Everything below depends on it.
+2. **Scope** — what is inside, and what is deliberately outside.
+3. **Level** — one box per service, container or team; never mixed.
+4. **State** — as-is, to-be, or both (two pages or one comparison).
+5. **Components by real product name** — "Snowflake", not "the warehouse"; this decides the icons.
+6. **Flows** — what moves, which way, sync or event-driven; only those worth an arrow.
+7. **Boundaries** — trust, network, ownership, account; they become the containers.
+8. **What must be visible** — failure paths, multi-region, HA/DR, a control under review.
+9. **Pages** — split by lifecycle stage or audience, not by how much fits.
+10. **Unknowns** — agree up front: a stated assumption or a labelled placeholder, never invention.
 
-**The branches, in dependency order.** Skip a branch when the answer is already in the
-request or genuinely cannot change the drawing.
+**Stop when** the remaining unknowns could not change the drawing: a three-box
+flow needs two questions, a review-board architecture needs the ladder. Write
+the answers down; they are the report's assumptions and the canvas note.
 
-1. **Purpose and audience.** Who reads this, and what decision does it support? An RFC
-   reviewer, a client steering group and an on-call engineer need three different
-   pictures of the same system. *Everything below depends on this answer.*
-2. **Scope boundary.** What is inside the picture, and what is deliberately outside?
-   Naming what is out is as useful as naming what is in.
-3. **Level of abstraction.** One box per service, per container, or per team? Mixing
-   levels in one diagram is the single most common way these go wrong.
-4. **State.** As-is, to-be, or both side by side? If both, are they two pages or one
-   comparison?
-5. **The components — by their real product names.** "The warehouse" is not drawable;
-   "Snowflake" is. This answer decides which bundled library items you can reach for, so
-   get the actual products: `node scripts/find-icon.mjs "<product>"`.
-6. **The flows.** What moves between the components, in which direction, and which are
-   synchronous versus scheduled or event-driven? Ask which flows matter enough to draw —
-   every arrow costs legibility.
-7. **Boundaries.** Trust, network, ownership, account/subscription/project. These become
-   the containers, so they change the layout more than anything except the level.
-8. **What must be visible.** Failure paths, multi-region, HA/DR, a specific control the
-   audience is there to scrutinise. Ask rather than guess which of these earns space.
-9. **Pages.** One page, or a set? Split by lifecycle stage or by audience, not by how
-   much fits.
-10. **Unknowns.** Where the user does not know, agree the treatment up front: draw it
-    with a stated assumption, or leave a labelled placeholder. Never quietly invent.
+## Safety — always
 
-**Stop when** the remaining unknowns could not change what gets drawn. Relentless means
-resolving every branch that matters, not filling a quota. A one-box-to-three-boxes
-flowchart needs two questions; a solution architecture for a review board needs the
-ladder. Calibrate to what is actually being asked, and say when you are stopping and why.
-
-**Then write the answers down.** They become the assumptions in your report, and the
-ones that matter go into a note box on the canvas. An assumption nobody can see is an
-assumption nobody can correct.
-
-## The bundled libraries
-
-36 libraries, 1,162 items, all native vector geometry — not one embedded image
-in the set, so every mark scales, recolours and can be pulled apart in the app.
-
-```bash
-node scripts/index-libraries.mjs                 # one line per library
-node scripts/index-libraries.mjs --items gcp-icons
-node scripts/index-libraries.mjs --unnamed       # the ones you have to look at
-node scripts/index-libraries.mjs --stats
-```
-
-Reference an item in a spec either by product name, which searches, or by
-`<slug>:<n>`, which does not:
-
-```json
-{ "kind": "icon", "icon": "snowflake",   "label": "Snowflake", "col": 0, "row": 0 }
-{ "kind": "icon", "icon": "gcp-icons:37", "label": "Pub/Sub",  "col": 1, "row": 0 }
-```
-
-Worth knowing:
-
-- **Many items draw their own name.** Most of the AWS, Azure and data-platform
-  marks include the product name as text. The generator detects that and skips
-  its own caption rather than printing the name twice; the build report lists
-  those nodes under `icons.selfCaptioned`.
-- **Styles differ between libraries.** An AWS mark is a hachure-filled square,
-  a GCP mark is flat blue line-art, an IT logo is a black glyph. Mixing three
-  libraries in one diagram looks like mixing three libraries. Prefer one
-  library per diagram where the coverage allows it.
-- Credits and licences: `assets/libraries/bundled/ATTRIBUTION.md`. Every
-  library belongs to its author.
-- Added or removed a `.excalidrawlib`? Rerun
-  `node scripts/index-libraries.mjs --build`. A test fails if the index and the
-  files disagree.
-
-## Building an icon from a logo
-
-For a product no bundled library covers — and only when the user asks, since a
-placeholder is the default answer. `--trace` turns a flat SVG into native
-Excalidraw geometry, which is what keeps it consistent with the bundled marks.
-
-```bash
-node scripts/make-icon.mjs --url https://.../dbt.svg --name dbt --trace --label "dbt"
-node scripts/make-icon.mjs --url https://.../logo.png --name acme
-node scripts/make-icon.mjs --file ~/Downloads/logo.svg --name acme --trace
-node scripts/make-icon.mjs --list
-node scripts/make-icon.mjs --inspect dbt
-node scripts/make-icon.mjs --restyle dbt --trace --monochrome --size 96
-```
-
-Then reference it in a spec by name:
-
-```json
-{ "id": "dbt", "kind": "icon", "icon": "dbt", "label": "dbt", "col": 2, "row": 1 }
-```
-
-**Two flavours. Prefer `--trace`.**
-
-- `--trace` converts a flat SVG into native Excalidraw `line` elements. The icon
-  becomes real geometry: it takes the hand-drawn stroke, scales cleanly,
-  recolours, and can be pulled apart in the app. This is what "an Excalidraw
-  icon" means, as opposed to a picture of a logo. It needs an SVG, and it is
-  only honest for flat vector marks — the tracer reports gradients, clip paths,
-  masks and `<text>` rather than losing them silently. If `skipped` comes back
-  non-empty, look at the result before shipping it.
-- Default (embedded) puts the logo in as an `image` element. Works for SVG,
-  PNG and JPEG. SVG remains vector artwork, but its paths are not editable
-  Excalidraw strokes and cannot be restyled in the app.
-
-**Customising.** `--size` (longest side, aspect preserved), `--label`,
-`--monochrome` (flatten to one colour), `--outline` (no fills — good for a
-busy mark), `--stroke #hex`, `--stroke-width`, `--roughness`. `--restyle` re-runs
-any of these over bytes already on disk, so changing your mind costs no second
-download.
-
-**Finding the file.** Use WebSearch/WebFetch to locate the asset, then hand the
-URL to the script — the script does the binary download, not WebFetch. Good
-sources, in order: the vendor's own press-kit or brand page; Simple Icons
-(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/<slug>.svg`) for flat
-monochrome marks, which trace perfectly; the vendor's GitHub organisation avatar
-or `docs/` assets; Wikimedia Commons.
-
-**Transparency.** Every cached file is checked, and an opaque PNG is warned
-about at build time as well. A logo on a baked-in white rectangle looks wrong on
-the canvas and worse inside a coloured boundary — go back for a better source
-rather than shipping it. SVG plus `--trace` sidesteps the problem entirely.
-
-**Look at it.** Render the diagram and read the PNG back. Brand searches return
-old logos, fan art and lookalikes, and a traced logo can come out subtly wrong;
-a wrong logo is worse than no logo.
-
-**Privacy.** Only the logo URL is ever requested. Never put a customer name,
-project codename, hostname or anything from the diagram into a search query or a
-URL — search the product name alone. Downloading a public asset leaks nothing;
-searching `"<customer> architecture"` does.
-
-## The public library catalogue
-
-Excalidraw's own libraries work here, and the agent can use them directly.
-
-```bash
-node scripts/browse-libraries.mjs --search "kubernetes"
-node scripts/browse-libraries.mjs --search "network" --items
-node scripts/browse-libraries.mjs --install slobodan/aws-serverless.excalidrawlib
-node scripts/browse-libraries.mjs --list
-node scripts/browse-libraries.mjs --show aws-serverless
-```
-
-Installed items are searched by `find-icon.mjs` alongside the house icons and
-referenced as `library:index` or `library:name`:
-
-```json
-{ "id": "fn", "kind": "icon", "icon": "aws-serverless:0", "label": "Lambda" }
-```
-
-**Most published libraries are format v1 and carry no item names**, so items
-come back as `aws-serverless-0`, `aws-serverless-1` and so on. Do not guess
-which is which — render the contact sheet and look:
-
-```bash
-node scripts/browse-libraries.mjs --preview aws-serverless --out sheet.excalidraw
-```
-```powershell
-./scripts/render-excalidraw.ps1 -Path sheet.excalidraw -Style clean -Width 1200
-```
-
-Library authors keep their own licence and trademarks. Installed libraries are
-cached locally and gitignored.
-
-## The local container
-
-```powershell
-./scripts/excalidraw-docker.ps1 -Up        # http://localhost:3000
-./scripts/excalidraw-docker.ps1 -Open -Path scene.excalidraw
-./scripts/excalidraw-docker.ps1 -Library   # reveal the house icon library to drag in
-./scripts/excalidraw-docker.ps1 -Status
-./scripts/excalidraw-docker.ps1 -Down
-```
-
-The container is the ground truth for appearance: the real app, the real fonts,
-the real renderer. Everything else here exists so it does not have to be opened
-for every small check.
-
-It is the same static app as excalidraw.com with **no backend** — scenes live in
-the browser and in the files on disk, so nothing drawn is uploaded. Two
-consequences: there is no server-side save (the `.excalidraw` file is the source
-of truth), and the app cannot open a file off the disk by itself, which is why
-`-Open` reveals it in Explorer to drag in.
-
-## Editing an existing scene
-
-- Never read a whole scene with embedded images into context — they run to
-  megabytes of base64. Summarize it instead:
-  ```bash
-  node scripts/analyze-excalidraw.mjs "<file>"            # structure and style tokens
-  node scripts/analyze-excalidraw.mjs "<file>" --cells    # geometry table, no text
-  node scripts/analyze-excalidraw.mjs "<file>" --images   # embedded image inventory
-  ```
-- Then make a targeted, backup-protected edit and re-validate.
-- Keep bindings two-sided. `repairBindings()` in the core library fixes imported
-  content; the validator fails a scene where one side is missing.
-- Match the scene you are editing, not this style guide. If the existing diagram
-  uses `roughness: 0` and sharp corners, so does your addition — say in the
-  report that you followed the file rather than the guide.
+- The user's scenes stay on the machine. Nothing is uploaded; the local
+  Excalidraw container has no backend.
+- The only network requests are public logos and the public library catalogue,
+  and only when asked. Search the product name alone — never a customer,
+  codename, hostname or anything else from the diagram.
+- Never read a whole existing scene into context; embedded images run to
+  megabytes of base64. `references/editing.md` says how to work on one.
 
 ## Non-negotiables
 
-- Editable `.excalidraw` JSON is the deliverable.
+- Editable `.excalidraw` JSON is the deliverable; images embed in the scene's
+  `files`, never linked.
 - Every arrow bound at both ends, so the diagram survives being dragged around.
-- Images embedded in the scene's `files`, never linked, so it opens for anyone.
-- Real icons for named products, from the bundled libraries first. Where none
-  exists, a placeholder that is obviously empty — never one product's mark
-  standing in for another, and never a grey box passed off as finished.
-- Every placeholder named in the report, so nothing unfinished ships silently.
-- Excalidraw's font-size steps and stroke widths; its default palette plus the
-  five house accents in `HOUSE_ACCENTS`, and a product's own brand colour where
-  the diagram is about that product.
-- A legend whenever more than one connector kind is used.
-- Connector meanings, colours and routing, stroke widths, fills, corners and
-  boundary strokes follow the house style unless this install's applied override
-  (`--print-style`) says otherwise.
-- Assumptions written on the canvas, not just in chat.
-- Keep the user's diagrams local. Nothing is ever uploaded; the only network
-  requests are for public logos and the public library catalogue, and nothing
-  from the diagram goes into a query.
+- Real icons for named products, bundled libraries first; where none exists, an
+  obviously empty placeholder, named in the report — never another product's
+  mark, never a grey box passed off as finished.
+- Excalidraw's font-size steps and stroke widths; its palette plus the house
+  accents, and a product's own brand colour where the diagram is about it.
+- A legend whenever more than one connector kind is used; assumptions on the
+  canvas.
+- Connector meanings, colours, routing, strokes, fills and corners follow the
+  house style unless this install's applied override (`--print-style`) says
+  otherwise.

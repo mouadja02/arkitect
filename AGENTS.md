@@ -37,7 +37,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    flows worth drawing, the trust boundaries, what must be visible, pages, and
    how to treat what the user does not know. Stop when the remaining unknowns
    could not change the drawing — a three-box flowchart needs two questions, a
-   review-board architecture needs the ladder. Never interrogate anyone about
+   review-board architecture needs the ladder. When the request already names
+   the components and flows, or nobody is there to answer, do not ask: draw,
+   and state every assumption. Never interrogate anyone about
    styling; that is what Arkitect is for. The full ladder is in each engine's
    SKILL.md under "Interview first".
 2. **Pick a pattern.** `skills/arkitect-<engine>/references/pattern-catalog.md`
@@ -215,6 +217,7 @@ followed the file.
 |---|---|
 | `skills/arkitect-drawio/SKILL.md` | the full Draw.io workflow |
 | `skills/arkitect-excalidraw/SKILL.md` | the full Excalidraw workflow |
+| `skills/*/references/{editing,icons,rendering}.md` | editing an existing file, icons beyond the first search, render troubleshooting |
 | `skills/*/references/style-guide.md` | the style rules and the evidence behind each |
 | `skills/*/references/pattern-catalog.md` | the reusable layouts |
 | `skills/arkitect-excalidraw/references/excalidraw-format.md` | the scene format, for hand-editing |

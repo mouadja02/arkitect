@@ -380,7 +380,12 @@ export function run(argv, { log = console.log, error = console.error, platform =
       bytes = shot.bytes;
       dims = { width: shot.width, height: shot.height };
     } catch (e) {
-      const hint = platform === 'linux' && !options.noSandbox ? ' On Linux, a browser that cannot start its sandbox needs --no-sandbox.' : '';
+      // Inside another sandbox or a container the browser cannot build its own,
+      // and says so; that is the diagnosed failure --no-sandbox exists for (#113).
+      const nested = /Operation not permitted|no usable sandbox|namespace|zygote/i.test(e.message);
+      const hint = platform !== 'linux' || options.noSandbox ? ''
+        : nested ? ' The browser could not start its own sandbox, as happens inside another sandbox or a container: retry with --no-sandbox.'
+          : ' On Linux, a browser that cannot start its sandbox needs --no-sandbox.';
       error(`PNG render failed with ${found.path}: ${e.message}. ${options.out} is unchanged.${hint}`);
       return 1;
     }
