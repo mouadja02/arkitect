@@ -29,8 +29,10 @@ shipped guide. Say so in the report.
 
 ## Workflow
 
-1. **Interview first** (below). Do not draw while a branch that would change the
-   drawing is unresolved.
+1. **Interview first** (below) when an answer would change the drawing. When the
+   request already names the components and the flows, or nobody is there to
+   answer, do not ask: draw, and state every assumption in the report and on
+   the canvas.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -108,10 +110,10 @@ shipped guide. Say so in the report.
 
 8. **Open it on request** in Draw.io Desktop.
 
-9. **Report.** File path, the assumptions the interview settled, validation and
-   render results, any icon that was not confident or not found, every logo
-   downloaded and from where, lifecycle caveats, and any deliberate deviation
-   from the style guide.
+9. **Report.** File path, every assumption you made (asked or not), validation
+   and render results — say that you looked at the PNG — any icon that was not
+   confident or not found, every logo downloaded and from where, lifecycle
+   caveats, and any deliberate deviation from the style guide.
 
 ## Interview first
 

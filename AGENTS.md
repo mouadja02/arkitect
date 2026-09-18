@@ -37,7 +37,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    flows worth drawing, the trust boundaries, what must be visible, pages, and
    how to treat what the user does not know. Stop when the remaining unknowns
    could not change the drawing — a three-box flowchart needs two questions, a
-   review-board architecture needs the ladder. Never interrogate anyone about
+   review-board architecture needs the ladder. When the request already names
+   the components and flows, or nobody is there to answer, do not ask: draw,
+   and state every assumption. Never interrogate anyone about
    styling; that is what Arkitect is for. The full ladder is in each engine's
    SKILL.md under "Interview first".
 2. **Pick a pattern.** `skills/arkitect-<engine>/references/pattern-catalog.md`

@@ -35,8 +35,10 @@ Do not undo them by hand.
 
 ## Workflow
 
-1. **Interview first** (below). Do not draw while a branch that would change the
-   drawing is unresolved.
+1. **Interview first** (below) when an answer would change the drawing. When the
+   request already names the components and the flows, or nobody is there to
+   answer, do not ask: draw, and state every assumption in the report and on
+   the canvas.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -127,9 +129,10 @@ Do not undo them by hand.
 8. **Open it in the real app** when the user wants to see or edit it, and before
    claiming it looks right in Excalidraw itself: `references/rendering.md`.
 
-9. **Report.** File path, assumptions made, validation and render results,
-   which icons came from where, every placeholder, anything unresolved, and any
-   deliberate deviation from the style guide.
+9. **Report.** File path, every assumption you made (asked or not), validation
+   and render results — say that you looked at the PNG — which icons came from
+   where, every placeholder, anything unresolved, and any deliberate deviation
+   from the style guide.
 
 ## Interview first
 

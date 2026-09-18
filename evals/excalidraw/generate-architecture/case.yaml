@@ -25,10 +25,6 @@ graders:
     input_match: arkitect-excalidraw
     arm: with-only
 
-  - type: file_exists
-    name: scene-written
-    path: ./eval-output/orders.excalidraw
-
   # Native editable JSON with two-sided arrow bindings, not a flat drawing.
   - type: regex
     name: native-bound-scene

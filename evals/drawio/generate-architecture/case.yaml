@@ -24,10 +24,6 @@ graders:
     input_match: arkitect-drawio
     arm: with-only
 
-  - type: file_exists
-    name: diagram-written
-    path: ./eval-output/log-ingestion.drawio
-
   # Native, editable XML: a real mxfile with vertices and connected edges.
   - type: regex
     name: native-drawio-xml

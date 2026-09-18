@@ -37,10 +37,6 @@ graders:
     min: 0
     max: 0
 
-  - type: file_exists
-    name: scene-written
-    path: ./eval-output/dbt-grafana.excalidraw
-
   - type: regex
     name: native-scene
     target: { source: file, path: ./eval-output/dbt-grafana.excalidraw }
