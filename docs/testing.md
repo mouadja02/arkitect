@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `283 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `284 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`

@@ -11,6 +11,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- The Excalidraw validator warns when an arrow runs through a node it does not
+  connect, and `build-diagram` lists each one under `crossings` by spec ids,
+  e.g. `edge a->c crosses node b` (#125).
+
 ### Changed
 
 - The plugin manifest declares `./skills/` as its skills path instead of the

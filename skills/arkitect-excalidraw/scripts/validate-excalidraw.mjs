@@ -223,6 +223,11 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
     }
   }
 
+  const crossings = connectorCrossings(live);
+  for (const c of crossings.slice(0, 10)) {
+    warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge a route`);
+  }
+
   // ------------------------------------------------------------ house style
 
   const offPalette = new Set();
@@ -244,6 +249,7 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
   info.embeddedFiles = Object.keys(files).length;
   info.overlaps = overlaps;
   info.tightLabels = tight;
+  info.crossings = crossings.length;
   info.canvas = { width: Math.round(view.width), height: Math.round(view.height) };
   // Off-palette colour is legal Excalidraw and sometimes correct - a brand
   // colour in a traced logo, for one - so it is reported, never failed.
@@ -251,6 +257,76 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
   info.nonStandardFontSizes = [...offSizes];
 
   return { path, ok: errors.length === 0, errors, warnings, info };
+}
+
+// Arrows that run through a shape they do not connect, which makes that shape
+// read as part of the flow (#125). A shape is one ungrouped rectangle, ellipse,
+// diamond or image, or one outermost group - an icon, a cylinder - taken as the
+// box around its non-text pieces. Anything that encloses another shape is a
+// boundary, and arrows cross boundaries on purpose. Grouped arrows are legend
+// samples and drawn glyphs, so they are skipped like everywhere else.
+//
+// Returns [{ arrow, node, members }]: the arrow's id, the id naming the shape
+// and every element id in it, so a caller that knows the spec can name both.
+export function connectorCrossings(elements) {
+  const live = elements.filter((el) => !el.isDeleted);
+  const SHAPES = new Set(['rectangle', 'ellipse', 'diamond', 'image', 'line', 'freedraw']);
+  const units = new Map();
+  for (const el of live) {
+    if (!SHAPES.has(el.type) || el.containerId) continue;
+    const groups = el.groupIds ?? [];
+    if (!groups.length && (el.type === 'line' || el.type === 'freedraw')) continue;
+    const key = groups.length ? `g:${groups[groups.length - 1]}` : `e:${el.id}`;
+    if (!units.has(key)) units.set(key, []);
+    units.get(key).push(el);
+  }
+  const grouped = new Set(live.filter((el) => el.type === 'arrow' && (el.groupIds ?? []).length)
+    .map((el) => `g:${el.groupIds[el.groupIds.length - 1]}`));
+  const shapes = [];
+  for (const [key, members] of units) {
+    if (grouped.has(key)) continue;
+    const b = bbox(members);
+    if (!(b.width > 0) || !(b.height > 0)) continue;
+    const largest = members.reduce((best, el) => (el.width * el.height > best.width * best.height ? el : best));
+    shapes.push({ id: largest.id, members: new Set(members.map((el) => el.id)), box: b });
+  }
+  const inside = (outer, inner) => inner !== outer && inner.box.x >= outer.box.x && inner.box.y >= outer.box.y
+    && inner.box.x + inner.box.width <= outer.box.x + outer.box.width
+    && inner.box.y + inner.box.height <= outer.box.y + outer.box.height;
+  const obstacles = shapes.filter((s) => !shapes.some((o) => inside(s, o)));
+
+  const found = [];
+  for (const a of live) {
+    if (a.type !== 'arrow' || (a.groupIds ?? []).length || !Array.isArray(a.points) || a.points.length < 2) continue;
+    const pts = a.points.map(([px, py]) => ({ x: a.x + px, y: a.y + py }));
+    const ends = [a.startBinding?.elementId, a.endBinding?.elementId].filter(Boolean);
+    for (const s of obstacles) {
+      if (ends.some((id) => s.members.has(id))) continue;
+      // An unbound end that starts or stops inside a shape belongs to it.
+      if ([pts[0], pts[pts.length - 1]].some((p) => pointIn(p, s.box))) continue;
+      for (let i = 1; i < pts.length; i++) {
+        if (segmentHitsBox(pts[i - 1], pts[i], s.box)) { found.push({ arrow: a.id, node: s.id, members: [...s.members] }); break; }
+      }
+    }
+  }
+  return found;
+}
+
+const pointIn = (p, b) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+
+// Liang-Barsky against the box shrunk by a pixel, so a line that only grazes
+// an edge does not count.
+function segmentHitsBox(p, q, box) {
+  const x0 = box.x + 1, y0 = box.y + 1, x1 = box.x + box.width - 1, y1 = box.y + box.height - 1;
+  if (x1 <= x0 || y1 <= y0) return false;
+  const dx = q.x - p.x, dy = q.y - p.y;
+  let t0 = 0, t1 = 1;
+  for (const [pk, qk] of [[-dx, p.x - x0], [dx, x1 - p.x], [-dy, p.y - y0], [dy, y1 - p.y]]) {
+    if (pk === 0) { if (qk < 0) return false; continue; }
+    const r = qk / pk;
+    if (pk < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return t0 < t1;
 }
 
 export function validateLibrary(doc, { path = '<library>' } = {}) {
