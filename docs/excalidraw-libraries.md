@@ -45,9 +45,20 @@ Database for PostgreSQL without a word. Every search result says up front what
 a node would get: `"draws": "<ref>"` or `"placeholder": "<reason>"`.
 `tests/excalidraw-icon-queries.json` holds the rule to account.
 
-Nothing is parsed at query time — the set is 21MB across three dozen files, so
+Nothing is parsed at query time — the set is 11MB across three dozen files, so
 `index.json` holds a flat list of names and sizes and that is all a search
 reads.
+
+The libraries are committed as compact JSON, one line each, with no formatting
+whitespace: as published they are about twice the size (#118). After adding or
+updating a `.excalidrawlib`, run
+
+```bash
+node $S/index-libraries.mjs --build
+```
+
+which compacts every bundled library, keeping each parsed value and the item
+order, and then rebuilds the index. A test fails on a library left pretty-printed.
 
 ### Items with no name
 

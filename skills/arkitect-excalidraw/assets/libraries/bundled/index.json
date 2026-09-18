@@ -1,13 +1,13 @@
 {
   "_comment": "Flat index of the bundled Excalidraw libraries. Names and sizes only - the element payloads stay in the .excalidrawlib files. Rebuild with index-libraries.mjs --build.",
-  "generated": "2026-09-08T20:13:11.749Z",
+  "generated": "2026-09-18T22:39:21.538Z",
   "totals": {
     "libraries": 36,
     "items": 1162,
     "named": 729,
     "captioned": 194,
     "unnamed": 239,
-    "bytes": 21095664
+    "bytes": 11150555
   },
   "libraries": [
     {
@@ -25,7 +25,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 98113,
+      "bytes": 54194,
       "firstItem": 0
     },
     {
@@ -43,7 +43,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 101526,
+      "bytes": 55240,
       "firstItem": 11
     },
     {
@@ -61,7 +61,7 @@
       "captioned": 24,
       "unnamed": 0,
       "images": 0,
-      "bytes": 107023,
+      "bytes": 66297,
       "firstItem": 33
     },
     {
@@ -79,7 +79,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 3939023,
+      "bytes": 2172382,
       "firstItem": 57
     },
     {
@@ -97,7 +97,7 @@
       "captioned": 4,
       "unnamed": 0,
       "images": 0,
-      "bytes": 346744,
+      "bytes": 190578,
       "firstItem": 306
     },
     {
@@ -115,7 +115,7 @@
       "captioned": 0,
       "unnamed": 15,
       "images": 0,
-      "bytes": 164769,
+      "bytes": 98096,
       "firstItem": 330
     },
     {
@@ -134,7 +134,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 140777,
+      "bytes": 79652,
       "firstItem": 345
     },
     {
@@ -152,7 +152,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 322584,
+      "bytes": 169525,
       "firstItem": 364
     },
     {
@@ -170,7 +170,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 537402,
+      "bytes": 271962,
       "firstItem": 383
     },
     {
@@ -188,7 +188,7 @@
       "captioned": 24,
       "unnamed": 0,
       "images": 0,
-      "bytes": 168026,
+      "bytes": 99990,
       "firstItem": 412
     },
     {
@@ -206,7 +206,7 @@
       "captioned": 3,
       "unnamed": 16,
       "images": 0,
-      "bytes": 419069,
+      "bytes": 259131,
       "firstItem": 436
     },
     {
@@ -224,7 +224,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 655695,
+      "bytes": 318474,
       "firstItem": 455
     },
     {
@@ -243,7 +243,7 @@
       "captioned": 7,
       "unnamed": 0,
       "images": 0,
-      "bytes": 37485,
+      "bytes": 23446,
       "firstItem": 488
     },
     {
@@ -261,7 +261,7 @@
       "captioned": 32,
       "unnamed": 0,
       "images": 0,
-      "bytes": 942311,
+      "bytes": 586154,
       "firstItem": 495
     },
     {
@@ -279,7 +279,7 @@
       "captioned": 34,
       "unnamed": 5,
       "images": 0,
-      "bytes": 608632,
+      "bytes": 366436,
       "firstItem": 527
     },
     {
@@ -297,7 +297,7 @@
       "captioned": 0,
       "unnamed": 29,
       "images": 0,
-      "bytes": 882412,
+      "bytes": 405279,
       "firstItem": 566
     },
     {
@@ -315,7 +315,7 @@
       "captioned": 2,
       "unnamed": 16,
       "images": 0,
-      "bytes": 184458,
+      "bytes": 99739,
       "firstItem": 595
     },
     {
@@ -333,7 +333,7 @@
       "captioned": 23,
       "unnamed": 3,
       "images": 0,
-      "bytes": 107439,
+      "bytes": 64167,
       "firstItem": 613
     },
     {
@@ -351,7 +351,7 @@
       "captioned": 1,
       "unnamed": 82,
       "images": 0,
-      "bytes": 796220,
+      "bytes": 426839,
       "firstItem": 639
     },
     {
@@ -369,7 +369,7 @@
       "captioned": 7,
       "unnamed": 0,
       "images": 0,
-      "bytes": 39546,
+      "bytes": 24527,
       "firstItem": 722
     },
     {
@@ -387,7 +387,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 4916000,
+      "bytes": 2220299,
       "firstItem": 729
     },
     {
@@ -405,7 +405,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 715143,
+      "bytes": 408479,
       "firstItem": 868
     },
     {
@@ -423,7 +423,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 123263,
+      "bytes": 63847,
       "firstItem": 933
     },
     {
@@ -441,7 +441,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 424623,
+      "bytes": 210630,
       "firstItem": 940
     },
     {
@@ -459,7 +459,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 754841,
+      "bytes": 309375,
       "firstItem": 971
     },
     {
@@ -477,7 +477,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 142936,
+      "bytes": 76659,
       "firstItem": 990
     },
     {
@@ -495,7 +495,7 @@
       "captioned": 0,
       "unnamed": 13,
       "images": 0,
-      "bytes": 34090,
+      "bytes": 19017,
       "firstItem": 1000
     },
     {
@@ -513,7 +513,7 @@
       "captioned": 2,
       "unnamed": 11,
       "images": 0,
-      "bytes": 105793,
+      "bytes": 63626,
       "firstItem": 1013
     },
     {
@@ -531,7 +531,7 @@
       "captioned": 0,
       "unnamed": 7,
       "images": 0,
-      "bytes": 68766,
+      "bytes": 42245,
       "firstItem": 1026
     },
     {
@@ -549,7 +549,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 2132192,
+      "bytes": 1259436,
       "firstItem": 1033
     },
     {
@@ -567,7 +567,7 @@
       "captioned": 0,
       "unnamed": 7,
       "images": 0,
-      "bytes": 44591,
+      "bytes": 26255,
       "firstItem": 1087
     },
     {
@@ -585,7 +585,7 @@
       "captioned": 0,
       "unnamed": 0,
       "images": 0,
-      "bytes": 13008,
+      "bytes": 6019,
       "firstItem": 1094
     },
     {
@@ -603,7 +603,7 @@
       "captioned": 0,
       "unnamed": 16,
       "images": 0,
-      "bytes": 365258,
+      "bytes": 210226,
       "firstItem": 1096
     },
     {
@@ -621,7 +621,7 @@
       "captioned": 8,
       "unnamed": 0,
       "images": 0,
-      "bytes": 183379,
+      "bytes": 113893,
       "firstItem": 1112
     },
     {
@@ -639,7 +639,7 @@
       "captioned": 22,
       "unnamed": 2,
       "images": 0,
-      "bytes": 218048,
+      "bytes": 136052,
       "firstItem": 1120
     },
     {
@@ -657,7 +657,7 @@
       "captioned": 1,
       "unnamed": 17,
       "images": 0,
-      "bytes": 254479,
+      "bytes": 152389,
       "firstItem": 1144
     }
   ],
