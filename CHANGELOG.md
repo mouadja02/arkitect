@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-18
+
 ### Fixed
 
 - Draw.io rendering on Linux uses `xvfb-run` when `DISPLAY` names a local X
