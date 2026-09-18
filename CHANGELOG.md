@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-18
+
 ### Added
 
 - `excalidraw build --seed N` builds the same scene byte for byte on every run (#119).
