@@ -13,7 +13,9 @@
 
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
-import { readScene, elementBox, bbox, decodeDataUrl, sha256, positionals } from './lib/excalidraw-core.mjs';
+import {
+  readScene, elementBox, bbox, decodeDataUrl, sha256, parseCliOrExit, exitUsage, readProblem,
+} from './lib/excalidraw-core.mjs';
 
 function tally(values) {
   const counts = new Map();
@@ -199,16 +201,25 @@ export function analyzeScene(scene, { name = '<scene>' } = {}) {
   };
 }
 
-function main(argv) {
-  const files = positionals(argv, ['--out']);
-  const flag = (n) => { const i = argv.indexOf(n); return i === -1 ? null : argv[i + 1]; };
-  if (!files.length) {
-    console.error('usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells] [--images]');
-    process.exit(2);
-  }
+const USAGE = 'usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells] [--images]';
 
-  if (argv.includes('--cells')) {
-    const scene = readScene(files[0]);
+// An unreadable file is one line and exit 2, like a usage error (#116).
+function load(path) {
+  try {
+    return readScene(path);
+  } catch (error) {
+    return exitUsage(readProblem(path, error, 'scene'));
+  }
+}
+
+function main(argv) {
+  const { options, positionals: files } = parseCliOrExit(argv,
+    { values: { '--out': null }, switches: ['--cells', '--images'] }, USAGE);
+  if (!files.length) exitUsage('expected at least one .excalidraw file', USAGE);
+  if ((options.cells || options.images) && files.length > 1) exitUsage('--cells and --images read one file', USAGE);
+
+  if (options.cells) {
+    const scene = load(files[0]);
     const rows = scene.elements.filter((el) => !el.isDeleted).map((el) => {
       const b = elementBox(el);
       return {
@@ -225,15 +236,15 @@ function main(argv) {
     return;
   }
 
-  if (argv.includes('--images')) {
-    const scene = readScene(files[0]);
+  if (options.images) {
+    const scene = load(files[0]);
     console.log(JSON.stringify(analyzeScene(scene, { name: basename(files[0]) }).images, null, 2));
     return;
   }
 
   const results = files.map((f) => {
+    const scene = load(f);
     const raw = readFileSync(f);
-    const scene = readScene(f);
     return {
       // The file name can itself carry a customer or project name, so only its
       // digest travels into any record derived from this.
@@ -242,7 +253,7 @@ function main(argv) {
     };
   });
 
-  const out = flag('--out');
+  const { out } = options;
   const payload = results.length === 1 ? results[0] : { scenes: results };
   if (out) {
     writeFileSync(out, `${JSON.stringify(payload, null, 2)}\n`);

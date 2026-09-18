@@ -1895,6 +1895,87 @@ test('Excalidraw --print-style shows the style a build would use, and writes not
   clearStore();
 });
 
+// A literal model must get a usage error for a mistyped option and one line
+// naming the file for an unreadable one - never success, never a stack trace.
+const firstLine = (r) => r.stderr.trim().split('\n')[0];
+const hasStack = (r) => /\n\s+at /.test(r.stderr);
+
+test('Excalidraw build refuses a bad command line in one line, before reading or writing (#116)', () => {
+  const dir = join(TMP, 'build-args');
+  mkdirSync(dir, { recursive: true });
+  const malformed = join(dir, 'malformed.spec.json');
+  writeFileSync(malformed, '{ "nodes": [ ');
+  const target = join(dir, 'never.excalidraw');
+  for (const [args, message] of [
+    [['--print-style', '--typo'], /unknown option --typo/],
+    [[malformed, '--out', target], /is not valid JSON$/],
+    [[join(dir, 'absent.spec.json'), '--out', target], /^no spec file at /],
+    [[STARTER_SPEC, STARTER_SPEC, '--out', target], /expected one spec file, got 2/],
+    [['--out', target], /expected a spec file/],
+    [[STARTER_SPEC], /--out <file.excalidraw> is required/],
+    [[STARTER_SPEC, '--out'], /--out needs a value/],
+    [[STARTER_SPEC, '--out', target, '--out', target], /--out given more than once/],
+    [[STARTER_SPEC, '--out', target, '--verbose'], /unknown option --verbose/],
+  ]) {
+    const r = buildCli(...args);
+    const shown = args.map((a) => a.split(/[\\/]/).pop()).join(' ');
+    eq(r.status, 2, `${shown}: usage status`);
+    assert(message.test(firstLine(r)), `${shown}: said "${firstLine(r)}"`);
+    assert(!hasStack(r) && !existsSync(target), `${shown}: no stack trace and nothing written`);
+  }
+  eq(buildCli(malformed, '--out', target).stderr.trim().split('\n').length, 1, 'a malformed spec is one line');
+  const flagFirst = buildCli('--out', target, '--defaults', STARTER_SPEC);
+  eq(flagFirst.status, 0, `flags before the spec still build: ${firstLine(flagFirst)}`);
+  eq(JSON.parse(flagFirst.stdout).wrote, target, 'reports the output it wrote');
+});
+
+test('Excalidraw analyze, validate and icon refuse a bad command line and name an unreadable file (#116)', () => {
+  const dir = join(TMP, 'tool-args');
+  mkdirSync(dir, { recursive: true });
+  const malformed = join(dir, 'malformed.excalidraw');
+  writeFileSync(malformed, '{ "type": "excalidraw", "elements": [ "secret label" ');
+  const absent = join(dir, 'absent.excalidraw');
+  const summary = join(dir, 'summary.json');
+  for (const [script, args, message] of [
+    ['analyze-excalidraw.mjs', [STARTER, '--typo'], /unknown option --typo/],
+    ['analyze-excalidraw.mjs', [], /expected at least one .excalidraw file/],
+    ['analyze-excalidraw.mjs', [STARTER, STARTER, '--cells'], /--cells and --images read one file/],
+    ['analyze-excalidraw.mjs', [absent, '--out', summary], /^no scene at /],
+    ['analyze-excalidraw.mjs', [malformed, '--cells'], /is not valid JSON$/],
+    ['analyze-excalidraw.mjs', [STARTER, '--out'], /--out needs a value/],
+    ['validate-excalidraw.mjs', [STARTER, '--verbose'], /unknown option --verbose/],
+    ['validate-excalidraw.mjs', [], /expected at least one/],
+    ['find-icon.mjs', ['postgres', '--fuzzy'], /unknown option --fuzzy/],
+    ['find-icon.mjs', ['postgres', '--limit', '0'], /--limit expects .* at least 1, got 0/],
+    ['find-icon.mjs', ['postgres', '--limit', 'three'], /--limit expects/],
+    ['find-icon.mjs', ['--limit', '3'], /expected a component name/],
+    ['find-icon.mjs', ['--stats', 'postgres'], /separate requests/],
+    ['find-icon.mjs', ['--resolve'], /--resolve needs a value/],
+  ]) {
+    const r = toolCli(script, ...args);
+    const shown = `${script} ${args.map((a) => a.split(/[\\/]/).pop()).join(' ')}`;
+    eq(r.status, 2, `${shown}: usage status`);
+    assert(message.test(firstLine(r)), `${shown}: said "${firstLine(r)}"`);
+    assert(!hasStack(r) && !existsSync(summary), `${shown}: no stack trace and nothing written`);
+  }
+
+  // A file validate cannot read is its own FAIL, named, never quoting the file.
+  const v = toolCli('validate-excalidraw.mjs', absent, malformed, '--json');
+  eq(v.status, 1, 'unreadable files fail validation');
+  assert(!v.stdout.includes('secret label') && !v.stderr.includes('secret label'), 'the JSON error never quotes the file');
+  assert(v.stdout.includes(`no file at ${absent.replace(/\\/g, '\\\\')}`), `a missing file is named: ${v.stdout.slice(0, 200)}`);
+  assert(v.stdout.includes('is not valid JSON'), 'a malformed file is named');
+
+  // Flags anywhere, --stats and --resolve included.
+  const search = toolCli('find-icon.mjs', '--limit', '2', 'aws', 'lambda');
+  eq(search.status, 0, `--limit before the words: ${firstLine(search)}`);
+  const found = JSON.parse(search.stdout);
+  eq(found.query, 'aws lambda', 'every word is the query');
+  assert(found.matches.length <= 2, '--limit is honoured');
+  eq(toolCli('find-icon.mjs', '--resolve', 'drawio:databases/postgresql').status, 0, '--resolve still resolves');
+  eq(toolCli('validate-excalidraw.mjs', '--strict', STARTER).status, 0, 'a flag before the file');
+});
+
 test('Excalidraw findings: --derive reads the conventions that are one token each, and an agent finding holds its target (#90)', () => {
   const record = {
     version: 4,
