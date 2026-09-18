@@ -31,6 +31,7 @@ import {
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon } from './find-icon.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { numberProblems, FINITE, POSITIVE, NON_NEGATIVE, SPAN } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
 import { HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
@@ -252,6 +253,24 @@ export class SpecError extends Error {
   }
 }
 
+// Coordinates may be fractional or negative; sizes, spans and pitches may not.
+const LAYOUT_NUMBERS = { originX: FINITE, originY: FINITE, colPitch: POSITIVE, rowPitch: POSITIVE, cell: POSITIVE };
+const STYLE_NUMBERS = {
+  ...LAYOUT_NUMBERS, nodeWidth: POSITIVE, nodeHeight: POSITIVE, iconSize: POSITIVE,
+  captionSize: POSITIVE, captionGap: NON_NEGATIVE, fontFamily: POSITIVE, bodyFontFamily: POSITIVE,
+  strokeWidth: POSITIVE, edgeStrokeWidth: POSITIVE, boundaryStrokeWidth: POSITIVE, roughness: NON_NEGATIVE,
+};
+const BOUNDARY_NUMBERS = {
+  col: FINITE, row: FINITE, cols: SPAN, rows: SPAN,
+  padLeft: NON_NEGATIVE, padTop: NON_NEGATIVE, padRight: NON_NEGATIVE, padBottom: NON_NEGATIVE,
+  fontSize: POSITIVE, strokeWidth: POSITIVE, roughness: NON_NEGATIVE,
+};
+const NODE_NUMBERS = {
+  col: FINITE, row: FINITE, width: POSITIVE, height: POSITIVE, size: POSITIVE,
+  fontSize: POSITIVE, fontFamily: POSITIVE, strokeWidth: POSITIVE, roughness: NON_NEGATIVE,
+};
+const EDGE_NUMBERS = { gap: NON_NEGATIVE, labelSize: POSITIVE, strokeWidth: POSITIVE, roughness: NON_NEGATIVE };
+
 export function validateSpec(spec) {
   const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
   if (!isObject(spec)) return ['spec: expected a JSON object'];
@@ -316,6 +335,17 @@ export function validateSpec(spec) {
       else if (!nodeIds.has(ref)) errors.push(`edges[${i}].${end}: ${show(ref)} is not a node id`);
     }
   });
+
+  // Geometry and style numbers the builder lays out with; a missing col or row
+  // is 0 (#115). The style block's vocabulary is the override validator's job.
+  for (const [key, rules] of [['layout', LAYOUT_NUMBERS], ['style', STYLE_NUMBERS]]) {
+    if (spec[key] != null && !isObject(spec[key])) errors.push(`${key}: expected an object`);
+    else if (spec[key]) errors.push(...numberProblems(key, spec[key], rules));
+  }
+  errors.push(...numberProblems('spec', spec, { legendX: FINITE, legendY: FINITE }));
+  boundaries.forEach((b, i) => { if (isObject(b)) errors.push(...numberProblems(`boundaries[${i}]`, b, BOUNDARY_NUMBERS)); });
+  nodes.forEach((n, i) => { if (isObject(n)) errors.push(...numberProblems(`nodes[${i}]`, n, NODE_NUMBERS)); });
+  edges.forEach((e, i) => { if (isObject(e)) errors.push(...numberProblems(`edges[${i}]`, e, EDGE_NUMBERS)); });
 
   return errors;
 }

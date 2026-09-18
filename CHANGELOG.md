@@ -19,6 +19,10 @@ separate file, no naming scheme, no required format beyond that.
 - `excalidraw build`, `analyze`, `validate` and `icon` refuse an unknown flag,
   a missing value or a stray file with exit 2 in one line, as the Draw.io
   commands do, and name a missing or malformed file without a stack trace (#116)
+- Both builders refuse a spec whose numbers are not usable — a string
+  coordinate, a size of 0 or less, a boundary spanning under one cell — naming
+  each field, instead of writing `NaN` or negative geometry; a Draw.io node or
+  boundary without `col` or `row` is drawn at 0, as in Excalidraw (#115)
 
 ## [1.2.0] — 2026-09-18
 

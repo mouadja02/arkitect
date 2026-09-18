@@ -137,6 +137,8 @@ is in effect:
    A spec whose edges or parents name something that does not exist is refused
    before anything is written, with every problem listed (exit 1). Edges connect
    nodes, not boundaries. Fix the spec; never drop the edge to make it build.
+   So is a number that is not one: a string `col`, a size of 0 or less. A
+   missing `col` or `row` is 0.
 
    A node or edge `kind` the builder does not know still builds (a node as a
    rectangle, an edge as a flow) and is listed under `unknownKinds` in the build

@@ -940,6 +940,69 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
 });
 
+// ------------------------------------------------------------- spec numbers (#115)
+
+test('numeric spec fields are checked in one run, each problem naming its field (#115)', () => {
+  const problems = builder.validateSpec({
+    layout: { cell: -100 },
+    style: { roughness: -1, iconSize: '100', strokeWidth: 0, edgeColor: '#000' },
+    legendX: 'right',
+    boundaries: [{ id: 'z', label: 'Z', col: 0, row: 0, rows: 0, padLeft: -5, fontSize: 0 }],
+    nodes: [
+      { id: 'a', label: 'A', col: 'oops', row: 0 },
+      { id: 'b', label: 'B', col: 1, row: 0, size: -1, fontFamily: 'Virgil', roughness: -2 },
+    ],
+    edges: [{ from: 'a', to: 'b', gap: -3, labelSize: '11', strokeWidth: -1 }],
+  });
+  const expected = [
+    'layout.cell: expected a number greater than 0, got -100',
+    'style.iconSize: expected a number greater than 0, got "100"',
+    'style.strokeWidth: expected a number greater than 0, got 0',
+    'style.roughness: expected a number of at least 0, got -1',
+    'spec.legendX: expected a finite number, got "right"',
+    'boundaries[0].rows: expected a number of at least 1, got 0',
+    'boundaries[0].padLeft: expected a number of at least 0, got -5',
+    'boundaries[0].fontSize: expected a number greater than 0, got 0',
+    'nodes[0].col: expected a finite number, got "oops"',
+    'nodes[1].size: expected a number greater than 0, got -1',
+    'nodes[1].fontFamily: expected a number greater than 0, got "Virgil"',
+    'nodes[1].roughness: expected a number of at least 0, got -2',
+    'edges[0].gap: expected a number of at least 0, got -3',
+    'edges[0].labelSize: expected a number greater than 0, got "11"',
+    'edges[0].strokeWidth: expected a number greater than 0, got -1',
+  ];
+  eq(problems.join('\n'), expected.join('\n'), 'every numeric problem; a string style token is left to the style checks');
+  eq(builder.validateSpec({ style: [] }).join(), 'style: expected an object', 'a style that is not an object');
+
+  // The issue's case: a string column used to build a scene that then failed validation.
+  let thrown;
+  try { builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', col: 'oops', row: 0 }] }); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram refuses the spec instead of drawing at NaN');
+
+  // What stays valid: no col or row (0), fractional and negative coordinates, Unicode.
+  const { scene } = builder.buildDiagram({ nodes: [
+    { id: 'a', kind: 'box', label: 'A' },
+    { id: 'b', kind: 'box', label: 'Zürich — 東京', col: 1.5, row: -0.5 },
+  ], edges: [{ from: 'a', to: 'b' }] });
+  const v = validator.validateScene(scene);
+  assert(v.ok, `the scene validates: ${v.errors.join('; ')}`);
+});
+
+test('a spec with a bad number is refused on the command line before any backup or write (#115)', () => {
+  const dir = join(TMP, 'spec-numbers');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'bad.spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 'oops', row: 0, width: -10 }] }));
+  const out = join(dir, 'bad.excalidraw');
+  writeFileSync(out, 'original');
+  const r = spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', out], { encoding: 'utf8' });
+  eq(r.status, 1, 'exit status');
+  eq(JSON.parse(r.stderr).errors.join(' | '),
+    'nodes[0].col: expected a finite number, got "oops" | nodes[0].width: expected a number greater than 0, got -10', 'both fields named');
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target is untouched');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
+});
+
 test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
   const spec = {
     boundaries: [

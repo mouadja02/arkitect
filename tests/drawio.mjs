@@ -3180,6 +3180,69 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
 });
 
+// ------------------------------------------------------------- spec numbers (#115)
+
+test('a node or boundary without col or row sits at 0, and fractional or negative coordinates still build (#115)', () => {
+  const geometry = (xml, id) => xml.match(new RegExp(`<mxCell id="${id}"[^>]*>\\s*<mxGeometry x="([^"]*)" y="([^"]*)" width="([^"]*)" height="([^"]*)"`))?.slice(1).join(',');
+  const bare = builder.buildDiagram({ boundaries: [{ id: 'z', label: 'Zone' }], nodes: [{ id: 'a', label: 'A' }] }).xml;
+  const zero = builder.buildDiagram({ boundaries: [{ id: 'z', label: 'Zone', col: 0, row: 0 }], nodes: [{ id: 'a', label: 'A', col: 0, row: 0 }] }).xml;
+  assert(!/NaN|Infinity/.test(bare), 'no NaN or Infinity in the geometry');
+  eq(geometry(bare, 'a'), geometry(zero, 'a'), 'a node without col and row is drawn at col 0, row 0');
+  eq(geometry(bare, 'z'), geometry(zero, 'z'), 'so is a boundary');
+  const spec = { nodes: [{ id: 'a', label: 'Zürich — 東京', col: 1.5, row: -0.5 }] };
+  eq(builder.validateSpec(spec).length, 0, 'fractional and negative coordinates are valid');
+  const xAt = (col) => Number(geometry(builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', col, row: -0.5 }] }).xml, 'a').split(',')[0]);
+  assert(xAt(1) < xAt(1.5) && xAt(1.5) < xAt(2), `a fractional column lands between columns: ${xAt(1)} < ${xAt(1.5)} < ${xAt(2)}`);
+  assert(!/NaN/.test(builder.buildDiagram(spec).xml), 'a Unicode label with fractional coordinates builds');
+});
+
+test('numeric spec fields are checked in one run, each problem naming its field (#115)', () => {
+  const problems = builder.validateSpec({
+    layout: { originX: 'left', colPitch: 0 },
+    legendY: '10',
+    boundaries: [{ id: 'z', label: 'Z', col: 0, row: 0, cols: 0.5, rows: 2, padTop: -1 }],
+    nodes: [
+      { id: 'a', label: 'A', col: 'oops', row: 0 },
+      { id: 'b', label: 'B', col: 0, row: 1, width: -10, height: 0, fontSize: '12' },
+      { id: 'c', label: 'C', col: 2, row: null },
+    ],
+    edges: [{ from: 'a', to: 'b', labelPos: 'mid' }],
+  });
+  const expected = [
+    'layout.originX: expected a finite number, got "left"',
+    'layout.colPitch: expected a number greater than 0, got 0',
+    'spec.legendY: expected a finite number, got "10"',
+    'boundaries[0].cols: expected a number of at least 1, got 0.5',
+    'boundaries[0].padTop: expected a number of at least 0, got -1',
+    'nodes[0].col: expected a finite number, got "oops"',
+    'nodes[1].width: expected a number greater than 0, got -10',
+    'nodes[1].height: expected a number greater than 0, got 0',
+    'nodes[1].fontSize: expected a number greater than 0, got "12"',
+    'edges[0].labelPos: expected a finite number, got "mid"',
+  ];
+  eq(problems.join('\n'), expected.join('\n'), 'every numeric problem, and a null row taken as absent');
+  eq(builder.validateSpec({ layout: 'wide' }).join(), 'layout: expected an object', 'a layout that is not an object');
+  eq(builder.validateSpec({ nodes: [{ id: 'a', col: Infinity, row: NaN }] }).length, 2, 'Infinity and NaN from the API are refused too');
+  let thrown;
+  try { builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', col: 'oops', row: 0 }] }); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram refuses the spec instead of writing NaN');
+});
+
+test('a spec with a bad number is refused on the command line before any backup or write (#115)', () => {
+  const dir = join(TMP, 'spec-numbers');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'bad.spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', label: 'A', col: 'oops', row: 0, width: -10 }] }));
+  const out = join(dir, 'bad.drawio');
+  writeFileSync(out, 'original');
+  const r = buildCli(specPath, '--out', out);
+  eq(r.status, 1, 'exit status');
+  eq(JSON.parse(r.stderr).errors.join(' | '),
+    'nodes[0].col: expected a finite number, got "oops" | nodes[0].width: expected a number greater than 0, got -10', 'both fields named');
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target is untouched');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
+});
+
 test('nested boundaries build, an edge may end on a boundary, and automatic edge ids skip taken ones (#36)', () => {
   const spec = {
     boundaries: [

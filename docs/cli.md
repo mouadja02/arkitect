@@ -200,6 +200,13 @@ is not a boundary, a boundary nested inside itself, and a missing, repeated or
 reserved id. `0`, `1`, `title`, `legend`, `legend-a0`-style ids and ids ending
 in `-lbl` are reserved for cells the builder writes itself.
 
+Numbers are checked the same way, each problem naming its field
+(`nodes[2].col: expected a finite number, got "oops"`). A missing `col` or
+`row` is `0`; coordinates may be fractional or negative. `width`, `height`,
+`size`, `fontSize` and the layout pitches must be greater than 0, a boundary's
+`cols`/`rows` at least 1 and its paddings at least 0. A number written as a
+string is refused, not converted.
+
 Worked example:
 `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json`.
 Fragments matching the pattern catalog: `assets/templates/patterns.json`.
@@ -258,7 +265,9 @@ An edge connects two node ids; a boundary cannot be an endpoint.
 The build refuses a spec that names something that does not exist, before it
 backs up or writes anything, and lists every problem at once (exit `1`, JSON on
 stderr): an unknown edge endpoint, a `parent` that is not a boundary, a boundary
-nested inside itself, and a missing or repeated id.
+nested inside itself, and a missing or repeated id. Numbers follow the Draw.io
+rules above, plus the numeric tokens of a spec-level `style` block and an
+edge's `gap`, `labelSize` and `strokeWidth`; `roughness` may be 0.
 
 Worked examples: `assets/templates/starter-architecture.spec.json` (small, one
 of every kind) and `assets/templates/aws-data-platform.spec.json` (48 nodes,

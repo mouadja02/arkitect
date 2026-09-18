@@ -51,8 +51,10 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    Hand-written XML/JSON is a narrow exception — only when the spec format
    genuinely cannot express what you need, or for a targeted edit to an
    existing file (§5) — never how a new diagram gets built. A spec whose
-   edges or parents name something that does not exist is refused before
+   edges or parents name something that does not exist, or whose numbers are
+   not numbers (a string `col`, a size of 0 or less), is refused before
    anything is written, every problem listed; fix the spec, never drop the edge.
+   A missing `col` or `row` is 0.
    A `kind` the builder does not know still builds, drawn as a default, and is
    listed under `unknownKinds` in the report; treat a non-empty list like an
    unresolved icon: fix the spec, or report it. Run `drawio build --print-style`

@@ -28,6 +28,7 @@ export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backup
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
+import { numberProblems, FINITE, POSITIVE, NON_NEGATIVE, SPAN } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
@@ -180,6 +181,14 @@ export class SpecError extends Error {
 // are not listed: they skip any id the spec already uses instead.
 const RESERVED_IDS = /^(?:0|1|title|legend|legend-[abet]\d+)$|-lbl$/;
 
+// Coordinates may be fractional or negative; sizes, spans and pitches may not.
+const LAYOUT_NUMBERS = { originX: FINITE, originY: FINITE, colPitch: POSITIVE, rowPitch: POSITIVE };
+const BOUNDARY_NUMBERS = {
+  col: FINITE, row: FINITE, cols: SPAN, rows: SPAN,
+  padLeft: NON_NEGATIVE, padTop: NON_NEGATIVE, padRight: NON_NEGATIVE, padBottom: NON_NEGATIVE,
+};
+const NODE_NUMBERS = { col: FINITE, row: FINITE, width: POSITIVE, height: POSITIVE, size: POSITIVE, fontSize: POSITIVE };
+
 export function validateSpec(spec) {
   const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
   if (!isObject(spec)) return ['spec: expected a JSON object'];
@@ -247,6 +256,14 @@ export function validateSpec(spec) {
     }
   });
 
+  // Geometry the builder multiplies and writes out; a missing col or row is 0 (#115).
+  if (spec.layout != null && !isObject(spec.layout)) errors.push('layout: expected an object');
+  else if (spec.layout) errors.push(...numberProblems('layout', spec.layout, LAYOUT_NUMBERS));
+  errors.push(...numberProblems('spec', spec, { legendX: FINITE, legendY: FINITE }));
+  boundaries.forEach((b, i) => { if (isObject(b)) errors.push(...numberProblems(`boundaries[${i}]`, b, BOUNDARY_NUMBERS)); });
+  nodes.forEach((n, i) => { if (isObject(n)) errors.push(...numberProblems(`nodes[${i}]`, n, NODE_NUMBERS)); });
+  edges.forEach((e, i) => { if (isObject(e)) errors.push(...numberProblems(`edges[${i}]`, e, { labelPos: FINITE })); });
+
   return errors;
 }
 
@@ -292,11 +309,14 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   // for the icon captions that hang below their cells.
   const boundaries = spec.boundaries ?? [];
   const byBoundaryId = new Map(boundaries.map((b) => [b.id, b]));
+  // A missing col or row is 0, as in Excalidraw (#115).
   const boxOf = (b) => {
-    const left = colX(b.col) - (b.padLeft ?? 40);
-    const top = rowY(b.row) - (b.padTop ?? 55);
-    const right = colX(b.col + (b.cols ?? 1) - 1) + T.iconSize + (b.padRight ?? 40);
-    const bottom = rowY(b.row + (b.rows ?? 1) - 1) + T.iconSize + CAPTION_ROOM + (b.padBottom ?? 25);
+    const col = b.col ?? 0;
+    const row = b.row ?? 0;
+    const left = colX(col) - (b.padLeft ?? 40);
+    const top = rowY(row) - (b.padTop ?? 55);
+    const right = colX(col + (b.cols ?? 1) - 1) + T.iconSize + (b.padRight ?? 40);
+    const bottom = rowY(row + (b.rows ?? 1) - 1) + T.iconSize + CAPTION_ROOM + (b.padBottom ?? 25);
     return { x: left, y: top, width: right - left, height: bottom - top };
   };
   // Origin a child's coordinates are relative to. boxOf already returns
@@ -335,8 +355,8 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     // so a box and an icon on the same row share a centre line and connectors
     // between them run straight instead of stepping.
     const origin = originOf(parent);
-    const x = colX(n.col) + (T.iconSize - w) / 2 - origin.x;
-    const y = rowY(n.row) + (T.iconSize - h) / 2 - origin.y;
+    const x = colX(n.col ?? 0) + (T.iconSize - w) / 2 - origin.x;
+    const y = rowY(n.row ?? 0) + (T.iconSize - h) / 2 - origin.y;
 
     let style;
     if (n.kind === 'note') style = STYLE.note;
