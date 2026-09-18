@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `274 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `279 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -36,6 +36,7 @@ process, so they cannot tread on each other.
 |---|---|
 | Generation | valid native output; unique ids; every edge connected at both ends; no overlaps; learned style tokens applied; a legend only when earned |
 | Spec checks | a spec naming a missing node, parent or boundary, a cycle, or a missing, repeated or reserved id is refused before any backup or write, every problem listed; the CLI exits 1 and leaves the target untouched; nested boundaries still build; Draw.io automatic edge ids skip taken ids and an unknown edge kind draws as a flow (#36); in both engines an unknown node or edge kind still builds and the report and CLI name its field, value, fallback and the valid kinds, an inherited name such as `constructor` counts as unknown, and the Excalidraw arrow it draws carries the flow stroke (#48) |
+| Spec numbers | in both engines a node or boundary without `col` or `row` is drawn at 0 with no `NaN`, and fractional, negative and Unicode-labelled examples still build and validate; a string coordinate, a size, pitch or font size of 0 or less, a span under 1, a negative padding, gap or roughness, a non-numeric Excalidraw `style` token and a layout that is not an object are each refused in one run with their field path, by `buildDiagram` and by the CLI, before any backup or write (#115) |
 | Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35); after a successful write each builder keeps the oldest backup of that target and the newest five, counting `-10` as newer than `-2` and any later second as newer than every counter, never reusing a counter that pruning freed, and never touches another file's backups, a lookalike stem, another extension or a hand-named copy; `--keep-backups N` sets the count, `0` keeps all, and a malformed value exits 2 before any backup is written or deleted (#49) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Analysis | structure and style emitted; labels, element text and image payloads never |

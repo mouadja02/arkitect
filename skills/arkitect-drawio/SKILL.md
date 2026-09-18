@@ -90,7 +90,8 @@ say so in the report.
    ```
    A spec whose edges or parents name something that does not exist is refused
    before anything is written, with every problem listed (exit 1). Fix the spec;
-   never drop the edge to make it build.
+   never drop the edge to make it build. So is a number that is not one: a string
+   `col`, a size of 0 or less. A missing `col` or `row` is 0.
    A node or edge `kind` the builder does not know still builds (a node as a box,
    an edge as a flow) and is listed under `unknownKinds` in the build report, with
    the field, the value, what it was drawn as and the valid kinds. Treat a
