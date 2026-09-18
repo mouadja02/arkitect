@@ -79,6 +79,7 @@ arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw analyze docs/arch.excalidraw --cells
 arkitect excalidraw render docs/arch.excalidraw --out preview.svg
 arkitect excalidraw build spec.json --out docs/arch.excalidraw --defaults   # the house style, ignoring your own
+arkitect excalidraw build spec.json --out docs/arch.excalidraw --seed 7     # the same bytes on every rebuild
 arkitect excalidraw build --print-style               # the style a build uses, and where it came from
 arkitect excalidraw learn --sources <files> --merge   # rebuild your style record
 arkitect excalidraw findings --derive                 # what your record says, for apply
@@ -94,6 +95,11 @@ or scene that is missing or not valid JSON is named in one line, never a stack
 trace; `validate` reports such a file as its own `FAIL`. `icon --limit N` takes a
 whole number of at least 1, and a search, `--stats` and `--resolve` are separate
 requests.
+
+`build --seed N` (a whole number from 0 to 4294967295) makes a rebuild
+reproducible: ids, stroke seeds and timestamps come from the seed, so the same
+spec, style, seed and icons write the same bytes and the same preview. Without
+it they are random, as the app's own are (#119).
 
 Excalidraw's `build` merges `~/.arkitect/excalidraw/style-overrides.json` exactly
 as Draw.io's merges its own: reported under `style`, skipped by `--defaults`,
