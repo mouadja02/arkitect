@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-09-18
+
 ### Added
 
 - Releases are cut by two workflows: `release prepare` bumps both manifests,
