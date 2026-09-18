@@ -35,11 +35,8 @@ Do not undo them by hand.
 
 ## Workflow
 
-1. **Interview first** (below) when an answer would change the drawing. When the
-   request already names the components and the flows, or nobody is there to
-   answer, do not ask: draw, and state every assumption in the report and on
-   the canvas. A product the user did not name is an assumption, not a
-   question: pick the common one and say so.
+1. **Decide whether to ask** — see Interview first, below. Most requests are
+   drawn straight away, with the assumptions stated.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -140,6 +137,11 @@ Do not undo them by hand.
    "rendered" for a render that failed) · **Deviations** from the style guide.
 
 ## Interview first
+
+**Ask only what would change the drawing, and only someone who can answer.**
+A request that names its components and flows is drawn, not questioned — even
+with a product or a source left unnamed: pick the common choice, draw, and list
+it under Assumptions.
 
 A diagram is a claim about someone's system; a wrong claim drawn well gets
 believed. Ask **one question at a time**, each with your **recommended answer**
