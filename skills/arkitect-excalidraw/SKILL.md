@@ -95,7 +95,9 @@ Do not undo them by hand.
    or whose numbers are not numbers (a string `col`, a size of 0 or less). Edges
    connect nodes, not boundaries. Fix the spec; never drop the edge. A missing
    `col` or `row` is 0. An unknown node or edge `kind` still builds and is listed
-   under `unknownKinds`: fix it or report it. Hand-written JSON is only for what
+   under `unknownKinds`: fix it or report it. An edge drawn through a node it
+   does not connect is listed under `crossings`: move that node to another row
+   or column. Hand-written JSON is only for what
    the spec cannot express — see `references/editing.md`.
 
 5. **Never overwrite blind.** The builder backs up an existing file first and
@@ -106,8 +108,8 @@ Do not undo them by hand.
    ```bash
    node scripts/validate-excalidraw.mjs "path/to/architecture.excalidraw"
    ```
-   Errors block delivery. Overlap and tight-label warnings are judgement calls:
-   check them against the render.
+   Errors block delivery. Overlap, tight-label and crossing warnings are
+   judgement calls: check them against the render.
 
 7. **Render and look at it.**
    ```bash

@@ -31,6 +31,7 @@ import {
   normalizeName, parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon } from './find-icon.mjs';
+import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { numberProblems, FINITE, POSITIVE, NON_NEGATIVE, SPAN } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
 import { HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
@@ -369,7 +370,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [],
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const colX = (c) => L.originX + c * L.colPitch;
@@ -384,6 +385,8 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const geom = new Map();          // node id -> box used for routing
   const anchorFor = new Map();     // node id -> element an arrow binds to
   const childrenOf = new Map();    // boundary id -> [boxes]
+  const nodeOf = new Map();        // element id -> node id, to name a crossing
+  const edgeOf = new Map();        // arrow id -> "from->to"
 
   const noteChild = (parentId, box) => {
     if (!parentId) return;
@@ -596,6 +599,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       grow(4 + m.height);
     }
 
+    for (const el of produced) nodeOf.set(el.id, n.id);
     geom.set(n.id, box);
     if (anchor) anchorFor.set(n.id, anchor);
     noteChild(n.parent, extent ?? box);
@@ -751,6 +755,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       fixedPoints: elbowed ? edgePointsBetween(from, to) : null,
     });
     edgeLayer.push(a);
+    edgeOf.set(a.id, `${e.from}->${e.to}`);
 
     if (e.label) {
       // Free text alongside the line, not a bound label: that is what the
@@ -821,6 +826,12 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   // filled box disappears, and a scope drawn last hides its own contents.
   scene.elements = [...frames, ...scopes, ...nodeLayer, ...edgeLayer, ...chrome];
   reindex(scene.elements);
+  // Reported, not rerouted: the fix is a layout change the spec's author makes (#125).
+  for (const c of connectorCrossings(scene.elements)) {
+    const node = c.members.map((id) => nodeOf.get(id)).find(Boolean);
+    if (!edgeOf.has(c.arrow) || !node) continue;
+    report.crossings.push(`edge ${edgeOf.get(c.arrow)} crosses node ${node}; move ${node} off the line or give the edge a route`);
+  }
   return { scene, report };
 }
 
@@ -907,6 +918,8 @@ function main(argv) {
     // Drawn, but not as the spec said. Treat it like a placeholder: fix the kind
     // and rebuild, or say why it stays (#48).
     unknownKinds: report.unknownKinds,
+    // A connector drawn through a node it does not connect (#125).
+    crossings: report.crossings,
     notes: report.notes,
     // Which style drew this: the house style, or this install's override (#90).
     style: styleSummary(style),

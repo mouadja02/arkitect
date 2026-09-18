@@ -2201,6 +2201,47 @@ test('the Excalidraw builder draws from the resolved style, not its own constant
   ]), 'every shipped kind draws exactly as before');
 });
 
+test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
+  const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
+  const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c' }] };
+  const built = builder.buildDiagram(three);
+  const v = validator.validateScene(built.scene);
+  assert(v.ok, `still valid: ${v.errors.join('; ')}`);
+  const bBox = built.scene.elements.find((el) => el.type === 'rectangle' && el.x === 280);
+  const crossing = v.warnings.filter((w) => w.includes('crosses'));
+  eq(crossing.length, 1, 'one crossing warning');
+  assert(crossing[0].includes(`"${bBox.id}"`), `the validator names node B's shape: ${crossing[0]}`);
+  eq(v.info.crossings, 1, 'counted in info');
+  eq(JSON.stringify(built.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge a route']),
+    'the builder names the edge and the node from the spec');
+
+  // Moved off the line, or a connector that only touches its own ends: nothing.
+  eq(builder.buildDiagram({ ...three, nodes: row(['a', 'b', 'c'], { b: { row: 1 } }) }).report.crossings.length, 0, 'B moved down a row');
+  eq(builder.buildDiagram({ ...three, edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }] }).report.crossings.length, 0, 'a chain');
+  // An arrow into a boundary crosses its edge on purpose.
+  const scoped = builder.buildDiagram({ nodes: row(['a', 'b', 'c'], { b: { parent: 'g' } }),
+    boundaries: [{ id: 'g', kind: 'scope', label: 'Group' }], edges: [{ from: 'a', to: 'b' }] });
+  eq(scoped.scene.elements.filter((el) => el.type === 'rectangle').length, 4, 'the boundary was drawn');
+  eq(scoped.report.crossings.length, 0, `a boundary is not an obstacle: ${scoped.report.crossings}`);
+  // A grouped node - here an icon placeholder with its caption - is one obstacle.
+  const icon = builder.buildDiagram({ ...three, nodes: row(['a', 'b', 'c'], { b: { kind: 'placeholder' } }) });
+  eq(JSON.stringify(icon.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge a route']), 'a grouped node');
+
+  for (const name of ['starter-architecture', 'aws-data-platform', 'shared-icon-packs', 'shared-icon-gallery']) {
+    const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8'));
+    eq(builder.buildDiagram(spec).report.crossings.length, 0, `${name} template`);
+  }
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
+    eq(validator.validateScene(scene).info.crossings, 0, `${name} committed scene`);
+  }
+
+  const specPath = join(TMP, 'crossing.spec.json');
+  writeFileSync(specPath, JSON.stringify(three));
+  const printed = JSON.parse(node('build-diagram.mjs', [specPath, '--out', join(TMP, 'crossing.excalidraw')]));
+  eq(JSON.stringify(printed.crossings), JSON.stringify(built.report.crossings), 'build-diagram prints it');
+});
+
 test('the docker compose file pins the official image and a port', () => {
   const compose = readFileSync(join(ROOT, 'docker', 'docker-compose.yml'), 'utf8');
   assert(/image:\s*excalidraw\/excalidraw/.test(compose), 'official image');
