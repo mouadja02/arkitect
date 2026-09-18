@@ -28,9 +28,8 @@ If `~/.arkitect/excalidraw/style-notes.md` or `patterns.md` exist
 `/learn-excalidraw-style` found in the user's own scenes, and they win over the
 shipped guide. Say so in the report.
 
-The builder already draws what the corpus does and a generator would not:
-elbow arrows at stroke width 4, edge captions as free text beside the line,
-regions as dashed rectangles rather than frames, and captions below the shape.
+The builder already draws the corpus's habits: elbow arrows at stroke width 4,
+edge captions beside the line, dashed-rectangle regions, captions below shapes.
 Do not undo them by hand.
 
 ## Workflow
@@ -38,40 +37,29 @@ Do not undo them by hand.
 1. **Decide whether to ask** — see Interview first, below. Most requests are
    drawn straight away, with the assumptions stated.
 
-2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
+2. **Pick a pattern and state assumptions.** Choose the nearest, then read
    only that `## N.` section of `references/pattern-catalog.md`:
-
-   | # | Use for | # | Use for |
-   |---|---|---|---|
-   | 1 | a source → sink pipeline | 10 | legend and annotation |
-   | 2 | a scope, trust or bounded-context box | 11 | several sources converging on one store |
-   | 3 | tiered frames: frontend / backend / data | 12 | tables or topics inside one product |
-   | 4 | a request path with a decision | 13 | two or three big phases (CI and CD) |
-   | 5 | current vs proposed | 14 | one tool fanning out to many artefacts |
-   | 6 | external systems you do not own | 15 | a naming convention beside the architecture |
-   | 7 | the inside of one service, block diagram | 16 | two diagrams sharing one canvas |
-   | 8 | an agentic or LLM system | 17 | components collected, not yet wired |
-   | 9 | a protocol where order is the point | | |
-
-   Patterns 11–17 are the shapes the reference corpus repeats: prefer one when
-   the system fits it. Spec fragments are in `assets/templates/patterns.json`.
-   Write every architectural assumption down; it goes in the report and, where
-   it matters, in a note on the canvas.
+   1 pipeline · 2 scope or trust box · 3 tiers · 4 request with a decision ·
+   5 current vs proposed · 6 external systems · 7 one service's inside ·
+   8 agentic/LLM · 9 ordered protocol · 10 legend · 11 sources into one store ·
+   12 tables inside a product · 13 big phases (CI/CD) · 14 one tool, many
+   outputs · 15 naming convention · 16 two diagrams, one canvas · 17 unwired
+   components. Prefer 11–17, the corpus's own shapes, when the system fits.
+   Spec fragments: `assets/templates/patterns.json`. Write every assumption
+   down for the report and, where it matters, a note on the canvas.
 
 3. **Resolve icons — bundled libraries first.**
    ```bash
    node scripts/find-icon.mjs "postgres" --compact
    ```
    Put the ref from a match in the spec: `"icon": "data-platform:9"`. A node
-   that only names its component is resolved by product name alone, never by a
-   name that merely appears inside another product's; the search says up front
-   what a node would draw (`"draws"`) or why it gets a placeholder. Shared packs
-   fill gaps with embedded original artwork (`"icon": "drawio:databases/postgresql"`).
-   Still short? Some library items carry no name — `references/icons.md` says how
-   to find them. **Otherwise use a placeholder and move on**: `kind: "placeholder"`,
-   or an unresolvable `icon`, draws a dotted `?` slot captioned with the
-   component and listed under `placeholders` in the build report. Do not fetch a
-   logo unless the user asks, and **never** use one product's mark for another.
+   that only names its component resolves by product name alone; the search says
+   what it would draw (`"draws"`) or why it gets a placeholder. Shared packs fill
+   gaps (`"icon": "drawio:databases/postgresql"`). Unnamed library items:
+   `references/icons.md`. **Otherwise use a placeholder and move on**:
+   `kind: "placeholder"`, or an unresolvable `icon`, draws a dotted `?` slot
+   named under `placeholders` in the build report. Do not fetch a logo unless
+   asked, and **never** use one product's mark for another.
 
 4. **Build from a spec.** First see which style this install draws with:
    ```bash
@@ -79,30 +67,28 @@ Do not undo them by hand.
    node scripts/build-diagram.mjs my-spec.json --out "path/to/architecture.excalidraw"
    ```
    Write the spec next to the output file, never inside this skill's folder.
-   With `"source": "override"` the user applied their own conventions: pick each
-   edge `kind` by its `meaning` there, and do not fight the tokens it changed. A
-   non-empty `style.errors` in the build report means the override was ignored:
-   tell the user. Never pass `--defaults` for a user's scene.
+   With `"source": "override"` (the user's own conventions), pick each edge
+   `kind` by its `meaning` there and keep the tokens it changed. A non-empty
+   `style.errors` means the override was ignored: tell the user. Never pass
+   `--defaults` for a user's scene.
 
-   **Look at one worked example's PNG before writing a spec**, then read its spec:
-   `assets/templates/starter-architecture.spec.json` for the vocabulary (every
-   node and connector kind), or `assets/templates/aws-data-platform.spec.json`
-   for the shape of a large real answer (regions per phase, sublabels, an error
-   lane, assumptions on the canvas, fractional `col`/`row`).
+   **Look at one worked example's PNG before writing a spec**, then its spec:
+   `assets/templates/starter-architecture.spec.json` for every node and
+   connector kind, or `assets/templates/aws-data-platform.spec.json` for a
+   large real answer (regions per phase, sublabels, an error lane, assumptions
+   on the canvas, fractional `col`/`row`).
 
-   The build refuses, before writing anything and listing every problem
-   (exit 1), a spec whose edges or parents name something that does not exist,
-   or whose numbers are not numbers (a string `col`, a size of 0 or less). Edges
-   connect nodes, not boundaries. Fix the spec; never drop the edge. A missing
-   `col` or `row` is 0. An unknown node or edge `kind` still builds and is listed
-   under `unknownKinds`: fix it or report it. An edge drawn through a node it
-   does not connect is listed under `crossings`: move that node to another row
-   or column. Hand-written JSON is only for what
-   the spec cannot express — see `references/editing.md`.
+   The build writes nothing and lists every problem (exit 1) when an edge or
+   parent names something missing or a number is not one (a string `col`, a
+   size ≤ 0). Edges connect nodes, not boundaries. Fix the spec; never drop the
+   edge. A missing `col` or `row` is 0. The report lists an unknown `kind` under
+   `unknownKinds` (fix or report it) and an edge through a node it does not
+   connect under `crossings` (move that node). Hand-written JSON only for what
+   the spec cannot express: `references/editing.md`.
 
-5. **Never overwrite blind.** The builder backs up an existing file first and
-   keeps the oldest backup plus the newest five (`--keep-backups N`; `0` keeps
-   all). Suggest `*.backup-*` for the user's `.gitignore`.
+5. **Never overwrite blind.** The builder backs up an existing file, keeping the
+   oldest plus the newest five (`--keep-backups N`, `0` keeps all). Suggest
+   `*.backup-*` for the user's `.gitignore`.
 
 6. **Validate.**
    ```bash
@@ -119,17 +105,13 @@ Do not undo them by hand.
    `--format svg` and say you could not look at a PNG. If the error says to
    retry with `--no-sandbox`, do so once. Read the PNG back and
    iterate; a scene that validates but reads badly is not done. The preview is
-   geometry-faithful, not font-faithful: judge layout, not typography. Three
-   things the first render nearly always shows, each fixed in the spec:
-   - a one-column region's long label runs into the next: name it in one or two
-     words and let sublabels carry detail;
-   - an elbow route drawn straight through a third icon: `"route": "straight"`
-     on that edge;
-   - adjacent elbows stacking into one phantom line: `"route": "straight"` on
-     one of them.
+   geometry-faithful, not font-faithful: judge layout, not typography. First
+   renders nearly always need, in the spec:
+   - a long region label overrunning: one or two words, detail in sublabels;
+   - an elbow through a third icon, or two stacked into one line: `"route": "straight"`.
 
-8. **Open it in the real app** when the user wants to see or edit it, and before
-   claiming it looks right in Excalidraw itself: `references/rendering.md`.
+8. **Open it in the real app** when the user wants to, and before claiming it
+   looks right in Excalidraw itself: `references/rendering.md`.
 
 9. **Report** under these headings, every one, even when it is short:
    **File** · **Assumptions** (every one, asked or not, and any product the
@@ -181,13 +163,9 @@ the answers down; they are the report's assumptions and the canvas note.
 - Editable `.excalidraw` JSON is the deliverable; images embed in the scene's
   `files`, never linked.
 - Every arrow bound at both ends, so the diagram survives being dragged around.
-- Real icons for named products, bundled libraries first; where none exists, an
-  obviously empty placeholder, named in the report — never another product's
-  mark, never a grey box passed off as finished.
-- Excalidraw's font-size steps and stroke widths; its palette plus the house
-  accents, and a product's own brand colour where the diagram is about it.
+- A missing icon is an obvious placeholder named in the report, never another
+  product's mark or a grey box passed off as finished.
+- Excalidraw's font sizes, stroke widths and palette plus the house accents; a
+  product's brand colour where the diagram is about it.
 - A legend whenever more than one connector kind is used; assumptions on the
   canvas.
-- Connector meanings, colours, routing, strokes, fills and corners follow the
-  house style unless this install's applied override (`--print-style`) says
-  otherwise.

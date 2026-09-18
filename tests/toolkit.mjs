@@ -446,9 +446,11 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
     for (const path of ['references/editing.md', 'references/icons.md', 'references/rendering.md', 'references/style-guide.md']) {
       assert(skill.includes(`\`${path}\``), `${engine}: SKILL.md has no reading path to ${path}`);
     }
-    // The selector offers exactly the patterns the catalog has.
-    const selector = skill.slice(skill.indexOf('pattern-catalog.md`:'), skill.indexOf('Write every architectural assumption'));
-    const offered = [...selector.matchAll(/\|\s*(\d+)\s*\|/g)].map((m) => Number(m[1])).sort((a, b) => a - b);
+    // The selector offers exactly the patterns the catalog has, as table rows or
+    // as a "1 pipeline · 2 ..." list (#137).
+    const selector = skill.slice(skill.indexOf('pattern-catalog.md`:'), skill.indexOf('Spec fragments'));
+    const entry = selector.includes('|') ? /\|\s*(\d+)\s*\|/g : /(?:^|·)[ \t]*(\d+) (?=[a-z])/gm;
+    const offered = [...selector.matchAll(entry)].map((m) => Number(m[1])).sort((a, b) => a - b);
     eq(offered.join(','), [...sections.keys()].sort((a, b) => a - b).join(','), `${engine}: selector rows vs catalog sections`);
     for (const rule of mustKeep) assert(skill.includes(rule), `${engine}: SKILL.md no longer says "${rule}"`);
   }
