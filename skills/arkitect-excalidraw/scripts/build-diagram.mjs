@@ -27,7 +27,7 @@ import {
   bindLabel, bindArrow, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
-  positionals, normalizeName,
+  normalizeName, parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon } from './find-icon.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
@@ -793,35 +793,40 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   return { scene, report };
 }
 
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N] [--defaults]\n'
+  + '       build-diagram.mjs --print-style [--defaults]';
+
 function main(argv) {
-  const usage = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--keep-backups N] [--defaults]\n'
-    + '       build-diagram.mjs --print-style [--defaults]';
-  const [specPath] = positionals(argv, ['--out', '--keep-backups']);
-  const flag = (name) => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
-  const defaults = argv.includes('--defaults');
-  if (argv.includes('--print-style')) {
-    if (specPath || argv.includes('--out') || argv.includes('--keep-backups')) {
-      console.error(`--print-style builds nothing, so it takes no spec, --out or --keep-backups\n${usage}`);
-      process.exit(2);
+  const { options, positionals } = parseCliOrExit(argv, {
+    values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style'],
+  }, USAGE);
+  const defaults = Boolean(options.defaults);
+  if (options['print-style']) {
+    if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined) {
+      exitUsage('--print-style builds nothing, so it takes no spec, --out or --keep-backups', USAGE);
     }
     const style = loadStyleOrWarn(defaults);
     console.log(JSON.stringify({ store: engineStore('excalidraw'), ...styleSummary(style, { full: true }) }, null, 2));
     return;
   }
-  const out = flag('--out');
-  if (!specPath || !out) {
-    console.error(usage);
-    process.exit(2);
+  if (positionals.length !== 1) {
+    exitUsage(positionals.length ? `expected one spec file, got ${positionals.length}` : 'expected a spec file', USAGE);
   }
-  // Absent means the default; present with no value is a usage error.
-  const rawKeep = flag('--keep-backups');
-  const keep = rawKeep === null ? String(DEFAULT_KEEP_BACKUPS) : String(rawKeep);
+  if (!options.out) exitUsage('--out <file.excalidraw> is required', USAGE);
+  const [specPath] = positionals;
+  const { out } = options;
+  const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
-    console.error(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}\n${usage}`);
-    process.exit(2);
+    exitUsage(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}`, USAGE);
   }
 
-  const spec = JSON.parse(readFileSync(specPath, 'utf8'));
+  // One line, not a stack trace: the message never quotes the spec's content.
+  let spec;
+  try {
+    spec = JSON.parse(readFileSync(specPath, 'utf8'));
+  } catch (error) {
+    exitUsage(readProblem(specPath, error, 'spec file'));
+  }
   const style = loadStyleOrWarn(defaults);
   let built;
   try {

@@ -87,6 +87,14 @@ arkitect excalidraw apply --accept <id,id>            # draw with them from now 
 arkitect excalidraw apply --reset                     # back to the house style
 ```
 
+`icon`, `build`, `validate` and `analyze` parse their arguments strictly, as
+Draw.io's do: an unknown flag, a flag with no value, a repeated flag or a stray
+file exits `2` with a one-line reason before anything is read or written. A spec
+or scene that is missing or not valid JSON is named in one line, never a stack
+trace; `validate` reports such a file as its own `FAIL`. `icon --limit N` takes a
+whole number of at least 1, and a search, `--stats` and `--resolve` are separate
+requests.
+
 Excalidraw's `build` merges `~/.arkitect/excalidraw/style-overrides.json` exactly
 as Draw.io's merges its own: reported under `style`, skipped by `--defaults`,
 shown by `--print-style`, and ignored whole with a one-line warning when it has

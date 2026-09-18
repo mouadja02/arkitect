@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `272 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `274 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -84,6 +84,7 @@ process, so they cannot tread on each other.
 | Worked example | two builds of the starter spec are identical, and the committed `starter-architecture.drawio` is byte-for-byte what the spec builds; the failure names the first differing line and cell (#50); no edge in it runs through a caption (#45) |
 | Caption routing | an edge leaving an icon downward, or entering one from below, in the same column, attaches below the caption (34px, more for a caption on several lines); horizontal, diagonal and box-to-box edges are left to the router; the validator estimates each route from its ports and warns, naming the edge and the icon, when it crosses a caption, and names exactly the two crossings when those attachments are stripped (#45) |
 | Personal style | the store defaults outside the plugin and `ARKITECT_HOME` moves it; with no override every build is byte-identical to the house style; the committed starter builds exactly through the API and through `--defaults` with a personal override planted, which a plain CLI build picks up; an override restyles tokens and kinds and adds a kind while a spec's own values still win; every field is checked — a raw style string, an unknown token or kind field, a bad colour, a pitch that stacks icons, a partial new kind, a wrong engine or schema — and a bad override is ignored whole, the build warning once and drawing the house style; `--print-style` shows the resolved style and writes nothing; learning tallies corner rounding and writes to the store, elsewhere only by `--out`; findings derive four tokens graded like conventions, refuse what a build would refuse, split a kind into fields and let an agent finding hold its target; apply lists only contradictions, strongest first with low confidence flagged, refuses a non-candidate, reports each change, drops values back at the house style, never replaces a broken override, and `--reset` restores the house style; style literals go through named tokens (#89) |
+| Command lines | `build`, `analyze`, `validate` and `icon` refuse an unknown flag, a missing or repeated value and an extra or missing file with exit 2 in one line, before anything is read or written; a missing or malformed spec or scene is named in one line with no stack trace, and `validate` reports an unreadable file as its own failure without quoting it; `icon --limit` must be at least 1, a search, `--stats` and `--resolve` are separate requests, and flags may come before or after the words and files (#116) |
 
 ### Excalidraw
 

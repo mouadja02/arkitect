@@ -7,6 +7,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from '../../../arkitect-drawio/scripts/lib/backups.mjs';
+export { parseCliOrExit, exitUsage, UsageError } from '../../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 
 export const SCENE_TYPE = 'excalidraw';
@@ -54,13 +55,16 @@ export const ROUGHNESS = { architect: 0, artist: 1, cartoonist: 2 };
 
 // ---------------------------------------------------------------- cli args
 
-// The positional arguments, with the value of any listed flag excluded.
-// Filtering on "does not start with --" alone silently swallows flag values:
-// `--limit 3` leaves a bare "3" that then reads as a file name, or as a second
-// word in a search query. Every CLI here shares that shape, so it shares this.
-export function positionals(argv, valueFlags = []) {
-  const takesValue = new Set(valueFlags);
-  return argv.filter((a, i) => !a.startsWith('--') && !takesValue.has(argv[i - 1]));
+// The CLIs parse with Draw.io's parseCliOrExit (re-exported above): a flag's
+// value is taken with its flag, and an unknown flag, a missing value or a
+// repeated flag exits 2 before anything is read or written (#116).
+
+// One line naming the file and what is wrong with it - never a stack trace,
+// never the file's content.
+export function readProblem(path, error, what = 'file') {
+  if (error.code === 'ENOENT') return `no ${what} at ${path}`;
+  if (error instanceof SyntaxError) return `${path} is not valid JSON`;
+  return error.code ? `cannot read ${what} ${path}: ${error.code}` : error.message;
 }
 
 // ---------------------------------------------------------------- ids

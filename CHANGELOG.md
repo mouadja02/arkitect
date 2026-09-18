@@ -16,6 +16,9 @@ separate file, no naming scheme, no required format beyond that.
 - A test callback that returns a promise fails instead of counting as passed
   before its assertions ran; the three suites share one harness, and the
   library-verification test settles before it asserts (#114)
+- `excalidraw build`, `analyze`, `validate` and `icon` refuse an unknown flag,
+  a missing value or a stray file with exit 2 in one line, as the Draw.io
+  commands do, and name a missing or malformed file without a stack trace (#116)
 
 ## [1.2.0] — 2026-09-18
 

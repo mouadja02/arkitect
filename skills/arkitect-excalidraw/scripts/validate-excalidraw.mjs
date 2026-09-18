@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs';
 import {
   elementBox, bbox, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
-  positionals,
+  parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 
 const MAX_COORD = 200000;
@@ -280,21 +280,20 @@ export function validateFile(path) {
   try {
     doc = JSON.parse(readFileSync(path, 'utf8'));
   } catch (e) {
-    return { path, ok: false, errors: [`not valid JSON: ${e.message}`], warnings: [], info: {} };
+    // Never Node's JSON message: it quotes the file's own text.
+    return { path, ok: false, errors: [readProblem(path, e)], warnings: [], info: {} };
   }
   return doc.type === 'excalidrawlib'
     ? validateLibrary(doc, { path })
     : validateScene(doc, { path });
 }
 
+const USAGE = 'usage: validate-excalidraw.mjs <file...> [--json] [--strict]';
+
 function main(argv) {
-  const files = positionals(argv);
-  const json = argv.includes('--json');
-  const strict = argv.includes('--strict');
-  if (!files.length) {
-    console.error('usage: validate-excalidraw.mjs <file...> [--json] [--strict]');
-    process.exit(2);
-  }
+  const { options, positionals: files } = parseCliOrExit(argv, { switches: ['--json', '--strict'] }, USAGE);
+  const { json, strict } = options;
+  if (!files.length) exitUsage('expected at least one .excalidraw or .excalidrawlib file', USAGE);
 
   let bad = 0;
   for (const f of files) {

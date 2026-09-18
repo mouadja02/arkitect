@@ -17,7 +17,9 @@
 // A search never prints element payloads, so scanning for an icon costs a few
 // lines of context rather than a wall of JSON.
 
-import { nameAliases, normalizeName, bbox, positionals } from './lib/excalidraw-core.mjs';
+import {
+  nameAliases, normalizeName, bbox, parseCliOrExit, exitUsage, UsageError,
+} from './lib/excalidraw-core.mjs';
 import { loadIndex as loadIconIndex, getIcon } from './make-icon.mjs';
 import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
@@ -222,11 +224,27 @@ export function resolveIcon(ref, { shared = true } = {}) {
   return entry ? resolveIcon(entry.ref, { shared }) : null;
 }
 
+const USAGE = 'usage: find-icon.mjs <component name> [--limit N] | --stats | --resolve <ref>';
+
+const limitArg = (value, flag) => {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 1) {
+    throw new UsageError(`${flag} expects how many matches to show, a whole number of at least 1, got ${value}`);
+  }
+  return n;
+};
+
 function main(argv) {
-  const flag = (n) => { const i = argv.indexOf(n); return i === -1 ? null : argv[i + 1]; };
+  const { options, positionals: words } = parseCliOrExit(argv, {
+    values: { '--limit': limitArg, '--resolve': null }, switches: ['--stats'],
+  }, USAGE);
+  // Exactly one of a search, --stats and --resolve; --limit only shapes a search.
+  const modes = [words.length > 0, Boolean(options.stats), options.resolve !== undefined].filter(Boolean).length;
+  if (modes !== 1) exitUsage(modes ? 'a search, --stats and --resolve are separate requests' : 'expected a component name', USAGE);
+  if (options.limit !== undefined && !words.length) exitUsage('--limit applies to a search', USAGE);
   const entries = catalog();
 
-  if (argv[0] === '--stats') {
+  if (options.stats) {
     const libs = listInstalled();
     console.log(JSON.stringify({
       houseIcons: entries.filter((e) => e.provider === 'house').length,
@@ -239,9 +257,9 @@ function main(argv) {
     return;
   }
 
-  if (argv[0] === '--resolve') {
-    const r = resolveIcon(argv[1]);
-    if (!r) { console.error(`nothing resolves "${argv[1]}"`); process.exit(1); }
+  if (options.resolve !== undefined) {
+    const r = resolveIcon(options.resolve);
+    if (!r) { console.error(`nothing resolves "${options.resolve}"`); process.exit(1); }
     const box = r.elements ? bbox(r.elements) : null;
     console.log(JSON.stringify({
       ref: r.source, name: r.name, kind: r.kind,
@@ -253,13 +271,8 @@ function main(argv) {
     return;
   }
 
-  const query = positionals(argv, ['--limit', '--resolve']).join(' ');
-  if (!query) {
-    console.error('usage: find-icon.mjs <component name> [--limit N] | --stats | --resolve <ref>');
-    process.exit(2);
-  }
-
-  const hits = search(query, { entries, limit: Number(flag('--limit') ?? 8) });
+  const query = words.join(' ');
+  const hits = search(query, { entries, limit: options.limit ?? 8 });
   if (!hits.length) {
     console.log(JSON.stringify({
       query,
