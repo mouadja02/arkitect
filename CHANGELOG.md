@@ -11,6 +11,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- The plugin manifest declares `./skills/` as its skills path instead of the
+  whole repository, so `claude plugin eval` no longer warns that `evals/`
+  overlaps it (#138).
+
 ## [1.3.0] — 2026-09-18
 
 ### Fixed

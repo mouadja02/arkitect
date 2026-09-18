@@ -332,6 +332,12 @@ test('the plugin, marketplace and package manifests agree', () => {
   eq(marketplace.plugins[0].name, manifest.name, 'marketplace vs plugin name');
   assert(existsSync(join(ROOT, pkg.bin.arkitect)), 'package.json bin points at a missing file');
   assert(manifest.description.length > 40, 'plugin description is too thin to be useful');
+  // Only skills/ is a component location, so evals/ and tests/ are not (#138),
+  // and everything in it has to be a skill Claude Code can load.
+  eq(JSON.stringify(manifest.skills), '["./skills/"]', 'declared skills path');
+  for (const dir of readdirSync(join(ROOT, 'skills'))) {
+    assert(existsSync(join(ROOT, 'skills', dir, 'SKILL.md')), `skills/${dir} has no SKILL.md`);
+  }
 });
 
 test('every advertised icon count agrees, so one cannot drift from the rest', () => {
