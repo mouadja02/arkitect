@@ -109,10 +109,17 @@ export const runBrowser = (exe, args, options) => {
 
 const removeWork = (dir) => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 
+// Lines Chromium prints on every start, failed or not; they would crowd out
+// the one that says why (#113).
+const NOISE = /crashpad|cpufreq|dbus|StartTransientUnit|Fontconfig/i;
+
 // The last of what the browser printed, for a failure message.
 const said = (log) => {
   try {
-    const text = readFileSync(log, 'utf8').trim().split('\n').slice(-3).join(' | ').slice(-400);
+    const text = readFileSync(log, 'utf8').trim().split('\n')
+      .map((line) => line.replace(/^\[[^\]]*\]\s*/, '').trim())
+      .filter((line) => line && !NOISE.test(line))
+      .slice(-3).join(' | ').slice(-400);
     return text ? ` (browser said: ${text})` : '';
   } catch {
     return '';

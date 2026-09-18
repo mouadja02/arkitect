@@ -32,7 +32,8 @@ shipped guide. Say so in the report.
 1. **Interview first** (below) when an answer would change the drawing. When the
    request already names the components and the flows, or nobody is there to
    answer, do not ask: draw, and state every assumption in the report and on
-   the canvas.
+   the canvas. A product the user did not name is an assumption, not a
+   question: pick the common one and say so.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -111,12 +112,12 @@ shipped guide. Say so in the report.
 
 8. **Open it on request** in Draw.io Desktop.
 
-9. **Report.** File path, every assumption you made (asked or not, including
-   any product the user did not name), validation results, the render as it
-   happened (you looked at the PNG, or it failed and why — never "rendered"
-   for a render that failed), each icon's id and pack, any that was not
-   confident or not found, every logo downloaded and from where, lifecycle
-   caveats, and any deliberate deviation from the style guide.
+9. **Report** under these headings, every one, even when it is short:
+   **File** · **Assumptions** (every one, asked or not, and any product the
+   user did not name) · **Icons** (each id and pack; any not confident or not
+   found; logos downloaded and from where; lifecycle caveats) · **Validation**
+   · **Render** (you looked at the PNG, or it failed and why — never
+   "rendered" for a render that failed) · **Deviations** from the style guide.
 
 ## Interview first
 

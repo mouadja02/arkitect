@@ -17,7 +17,9 @@ separate file, no naming scheme, no required format beyond that.
   server whose socket is not there, as inside a sandbox or container, instead
   of exporting nothing; a failed page now says why (#113)
 - Excalidraw PNG rendering on Linux prefers a packaged Chrome or Edge to
-  Chromium, and Ubuntu's snap `chromium-browser` wrapper comes last (#113)
+  Chromium, and Ubuntu's snap `chromium-browser` wrapper comes last; a failed
+  render drops Chromium's start-up chatter from its message and, when the
+  browser could not nest its own sandbox, says to retry with `--no-sandbox` (#113)
 - Both builders create a missing output folder instead of failing with a stack
   trace (#113)
 

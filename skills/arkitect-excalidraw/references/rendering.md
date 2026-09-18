@@ -15,7 +15,9 @@ node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --format sv
 `--out-dir` writes `<name>.png` with a local Edge, Chrome or Chromium, on any OS;
 pin one with `--browser` or `ARKITECT_BROWSER`. With none installed it says so and
 exits 1: install one, or fall back to `--format svg`, which needs no browser, and
-say that you could not look at a PNG. `--out` picks the format by extension. The
+say that you could not look at a PNG. Inside another sandbox or a container the
+browser may be unable to build its own sandbox; the error then says so and
+names `--no-sandbox`, which is the diagnosed failure that flag exists for. `--out` picks the format by extension. The
 Windows helper `./scripts/render-excalidraw.ps1 -Path … -OutDir …` still works.
 
 The preview is geometry-faithful, not pixel-faithful: Excalidraw's fonts are not

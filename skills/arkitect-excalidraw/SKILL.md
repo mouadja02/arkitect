@@ -38,7 +38,8 @@ Do not undo them by hand.
 1. **Interview first** (below) when an answer would change the drawing. When the
    request already names the components and the flows, or nobody is there to
    answer, do not ask: draw, and state every assumption in the report and on
-   the canvas.
+   the canvas. A product the user did not name is an assumption, not a
+   question: pick the common one and say so.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -116,7 +117,8 @@ Do not undo them by hand.
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
    Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
-   `--format svg` and say you could not look at a PNG. Read the PNG back and
+   `--format svg` and say you could not look at a PNG. If the error says to
+   retry with `--no-sandbox`, do so once. Read the PNG back and
    iterate; a scene that validates but reads badly is not done. The preview is
    geometry-faithful, not font-faithful: judge layout, not typography. Three
    things the first render nearly always shows, each fixed in the spec:
@@ -130,12 +132,12 @@ Do not undo them by hand.
 8. **Open it in the real app** when the user wants to see or edit it, and before
    claiming it looks right in Excalidraw itself: `references/rendering.md`.
 
-9. **Report.** File path, every assumption you made (asked or not, including
-   any product the user did not name), validation results, the render as it
-   happened (you looked at the PNG, or it failed and why — never "rendered"
-   for a render that failed), each icon's ref and where it came from (bundled
-   library, shared pack, a logo you built), every placeholder, anything
-   unresolved, and any deliberate deviation from the style guide.
+9. **Report** under these headings, every one, even when it is short:
+   **File** · **Assumptions** (every one, asked or not, and any product the
+   user did not name) · **Icons** (each ref and where it came from: bundled
+   library, shared pack, a logo you built; every placeholder) · **Validation**
+   · **Render** (you looked at the PNG, or it failed and why — never
+   "rendered" for a render that failed) · **Deviations** from the style guide.
 
 ## Interview first
 
