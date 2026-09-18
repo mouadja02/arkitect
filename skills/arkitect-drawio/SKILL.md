@@ -111,9 +111,10 @@ shipped guide. Say so in the report.
 8. **Open it on request** in Draw.io Desktop.
 
 9. **Report.** File path, every assumption you made (asked or not), validation
-   and render results — say that you looked at the PNG — any icon that was not
-   confident or not found, every logo downloaded and from where, lifecycle
-   caveats, and any deliberate deviation from the style guide.
+   and render results — say that you looked at the PNG — each icon's id and
+   pack, any that was not confident or not found, every logo downloaded and
+   from where, lifecycle caveats, and any deliberate deviation from the style
+   guide.
 
 ## Interview first
 

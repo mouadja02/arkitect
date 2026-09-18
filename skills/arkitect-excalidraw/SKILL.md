@@ -130,9 +130,10 @@ Do not undo them by hand.
    claiming it looks right in Excalidraw itself: `references/rendering.md`.
 
 9. **Report.** File path, every assumption you made (asked or not), validation
-   and render results — say that you looked at the PNG — which icons came from
-   where, every placeholder, anything unresolved, and any deliberate deviation
-   from the style guide.
+   and render results — say that you looked at the PNG — each icon's ref and
+   where it came from (bundled library, shared pack, a logo you built), every
+   placeholder, anything unresolved, and any deliberate deviation from the
+   style guide.
 
 ## Interview first
 
