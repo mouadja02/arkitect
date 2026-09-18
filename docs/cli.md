@@ -348,8 +348,10 @@ nothing is found, how many PATH directories it searched and every install
 location it tried; and a warning when `DRAWIO_EXE` is set to something `render`
 would refuse. Rendering is local; never use the hosted editor.
 
-On Linux without `DISPLAY`, the helper announces and uses `xvfb-run -a` if
-available. Install Xvfb separately when needed, and set `HOME` under cron/ssh.
+On Linux without a usable `DISPLAY` — none set, or a local `:N` whose X socket
+is not there, as inside a sandbox or container — the helper announces and uses
+`xvfb-run -a` if available. A failed page names why: the exit code or signal
+and Draw.io's first error line. Install Xvfb separately when needed, and set `HOME` under cron/ssh.
 Only add `--disable-gpu` for observed GPU failures, or `--no-sandbox` for a
 diagnosed sandbox/user-namespace failure; neither is enabled blindly.
 
@@ -387,7 +389,8 @@ chooses the format; any other extension, or a directory, exits `2`.
 `--out-dir DIR` writes `DIR/<scene>.png`, or `.svg` with `--format svg`, the way
 `drawio render --out-dir` does. A PNG takes `--width` pixels (default 2200) and
 uses a local Edge, Chrome or Chromium, found on `PATH` or where each OS installs
-it; `--browser PATH` or `ARKITECT_BROWSER` pins one, and an unusable pin fails
+it — on Linux Chrome and Edge first, then Chromium, and Ubuntu's snap wrapper
+last, since the snap cannot start inside a sandbox or container; `--browser PATH` or `ARKITECT_BROWSER` pins one, and an unusable pin fails
 instead of falling back to another browser. Ubuntu's snap-packaged Chromium
 (also behind `/usr/bin/chromium-browser`) cannot see the host's `/tmp`, so for a
 snap the page and screenshot are staged in `~/snap/chromium/common` and removed

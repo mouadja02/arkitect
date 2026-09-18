@@ -11,7 +11,8 @@ node bin/arkitect.mjs drawio render "path/to/diagram.drawio" --all --out-dir .an
 ```
 
 Uses local Draw.io Desktop on Linux, macOS and Windows, with automatic
-`xvfb-run -a` wrapping on Linux without `DISPLAY` when available. Override
+`xvfb-run -a` wrapping on Linux without a usable `DISPLAY` (none, or a local
+`:N` whose X socket is hidden, as in a sandbox) when available. Override
 discovery with `--drawio-exe` or `DRAWIO_EXE`. Outputs are
 `<base>.p<0-based index>.png`. The PowerShell helper remains unchanged:
 `./scripts/render-drawio.ps1 -Path "path/to/diagram.drawio" -OutDir .analysis/renders`.
@@ -36,6 +37,8 @@ repository.
 ## When the export fails
 
 - Judge export success by a fresh non-empty output, not Chromium stderr noise.
+  A failed page says why: the exit code or signal and Draw.io's first error.
+  Put that reason in your report.
 - Extra Electron flags are opt-in: `--disable-gpu` for observed GPU errors,
   `--no-sandbox` only for a diagnosed sandbox failure. Never add them blindly.
 - After a host update breaks rendering, report 🔴 and explicitly fall back to

@@ -1279,6 +1279,12 @@ test('browser discovery covers Edge, Chrome and Chromium on every platform, PATH
   eq(at('darwin', { PATH: '' }, '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge').source, 'install location', 'macOS Edge');
   eq(at('linux', { PATH: '/usr/local/bin' }, '/usr/local/bin/google-chrome').source, 'PATH', 'a Chrome on the Linux PATH');
   eq(at('linux', { PATH: '' }, '/snap/bin/chromium').path, '/snap/bin/chromium', 'snap Chromium');
+  // A packaged Chrome or Edge beats Chromium, and Ubuntu's snap wrapper comes
+  // last: the snap cannot start inside a sandbox or container (#113).
+  const both = (...present) => browserLib.locateBrowser(undefined, { platform: 'linux', env: { PATH: '/usr/bin' }, isExecutable: (p) => present.includes(p) }).path;
+  eq(both('/usr/bin/chromium-browser', '/usr/bin/google-chrome'), '/usr/bin/google-chrome', 'Chrome before the chromium-browser wrapper');
+  eq(both('/usr/bin/chromium', '/usr/bin/microsoft-edge'), '/usr/bin/microsoft-edge', 'Edge before Chromium');
+  eq(both('/usr/bin/chromium-browser', '/usr/bin/chromium'), '/usr/bin/chromium', 'a real Chromium before the snap wrapper');
   const none = at('linux', { PATH: '/a' }, null);
   eq(JSON.stringify([none.path, none.source]), JSON.stringify([null, null]), 'nothing found');
   assert(none.tried.includes('/a/chromium') && none.tried.includes('/opt/google/chrome/chrome'), 'every candidate tried');

@@ -253,12 +253,16 @@ test('renderer validates all and passthrough ranges before discovery or export',
 
 test('renderer wraps only headless Linux with available xvfb-run and logs the wrapper', () => {
   const file = join(TMP, 'headless.drawio'); writeFileSync(file, '<mxGraphModel/>');
-  for (const [platform, display, haveXvfb, wrapped] of [
-    ['linux', '', true, true], ['linux', ':7', true, false], ['linux', '', false, false], ['darwin', '', true, false], ['win32', '', true, false],
+  // [platform, DISPLAY, is that display's X server reachable, xvfb-run installed, wrapped]
+  for (const [platform, display, up, haveXvfb, wrapped] of [
+    ['linux', '', false, true, true], ['linux', ':7', true, true, false], ['linux', '', false, false, false],
+    ['darwin', '', false, true, false], ['win32', '', false, true, false],
+    // A sandbox that hides the X socket (WSLg's :0 included) gets xvfb-run (#113).
+    ['linux', ':0', false, true, true],
   ]) {
     const lines = []; let invocation;
     renderer.render(renderer.parseArgs([file, '--all', '--out-dir', join(TMP, 'headless')]), {
-      platform, env: { PATH: '/tools', DISPLAY: display },
+      platform, env: { PATH: '/tools', DISPLAY: display }, displayUp: () => up,
       isExecutable: p => p.includes('drawio') || (haveXvfb && p.endsWith('xvfb-run')),
       log: s => lines.push(s), runner: (exe, args) => {
         invocation = { exe, args }; writeFileSync(args[args.indexOf('-o') + 1], 'png'); return { status: 0 };
@@ -267,7 +271,33 @@ test('renderer wraps only headless Linux with available xvfb-run and logs the wr
     eq(invocation.exe.endsWith('xvfb-run'), wrapped, 'wrapper selection');
     eq(lines.some(s => s.includes('xvfb-run -a')), wrapped, 'wrapper log');
     if (wrapped) eq(JSON.stringify(invocation.args.slice(0, 3)), JSON.stringify(['-a', '/tools/drawio', '-x']), 'wrapper argv');
+    if (wrapped && display) assert(lines.some(s => s.includes(`DISPLAY ${display} has no X server here`)), `says why: ${lines.join(' | ')}`);
   }
+});
+
+test('a local DISPLAY counts only when its X socket exists, and a failed export says why (#113)', () => {
+  const socket = (want) => (p) => p === want;
+  eq(renderer.displayReachable(':0', { exists: socket('/tmp/.X11-unix/X0') }), true, ':0 with its socket');
+  eq(renderer.displayReachable(':0', { exists: () => false }), false, ':0 without its socket');
+  eq(renderer.displayReachable('unix:3.0', { exists: socket('/tmp/.X11-unix/X3') }), true, 'unix:N.S names socket N');
+  eq(renderer.displayReachable('build-host:10.0', { exists: () => false }), true, 'a remote display is trusted');
+  eq(renderer.displayReachable('', { exists: () => true }), false, 'no DISPLAY');
+
+  const crashed = { status: null, signal: 'SIGTRAP', stderr: '[9:0918/1:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.systemd1.Manager.StartTransientUnit\n'
+    + '[9:0918/1:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:257] Missing X server or $DISPLAY\n[9:0918/1:ERROR:ui/aura/env.cc:246] The platform failed to initialize.  Exiting.\n' };
+  eq(renderer.exportFailure(crashed), 'killed by SIGTRAP: Missing X server or $DISPLAY', 'the signal and the first real error');
+  eq(renderer.exportFailure({ status: 3, stderr: '' }), 'exit 3', 'a bare exit code');
+  eq(renderer.exportFailure({ error: new Error('spawn xvfb-run ENOENT') }), 'spawn xvfb-run ENOENT', 'a spawn error');
+  eq(renderer.exportFailure({ status: 0, stderr: '' }), '', 'nothing to say');
+
+  const file = join(TMP, 'crash.drawio'); writeFileSync(file, '<mxGraphModel/>');
+  const lines = [];
+  const result = renderer.render(renderer.parseArgs([file, '--out-dir', join(TMP, 'crash')]), {
+    platform: 'linux', env: { PATH: '/tools', DISPLAY: ':1' }, displayUp: () => true, isExecutable: p => p.includes('drawio'),
+    log: s => lines.push(s), runner: () => crashed,
+  });
+  eq(result.ok, false, 'an empty export fails');
+  assert(lines.some(s => s.includes('FAILED') && s.includes('(killed by SIGTRAP: Missing X server or $DISPLAY)')), `the log says why: ${lines.join(' | ')}`);
 });
 
 test('renderer backs up before export, rejects stale or empty output and continues after failure', () => {

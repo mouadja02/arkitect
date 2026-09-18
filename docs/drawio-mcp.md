@@ -138,7 +138,8 @@ node skills/arkitect-drawio/scripts/render-drawio.mjs docs/architecture.drawio -
 
 `--all` counts pages in the file. `--drawio-exe` or `DRAWIO_EXE` overrides
 executable discovery. Outputs are `<base>.p<0-based index>.<format>`; PNG is
-the default. On Linux without `DISPLAY`, `xvfb-run -a` is used when available.
+the default. On Linux without a usable `DISPLAY` (none, or a local one whose X socket is
+hidden), `xvfb-run -a` is used when available.
 See [CLI rendering](cli.md#rendering) for all options and troubleshooting.
 
 ### Page indexing across Draw.io builds

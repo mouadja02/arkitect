@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `280 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `282 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -42,6 +42,7 @@ process, so they cannot tread on each other.
 | Analysis | structure and style emitted; labels, element text and image payloads never |
 | Plugin shape | the manifest is valid, all six skills are well formed, the learning and apply skills are user-invoked only, CI expects the same skill count, no hard-coded install paths |
 | Context budget | each drawing `SKILL.md` plus its largest pattern section is at most 12,000 bytes; every file its reading table names exists, editing, icons, rendering and the style guide each have a reading path, the pattern selector offers exactly the catalog's sections, and the privacy, icon-honesty and render rules are still in `SKILL.md` (#113) |
+| Headless runs | a local `DISPLAY` counts only when its X socket exists, so a sandbox that hides it gets `xvfb-run` and the log says why; a failed Draw.io export names its exit code or signal and first error line; on Linux a packaged Chrome or Edge is chosen before Chromium and the snap `chromium-browser` wrapper last; both builders create a missing output folder (#113) |
 | Committed examples | every documented command that rebuilds a Draw.io or an Excalidraw template passes `--defaults`, so a personal style override never reaches the repository; each engine must have at least one such command (#89, #90) |
 | Packaging | the real `npm pack` tarball, with a sentinel planted in every local-only location, ships every bundled asset and none of the caches, cached logos, built icons, downloaded libraries, contact-sheet HTML, browser profiles or backups, and unpacks under 60 MB; extracted outside the checkout its CLI runs `version`, `doctor`, both icon searches and a build and validate per engine, and `test` exits 2. Uses the npm beside Node, offline; skips only if there is none (#38) |
 | Redaction | no sensitive string from a reference diagram appears anywhere in the repository |

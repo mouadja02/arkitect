@@ -143,6 +143,18 @@ test('doctor finds Draw.io Desktop where render does, and says how (#46)', () =>
   for (const p of installs) assert(out.includes(`tried ${p}`), `doctor does not list ${p}:\n${out}`);
 });
 
+test('both builders create a missing output folder instead of failing with a stack trace (#113)', () => {
+  for (const [engine, spec, ext] of [
+    ['drawio', join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', 'starter-architecture.spec.json'), 'drawio'],
+    ['excalidraw', join(ROOT, 'skills', 'arkitect-excalidraw', 'assets', 'templates', 'starter-architecture.spec.json'), 'excalidraw'],
+  ]) {
+    const out = join(TMP, 'new-folder', engine, 'deeper', `arch.${ext}`);
+    const report = JSON.parse(cli([engine, 'build', spec, '--out', out, '--defaults']));
+    eq(report.wrote, out, `${engine} reports the file it wrote`);
+    assert(statSync(out).size > 0, `${engine} wrote into the new folder`);
+  }
+});
+
 test('both engines dispatch through to a real search', () => {
   const drawio = JSON.parse(cli(['drawio', 'icon', 'bedrock']));
   assert(drawio.matches?.length > 0, 'no draw.io icon match for "bedrock"');

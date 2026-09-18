@@ -20,7 +20,8 @@
 //   node build-diagram.mjs spec.json --out a.excalidraw --defaults   the house style, ignoring the override
 //   node build-diagram.mjs --print-style                             what a build would use
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import {
   emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
   rectangle, ellipse, diamond, line, arrow, text, frame, image as imageEl,
@@ -868,6 +869,8 @@ function main(argv) {
     process.exit(1);
   }
   const { scene, report } = built;
+  // A missing output folder is created, not reported as a stack trace (#113).
+  mkdirSync(dirname(out), { recursive: true });
   const backup = backupExisting(out);
   writeScene(out, scene);
   // Only once the new file is written: a failed write keeps every backup (#49).

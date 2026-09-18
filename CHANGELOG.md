@@ -11,6 +11,16 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- Draw.io rendering on Linux uses `xvfb-run` when `DISPLAY` names a local X
+  server whose socket is not there, as inside a sandbox or container, instead
+  of exporting nothing; a failed page now says why (#113)
+- Excalidraw PNG rendering on Linux prefers a packaged Chrome or Edge to
+  Chromium, and Ubuntu's snap `chromium-browser` wrapper comes last (#113)
+- Both builders create a missing output folder instead of failing with a stack
+  trace (#113)
+
 ### Changed
 
 - Both drawing skills read at most 12,000 bytes before the chosen example,

@@ -80,6 +80,7 @@ Do not undo them by hand.
    node scripts/build-diagram.mjs --print-style
    node scripts/build-diagram.mjs my-spec.json --out "path/to/architecture.excalidraw"
    ```
+   Write the spec next to the output file, never inside this skill's folder.
    With `"source": "override"` the user applied their own conventions: pick each
    edge `kind` by its `meaning` there, and do not fight the tokens it changed. A
    non-empty `style.errors` in the build report means the override was ignored:
@@ -129,11 +130,12 @@ Do not undo them by hand.
 8. **Open it in the real app** when the user wants to see or edit it, and before
    claiming it looks right in Excalidraw itself: `references/rendering.md`.
 
-9. **Report.** File path, every assumption you made (asked or not), validation
-   and render results — say that you looked at the PNG — each icon's ref and
-   where it came from (bundled library, shared pack, a logo you built), every
-   placeholder, anything unresolved, and any deliberate deviation from the
-   style guide.
+9. **Report.** File path, every assumption you made (asked or not, including
+   any product the user did not name), validation results, the render as it
+   happened (you looked at the PNG, or it failed and why — never "rendered"
+   for a render that failed), each icon's ref and where it came from (bundled
+   library, shared pack, a logo you built), every placeholder, anything
+   unresolved, and any deliberate deviation from the style guide.
 
 ## Interview first
 

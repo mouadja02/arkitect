@@ -18,9 +18,13 @@ const TIMEOUT = 120000;
 // Chromium refuses windows past 16384px, and a PNG that large is not readable anyway.
 const MAX_VIEWPORT = 16000;
 
+// On Linux a packaged Chrome or Edge comes before Chromium, and Ubuntu's
+// chromium-browser - a wrapper that execs the snap - comes last: the snap cannot
+// start inside a sandbox or container ("timeout waiting for snap system
+// profiles"), and ci.yml pins Chrome for the same reason (#113).
 const PATH_NAMES = {
   win32: ['msedge.exe', 'chrome.exe'],
-  posix: ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable', 'microsoft-edge', 'microsoft-edge-stable'],
+  posix: ['google-chrome', 'google-chrome-stable', 'microsoft-edge', 'microsoft-edge-stable', 'chromium', 'chromium-browser'],
 };
 
 const INSTALL_LOCATIONS = {
@@ -35,8 +39,8 @@ const INSTALL_LOCATIONS = {
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
   ],
   linux: () => [
-    '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable',
-    '/usr/bin/microsoft-edge', '/snap/bin/chromium', '/opt/google/chrome/chrome',
+    '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/opt/google/chrome/chrome', '/usr/bin/microsoft-edge',
+    '/usr/bin/chromium', '/usr/bin/chromium-browser', '/snap/bin/chromium',
   ],
 };
 

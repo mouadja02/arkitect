@@ -12,7 +12,7 @@ are the same files — you are only choosing how your tool finds them.
 | Claude Code | the plugin route | not needed for any other agent |
 | Docker | the local Excalidraw app | optional. Generation, validation and preview all work without it |
 | [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases) | rendering `.drawio` to PNG | optional, local only. `arkitect drawio render` discovers Linux/macOS/Windows installs; override with `--drawio-exe` or `DRAWIO_EXE` |
-| Xvfb | headless Linux Draw.io rendering | `sudo apt install -y xvfb` when `xvfb-run` is missing; automatically used without `DISPLAY` |
+| Xvfb | headless Linux Draw.io rendering | `sudo apt install -y xvfb` when `xvfb-run` is missing; automatically used without a usable `DISPLAY` |
 | PowerShell | legacy `.ps1` helpers | optional; Draw.io rendering also has a cross-platform Node helper |
 | Edge or Chrome | rasterising the Excalidraw SVG preview to PNG | already present on Windows and macOS |
 

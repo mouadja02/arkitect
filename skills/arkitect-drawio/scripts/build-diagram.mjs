@@ -22,7 +22,8 @@
 // grid snapping - the reference diagrams are placed free-hand, so this is a
 // deliberate normalisation, not an observed convention.
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
@@ -538,6 +539,8 @@ function main(argv) {
     process.exit(1);
   }
   const { xml, report } = built;
+  // A missing output folder is created, not reported as a stack trace (#113).
+  mkdirSync(dirname(out), { recursive: true });
   const backup = backupExisting(out);
   writeFileSync(out, xml);
   // Only once the new file is written: a failed write keeps every backup (#49).
