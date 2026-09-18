@@ -257,8 +257,10 @@ separate file, no naming scheme, no required format beyond that.
   of drifting silently across 4 files (#47)
 - An unknown node/edge `kind` (a typo) is named in the build report instead of
   silently drawing a fallback with no trace (#48)
-- The committed worked examples are proven byte-identical to a fresh build
-  from their spec (#50)
+- The committed worked examples are proven to match a fresh build from their
+  spec: the Draw.io starter byte for byte, the Excalidraw examples element by
+  element through a projection that drops ids, seeds, nonces, timestamps and
+  index keys (#50)
 - `AGENTS.md` and both engine `SKILL.md` files no longer contradict each other
   on icon-search order, spec-vs-hand-written-XML, or the render/commit policy
 - The Draw.io icon search's own hint no longer suggests a command that prints
