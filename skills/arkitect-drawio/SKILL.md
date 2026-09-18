@@ -110,7 +110,8 @@ shipped guide. Say so in the report.
    if it cannot be fixed, report 🔴 and fall back to validate-only — never skip
    the look silently. A render of a user's diagram stays local.
 
-8. **Open it on request** in Draw.io Desktop.
+8. **Open it on request** in Draw.io Desktop or the VS Code extension. Never
+   send the user to the hosted web editor with their diagram.
 
 9. **Report** under these headings, every one, even when it is short:
    **File** · **Assumptions** (every one, asked or not, and any product the

@@ -57,4 +57,5 @@ graders:
       another product's mark, as a plain box presented as finished, or if the
       response is silent about either one's source. Other components (a data
       source, a warehouse) may use any honest icon or a labelled box, but a
-      product the user did not name must be presented as an assumption.
+      product the user did not name must be presented as an assumption;
+      naming it under an Assumptions heading counts.

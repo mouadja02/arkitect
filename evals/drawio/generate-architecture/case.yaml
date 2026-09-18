@@ -60,6 +60,7 @@ graders:
       The response reports the saved file path, states the architectural
       assumptions it made, reports the validation result, and reports the
       render as it happened: that it looked at the rendered image, or that
-      rendering failed and why. It must not claim to have opened the hosted
-      draw.io editor or to have uploaded anything. Pass only if all of that
-      holds.
+      rendering failed and why. Recommending Draw.io Desktop or the VS Code
+      extension is fine; fail if it claims to have opened or uploaded to the
+      hosted draw.io editor, or sends the user to the hosted web editor with
+      the diagram. Pass only if all of that holds.
