@@ -21,6 +21,7 @@ where to find it.
 
 ```bash
 arkitect drawio icon "bedrock"                        # search the AWS palette
+arkitect drawio icon "bedrock" --compact              # just the verdict and a spec node
 arkitect drawio icon --cell aws/amazon-bedrock --label "Amazon Bedrock" --x 0 --y 0
 arkitect drawio logo --url https://.../logo.svg --name snowflake
 arkitect drawio logo --list
@@ -64,6 +65,7 @@ one-line warning, and never half applied. See [style.md](style.md#making-it-your
 
 ```bash
 arkitect excalidraw icon "postgres"                   # native libraries + shared packs
+arkitect excalidraw icon "postgres" --compact         # just the verdict and a spec node
 arkitect excalidraw icon --resolve gcp-icons:37       # what a spec node would draw
 arkitect excalidraw icon --stats
 arkitect excalidraw libraries                         # one line per bundled library

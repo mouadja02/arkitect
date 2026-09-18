@@ -54,13 +54,13 @@ shipped guide. Say so in the report.
 
 3. **Resolve icons — bundled packs first.**
    ```bash
-   node scripts/find-icon.mjs "bedrock"                    # metadata only, never bytes
-   node scripts/find-icon.mjs "cloud run" --context gcp    # bias toward the stack in play
+   node scripts/find-icon.mjs "bedrock" --compact          # verdict + spec node, never bytes
+   node scripts/find-icon.mjs "cloud run" --context gcp --compact   # bias toward the stack
    ```
    **A result that is not `confident` is a question, not an answer**: pick an id
-   deliberately, narrow with `--pack`, or ask. Put the id in the spec as
-   `{ "kind": "icon", "icon": "<id>" }`; the builder embeds the artwork. A match
-   with `bytes: "on-demand"`, a `lifecycle` block, or no match at all: follow
+   deliberately, narrow with `--pack`, or ask; drop `--compact` for every detail.
+   Put the id in the spec as `{ "kind": "icon", "icon": "<id>" }`; the builder
+   embeds the artwork. An `onDemand` or `lifecycle` note, or no match: follow
    `references/icons.md`. A product the packs do not carry gets its real logo
    (`kind: "logo"`, same file). **Never** use a different product's icon to fill
    a gap; a labelled box named in the report is honest.

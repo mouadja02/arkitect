@@ -1026,6 +1026,50 @@ test('a test callback that returns a promise fails instead of passing before it 
   assert(!probeLog.some((line) => line.startsWith('ok    ') && line.includes('later')), 'nothing async is logged as ok');
 });
 
+test('a compact icon search answers in under 1KB and keeps every verdict (#117)', () => {
+  const ask = (engine, query) => {
+    const out = cli([engine, 'icon', query, '--compact']);
+    assert(Buffer.byteLength(out) <= 1000, `${engine} icon "${query}" --compact is ${Buffer.byteLength(out)} bytes`);
+    eq(out.trim().split('\n').length, 1, `${engine} "${query}" is one line`);
+    return JSON.parse(out);
+  };
+  const full = (engine, query) => JSON.parse(cli([engine, 'icon', query]));
+
+  // The two searches the issue measured, and what they resolve to.
+  const bedrock = ask('drawio', 'bedrock');
+  eq(bedrock.resolved, full('drawio', 'bedrock').resolved, 'drawio: the same verdict as the full search');
+  eq(JSON.stringify(bedrock.node), '{"kind":"icon","icon":"aws/amazon-bedrock"}', 'drawio: a spec node');
+  const postgres = ask('excalidraw', 'postgres');
+  eq(postgres.draws, full('excalidraw', 'postgres').draws, 'excalidraw: the same verdict as the full search');
+  eq(postgres.node.icon, postgres.draws, 'excalidraw: a spec node');
+  assert(postgres.others.length <= 3, 'excalidraw: alternatives are bounded');
+
+  // Ambiguity stays a question, with bounded choices, in both engines.
+  const monitor = ask('drawio', 'monitor');
+  eq(monitor.confident, false, 'drawio: an ambiguous search is not settled');
+  assert(!('node' in monitor) && monitor.needsAChoice && monitor.choices.length === 4 && monitor.more > 0, 'drawio: choices, not a node');
+  const queue = ask('excalidraw', 'queue');
+  assert(!('draws' in queue) && !('node' in queue) && queue.placeholder && queue.choices.length <= 4, 'excalidraw: choices, not a node');
+
+  // A lifecycle caveat and an on-demand next step survive compaction.
+  const census = ask('drawio', 'census');
+  assert(/folded into Fivetran/.test(census.lifecycle) && census.successor, 'drawio: the lifecycle caveat and successor');
+  assert(/placeholder|fetch/i.test(census.onDemand), 'drawio: what to do about a mark with no bytes');
+  const hudi = ask('drawio', 'hudi');
+  assert(hudi.choices.some((c) => c.onDemand), 'drawio: an on-demand choice is marked');
+
+  // Nothing found is said with a next step, never as an empty answer.
+  for (const engine of ['drawio', 'excalidraw']) {
+    const none = ask(engine, 'zzqqxx');
+    assert(none.found === 0 && /labelled/.test(none.next), `${engine}: a miss says what to do`);
+  }
+
+  // The full output is unchanged by the new flag's existence.
+  assert(Array.isArray(full('drawio', 'bedrock').matches[0].variants), 'drawio: the full search is as before');
+  const r = spawnSync(process.execPath, [CLI, 'excalidraw', 'icon', '--stats', '--compact'], { encoding: 'utf8' });
+  eq(r.status, 2, '--compact applies to a search only');
+});
+
 // -------------------------------------------------------------
 
 finish();

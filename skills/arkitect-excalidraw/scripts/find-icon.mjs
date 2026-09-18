@@ -3,6 +3,7 @@
 //
 //   node find-icon.mjs "dbt"                     rank matches, metadata only
 //   node find-icon.mjs "postgres" --limit 12
+//   node find-icon.mjs "postgres" --compact      the verdict and a spec node, under 1KB
 //   node find-icon.mjs --stats
 //   node find-icon.mjs --resolve dbt             what a spec node would draw
 //
@@ -24,6 +25,7 @@ import { loadIndex as loadIconIndex, getIcon } from './make-icon.mjs';
 import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
 import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef } from './lib/shared-icons.mjs';
+import { loadCatalog as loadSharedCatalog, byExactId, lifecycleOf } from '../../arkitect-drawio/scripts/find-icon.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath } from 'node:path';
 
@@ -224,7 +226,32 @@ export function resolveIcon(ref, { shared = true } = {}) {
   return entry ? resolveIcon(entry.ref, { shared }) : null;
 }
 
-const USAGE = 'usage: find-icon.mjs <component name> [--limit N] | --stats | --resolve <ref>';
+// The answer an agent acts on, in well under 1KB (#117): what a spec node draws,
+// or why it gets a placeholder, plus a few refs to choose between. A shared mark
+// carries its lifecycle caveat. Nothing is settled by taking the first hit.
+export const COMPACT_CHOICES = 4;
+export function compactAnswer(query, hits, verdict) {
+  const choice = (h) => ({ ref: h.ref, name: h.name, score: h.score });
+  if (!hits.length) {
+    return { query, found: 0,
+      next: 'Nothing matches. Try browse-libraries.mjs --search, or make-icon.mjs from the real logo; else a labelled shape, said so.' };
+  }
+  if (verdict.entry) {
+    const ref = verdict.entry.ref;
+    const shared = ref.startsWith('drawio:') ? byExactId(loadSharedCatalog(), ref.slice('drawio:'.length)) : null;
+    const life = shared ? lifecycleOf(shared) : null;
+    const others = hits.filter((h) => h.ref !== ref).slice(0, COMPACT_CHOICES - 1).map(choice);
+    return { query, draws: ref, name: verdict.entry.name,
+      ...(life ? { lifecycle: life.caveat } : {}),
+      node: { kind: 'icon', icon: ref },
+      ...(others.length ? { others } : {}) };
+  }
+  return { query, placeholder: verdict.reason, choices: hits.slice(0, COMPACT_CHOICES).map(choice),
+    ...(hits.length > COMPACT_CHOICES ? { more: hits.length - COMPACT_CHOICES } : {}),
+    next: 'Pick a ref deliberately and set "icon": "<ref>", or keep the placeholder and say so; drop --compact for detail.' };
+}
+
+const USAGE = 'usage: find-icon.mjs <component name> [--limit N] [--compact] | --stats | --resolve <ref>';
 
 const limitArg = (value, flag) => {
   const n = Number(value);
@@ -236,12 +263,13 @@ const limitArg = (value, flag) => {
 
 function main(argv) {
   const { options, positionals: words } = parseCliOrExit(argv, {
-    values: { '--limit': limitArg, '--resolve': null }, switches: ['--stats'],
+    values: { '--limit': limitArg, '--resolve': null }, switches: ['--stats', '--compact'],
   }, USAGE);
   // Exactly one of a search, --stats and --resolve; --limit only shapes a search.
   const modes = [words.length > 0, Boolean(options.stats), options.resolve !== undefined].filter(Boolean).length;
   if (modes !== 1) exitUsage(modes ? 'a search, --stats and --resolve are separate requests' : 'expected a component name', USAGE);
   if (options.limit !== undefined && !words.length) exitUsage('--limit applies to a search', USAGE);
+  if (options.compact && !words.length) exitUsage('--compact applies to a search', USAGE);
   const entries = catalog();
 
   if (options.stats) {
@@ -273,6 +301,10 @@ function main(argv) {
 
   const query = words.join(' ');
   const hits = search(query, { entries, limit: options.limit ?? 8 });
+  if (options.compact) {
+    console.log(JSON.stringify(compactAnswer(query, hits, hits.length ? unattended(query, { entries }) : {})));
+    return;
+  }
   if (!hits.length) {
     console.log(JSON.stringify({
       query,

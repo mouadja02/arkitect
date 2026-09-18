@@ -60,7 +60,7 @@ Do not undo them by hand.
 
 3. **Resolve icons — bundled libraries first.**
    ```bash
-   node scripts/find-icon.mjs "postgres"
+   node scripts/find-icon.mjs "postgres" --compact
    ```
    Put the ref from a match in the spec: `"icon": "data-platform:9"`. A node
    that only names its component is resolved by product name alone, never by a

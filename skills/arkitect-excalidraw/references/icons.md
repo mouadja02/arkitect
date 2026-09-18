@@ -9,6 +9,7 @@ public catalogue. Paths are relative to the skill; scripts are in `scripts/`.
 ```bash
 node scripts/find-icon.mjs "postgres"
 node scripts/find-icon.mjs "postgres" --limit 12
+node scripts/find-icon.mjs "postgres" --compact          # the verdict alone, under 1KB
 node scripts/find-icon.mjs --resolve data-platform:9     # what a spec node would draw
 node scripts/find-icon.mjs --stats
 ```
@@ -19,7 +20,8 @@ prefix like `dynamo` for DynamoDB. A name that merely appears inside a different
 product's (`postgres` inside "Azure Database for Postgres") never selects that
 product. Shared packs may supply the correct mark; otherwise it gets a
 placeholder. The search says which up front: `"draws": "<ref>"`, or
-`"placeholder": "<why>"`.
+`"placeholder": "<why>"`. With `--compact` it prints only that, a spec `node` or
+at most four `choices`, and a few `others` (#117).
 
 **Shared packs** fill coverage gaps with 4,843 original SVG/PNG marks from the
 sibling Draw.io skill. Existing successful resolutions keep their artwork; use
