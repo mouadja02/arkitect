@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-18
+
 ### Fixed
 
 - Draw.io rendering on Linux uses `xvfb-run` when `DISPLAY` names a local X
@@ -29,6 +31,14 @@ separate file, no naming scheme, no required format beyond that.
   down from 34,621 (Draw.io) and 46,646 (Excalidraw): `SKILL.md` keeps one
   short workflow and a pattern selector, and editing, icons, logos, libraries
   and rendering move to `references/` behind a named condition (#113)
+- Both skills draw instead of asking when the request already names the
+  components and flows, treat a product the user did not name as a stated
+  assumption, report under fixed headings (File, Assumptions, Icons,
+  Validation, Render, Deviations) with the render as it happened, write the
+  spec next to the output, and never send the user to the hosted Draw.io
+  editor (#113)
+- The eval cases load under `claude plugin eval` (schema 1.1), carry the
+  engine in their names, and expect the marks that are bundled today (#113)
 
 ## [1.2.1] — 2026-09-18
 
