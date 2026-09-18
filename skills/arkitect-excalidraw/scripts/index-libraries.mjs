@@ -1,23 +1,25 @@
 #!/usr/bin/env node
 // Index the Excalidraw libraries bundled with this plugin.
 //
-//   node index-libraries.mjs --build          rebuild assets/libraries/bundled/index.json
+//   node index-libraries.mjs --build          compact the bundled libraries, then rebuild
+//                                             assets/libraries/bundled/index.json
 //   node index-libraries.mjs --stats
 //   node index-libraries.mjs --list           one line per library
 //   node index-libraries.mjs --items <slug>   the item names in one library
 //   node index-libraries.mjs --unnamed        libraries whose items cannot be searched by name
 //
-// The bundled set is the primary source of marks for a diagram. It is 21MB of
+// The bundled set is the primary source of marks for a diagram. It is 11MB of
 // JSON across three dozen files, so nothing searches it directly: this writes a
 // flat index of names and sizes - no element payloads - and find-icon.mjs reads
 // only that. A query then costs one small file read instead of parsing every
 // library.
 //
 // Rebuild after adding or removing a .excalidrawlib. A test fails if the index
-// and the files disagree.
+// and the files disagree, or if a library still carries formatting whitespace.
 
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { dirname, join, basename } from 'node:path';
 import { readLibrary, bbox, normalizeName, writeScene } from './lib/excalidraw-core.mjs';
 import { contactSheet } from './browse-libraries.mjs';
@@ -52,6 +54,28 @@ function libraryFiles() {
 function titleFor(slug) {
   const s = slug.replace(/-/g, ' ');
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// A library as published is pretty-printed; about half its bytes are
+// indentation (#118). The compact form parses to exactly the same values, item
+// order included. Null when it would not - a -0 prints as 0 - so that file is
+// left as it is rather than changed.
+export function compactLibrary(raw) {
+  const value = JSON.parse(raw);
+  const compact = `${JSON.stringify(value)}\n`;
+  return isDeepStrictEqual(JSON.parse(compact), value) ? compact : null;
+}
+
+// Rewrites each bundled library that is not already compact; returns their names.
+export function compactBundled() {
+  const changed = [];
+  for (const file of libraryFiles()) {
+    const path = join(BUNDLED_DIR, file);
+    const raw = readFileSync(path, 'utf8');
+    const compact = compactLibrary(raw);
+    if (compact && compact !== raw) { writeFileSync(path, compact); changed.push(file); }
+  }
+  return changed;
 }
 
 export function buildIndex() {
@@ -168,9 +192,10 @@ function main(argv) {
   const flag = (n) => { const i = argv.indexOf(n); return i === -1 ? null : argv[i + 1]; };
 
   if (argv.includes('--build')) {
+    const compacted = compactBundled();
     const index = buildIndex();
     writeFileSync(BUNDLED_INDEX, `${JSON.stringify(index, null, 2)}\n`);
-    console.log(JSON.stringify({ wrote: BUNDLED_INDEX, ...index.totals }, null, 2));
+    console.log(JSON.stringify({ wrote: BUNDLED_INDEX, compacted, ...index.totals }, null, 2));
     return;
   }
 

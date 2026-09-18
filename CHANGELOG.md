@@ -19,6 +19,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- The 36 bundled Excalidraw libraries are committed as compact JSON, 11.2 MB
+  instead of 21.1 MB with every parsed value unchanged, and
+  `index-libraries.mjs --build` compacts a library before indexing it (#118).
 - The plugin manifest declares `./skills/` as its skills path instead of the
   whole repository, so `claude plugin eval` no longer warns that `evals/`
   overlaps it (#138).

@@ -708,6 +708,24 @@ test('the bundled index matches the libraries on disk', () => {
   }
 });
 
+test('the bundled libraries ship compact, and the index records their real sizes (#118)', () => {
+  const index = libIndex.loadIndex();
+  let total = 0;
+  for (const l of index.libraries) {
+    const path = join(libIndex.BUNDLED_DIR, l.file);
+    const raw = readFileSync(path, 'utf8');
+    eq(libIndex.compactLibrary(raw), raw, `${l.file} carries formatting whitespace - run: node index-libraries.mjs --build`);
+    eq(l.bytes, Buffer.byteLength(raw), `${l.file} size in the index`);
+    total += l.bytes;
+  }
+  eq(index.totals.bytes, total, 'the index total');
+  assert(total <= 11.2e6, `the bundled libraries grew to ${total} bytes`);
+  // Compacting keeps every parsed value, item order included, or declines.
+  const pretty = JSON.stringify({ type: 'excalidrawlib', libraryItems: [{ id: 'b' }, { id: 'a', n: 1.5e-7 }] }, null, 2);
+  eq(libIndex.compactLibrary(pretty), '{"type":"excalidrawlib","libraryItems":[{"id":"b"},{"id":"a","n":1.5e-7}]}\n', 'compact form');
+  eq(libIndex.compactLibrary('{"x": -0}'), null, 'a -0 would print as 0, so the file is left alone');
+});
+
 test('no bundled item is given a name nobody gave it', () => {
   const index = libIndex.loadIndex();
   for (const it of index.items) {
