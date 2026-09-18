@@ -16,6 +16,10 @@ separate file, no naming scheme, no required format beyond that.
 - `excalidraw build --seed N` builds the same scene byte for byte on every run (#119).
 - `icon --compact` in both engines answers an icon search in one line under 1KB; the skills use it (#117).
 
+### Changed
+
+- The Excalidraw skill and its largest pattern now read 10,484 bytes, down from 11,891 (#137).
+
 ## [1.4.0] — 2026-09-18
 
 ### Added
