@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `271 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `272 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -45,6 +45,7 @@ process, so they cannot tread on each other.
 | Redaction | no sensitive string from a reference diagram appears anywhere in the repository |
 | Repository contents | the repository-wide checks - broken docs links and both redaction guards - read the files git says are ours: tracked, plus new ones that are not ignored, so a local agent install or any other untracked directory in the checkout is not mistaken for our own text; nothing git tracks is a file `.gitignore` excludes, which an ignore rule written after a force-add cannot fix on its own |
 | Icon counts | every exact icon count a doc quotes — the marks that ship, the bundled total across both engines, the entries catalogued without bytes, each pack's count in the Draw.io skill's table, the Excalidraw library and item totals, and both answer keys' sizes — is checked against the catalog, the library index and the query files, and the failure names the value to write; a sentence that stops quoting its number fails too, so rewording one is deliberate (#78) |
+| Test harness | the three suites share one synchronous `test()`: a callback that returns a promise, whether it later resolves or rejects, fails with that reason instead of passing before its assertions ran, and its rejection cannot end the run; a synchronous throw still fails with its message and a skip still skips (#114) |
 
 ### Draw.io
 

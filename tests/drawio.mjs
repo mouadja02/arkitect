@@ -15,6 +15,7 @@ import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 import { repoFiles } from './repo-files.mjs';
+import { createHarness, settle } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -28,28 +29,8 @@ const SOURCES_FILE = join(ROOT, '.analysis', 'sources.local.json');
 // the machine cannot change what a build here draws.
 process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
 
-let pass = 0; let fail = 0; let skip = 0;
-const failures = [];
-
-// Tests that need reference diagrams of your own. They skip on a clone without
-// .analysis/sources.local.json, and run-tests.mjs checks the skip count quoted
-// in docs/testing.md against how many are declared this way (#47).
-let sourceDependent = 0;
-function sourceTest(name, fn) {
-  sourceDependent++;
-  test(name, fn);
-}
-
-function test(name, fn) {
-  try {
-    const r = fn();
-    if (r === 'skip') { skip++; console.log(`skip  ${name}`); return; }
-    pass++; console.log(`ok    ${name}`);
-  } catch (e) {
-    fail++; failures.push(`${name}: ${e.message}`);
-    console.log(`FAIL  ${name}\n        ${e.message}`);
-  }
-}
+// test() is synchronous; a callback that returns a promise fails (#114).
+const { test, sourceTest, finish } = createHarness();
 
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function eq(a, b, msg) { if (a !== b) throw new Error(`${msg} (expected ${b}, got ${a})`); }
@@ -1268,8 +1249,10 @@ test('the Apache and CNCF marks that stay on-demand record the licence finding, 
   }
 });
 
-test('committed libraries still match the manifest they were built from', async () => {
-  const checks = await packs.verify();
+const verified = await settle(packs.verify());
+test('committed libraries still match the manifest they were built from', () => {
+  if (verified.error) throw verified.error;
+  const checks = verified.value;
   const bad = checks.filter((c) => !c.pass);
   assert(bad.length === 0, `failing checks: ${bad.map((c) => `${c.name} [${c.detail}]`).join(', ')}`);
   assert(checks.length >= 50, `expected at least 50 checks, got ${checks.length}`);
@@ -1282,7 +1265,6 @@ test('committed libraries still match the manifest they were built from', async 
 // The checks reach the network, so the suite drives them with fake fetchers.
 // test() is synchronous: settle the promises first, assert afterwards.
 const upstream = await import(`file://${join(SCRIPTS, 'lib', 'upstream.mjs').replace(/\\/g, '/')}`);
-const settle = async (promise) => { try { return { value: await promise }; } catch (error) { return { error }; } };
 
 const fakeCatalog = { icons: [
   { id: 'brands/gonebrand', bytes: 'committed', source: 'simple-icons@1.0.0', upstreamId: 'gonebrand' },
@@ -3681,7 +3663,4 @@ test('scripts avoid hard-coded absolute paths', () => {
 
 // -------------------------------------------------------------
 
-console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
-console.log(`source-dependent: ${sourceDependent}`);
-if (!haveSources) console.log('(reference-diagram tests skipped: .analysis/sources.local.json not present)');
-if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }
+finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');

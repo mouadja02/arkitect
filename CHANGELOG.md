@@ -11,6 +11,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- A test callback that returns a promise fails instead of counting as passed
+  before its assertions ran; the three suites share one harness, and the
+  library-verification test settles before it asserts (#114)
+
 ## [1.2.0] — 2026-09-18
 
 ### Added

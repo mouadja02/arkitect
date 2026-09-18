@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
 import { liveCounts, checkDocCounts } from './icon-count-guard.mjs';
+import { createHarness, settle } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -25,19 +26,9 @@ const TMP = join(HERE, 'output', 'toolkit');
 // runs, the packed one included, inherits this.
 process.env.ARKITECT_HOME = join(TMP, 'arkitect-home');
 
-let pass = 0; let fail = 0; let skip = 0;
-const failures = [];
+// test() is synchronous; a callback that returns a promise fails (#114).
+const { test, finish } = createHarness();
 
-function test(name, fn) {
-  try {
-    const r = fn();
-    if (r === 'skip') { skip++; console.log(`skip  ${name}`); return; }
-    pass++; console.log(`ok    ${name}`);
-  } catch (e) {
-    fail++; failures.push(`${name}: ${e.message}`);
-    console.log(`FAIL  ${name}\n        ${e.message}`);
-  }
-}
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 function eq(a, b, msg) { if (a !== b) throw new Error(`${msg} (expected ${b}, got ${a})`); }
 
@@ -867,22 +858,21 @@ test('a release bumps the version, dates [Unreleased] verbatim and opens a fresh
 });
 
 // test() is synchronous: the model calls are settled first, asserted afterwards.
-const settleRelease = async (p) => { try { return { value: await p }; } catch (error) { return { error }; } };
 const goodDraft = '### Added\n\n- New command (#9)\n\n### Fixed\n\n- A crash on\n  empty input';
 const draftMessages = release.draftMessages('Fix thing (#3)', '### Added\n\n- Example');
 const sentToModel = [];
-const modelOk = await settleRelease(release.callModel({
+const modelOk = await settle(release.callModel({
   baseUrl: 'https://llm.example/v1/', model: 'm', apiKey: 'k', messages: draftMessages,
   fetchImpl: async (url, init) => {
     sentToModel.push({ url, init });
     return { ok: true, json: async () => ({ choices: [{ message: { content: `\`\`\`markdown\n${goodDraft}\n\`\`\`` } }] }) };
   },
 }));
-const modelUnset = await settleRelease(release.callModel({ baseUrl: '', model: 'm', apiKey: '', messages: draftMessages,
+const modelUnset = await settle(release.callModel({ baseUrl: '', model: 'm', apiKey: '', messages: draftMessages,
   fetchImpl: async () => { throw new Error('should not be called'); } }));
-const modelDown = await settleRelease(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
+const modelDown = await settle(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
   fetchImpl: async () => ({ ok: false, status: 429, statusText: 'Too Many Requests' }) }));
-const modelBlank = await settleRelease(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
+const modelBlank = await settle(release.callModel({ baseUrl: 'https://x', model: 'm', apiKey: 'k', messages: draftMessages,
   fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: '  ' } }] }) }) }));
 
 test('a model-drafted changelog fills only an empty [Unreleased], in the house shape, and a failed call fails (#88)', () => {
@@ -928,7 +918,36 @@ test('the release workflows are started by a person, gated by a merged pull requ
   }
 });
 
+// ------------------------------------------------------------- the harness
+
+// A second harness, logging to an array so its FAIL lines stay out of this run.
+// Every callback runs now; the rejection gets a turn to escape before the checks.
+const probeLog = [];
+const probe = createHarness({ log: (line) => probeLog.push(line) });
+const escaped = [];
+const onEscape = (reason) => escaped.push(reason);
+process.on('unhandledRejection', onEscape);
+probe.test('rejects later', async () => { await Promise.resolve(); throw new Error('assertion failed'); });
+probe.test('resolves later', async () => {});
+probe.test('a bare thenable', () => ({ then() {} }));
+probe.test('passes', () => {});
+probe.test('skips', () => 'skip');
+probe.test('throws', () => { throw new Error('boom'); });
+await new Promise((done) => setImmediate(done));
+process.off('unhandledRejection', onEscape);
+
+test('a test callback that returns a promise fails instead of passing before it ran (#114)', () => {
+  const { pass, fail, skip } = probe.counts;
+  eq(`${pass}/${fail}/${skip}`, '1/4/1', 'pass/fail/skip');
+  for (const name of ['rejects later', 'resolves later', 'a bare thenable']) {
+    assert(probe.failures.includes(`${name}: returned a promise; settle it before test() and assert synchronously`),
+      `${name} is a failure: ${probe.failures.join(' | ')}`);
+  }
+  assert(probe.failures.includes('throws: boom'), 'a synchronous throw still fails with its message');
+  eq(escaped.length, 0, 'the rejection is observed, not left to end the run');
+  assert(!probeLog.some((line) => line.startsWith('ok    ') && line.includes('later')), 'nothing async is logged as ok');
+});
+
 // -------------------------------------------------------------
 
-console.log(`\n${pass} passed, ${fail} failed, ${skip} skipped`);
-if (fail) { console.log('\nfailures:'); for (const f of failures) console.log(`  - ${f}`); process.exit(1); }
+finish();
