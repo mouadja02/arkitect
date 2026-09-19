@@ -11,6 +11,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Security
+
+- The Excalidraw preview SVG no longer carries anything a scene file put there:
+  colours, numbers, the fill pattern id and the image data URL are checked
+  against a grammar instead of interpolated, so a crafted scene can no longer
+  write its own attribute or `<script>` into a preview that runs when the file
+  is opened in a browser (#150).
+
 ## [1.5.0] — 2026-09-18
 
 ### Added

@@ -31,12 +31,24 @@ const FONT_STACK = {
 
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-const f = (n) => Math.round(n * 100) / 100;
+// A scene file is user-supplied and may be hostile: anything interpolated into
+// the SVG has to be checked, or a colour of `#000" onload="...` writes its own
+// attribute and `#000"><script>` writes its own element. These are checked
+// against a grammar rather than escaped, because an escaped nonsense colour is
+// inert but still nonsense, and every field here has a sane default (#150).
+const COLOUR = /^(?:#[0-9a-f]{3,8}|transparent|none|[a-z]{3,20}|(?:rgb|rgba|hsl|hsla)\([\d.,%\s/-]+\))$/i;
+const colour = (value, fallback) => (COLOUR.test(String(value ?? '')) ? String(value) : fallback);
+const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+// Excalidraw stores embedded artwork as a base64 image data URL. Anything else
+// - a remote URL, a javascript: scheme, an SVG carrying script - is not drawn.
+const DATA_IMAGE = /^data:image\/(?:png|jpe?g|gif|webp|avif|svg\+xml)(?:;[\w-]+=[\w-]+)*;base64,[A-Za-z0-9+/=\s]*$/;
+
+const f = (n) => Math.round(num(n, 0) * 100) / 100;
 
 function dashArray(el) {
-  const w = el.strokeWidth || 1;
+  const w = strokeWidth(el);
   if (el.strokeStyle === 'dashed') return `${f(8 * w)} ${f(8 * w)}`;
   if (el.strokeStyle === 'dotted') return `${f(1.5 * w)} ${f(6 * w)}`;
   return null;
@@ -44,42 +56,51 @@ function dashArray(el) {
 
 // Hachure and cross-hatch become SVG patterns, one per colour/style pair.
 function fillRef(el, patterns) {
-  const bg = el.backgroundColor;
-  if (!bg || bg === 'transparent') return 'none';
+  const bg = colour(el.backgroundColor, 'transparent');
+  if (bg === 'transparent' || bg === 'none') return 'none';
   if (el.fillStyle === 'solid' || !el.fillStyle) return bg;
-  const key = `${el.fillStyle}-${bg.replace('#', '')}`;
+  // The id is generated, never taken from the scene: a fill style or colour is
+  // free to contain a quote, and this ends up in both an id and a url(#...).
+  const key = `${el.fillStyle === 'cross-hatch' ? 'cross-hatch' : 'hachure'}-${bg}`;
   if (!patterns.has(key)) {
     const lines = el.fillStyle === 'cross-hatch'
       ? '<path d="M0 0 L8 8 M8 0 L0 8" />'
       : '<path d="M-2 8 L8 -2 M0 10 L10 0" />';
-    patterns.set(key, `<pattern id="${key}" width="8" height="8" patternUnits="userSpaceOnUse">`
-      + `<g stroke="${bg}" stroke-width="1.6" fill="none">${lines}</g></pattern>`);
+    const id = `fill-${patterns.size}`;
+    patterns.set(key, { id, markup: `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">`
+      + `<g stroke="${bg}" stroke-width="1.6" fill="none">${lines}</g></pattern>` });
   }
-  return `url(#${key})`;
+  return `url(#${patterns.get(key).id})`;
 }
+
+const stroke = (el) => colour(el.strokeColor, '#1e1e1e');
+const strokeWidth = (el) => {
+  const w = num(el.strokeWidth, 1);
+  return w > 0 ? w : 1;
+};
 
 function strokeAttrs(el) {
   const dash = dashArray(el);
-  return `stroke="${el.strokeColor}" stroke-width="${el.strokeWidth || 1}" `
+  return `stroke="${stroke(el)}" stroke-width="${f(strokeWidth(el))}" `
     + 'stroke-linecap="round" stroke-linejoin="round" fill="none"'
     + (dash ? ` stroke-dasharray="${dash}"` : '');
 }
 
 function arrowhead(kind, x, y, angle, el) {
   if (!kind) return '';
-  const size = 12 + (el.strokeWidth || 1) * 2;
+  const size = 12 + strokeWidth(el) * 2;
   const a1 = angle + Math.PI - 0.45;
   const a2 = angle + Math.PI + 0.45;
   const p1 = [x + size * Math.cos(a1), y + size * Math.sin(a1)];
   const p2 = [x + size * Math.cos(a2), y + size * Math.sin(a2)];
-  const common = `stroke="${el.strokeColor}" stroke-width="${el.strokeWidth || 1}" stroke-linecap="round" stroke-linejoin="round"`;
+  const common = `stroke="${stroke(el)}" stroke-width="${f(strokeWidth(el))}" stroke-linecap="round" stroke-linejoin="round"`;
   if (kind === 'triangle' || kind === 'triangle_outline') {
     return `<path d="M ${f(x)} ${f(y)} L ${f(p1[0])} ${f(p1[1])} L ${f(p2[0])} ${f(p2[1])} Z" `
-      + `${common} fill="${kind === 'triangle' ? el.strokeColor : 'none'}" />`;
+      + `${common} fill="${kind === 'triangle' ? stroke(el) : 'none'}" />`;
   }
   if (kind === 'dot' || kind === 'circle' || kind === 'circle_outline') {
     return `<circle cx="${f(x)}" cy="${f(y)}" r="${f(size / 2.6)}" ${common} `
-      + `fill="${kind === 'circle_outline' ? 'none' : el.strokeColor}" />`;
+      + `fill="${kind === 'circle_outline' ? 'none' : stroke(el)}" />`;
   }
   if (kind === 'bar') {
     const b1 = [x + size * 0.6 * Math.cos(angle + Math.PI / 2), y + size * 0.6 * Math.sin(angle + Math.PI / 2)];
@@ -92,7 +113,7 @@ function arrowhead(kind, x, y, angle, el) {
     const s1 = [mid[0] + (size / 2.2) * Math.cos(angle + Math.PI / 2), mid[1] + (size / 2.2) * Math.sin(angle + Math.PI / 2)];
     const s2 = [mid[0] + (size / 2.2) * Math.cos(angle - Math.PI / 2), mid[1] + (size / 2.2) * Math.sin(angle - Math.PI / 2)];
     return `<path d="M ${f(x)} ${f(y)} L ${f(s1[0])} ${f(s1[1])} L ${f(back[0])} ${f(back[1])} L ${f(s2[0])} ${f(s2[1])} Z" `
-      + `${common} fill="${kind === 'diamond' ? el.strokeColor : 'none'}" />`;
+      + `${common} fill="${kind === 'diamond' ? stroke(el) : 'none'}" />`;
   }
   // default "arrow": two barbs
   return `<path d="M ${f(p1[0])} ${f(p1[1])} L ${f(x)} ${f(y)} L ${f(p2[0])} ${f(p2[1])}" ${common} fill="none" />`;
@@ -100,30 +121,33 @@ function arrowhead(kind, x, y, angle, el) {
 
 function renderText(el, knockout = null) {
   const family = FONT_STACK[el.fontFamily] ?? FONT_STACK[1];
-  const lineHeight = el.fontSize * (el.lineHeight ?? LINE_HEIGHT[el.fontFamily] ?? 1.25);
+  const fontSize = num(el.fontSize, 20);
+  const lineHeight = fontSize * num(el.lineHeight ?? LINE_HEIGHT[el.fontFamily], 1.25);
   const lines = String(el.text ?? '').split('\n');
   const anchor = el.textAlign === 'center' ? 'middle' : el.textAlign === 'right' ? 'end' : 'start';
-  const ax = el.textAlign === 'center' ? el.x + el.width / 2 : el.textAlign === 'right' ? el.x + el.width : el.x;
+  const x = num(el.x, 0);
+  const width = num(el.width, 0);
+  const ax = el.textAlign === 'center' ? x + width / 2 : el.textAlign === 'right' ? x + width : x;
   // Excalidraw positions the first baseline about 0.79 of a line-height down.
-  const baseline = el.y + lineHeight * 0.79;
+  const baseline = num(el.y, 0) + lineHeight * 0.79;
   const tspans = lines.map((l, i) =>
     `<tspan x="${f(ax)}" y="${f(baseline + i * lineHeight)}">${esc(l) || ' '}</tspan>`).join('');
   // Excalidraw clears the canvas behind a label bound to an arrow, so the text
   // is readable where it crosses the line. Without it the preview looks worse
   // than the real thing and invites a pointless layout fix.
   const bg = knockout
-    ? `<rect x="${f(el.x - 4)}" y="${f(el.y - 2)}" width="${f(el.width + 8)}" height="${f(el.height + 4)}" `
+    ? `<rect x="${f(x - 4)}" y="${f(num(el.y, 0) - 2)}" width="${f(width + 8)}" height="${f(num(el.height, 0) + 4)}" `
       + `fill="${knockout}" stroke="none" />`
     : '';
-  return `${bg}<text font-family="${family}" font-size="${el.fontSize}" fill="${el.strokeColor}" `
+  return `${bg}<text font-family="${family}" font-size="${f(fontSize)}" fill="${stroke(el)}" `
     + `text-anchor="${anchor}" style="white-space:pre">${tspans}</text>`;
 }
 
 function renderElement(el, scene, patterns) {
   if (el.isDeleted) return '';
-  const opacity = (el.opacity ?? 100) / 100;
-  const seed = el.seed ?? 1;
-  const roughness = el.roughness ?? 1;
+  const opacity = num(el.opacity, 100) / 100;
+  const seed = num(el.seed, 1);
+  const roughness = num(el.roughness, 1);
   const rough = { seed, roughness, passes: el.strokeStyle === 'solid' ? 2 : 1 };
   const fill = fillRef(el, patterns);
   let body = '';
@@ -190,36 +214,37 @@ function renderElement(el, scene, patterns) {
     case 'text': {
       const container = el.containerId ? scene.elements.find((o) => o.id === el.containerId) : null;
       body = renderText(el, container?.type === 'arrow'
-        ? (scene.appState?.viewBackgroundColor ?? '#ffffff')
+        ? colour(scene.appState?.viewBackgroundColor, '#ffffff')
         : null);
       break;
     }
     case 'image': {
       const file = scene.files?.[el.fileId];
-      if (file?.dataURL) {
+      if (file?.dataURL && DATA_IMAGE.test(String(file.dataURL))) {
         body = `<image href="${esc(file.dataURL)}" x="${f(el.x)}" y="${f(el.y)}" `
           + `width="${f(el.width)}" height="${f(el.height)}" preserveAspectRatio="xMidYMid meet" />`;
       } else {
         body = `<rect x="${f(el.x)}" y="${f(el.y)}" width="${f(el.width)}" height="${f(el.height)}" `
           + 'fill="none" stroke="#e03131" stroke-dasharray="4 4" />'
           + `<text x="${f(el.x + el.width / 2)}" y="${f(el.y + el.height / 2)}" text-anchor="middle" `
-          + `font-size="11" fill="#e03131">missing file</text>`;
+          + `font-size="11" fill="#e03131">${file?.dataURL ? 'unsupported image' : 'missing file'}</text>`;
       }
       break;
     }
     case 'embeddable':
     case 'iframe':
       body = `<rect x="${f(el.x)}" y="${f(el.y)}" width="${f(el.width)}" height="${f(el.height)}" `
-        + `fill="#f1f3f5" stroke="${el.strokeColor}" />`;
+        + `fill="#f1f3f5" stroke="${stroke(el)}" />`;
       break;
     default:
       return '';
   }
 
-  const rot = el.angle
-    ? ` transform="rotate(${f((el.angle * 180) / Math.PI)} ${f(el.x + (el.width ?? 0) / 2)} ${f(el.y + (el.height ?? 0) / 2)})"`
+  const angle = num(el.angle, 0);
+  const rot = angle
+    ? ` transform="rotate(${f((angle * 180) / Math.PI)} ${f(num(el.x, 0) + num(el.width, 0) / 2)} ${f(num(el.y, 0) + num(el.height, 0) / 2)})"`
     : '';
-  return `<g opacity="${opacity}"${rot}>${body}</g>`;
+  return `<g opacity="${f(opacity)}"${rot}>${body}</g>`;
 }
 
 export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', background = null } = {}) {
@@ -243,13 +268,13 @@ export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', ba
   ].map((el) => (style === 'clean' ? { ...el, roughness: 0 } : el));
 
   const body = ordered.map((el) => renderElement(el, scene, patterns)).join('\n  ');
-  const bg = background ?? scene.appState?.viewBackgroundColor ?? '#ffffff';
+  const bg = colour(background ?? scene.appState?.viewBackgroundColor, '#ffffff');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      width="${f(width * scale)}" height="${f(height * scale)}"
      viewBox="${f(view.x - padding)} ${f(view.y - padding)} ${f(width)} ${f(height)}">
-  <defs>${[...patterns.values()].join('')}</defs>
+  <defs>${[...patterns.values()].map((p) => p.markup).join('')}</defs>
   <rect x="${f(view.x - padding)}" y="${f(view.y - padding)}" width="${f(width)}" height="${f(height)}" fill="${bg}" />
   ${body}
 </svg>

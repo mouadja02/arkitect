@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { repoFiles } from './repo-files.mjs';
+import * as xml from '../skills/arkitect-drawio/scripts/lib/xml-check.mjs';
 import { createHarness } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -1131,6 +1132,88 @@ test('the renderer produces an SVG covering every element', () => {
 
 test('the render is stable across runs', () => {
   eq(renderer.sceneToSvg(built.scene), renderer.sceneToSvg(built.scene), 'same scene, same SVG');
+});
+
+// A scene file is user input, and the preview is meant to be opened. A
+// strokeColor of `#1e1e1e"><script>` used to close the attribute, close the
+// element and write its own script, which ran on open - reaching the network
+// from a file:// page with the diagram in hand (#150).
+test('no scene field can write an attribute or an element into the preview (#150)', () => {
+  const payload = '#1e1e1e" /><script>window.PROBE=1</script><path d="';
+  // Every field the renderer interpolates, poisoned, beside the benign twin
+  // the output is compared against.
+  const poison = {
+    strokeColor: payload,
+    backgroundColor: payload,
+    fillStyle: `hachure" x="${payload}`,
+    strokeWidth: '1" onload="PROBE',
+    strokeStyle: `dashed" onmouseover="PROBE`,
+    fontSize: '20" onload="PROBE',
+    opacity: '100" onload="PROBE',
+    angle: '0.1" onload="PROBE',
+    lineHeight: '1.25" onload="PROBE',
+  };
+  const benign = {
+    strokeColor: '#1e1e1e', backgroundColor: '#ffec99', fillStyle: 'hachure',
+    strokeWidth: 1, strokeStyle: 'dashed', fontSize: 20, opacity: 100,
+    angle: 0.1, lineHeight: 1.25,
+  };
+  const build = (v) => ({
+    type: 'excalidraw',
+    version: 2,
+    source: 'test',
+    appState: { viewBackgroundColor: v === poison ? payload : '#ffffff' },
+    elements: [
+      { id: 'r', type: 'rectangle', x: 0, y: 0, width: 120, height: 60, seed: 1, ...v },
+      { id: 'd', type: 'diamond', x: 0, y: 80, width: 120, height: 60, seed: 2, ...v },
+      { id: 'e', type: 'ellipse', x: 0, y: 160, width: 120, height: 60, seed: 3, ...v },
+      { id: 'a', type: 'arrow', x: 0, y: 240, width: 100, height: 0, seed: 4,
+        points: [[0, 0], [100, 0]], startArrowhead: 'dot', endArrowhead: 'triangle', ...v },
+      { id: 't', type: 'text', x: 0, y: 260, width: 120, height: 25, text: 'PROBE_TEXT', seed: 5, ...v },
+      { id: 'f', type: 'frame', x: 0, y: 300, width: 200, height: 80, seed: 6, name: payload, ...v },
+      { id: 'i', type: 'image', x: 0, y: 400, width: 40, height: 40, fileId: 'one', seed: 7, ...v },
+      { id: 'b', type: 'embeddable', x: 0, y: 460, width: 40, height: 40, seed: 8, ...v },
+    ],
+    files: { one: { dataURL: 'data:image/svg+xml;base64,<script>window.PROBE=1</script>' } },
+  });
+
+  const svg = renderer.sceneToSvg(build(poison));
+  assert(!/<script/i.test(svg), 'no script element reaches the preview');
+  assert(!/\son[a-z]+\s*=/i.test(svg), 'no event-handler attribute reaches the preview');
+  // A frame name is a label: it is drawn, escaped, and that is correct. What
+  // must never appear is the payload copied through as markup.
+  assert(!svg.includes(payload), 'the payload is never written verbatim');
+  assert(!/<\/?(script|foreignObject|iframe|use|a)/i.test(svg), 'and no element that could carry behaviour');
+  assert(!/(NaN|Infinity)/.test(svg), 'and no nonfinite number is written');
+  eq(xml.checkXml(svg).ok, true, 'the preview is well-formed XML');
+
+  // The strict check: a rejected value may draw less - no hachure pattern, no
+  // rotation - but it must never add one tag or one attribute name the same
+  // scene with valid values does not have.
+  const skeleton = (text) => {
+    const names = new Set();
+    for (const [, tag, attrs] of text.matchAll(/<([a-zA-Z][\w:-]*)((?:\s+[\w:-]+="[^"]*")*)/g)) {
+      names.add(`<${tag}`);
+      for (const [, attr] of attrs.matchAll(/\s([\w:-]+)="/g)) names.add(`${tag}@${attr}`);
+    }
+    return names;
+  };
+  const allowed = skeleton(renderer.sceneToSvg(build(benign)));
+  const added = [...skeleton(svg)].filter((name) => !allowed.has(name));
+  eq(added.join(' '), '', 'no tag or attribute the benign scene does not also have');
+
+  // An image the renderer will not draw is said to be undrawn, not dropped.
+  assert(svg.includes('unsupported image'), 'a non-image data URL is refused, visibly');
+  assert(renderer.sceneToSvg(build(benign)).includes('PROBE_TEXT'), 'ordinary text still renders');
+
+  // Valid colours in every spelling Excalidraw writes still pass through.
+  for (const good of ['#fff', '#1e1e1e', '#1e1e1eff', 'transparent', 'red', 'rgb(30, 30, 30)', 'rgba(30,30,30,.5)']) {
+    const one = renderer.sceneToSvg({
+      type: 'excalidraw',
+      elements: [{ id: 'r', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, seed: 1, strokeColor: good }],
+    });
+    assert(one.includes(`stroke="${good}"`), `${good} is drawn as given`);
+  }
 });
 
 // `render --out preview.png` used to exit 0 having written SVG bytes, `--out
