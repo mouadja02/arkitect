@@ -1,27 +1,33 @@
 # Eval cases
 
-Eight cases, four for each engine, covering what matters
+Twelve cases, six for each engine, covering what matters
 most: that a plain request fires the right skill and produces valid, styled,
 native output; that a missing product icon is reported or built honestly rather
-than substituted; and that the learning and apply skills never fire on their own.
+than substituted; that an edit follows the file in front of it; and that the
+learning and apply skills never fire on their own.
 
 ```
 evals/
   drawio/
     generate-architecture/          a plain request produces a valid styled .drawio
-    missing-icon-honesty/           a missing icon is reported, never substituted
+    missing-icon-honesty/           a found icon is named honestly, never substituted
+    edit-existing-diagram/          an edit analyzes, backs up, and follows the file
+    engine-choice-is-explained/     no engine named: pick one and say why
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
+    unknown-product-placeholder/    a name with no mark gets a placeholder, not a lie
+    native-not-mermaid/             "for the README" still hands over a real scene
     learning-skill-stays-manual/    same rule, other engine
     apply-skill-stays-manual/       same rule, other engine
 ```
 
 Case names carry the engine (`drawio-generate-architecture`), so `--case` and
-the report tell the two apart. `--tag generation icons` selects the four
-generation and icon cases.
+the report tell the two apart. `--tag generation icons` selects the generation
+and icon cases, `--tag editing` the edit case, and `--tag safety invocation`
+the ones that must never fire a skill.
 
 ```bash
 scripts/eval.sh --check                              # prerequisites only, no spend

@@ -1,0 +1,69 @@
+schema_version: "1.1"
+name: excalidraw-native-not-mermaid
+description: >
+  "For the README" is the request most likely to tempt an agent into handing
+  back a Mermaid block. The deliverable is an editable .excalidraw scene; a
+  fenced diagram-as-code block in the reply is not the artifact.
+tags: [generation, honesty]
+runs: 2
+
+execution:
+  max_turns: 45
+  timeout_seconds: 1200
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    I want a diagram of our CI pipeline for the project README: a push triggers
+    lint, then unit tests, then a container build; a manual approval gate sits
+    before deploy to production, and a failed test sends the run back to the
+    developer. Save it to ./eval-output/ci-pipeline.excalidraw.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  # Mermaid is fine as a thinking aid; it is never the thing handed over.
+  - type: regex
+    name: no-mermaid-in-the-reply
+    target: last_message
+    pattern: '```\s*mermaid'
+    flags: 'i'
+    match: not_contains
+
+  - type: regex
+    name: native-bound-scene
+    target: { source: file, path: ./eval-output/ci-pipeline.excalidraw }
+    pattern: '^(?=[\s\S]*"type": "excalidraw")(?=[\s\S]*"type": "arrow")(?=[\s\S]*"startBinding")(?=[\s\S]*"endBinding")(?=[\s\S]*"boundElements")'
+
+  # A decision point and a failure path mean more than one connector kind,
+  # which is exactly when the style rules call for a legend.
+  - type: regex
+    name: no-none-fill
+    target: { source: file, path: ./eval-output/ci-pipeline.excalidraw }
+    pattern: '"backgroundColor": "none"'
+    match: not_contains
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-excalidraw
+
+  - type: tool_used
+    name: ran-the-renderer
+    tool: Bash
+    input_match: render-excalidraw
+
+  - type: llm
+    name: hands-over-the-scene
+    criteria: |
+      The response hands over the saved .excalidraw file as the deliverable:
+      it gives the path, says how to open or edit it, reports the validation
+      result and reports the render as it happened. The approval gate and the
+      failure path back to the developer are both accounted for in the
+      diagram. Fail if the response offers a Mermaid, Graphviz or ASCII
+      diagram as what the user should put in the README, if it suggests the
+      scene needs to be exported by hand before it is usable without also
+      giving the rendered image it already produced, or if it claims to have
+      uploaded anything.

@@ -1,0 +1,72 @@
+schema_version: "1.1"
+name: drawio-edit-existing-diagram
+description: >
+  Editing an existing diagram has its own rules: analyze it rather than reading
+  megabytes of it into context, back it up before touching it, and match the
+  style of the file in front of you rather than the house style guide.
+tags: [editing, style]
+runs: 2
+
+# The fixture is created by the scaffold, which only runs under --scaffold.
+# scaffold_script names a file inside this case directory, not inline bash.
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    eval-input/checkout.drawio has a web app, a checkout API and an orders DB.
+    Add a Redis cache that the Checkout API reads from, in place, and keep the
+    rest of the diagram as it is.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  # A diagram can run to megabytes of embedded base64; the analyzer exists so
+  # the whole file never has to enter the context window.
+  - type: tool_used
+    name: analyzed-instead-of-reading
+    tool: Bash
+    input_match: analyze-drawio
+
+  # The edit lands in the same file, keeping everything that was there.
+  - type: regex
+    name: cache-added-nothing-lost
+    target: { source: file, path: ./eval-input/checkout.drawio }
+    pattern: '^(?=[\s\S]*[Rr]edis)(?=[\s\S]*Web App)(?=[\s\S]*Checkout API)(?=[\s\S]*Orders DB)(?=[\s\S]*edge="1")'
+
+  # The file draws rounded boxes in #1A1A1A. Matching the file means the new
+  # node does too - reaching for the house style guide would give rounded=0
+  # and #232F3E, which is the failure this case is looking for.
+  - type: regex
+    name: followed-the-file-not-the-style-guide
+    target: { source: file, path: ./eval-input/checkout.drawio }
+    pattern: 'rounded=0;whiteSpace=wrap'
+    match: not_contains
+
+  # Never overwrite blind: a timestamped sibling backup is written first.
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'checkout\.drawio\.backup-|checkout\.backup-'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-drawio
+
+  - type: llm
+    name: reports-the-edit-honestly
+    criteria: |
+      The response says the Redis cache was added to the existing file, states
+      that it matched the style already in that file rather than applying a
+      house style, and reports the validation result. Mentioning the backup it
+      wrote is a pass; claiming a backup it did not write, claiming the file
+      was rebuilt from scratch, or claiming to have uploaded or opened the
+      diagram in the hosted draw.io editor is a fail.

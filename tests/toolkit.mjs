@@ -455,6 +455,51 @@ test('every eval scaffold_script names a runnable script beside its case (#133)'
   assert(scaffolded >= 4, `expected at least the four stays-manual scaffolds, found ${scaffolded}`);
 });
 
+// evals/README.md counts the cases in prose and lists every one of them. Both
+// go stale the moment a case is added, and a reader has no way to tell, so they
+// are checked the way every other count a doc quotes is (#78, #177).
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+  'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen'];
+
+test('evals/README.md counts and lists exactly the cases that exist (#177)', () => {
+  const cases = evalCases();
+  // A Windows clone checks this out with CRLF, and the tree is matched by line.
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8').replace(/\r\n/g, '\n');
+
+  const perEngine = new Map();
+  for (const { id } of cases) {
+    const engine = id.split('/')[1];
+    perEngine.set(engine, (perEngine.get(engine) ?? 0) + 1);
+  }
+  const counts = [...perEngine.values()];
+  assert(counts.length > 0, 'no eval engines were found');
+
+  const quoted = readme.match(/^(\w+) cases, (\w+) for each engine/mi);
+  assert(quoted, 'evals/README.md no longer opens with "<N> cases, <M> for each engine"');
+  const total = NUMBER_WORDS[cases.length];
+  assert(total, `${cases.length} cases is past the words this test knows`);
+  eq(quoted[1].toLowerCase(), total,
+    `evals/README.md says ${quoted[1]} cases; there are ${cases.length}, so write ${total}`);
+
+  assert(counts.every((n) => n === counts[0]),
+    `the engines no longer hold the same number of cases (${[...perEngine].map(([e, n]) => `${e}: ${n}`).join(', ')})`);
+  eq(quoted[2].toLowerCase(), NUMBER_WORDS[counts[0]],
+    `evals/README.md says ${quoted[2]} per engine; there are ${counts[0]}`);
+
+  // The tree lists each directory by name, once, and nothing that is not there.
+  const tree = readme.slice(readme.indexOf('evals/\n'), readme.indexOf('```', readme.indexOf('evals/\n')));
+  assert(tree.includes('drawio/'), 'the case tree in evals/README.md was not found');
+  for (const { id } of cases) {
+    const name = id.split('/')[2];
+    assert(new RegExp(`^\\s+${name}/`, 'm').test(tree), `evals/README.md's tree does not list ${id}`);
+  }
+  const listed = [...tree.matchAll(/^\s{4}([a-z0-9-]+)\/\s{2,}/gm)].map((m) => m[1]);
+  eq(listed.length, cases.length, `the tree lists ${listed.length} cases but ${cases.length} exist`);
+  for (const name of listed) {
+    assert(cases.some(({ id }) => id.endsWith(`/${name}`)), `evals/README.md's tree lists ${name}, which does not exist`);
+  }
+});
+
 // The default drawing path has to fit a small model's window before it has read
 // the user's architecture (#113): SKILL.md plus the one pattern section it sends
 // the agent to, measured in bytes. Everything else sits behind a named condition.
