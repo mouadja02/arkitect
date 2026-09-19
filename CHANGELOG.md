@@ -13,6 +13,17 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The two supported Windows render helpers, `render-drawio.ps1` and
+  `render-excalidraw.ps1`, are thin adapters over the tested Node renderers
+  rather than second implementations of export, browser discovery and
+  screenshotting. Both tested only whether a file existed at the output path, so
+  an exporter that produced nothing was reported as `rendered` over whatever
+  image was already there, with exit 0 — and the Excalidraw one then deleted the
+  good SVG. A failed render now exits non-zero, never says it rendered, leaves
+  the previous output byte-identical, and leaves an SVG behind when it was the
+  PNG rasterisation that failed. Every documented parameter still maps to one
+  renderer flag; `-DrawioExe` defaults to discovery, and a run that finds no
+  browser exits 1 saying so rather than 0 (#157).
 - A layout or style value set explicitly to null takes the builder's default in
   both engines, as it is documented to and as leaving the field out does, rather
   than being spread over that default: `colPitch: null` no longer collapses

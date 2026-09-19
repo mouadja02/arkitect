@@ -18,7 +18,11 @@ exits 1: install one, or fall back to `--format svg`, which needs no browser, an
 say that you could not look at a PNG. Inside another sandbox or a container the
 browser may be unable to build its own sandbox; the error then says so and
 names `--no-sandbox`, which is the diagnosed failure that flag exists for. `--out` picks the format by extension. The
-Windows helper `./scripts/render-excalidraw.ps1 -Path … -OutDir …` still works.
+Windows helper `./scripts/render-excalidraw.ps1 -Path … -OutDir …` keeps its
+parameters and is a thin adapter over this renderer, so browser discovery and
+`ARKITECT_BROWSER` are the same here as there. A PNG that does not come out
+exits non-zero, leaves the previous preview untouched and writes the SVG instead,
+rather than reporting a stale image as rendered (#157).
 
 The preview is geometry-faithful, not pixel-faithful: Excalidraw's fonts are not
 installed outside the app, so text is substituted and runs a little wide, and

@@ -14,8 +14,13 @@ Uses local Draw.io Desktop on Linux, macOS and Windows, with automatic
 `xvfb-run -a` wrapping on Linux without a usable `DISPLAY` (none, or a local
 `:N` whose X socket is hidden, as in a sandbox) when available. Override
 discovery with `--drawio-exe` or `DRAWIO_EXE`. Outputs are
-`<base>.p<0-based index>.png`. The PowerShell helper remains unchanged:
+`<base>.p<0-based index>.png`. The PowerShell helper keeps its parameters and
+is a thin adapter over this renderer, so it inherits the backup, the restore and
+the rule that only a fresh non-empty file counts as a render:
 `./scripts/render-drawio.ps1 -Path "path/to/diagram.drawio" -OutDir .analysis/renders`.
+A failed export exits non-zero and never reports a page as rendered, whatever
+was at the output path before (#157). `-DrawioExe` now defaults to empty, so
+discovery works as it does here; pass it to pin a build.
 
 To open a diagram for the user on Windows:
 `& 'C:\Program Files\draw.io\draw.io.exe' "<file>"`.

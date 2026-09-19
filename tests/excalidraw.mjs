@@ -13,7 +13,7 @@
 // would stop testing the thing that actually breaks.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -958,6 +958,64 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
   assert(thrown instanceof builder.SpecError, 'buildDiagram did not refuse the spec');
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
+});
+
+// ------------------------------------------------------------- PowerShell entry point (#157)
+
+const powershell = (script, args) => spawnSync('powershell.exe',
+  ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...args],
+  { encoding: 'utf8', timeout: 180000 });
+
+// The Windows helper tested only whether something existed at the PNG path, so
+// a browser that produced nothing was reported as "rendered" over a stale image
+// - and then deleted the good SVG on the way out, leaving nothing usable at all
+// (#157). It is an adapter over render-excalidraw.mjs now, which rasterises in
+// memory and replaces the previous preview only once that succeeded.
+test('the Windows Excalidraw helper never calls a stale image a render (#157)', () => {
+  const script = join(SCRIPTS, 'render-excalidraw.ps1');
+  const source = readFileSync(script, 'utf8');
+  assert(/render-excalidraw\.mjs/.test(source), 'it delegates to the tested renderer');
+  assert(/exit \$code/.test(source), 'and exits with what the renderer said');
+  assert(!/Test-Path \$png\b/.test(source), 'an existing PNG path is no longer success');
+  assert(!/msedge\.exe/.test(source), 'browser discovery is the renderer\'s, not a second list here');
+  assert(!/--screenshot/.test(source), 'and so is the screenshot invocation');
+  for (const flag of ['--style', '--padding', '--width', '--browser', '--out']) {
+    assert(source.includes(flag), `the documented parameters still map to ${flag}`);
+  }
+  if (process.platform !== 'win32') return;
+
+  const dir = join(TMP, 'ps-render-excalidraw');
+  mkdirSync(dir, { recursive: true });
+  const scenePath = join(dir, 'scene.excalidraw');
+  const scene = core.emptyScene();
+  scene.elements = [core.rectangle({ x: 0, y: 0, width: 120, height: 60 })];
+  writeFileSync(scenePath, JSON.stringify(scene));
+  const png = join(dir, 'scene.png');
+  const svg = join(dir, 'scene.svg');
+
+  // node.exe stands in for a browser that starts and produces no screenshot.
+  writeFileSync(png, 'stale-render');
+  rmSync(svg, { force: true });
+  const failed = powershell(script, ['-Path', scenePath, '-OutDir', dir, '-BrowserExe', process.execPath]);
+  assert(failed.status !== 0, `a failed rasterisation must exit non-zero, got ${failed.status}`);
+  assert(!/"wrote"|rendered ->/.test(failed.stdout), `it must not say it wrote a PNG: ${failed.stdout.trim()}`);
+  eq(readFileSync(png, 'utf8'), 'stale-render', 'the previous preview is untouched');
+  assert(existsSync(svg), 'and an SVG is left behind, which is what is still worth looking at');
+
+  // Success needs a real, new image; without a browser there is nothing to prove it with.
+  if (!browserLib.locateBrowser(undefined).path) return;
+  rmSync(svg, { force: true });
+  writeFileSync(png, 'stale-render');
+  const ok = powershell(script, ['-Path', scenePath, '-OutDir', dir, '-Width', '900', '-Style', 'clean', '-Padding', '10']);
+  eq(ok.status, 0, `a real render succeeds: ${(ok.stdout + ok.stderr).trim()}`);
+  const report = JSON.parse(ok.stdout.slice(ok.stdout.indexOf('{')));
+  eq(report.width, 900, '-Width reached the renderer');
+  assert(report.bytes > 1000 && statSync(png).size === report.bytes, 'a new, complete image replaced the stale one');
+  eq(existsSync(svg), false, 'and no SVG is left without -KeepSvg');
+
+  const kept = powershell(script, ['-Path', scenePath, '-OutDir', dir, '-KeepSvg']);
+  eq(kept.status, 0, `-KeepSvg still renders: ${(kept.stdout + kept.stderr).trim()}`);
+  assert(existsSync(svg), '-KeepSvg keeps the SVG beside the PNG');
 });
 
 // ------------------------------------------------------------- spec numbers (#115)
