@@ -998,6 +998,30 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
   eq(bash.status, 0, `bash rejected scripts/eval.sh: ${(bash.stderr || '').trim().slice(0, 200)}`);
 });
 
+// A .sh authored on Windows is recorded 0644 by default, and the working-tree
+// mode says nothing on Windows - only the mode git stores travels to a clone.
+// evals/README.md documents `scripts/eval.sh` as a command, so it has to be one
+// (#181). The scaffolds are run through bash by the eval runner rather than
+// executed, so their mode is consistency, not correctness.
+test('every committed .sh keeps its executable bit (#181)', () => {
+  let out;
+  try {
+    out = execFileSync('git', ['-C', ROOT, 'ls-files', '-s', '--', '*.sh'], { encoding: 'utf8' });
+  } catch {
+    console.log('      (git was not available)');
+    return 'skip';
+  }
+  const rows = out.split('\n').filter(Boolean).map((line) => {
+    const [mode, , , ...rest] = line.replace('\t', ' ').split(/\s+/);
+    return { mode, path: rest.join(' ') };
+  });
+  assert(rows.length > 0, 'git tracks no .sh files at all');
+  assert(rows.some((r) => r.path === 'scripts/eval.sh'), 'scripts/eval.sh is no longer tracked');
+  const plain = rows.filter((r) => r.mode !== '100755');
+  assert(!plain.length,
+    `these are committed non-executable; run git update-index --chmod=+x on each:\n        ${plain.map((r) => `${r.mode} ${r.path}`).join('\n        ')}`);
+});
+
 test('the eval summary reports every case and gates on the low ones (#134)', () => {
   const summary = join(ROOT, 'scripts', 'eval-summary.mjs');
   const run = (json) => {

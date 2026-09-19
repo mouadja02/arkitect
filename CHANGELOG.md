@@ -39,6 +39,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- `scripts/eval.sh` is executable in a fresh clone. It was committed 0644,
+  because git records that by default for a file authored on Windows, so the
+  command `evals/README.md` documents answered `Permission denied`. A test now
+  fails if any committed `.sh` loses the mode git stores, naming the file and
+  the `git update-index --chmod=+x` that fixes it - the working-tree bit says
+  nothing on Windows, so the stored mode is the only thing worth checking
+  (#181).
+
 - The four `stays-manual` eval cases run again. `context.scaffold_script` is the
   path to a script file, resolved against the case directory, not inline bash:
   every one of them inlined its fixture, so `claude plugin eval` refused the
