@@ -11,6 +11,21 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- The eval suite checks what it can and judges only what it cannot. Every
+  generation and icon case gained `regex` graders for the six report headings,
+  the saved file name and each expected icon id, and each `llm` grader was
+  narrowed to the one judgement no pattern can make - usually "does the Render
+  section describe something that actually happened". Two of them replaced
+  judgements that had demonstrably failed: a Haiku judge passed a run where dbt
+  was drawn as a text label while the report claimed proper icons throughout,
+  and the "are the accounts drawn as boundaries" criterion scored pass, fail,
+  fail on unchanged code - it now counts `container=1` in the built file. Those
+  cases run three times, so a flapping judge reads as a spread rather than one
+  verdict that happened to land, and a test holds the composition so a case
+  cannot drift back to judge-only checks (#135).
+
 ### Added
 
 - Four eval cases for parts of the contract nothing tested: that an edit

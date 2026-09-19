@@ -5,7 +5,7 @@ description: >
   review board is the Draw.io case, and whichever way the choice goes the agent
   has to say which engine it picked and why rather than choosing in silence.
 tags: [generation, invocation]
-runs: 2
+runs: 3
 
 execution:
   max_turns: 30
@@ -16,8 +16,8 @@ execution:
     board next week: an Organizations management account, a shared-services
     account with Transit Gateway and Route 53 resolver endpoints, a security
     account collecting CloudTrail into S3 and GuardDuty findings, and two
-    workload accounts. Draw it and save it into ./eval-output/ — pick the file
-    name yourself.
+    workload accounts. Draw it and save it as ./eval-output/landing-zone with
+    whichever file extension is right for what you draw.
 
 graders:
   # "Solution architecture", "for the client", "AWS" all point at Draw.io.
@@ -37,7 +37,7 @@ graders:
   - type: regex
     name: wrote-a-drawio-file
     target: files
-    pattern: 'eval-output[\\/][^\s]*\.drawio'
+    pattern: 'landing-zone\.drawio'
 
   - type: tool_used
     name: ran-the-validator
@@ -54,10 +54,13 @@ graders:
       leaves several open. Fail if the engine choice is never explained, or if
       the response claims to have uploaded the diagram anywhere.
 
-  - type: llm
+  # Whether the accounts are drawn as boundaries is a fact about the file, not
+  # something to infer from the prose - the prose version of this grader
+  # flapped pass/fail/fail on unchanged code (#135). Every boundary kind the
+  # builder emits - awsGroup, scope and lane - carries container=1, and the
+  # prompt names five accounts, so four containers is a safe floor for "not
+  # one flat row of boxes".
+  - type: regex
     name: accounts-are-boundaries
-    criteria: |
-      The diagram is described as separating the AWS accounts from one another
-      - as containers, boundaries, swimlanes or groups - rather than drawing
-      every service as one flat row of boxes with no account structure. Pass if
-      the response makes clear that the account boundaries are drawn.
+    target: { source: file, path: ./eval-output/landing-zone.drawio }
+    pattern: '^(?=(?:[\s\S]*?container=1){4})'

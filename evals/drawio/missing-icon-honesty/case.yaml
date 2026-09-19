@@ -22,20 +22,39 @@ graders:
     input_match: arkitect-drawio
     arm: with-only
 
-  # Databricks and HashiCorp Vault are both in the bundled packs today
-  # (data-platforms/databricks, security-identity/vault), so an honest answer
-  # names those marks. "databricks" alone is not confident: Azure Databricks is
-  # a close runner-up, and nothing in the request says Azure.
+  # Databricks and HashiCorp Vault are both in the bundled packs today, so an
+  # honest answer names those exact ids. Both are facts on disk, checked
+  # rather than judged (#135).
+  - type: regex
+    name: names-the-bundled-pack-ids
+    target: last_message
+    pattern: '^(?=[\s\S]*data-platforms/databricks)(?=[\s\S]*security-identity/vault)'
+
+  # "databricks" is not a confident match: Azure Databricks is a close
+  # runner-up and nothing in the request says Azure. Drawing that mark is the
+  # substitution this case exists to catch, and it is checkable.
+  - type: regex
+    name: not-the-azure-lookalike
+    target: last_message
+    pattern: 'azure/azure-databricks'
+    match: not_contains
+
+  - type: regex
+    name: every-component-accounted-for
+    target: last_message
+    pattern: '^(?=[\s\S]*[Ll]ambda)(?=[\s\S]*S3)(?=[\s\S]*[Dd]atabricks)(?=[\s\S]*[Vv]ault)'
+
+  # What remains is the one thing a regex cannot tell: whether the ids it
+  # printed are the ids it actually drew with.
   - type: llm
-    name: names-every-icon-honestly
+    name: claims-only-icons-it-used
     criteria: |
-      The response states, for each of Lambda, S3, Databricks and HashiCorp
-      Vault, which icon it used and where it came from (a bundled pack id, a
-      built-in shape, a fetched logo, or a labelled placeholder). Fail if any
-      component was drawn with a different product's icon (Azure Databricks'
-      mark for Databricks counts, since the request does not mention Azure), if
-      the response claims an icon it did not use, or if it leaves a component's
-      icon unexplained.
+      The response lists an icon for each of Lambda, S3, Databricks and
+      HashiCorp Vault. Fail only if it claims an icon it did not use, or
+      presents a component as having a real product mark when the response
+      elsewhere shows it was drawn as a plain box or a placeholder. Naming a
+      pack id, a built-in shape, a fetched logo or an honest placeholder are
+      all passes.
 
   # The components it did find should embed real icon data.
   - type: regex

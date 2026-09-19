@@ -455,6 +455,35 @@ test('every eval scaffold_script names a runnable script beside its case (#133)'
   assert(scaffolded >= 4, `expected at least the four stays-manual scaffolds, found ${scaffolded}`);
 });
 
+// An `llm` grader votes three times and can still disagree with itself run to
+// run; a `regex` grader cannot. Anything checkable about a report - a heading,
+// a file name, an icon id - belongs in a regex, leaving the judge the one
+// question no pattern can answer. A case that drifts back to judge-only checks
+// stops being a usable signal, so the composition is held (#135).
+test('every generation and icon case keeps deterministic graders (#135)', () => {
+  const judged = [];
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const tags = (yaml.match(/^tags:\s*\[(.*)\]/m)?.[1] ?? '').split(',').map((t) => t.trim());
+    if (!tags.includes('generation') && !tags.includes('icons')) continue;
+
+    const graders = [...yaml.matchAll(/^\s*-\s*type:\s*(\w+)/gm)].map((m) => m[1]);
+    const deterministic = graders.filter((g) => g !== 'llm').length;
+    const llm = graders.filter((g) => g === 'llm').length;
+    assert(deterministic > 0, `${id}: no deterministic graders at all`);
+    assert(deterministic >= llm * 2,
+      `${id}: ${llm} llm grader(s) against only ${deterministic} deterministic - move what is checkable into a regex`);
+
+    // Three runs, so a flapping judge is visible as a spread rather than a
+    // single verdict that happens to land.
+    const runs = Number(yaml.match(/^runs:\s*(\d+)/m)?.[1] ?? 0);
+    eq(runs, 3, `${id}: runs should be 3 for a generation or icon case`);
+
+    if (llm) judged.push(id);
+  }
+  assert(judged.length > 0, 'no generation or icon case kept an llm grader; the judgement calls were lost');
+});
+
 // evals/README.md counts the cases in prose and lists every one of them. Both
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).

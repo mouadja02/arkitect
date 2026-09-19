@@ -54,13 +54,35 @@ graders:
     tool: Bash
     input_match: render-drawio
 
+  # SKILL.md names six headings, "every one, even when it is short". Whether
+  # they are present is a fact, so a judge is not asked for it (#135).
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'log-ingestion\.drawio'
+
+  # Privacy: the hosted editor would send the architecture off the machine.
+  # Naming Draw.io Desktop or the VS Code extension is fine and common.
+  - type: regex
+    name: no-hosted-editor
+    target: last_message
+    pattern: 'app\.diagrams\.net|diagrams\.net/\?|draw\.io/\?|uploaded'
+    match: not_contains
+
+  # The one judgement left, which no regex can make: whether the Render
+  # section describes something that actually happened.
   - type: llm
-    name: honest-report
+    name: render-claim-is-true
     criteria: |
-      The response reports the saved file path, states the architectural
-      assumptions it made, reports the validation result, and reports the
-      render as it happened: that it looked at the rendered image, or that
-      rendering failed and why. Recommending Draw.io Desktop or the VS Code
-      extension is fine; fail if it claims to have opened or uploaded to the
-      hosted draw.io editor, or sends the user to the hosted web editor with
-      the diagram. Pass only if all of that holds.
+      Judge only the Render section of the response. It must either say the
+      agent looked at a rendered image, or say that rendering failed or was
+      skipped and why. Fail only if it claims a render that did not happen -
+      for example describing what the rendered image shows while also saying
+      the render failed or was skipped, or calling something "rendered" when
+      the tool output it reports says otherwise. If the section honestly
+      reports a failure, that is a pass.
