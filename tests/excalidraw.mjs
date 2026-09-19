@@ -1118,6 +1118,132 @@ test('the validator accepts a library file', () => {
   assert(validator.validateFile(p).ok, 'a well-formed library should pass');
 });
 
+// A scene the app would never have written used to reach the geometry helpers
+// and throw, so the caller got a stack trace and no result, and a batch stopped
+// at that file; other malformed numbers passed as ok (#154). Every shape below
+// must come back as an ordinary structured failure naming the field.
+const MALFORMED_SCENES = [
+  ['a null document', null, /the scene is null/],
+  ['a document that is an array', [], /the scene is an array/],
+  ['a null element', { type: 'excalidraw', elements: [null] }, /element at index 0 is null/],
+  ['an element that is a string', { type: 'excalidraw', elements: ['rect'] }, /element at index 0 is a string/],
+  ['null arrow points', { type: 'excalidraw', elements: [{ id: 'a', type: 'arrow', x: 0, y: 0, points: [null, null] }] },
+    /point 0 is not a pair of numbers/],
+  ['a point that is one number', { type: 'excalidraw', elements: [{ id: 'a', type: 'arrow', x: 0, y: 0, points: [[0], [1, 1]] }] },
+    /point 0 is not a pair of numbers/],
+  ['points that are not an array', { type: 'excalidraw', elements: [{ id: 'a', type: 'line', x: 0, y: 0, points: 'straight' }] },
+    /non-array points/],
+  ['a string width', { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 'oops', height: 10 }] },
+    /has non-numeric width/],
+  ['a null height', { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: null }] },
+    /has non-numeric height/],
+  ['a non-finite x', { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 'left', y: 0, width: 10, height: 10 }] },
+    /has non-numeric x/],
+  ['a null boundElements entry',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, boundElements: [null] }] },
+    /boundElements 0 does not name an element id/],
+  ['boundElements that is not an array',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, boundElements: 'b' }] },
+    /non-array boundElements/],
+  ['a binding that is a bare string',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'arrow', x: 0, y: 0, points: [[0, 0], [1, 1]], startBinding: 'b' }] },
+    /startBinding that does not name an element/],
+  ['groupIds that are not strings',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, groupIds: [7] }] },
+    /groupIds that are not a list of strings/],
+  ['a numeric frameId',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, frameId: 3 }] },
+    /non-string frameId/],
+  ['a deleted element with a broken boundElements',
+    { type: 'excalidraw', elements: [{ id: 'a', type: 'rectangle', x: 0, y: 0, width: 10, height: 10, isDeleted: true, boundElements: 'b' }] },
+    /non-array boundElements/],
+  ['files that is not an object', { type: 'excalidraw', elements: [], files: [] }, /files is not an object/],
+  ['a file entry that is a string',
+    { type: 'excalidraw', elements: [], files: { f: 'data:image/png;base64,AA==' } }, /file "f" is a string/],
+];
+
+test('malformed scene structures fail with a named field and never throw (#154)', () => {
+  for (const [what, doc, expected] of MALFORMED_SCENES) {
+    let r;
+    try {
+      r = validator.validateScene(doc);
+    } catch (error) {
+      throw new Error(`${what} threw instead of reporting: ${error.message}`);
+    }
+    eq(r.ok, false, `${what} must fail`);
+    assert(r.errors.some((e) => expected.test(e)),
+      `${what} must name the field, got: ${r.errors.join('; ')}`);
+    assert(!r.errors.some((e) => /could not be validated/.test(e)),
+      `${what} must be caught by the shape pass, not the backstop`);
+  }
+});
+
+// Excalidraw stores a connector's shape in points, so an arrow drawn straight
+// down has width 0 and is perfectly legal; only a dimension that is not a
+// number is malformed (#154).
+test('a zero-dimensional arrow is legal where a non-numeric one is not (#154)', () => {
+  const scene = core.emptyScene();
+  const box = core.rectangle({ x: 0, y: 0, width: 60, height: 40 });
+  const arr = core.arrow({ x: 30, y: 40, points: [[0, 0], [0, 80]] });
+  arr.startBinding = { elementId: box.id, focus: 0, gap: 4 };
+  box.boundElements = [{ id: arr.id, type: 'arrow' }];
+  scene.elements = [box, arr];
+  eq(core.elementBox(arr).width, 0, 'the arrow really is zero-width');
+  const r = validator.validateScene(scene);
+  eq(r.ok, true, `a straight vertical arrow must still validate: ${r.errors.join('; ')}`);
+  assert(!r.warnings.some((w) => /zero or negative size/.test(w)), 'and must not be warned about for its width');
+
+  const bad = core.emptyScene();
+  bad.elements = [{ ...core.rectangle({ x: 0, y: 0, width: 10, height: 10 }), width: '10' }];
+  assert(!validator.validateScene(bad).ok, 'a rectangle whose width is a string must fail');
+});
+
+test('malformed library structures fail without throwing, item by item (#154)', () => {
+  const good = [core.rectangle({ x: 0, y: 0, width: 10, height: 10 })];
+  const cases = [
+    ['a null document', null, /the library is null/],
+    ['an item that is null', { type: 'excalidrawlib', libraryItems: [null] }, /item 0 is null/],
+    ['an item whose elements are a string', { type: 'excalidrawlib', libraryItems: [{ elements: 'rect' }] },
+      /item 0 is a string/],
+    ['a v1 entry that is not a list', { type: 'excalidrawlib', library: [42] }, /item 0 is a number/],
+    ['a malformed element inside an item', { type: 'excalidrawlib', libraryItems: [{ elements: [null] }] },
+      /item 0: element at index 0 is null/],
+  ];
+  for (const [what, doc, expected] of cases) {
+    let r;
+    try {
+      r = validator.validateLibrary(doc);
+    } catch (error) {
+      throw new Error(`${what} threw instead of reporting: ${error.message}`);
+    }
+    eq(r.ok, false, `${what} must fail`);
+    assert(r.errors.some((e) => expected.test(e)), `${what} must say which item, got: ${r.errors.join('; ')}`);
+  }
+
+  // One bad item must not hide the ones after it.
+  const mixed = validator.validateLibrary({ type: 'excalidrawlib', libraryItems: [null, { elements: [] }, { elements: good }] });
+  assert(mixed.errors.some((e) => /item 0 is null/.test(e)), 'item 0 is reported');
+  assert(mixed.errors.some((e) => /item 1 has no elements/.test(e)), 'and item 1 is still reached');
+});
+
+// The gate is a command, not only a function: batch tooling reads its stdout.
+test('a malformed file does not cost the batch the files after it (#154)', () => {
+  const badPath = join(TMP, 'batch-malformed.excalidraw');
+  const goodPath = join(TMP, 'batch-fine.excalidraw');
+  writeFileSync(badPath, 'null');
+  const scene = core.emptyScene();
+  scene.elements = [core.rectangle({ x: 0, y: 0, width: 40, height: 20 })];
+  writeFileSync(goodPath, JSON.stringify(scene));
+
+  const r = spawnSync(process.execPath, [join(SCRIPTS, 'validate-excalidraw.mjs'), badPath, goodPath, '--json'], { encoding: 'utf8' });
+  eq(r.status, 1, 'the run fails because one file is malformed');
+  eq(r.stderr.trim(), '', `nothing is written to stderr, got: ${r.stderr.trim()}`);
+  const reports = r.stdout.trim().split(/(?=^\{$)/m).map((chunk) => JSON.parse(chunk));
+  eq(reports.length, 2, 'both files are reported');
+  eq(reports[0].ok, false, 'the malformed file fails');
+  eq(reports[1].ok, true, `the file after it is still checked: ${reports[1].errors.join('; ')}`);
+});
+
 // ------------------------------------------------------------- render
 
 test('the renderer produces an SVG covering every element', () => {
