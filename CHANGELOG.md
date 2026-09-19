@@ -13,6 +13,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A layout or style value set explicitly to null takes the builder's default in
+  both engines, as it is documented to and as leaving the field out does, rather
+  than being spread over that default: `colPitch: null` no longer collapses
+  every column onto one another, and `nodeWidth: null` no longer draws a node
+  with no width. A finite coordinate whose layout arithmetic overflows is
+  refused before anything is drawn, naming the field responsible, instead of
+  being written out as `pageWidth="Infinity"` or as the null JSON has to use
+  for a number it cannot hold; no non-finite geometry reaches a file (#153).
 - Draw.io validation checks that the file is well-formed XML before it checks
   anything else, over the wrapper and over each compressed page once decoded,
   so a mismatched or unclosed tag, a repeated attribute, an unquoted value or a

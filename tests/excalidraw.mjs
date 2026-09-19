@@ -1023,6 +1023,67 @@ test('a spec with a bad number is refused on the command line before any backup 
   eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
 });
 
+// null is documented as taking the default, and numberProblems lets it through
+// for exactly that reason - but object spread then wrote the null over the
+// default it was supposed to fall back to, so style.nodeWidth: null drew a node
+// of no width and layout.colPitch: null collapsed the grid (#153).
+test('an explicit null takes the default, exactly as leaving the field out does (#153)', () => {
+  const nodes = [{ id: 'a', kind: 'box', label: 'A', col: 0 }, { id: 'b', kind: 'box', label: 'B', col: 1 }];
+  const same = (nulled, absent, what) => {
+    const a = builder.buildDiagram(nulled, { seed: 1 }).scene;
+    const b = builder.buildDiagram(absent, { seed: 1 }).scene;
+    eq(JSON.stringify(a), JSON.stringify(b), what);
+    return a;
+  };
+  const layout = same({ layout: { colPitch: null, rowPitch: null, originX: null }, nodes }, { nodes },
+    'a null layout value must build the same scene as no value at all');
+  const v = validator.validateScene(layout);
+  assert(v.ok, `the scene validates: ${v.errors.join('; ')}`);
+  eq(v.info.overlaps, 0, 'two columns must not land on top of each other');
+
+  const styled = same({ style: { nodeWidth: null, nodeHeight: null }, nodes: [nodes[0]] }, { nodes: [nodes[0]] },
+    'a null style token must build the same scene as no token at all');
+  const box = styled.elements.find((el) => el.type === 'rectangle');
+  assert(box.width > 0 && box.height > 0, `the node keeps a real size, got ${box.width}x${box.height}`);
+});
+
+// Every operand finite, the product not: JSON has no Infinity, so what used to
+// be written was a null where a coordinate belongs (#153).
+test('a coordinate that overflows the layout is refused, naming the field (#153)', () => {
+  const overflowing = [
+    [{ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 1e308 }] }, 'nodes[0].col: 1e+308 is past what this layout\'s grid can reach'],
+    [{ nodes: [{ id: 'a', kind: 'box', label: 'A', row: -1e308 }] }, 'nodes[0].row: -1e+308 is past what this layout\'s grid can reach'],
+    [{ boundaries: [{ id: 'z', kind: 'scope', label: 'Z', col: 0, cols: 1e308 }] },
+      'boundaries[0].cols: 1e+308 is past what this layout\'s grid can reach'],
+    [{ style: { colPitch: 1e308 }, nodes: [{ id: 'a', kind: 'box', label: 'A', col: 1e10 }] },
+      'nodes[0].col: 10000000000 is past what this layout\'s grid can reach'],
+  ];
+  for (const [spec, expected] of overflowing) {
+    eq(builder.validateSpec(spec).length, 0, `the fields are individually finite: ${JSON.stringify(spec)}`);
+    let thrown;
+    try { builder.buildDiagram(spec, { seed: 1 }); } catch (e) { thrown = e; }
+    assert(thrown instanceof builder.SpecError, `${JSON.stringify(spec)} must be refused`);
+    eq(thrown.errors.join(' | '), expected, 'the field responsible is named');
+  }
+  const big = builder.buildDiagram({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 1e10 }] }, { seed: 1 }).scene;
+  assert(big.elements.every((el) => Number.isFinite(el.x) && Number.isFinite(el.y)),
+    'a large but reachable column still builds');
+});
+
+test('an overflowing spec never reaches the target file or a backup (#153)', () => {
+  const dir = join(TMP, 'spec-overflow');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'overflow.spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 1e308 }] }));
+  const out = join(dir, 'overflow.excalidraw');
+  writeFileSync(out, 'original');
+  const r = spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', out], { encoding: 'utf8' });
+  eq(r.status, 1, 'exit status');
+  eq(JSON.parse(r.stderr).errors.join(' | '), 'nodes[0].col: 1e+308 is past what this layout\'s grid can reach', 'the field is named');
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target is untouched');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
+});
+
 test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
   const spec = {
     boundaries: [

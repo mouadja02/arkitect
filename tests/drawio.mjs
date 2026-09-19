@@ -3427,6 +3427,58 @@ test('a spec with a bad number is refused on the command line before any backup 
   eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
 });
 
+// null is documented as taking the default, and numberProblems lets it through
+// for exactly that reason - but object spread then wrote the null over the
+// default it was supposed to fall back to, so a whole grid collapsed onto one
+// column (#153).
+test('an explicit null takes the default, exactly as leaving the field out does (#153)', () => {
+  const nodes = [{ id: 'a', label: 'A', col: 0 }, { id: 'b', label: 'B', col: 1 }];
+  const nulled = builder.buildDiagram({ layout: { colPitch: null, rowPitch: null, originX: null }, nodes }).xml;
+  const absent = builder.buildDiagram({ nodes }).xml;
+  eq(nulled, absent, 'a null layout value must build the same file as no value at all');
+  const p = join(TMP, 'null-defaults.drawio');
+  writeFileSync(p, nulled);
+  const r = validator.validateFile(p);
+  assert(r.ok, `the build validates: ${r.errors.join('; ')}`);
+  eq(r.info.pages[0].overlaps, 0, 'two columns must not land on top of each other');
+});
+
+// Every operand finite, the product not: what used to be written was
+// pageWidth="Infinity" and a coordinate to match (#153).
+test('a coordinate that overflows the layout is refused, naming the field (#153)', () => {
+  const overflowing = [
+    [{ nodes: [{ id: 'a', label: 'A', col: 1e308 }] }, 'nodes[0].col: 1e+308 is past what this layout\'s grid can reach'],
+    [{ nodes: [{ id: 'a', label: 'A', row: -1e308 }] }, 'nodes[0].row: -1e+308 is past what this layout\'s grid can reach'],
+    [{ boundaries: [{ id: 'z', label: 'Z', col: 0, cols: 1e308 }] }, 'boundaries[0].cols: 1e+308 is past what this layout\'s grid can reach'],
+    [{ layout: { colPitch: 1e308 }, nodes: [{ id: 'a', label: 'A', col: 1e10 }] },
+      'nodes[0].col: 10000000000 is past what this layout\'s grid can reach'],
+  ];
+  for (const [spec, expected] of overflowing) {
+    eq(builder.validateSpec(spec).length, 0, `the fields are individually finite: ${JSON.stringify(spec)}`);
+    let thrown;
+    try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
+    assert(thrown instanceof builder.SpecError, `${JSON.stringify(spec)} must be refused`);
+    eq(thrown.errors.join(' | '), expected, 'the field responsible is named');
+  }
+  // The pitch is what decides, so the same col is fine with the default one.
+  assert(!/NaN|Infinity/.test(builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', col: 1e10 }] }).xml),
+    'a large but reachable column still builds');
+});
+
+test('an overflowing spec never reaches the target file or a backup (#153)', () => {
+  const dir = join(TMP, 'spec-overflow');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'overflow.spec.json');
+  writeFileSync(specPath, JSON.stringify({ nodes: [{ id: 'a', label: 'A', col: 1e308 }] }));
+  const out = join(dir, 'overflow.drawio');
+  writeFileSync(out, 'original');
+  const r = buildCli(specPath, '--out', out);
+  eq(r.status, 1, 'exit status');
+  eq(JSON.parse(r.stderr).errors.join(' | '), 'nodes[0].col: 1e+308 is past what this layout\'s grid can reach', 'the field is named');
+  eq(readFileSync(out, 'utf8'), 'original', 'the existing target is untouched');
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
+});
+
 test('nested boundaries build, an edge may end on a boundary, and automatic edge ids skip taken ones (#36)', () => {
   const spec = {
     boundaries: [
