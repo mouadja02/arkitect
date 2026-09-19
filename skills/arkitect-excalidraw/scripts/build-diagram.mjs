@@ -33,7 +33,10 @@ import {
 import { resolveIcon } from './find-icon.mjs';
 import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
-import { numberProblems, FINITE, POSITIVE, NON_NEGATIVE, SPAN } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
+import {
+  numberProblems, defaulted, gridProblems, nonFiniteBoxes,
+  FINITE, POSITIVE, NON_NEGATIVE, SPAN,
+} from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
 import { HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
@@ -371,10 +374,13 @@ export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {})
 
 function assemble(spec, style) {
   const EDGE_KINDS = style.edgeKinds;
-  const S = { ...style.tokens, ...(spec.style ?? {}) };
+  // defaulted, not a plain spread: an explicit null is documented as taking the
+  // default, and a spread writes it over the default instead, which is how
+  // style.nodeWidth: null drew a node of no width at all (#153).
+  const S = { ...style.tokens, ...defaulted(spec.style) };
   const L = {
     originX: S.originX, originY: S.originY, colPitch: S.colPitch, rowPitch: S.rowPitch, cell: S.cell,
-    ...(spec.layout ?? {}),
+    ...defaulted(spec.layout),
   };
   const scene = emptyScene();
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
@@ -385,6 +391,11 @@ function assemble(spec, style) {
   };
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
+
+  // Finite operands, non-finite product: refused here, naming the field, rather
+  // than serialized as the null JSON has to use for a number it cannot hold (#153).
+  const grid = gridProblems(spec, { colX, rowY });
+  if (grid.length) throw new SpecError(grid);
 
   const frames = [];      // real Excalidraw frames, drawn first
   const scopes = [];      // dashed group rectangles
@@ -842,6 +853,13 @@ function assemble(spec, style) {
     if (!edgeOf.has(c.arrow) || !node) continue;
     report.crossings.push(`edge ${edgeOf.get(c.arrow)} crosses node ${node}; move ${node} off the line or give the edge a route`);
   }
+  // The last word before anything is written. main() backs up and writes only
+  // after buildDiagram returns, so a throw here leaves the target untouched.
+  const nonFinite = nonFiniteBoxes(scene.elements.map((el) => ({
+    id: nodeOf.get(el.id) ?? el.id, x: el.x, y: el.y, width: el.width, height: el.height,
+  })));
+  if (nonFinite.length) throw new SpecError(nonFinite);
+
   return { scene, report };
 }
 

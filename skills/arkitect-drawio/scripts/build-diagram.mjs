@@ -29,7 +29,10 @@ export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backup
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
-import { numberProblems, FINITE, POSITIVE, NON_NEGATIVE, SPAN } from './lib/spec-numbers.mjs';
+import {
+  numberProblems, defaulted, gridProblems, nonFiniteBoxes,
+  FINITE, POSITIVE, NON_NEGATIVE, SPAN,
+} from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
@@ -190,6 +193,19 @@ const BOUNDARY_NUMBERS = {
 };
 const NODE_NUMBERS = { col: FINITE, row: FINITE, width: POSITIVE, height: POSITIVE, size: POSITIVE, fontSize: POSITIVE };
 
+// Only what did not come out as a number, keyed by attribute, for the guard
+// above; mxPoint children are derived from these boxes and follow them.
+function geometryOf(cell) {
+  const out = {};
+  for (const tag of cell.match(/<mxGeometry\b[^>]*>/g) ?? []) {
+    for (const [, key, value] of tag.matchAll(/\b(x|y|width|height)="([^"]*)"/g)) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) out[key] = n;
+    }
+  }
+  return out;
+}
+
 export function validateSpec(spec) {
   const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
   if (!isObject(spec)) return ['spec: expected a JSON object'];
@@ -290,12 +306,19 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   // Packs named by the spec win ties, so a diagram declared as GCP resolves
   // "cloud run" inside GCP rather than wherever the string happens to match.
   const contextPacks = spec.context?.packs ?? null;
-  const L = { originX: 80, originY: 100, colPitch: T.colPitch, rowPitch: T.rowPitch, ...(spec.layout ?? {}) };
+  // defaulted, not a plain spread: an explicit null is documented as taking the
+  // default, and a spread writes it over the default instead (#153).
+  const L = { originX: 80, originY: 100, colPitch: T.colPitch, rowPitch: T.rowPitch, ...defaulted(spec.layout) };
   const cells = [];
   const push = (xml) => cells.push(xml);
 
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
+
+  // Finite operands, non-finite product: refused here, naming the field, rather
+  // than written out as pageWidth="Infinity" and a coordinate of its own (#153).
+  const grid = gridProblems(spec, { colX, rowY });
+  if (grid.length) throw new SpecError(grid);
 
   let pageW = 0; let pageH = 0;
   const track = (x, y, w, h) => { pageW = Math.max(pageW, x + w); pageH = Math.max(pageH, y + h); };
@@ -476,6 +499,12 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     const ids = [...new Set(group.map((d) => d.id))].sort();
     if (ids.length > 1) report.sameArtwork.push({ ids, nodes: group.map((d) => d.node) });
   }
+
+  // The last word before anything is written. main() backs up and writes only
+  // after buildDiagram returns, so a throw here leaves the target untouched.
+  const drawn = cells.map((cell) => ({ id: /\bid="([^"]*)"/.exec(cell)?.[1] ?? 'a cell with no id', ...geometryOf(cell) }));
+  const nonFinite = nonFiniteBoxes([...drawn, { id: 'the page', width: pageW, height: pageH }]);
+  if (nonFinite.length) throw new SpecError(nonFinite);
 
   const model = `<mxGraphModel dx="1400" dy="800" grid="0" gridSize="10" guides="1" tooltips="1" `
     + `connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="${Math.max(850, Math.round(pageW + 120))}" `
