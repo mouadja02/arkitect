@@ -11,6 +11,13 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- `learn --help` prints the usage instead of performing the learn and replacing
+  your style record; both engines now reject unknown flags, missing and repeated
+  values, stray arguments, missing source files and incompatible modes before
+  reading or writing anything (#151).
+
 ### Security
 
 - The Excalidraw preview SVG no longer carries anything a scene file put there:

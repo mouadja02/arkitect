@@ -24,6 +24,7 @@ import { dirname, join, resolve } from 'node:path';
 import { readScene, sha256 } from './lib/excalidraw-core.mjs';
 import { analyzeScene } from './analyze-excalidraw.mjs';
 import { storeFile, writeJson } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { parseCliOrExit, exitUsage } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -273,19 +274,38 @@ function loadRecord(path) {
   try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
 }
 
+const USAGE = `usage: build-knowledge.mjs --sources <file...> [--merge] [--out p]
+       build-knowledge.mjs --baseline    (no corpus: write the defaults record)
+       build-knowledge.mjs --print`;
+
+// Learning rewrites the style record, so the arguments are checked before a
+// single scene is read. `--help` used to be ignored, which meant asking for the
+// usage performed the learn and replaced the record (#151).
 function main(argv) {
-  const has = (n) => argv.includes(n);
-  const oi = argv.indexOf('--out');
-  if (oi !== -1 && (!argv[oi + 1] || argv[oi + 1].startsWith('--'))) {
-    console.error('--out needs a file');
-    process.exit(2);
+  const { options, positionals } = parseCliOrExit(argv, {
+    variadic: ['--sources'],
+    values: { '--out': null },
+    switches: ['--merge', '--baseline', '--print'],
+  }, USAGE);
+  if (positionals.length) exitUsage(`unexpected argument ${positionals[0]}; files go after --sources`, USAGE);
+  const has = (n) => options[n.slice(2)] === true;
+  const sources = options.sources ?? [];
+
+  // The three modes do different things to the record, so asking for two at
+  // once is refused rather than silently ranked.
+  if (has('--print') && (sources.length || has('--merge') || has('--baseline'))) {
+    exitUsage('--print only reads a record; it takes no other mode', USAGE);
   }
+  if (has('--baseline') && (sources.length || has('--merge'))) {
+    exitUsage('--baseline writes the defaults record and reads no corpus', USAGE);
+  }
+
   const ownRecord = storeFile('excalidraw', 'record');
-  const out = oi === -1 ? ownRecord : resolve(argv[oi + 1]);
+  const out = options.out === undefined ? ownRecord : resolve(options.out);
 
   if (has('--print')) {
     // Your own record once you have one, the shipped house style until then.
-    const path = oi === -1 && !existsSync(ownRecord) ? SHIPPED_RECORD : out;
+    const path = options.out === undefined && !existsSync(ownRecord) ? SHIPPED_RECORD : out;
     const rec = loadRecord(path);
     if (!rec) { console.error(`no record at ${path}`); process.exit(1); }
     console.log(JSON.stringify({
@@ -298,18 +318,9 @@ function main(argv) {
     return;
   }
 
-  // Sources run up to the next flag, so `--sources a b --out rec.json` does not
-  // read rec.json as a scene.
-  const si = argv.indexOf('--sources');
-  const sources = [];
-  if (si !== -1) for (let i = si + 1; i < argv.length && !argv[i].startsWith('--'); i++) sources.push(argv[i]);
-
-  if (!sources.length && !has('--baseline')) {
-    console.error('usage: build-knowledge.mjs --sources <file...> [--merge]\n'
-      + '       build-knowledge.mjs --baseline    (no corpus: write the defaults record)\n'
-      + '       build-knowledge.mjs --print');
-    process.exit(2);
-  }
+  if (!sources.length && !has('--baseline')) exitUsage('--sources needs at least one file', USAGE);
+  const missing = sources.filter((f) => !existsSync(f));
+  if (missing.length) exitUsage(`no such file: ${missing[0]}`, USAGE);
 
   const analyses = sources.map((f) => {
     const raw = readFileSync(f);

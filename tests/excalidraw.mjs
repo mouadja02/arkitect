@@ -1886,6 +1886,72 @@ test('learning writes your record to the store, and elsewhere only by --out (#89
   rmSync(home, { recursive: true, force: true });
 });
 
+// `learn --sources x --help` used to ignore the --help, do the learn, and
+// replace a record the caller only meant to read the usage for (#151).
+test('learning checks its arguments before it reads or writes anything (#151)', () => {
+  const home = process.env.ARKITECT_HOME;
+  const store = join(home, 'excalidraw');
+  const scene = join(SKILL, 'assets', 'templates', 'starter-architecture.excalidraw');
+  const learn = (...args) => spawnSync(process.execPath, [join(SCRIPTS, 'build-knowledge.mjs'), ...args], { encoding: 'utf8' });
+  rmSync(home, { recursive: true, force: true });
+  mkdirSync(store, { recursive: true });
+  const record = join(store, 'source-analysis.json');
+  const sources = join(store, 'sources.json');
+  const sentinel = () => {
+    writeFileSync(record, 'SENTINEL-RECORD');
+    writeFileSync(sources, 'SENTINEL-SOURCES');
+  };
+  const untouched = (what) => {
+    eq(readFileSync(record, 'utf8'), 'SENTINEL-RECORD', `${what}: the record is untouched`);
+    eq(readFileSync(sources, 'utf8'), 'SENTINEL-SOURCES', `${what}: the source list is untouched`);
+  };
+
+  for (const args of [
+    ['--sources', scene, '--help'],
+    ['--help', '--sources', scene],
+    ['--sources', scene, '--merge', '-h'],
+  ]) {
+    sentinel();
+    const r = learn(...args);
+    eq(r.status, 0, `${args.join(' ')} exits 0`);
+    assert(r.stdout.includes('usage: build-knowledge.mjs'), `${args.join(' ')} prints the usage`);
+    assert(!r.stdout.includes('"wrote"'), `${args.join(' ')} does not learn`);
+    untouched(args.join(' '));
+  }
+
+  for (const [args, said] of [
+    [['--sources', scene, '--nope'], 'unknown option --nope'],
+    [['--sources', scene, '--out'], '--out needs a value'],
+    [['--sources', scene, '--out', 'a', '--out', 'b'], '--out given more than once'],
+    [['--sources', '--merge'], '--sources needs at least one value'],
+    [['--merge'], '--sources needs at least one file'],
+    [['stray.excalidraw', '--sources', scene], 'unexpected argument stray.excalidraw'],
+    [['--sources', join(TMP, 'not-here.excalidraw')], 'no such file'],
+    // Two modes at once had no answer; it used to pick one silently.
+    [['--print', '--baseline'], '--print only reads a record'],
+    [['--print', '--sources', scene], '--print only reads a record'],
+    [['--baseline', '--sources', scene], '--baseline writes the defaults record'],
+    [['--baseline', '--merge'], '--baseline writes the defaults record'],
+  ]) {
+    sentinel();
+    const r = learn(...args);
+    eq(r.status, 2, `${args.join(' ')} is a usage error`);
+    assert(r.stderr.includes(said), `${args.join(' ')} says "${said}", got "${r.stderr.trim()}"`);
+    untouched(args.join(' '));
+  }
+
+  // The three supported modes still do what they did.
+  rmSync(home, { recursive: true, force: true });
+  eq(learn('--sources', scene).status, 0, 'a plain learn still works');
+  eq(learn('--sources', scene, '--merge').status, 0, 'and --merge still works');
+  eq(JSON.parse(readFileSync(join(store, 'source-analysis.json'), 'utf8')).version, 2, 'the merge counted as a second version');
+  eq(learn('--print').status, 0, '--print still reads the record');
+  const baseline = learn('--baseline');
+  eq(baseline.status, 0, '--baseline still writes the defaults record');
+  eq(JSON.parse(readFileSync(join(store, 'source-analysis.json'), 'utf8')).version, 0, 'as version 0');
+  rmSync(home, { recursive: true, force: true });
+});
+
 // ------------------------------------------------------------- per-install style (#90)
 
 const OWN_STORE = join(process.env.ARKITECT_HOME, 'excalidraw');

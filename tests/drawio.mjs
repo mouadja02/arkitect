@@ -2668,6 +2668,59 @@ test('learning writes your record to the store, and elsewhere only by --out (#89
   clearStore();
 });
 
+// `learn --sources x --help` used to ignore the --help, do the learn, and
+// replace a record the caller only meant to read the usage for (#151).
+test('learning checks its arguments before it reads or writes anything (#151)', () => {
+  clearStore();
+  mkdirSync(OWN_STORE, { recursive: true });
+  const record = join(OWN_STORE, 'source-analysis.json');
+  const sources = join(OWN_STORE, 'sources.json');
+  const sentinel = () => {
+    writeFileSync(record, 'SENTINEL-RECORD');
+    writeFileSync(sources, 'SENTINEL-SOURCES');
+  };
+  const untouched = (what) => {
+    eq(readFileSync(record, 'utf8'), 'SENTINEL-RECORD', `${what}: the record is untouched`);
+    eq(readFileSync(sources, 'utf8'), 'SENTINEL-SOURCES', `${what}: the source list is untouched`);
+  };
+
+  for (const args of [
+    ['--sources', COMMITTED_STARTER, '--help'],
+    ['--help', '--sources', COMMITTED_STARTER],
+    ['--sources', COMMITTED_STARTER, '--merge', '-h'],
+  ]) {
+    sentinel();
+    const r = toolCli('build-knowledge.mjs', ...args);
+    eq(r.status, 0, `${args.join(' ')} exits 0`);
+    assert(r.stdout.includes('usage: build-knowledge.mjs'), `${args.join(' ')} prints the usage`);
+    assert(!r.stdout.includes('source-analysis v'), `${args.join(' ')} does not learn`);
+    untouched(args.join(' '));
+  }
+
+  for (const [args, said] of [
+    [['--sources', COMMITTED_STARTER, '--nope'], 'unknown option --nope'],
+    [['--sources', COMMITTED_STARTER, '--out'], '--out needs a value'],
+    [['--sources', COMMITTED_STARTER, '--out', 'a', '--out', 'b'], '--out given more than once'],
+    [['--sources', '--merge'], '--sources needs at least one value'],
+    [['--merge'], '--sources needs at least one file'],
+    [['stray.drawio', '--sources', COMMITTED_STARTER], 'unexpected argument stray.drawio'],
+    [['--sources', join(TMP, 'not-here.drawio')], 'no such file'],
+  ]) {
+    sentinel();
+    const r = toolCli('build-knowledge.mjs', ...args);
+    eq(r.status, 2, `${args.join(' ')} is a usage error`);
+    assert(r.stderr.includes(said), `${args.join(' ')} says "${said}", got "${r.stderr.trim()}"`);
+    untouched(args.join(' '));
+  }
+
+  // The commands that are supposed to work still do.
+  clearStore();
+  eq(toolCli('build-knowledge.mjs', '--sources', COMMITTED_STARTER).status, 0, 'a plain learn still works');
+  eq(toolCli('build-knowledge.mjs', '--sources', COMMITTED_STARTER, '--merge').status, 0, 'and --merge still works');
+  eq(JSON.parse(readFileSync(join(OWN_STORE, 'source-analysis.json'), 'utf8')).version, 2, 'the merge counted as a second version');
+  clearStore();
+});
+
 test('findings: --derive reads four tokens, --add is checked, and an agent finding holds its target (#89)', () => {
   const record = {
     version: 3,

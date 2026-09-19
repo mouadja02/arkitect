@@ -28,7 +28,9 @@ export class UsageError extends Error {}
 // come before or after the files. An unknown flag, a missing value or a repeated
 // value flag is refused rather than ignored. `values` maps each value flag to a
 // converter that may throw a UsageError, or to null to keep the string.
-export function parseCli(argv, { values = {}, switches = [] } = {}) {
+// `variadic` flags take every following argument up to the next flag, which is
+// how `--sources a b c` is spelled.
+export function parseCli(argv, { values = {}, switches = [], variadic = [] } = {}) {
   const options = {};
   const positionals = [];
   const key = (flag) => flag.slice(2);
@@ -36,6 +38,14 @@ export function parseCli(argv, { values = {}, switches = [] } = {}) {
     const arg = argv[i];
     if (arg === '--help' || arg === '-h') return { help: true, options, positionals };
     if (switches.includes(arg)) { options[key(arg)] = true; continue; }
+    if (variadic.includes(arg)) {
+      if (Object.hasOwn(options, key(arg))) throw new UsageError(`${arg} given more than once`);
+      const taken = [];
+      while (argv[i + 1] !== undefined && !argv[i + 1].startsWith('--')) taken.push(argv[++i]);
+      if (!taken.length) throw new UsageError(`${arg} needs at least one value`);
+      options[key(arg)] = taken;
+      continue;
+    }
     if (Object.hasOwn(values, arg)) {
       const value = argv[++i];
       if (value === undefined || value.startsWith('--')) throw new UsageError(`${arg} needs a value`);
