@@ -13,6 +13,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Excalidraw frame membership follows the spec's `parent` rather than whether
+  an element happens to fit inside its node's routing box. A free icon caption
+  or a sublabel sits outside that box by construction, so it used to lose the
+  frame its node declared, while a node that merely overlapped a framed one
+  gained it; a scope nested in a frame gave its contents no membership at all.
+  Everything a node or a nested scope draws now moves with the frame, an edge
+  joins only when both ends are in it, and a frame parented to a frame — which
+  Excalidraw does not support — is reported under `notes` (#158).
 - The two supported Windows render helpers, `render-drawio.ps1` and
   `render-excalidraw.ps1`, are thin adapters over the tested Node renderers
   rather than second implementations of export, browser discovery and

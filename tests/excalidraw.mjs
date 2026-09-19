@@ -1142,6 +1142,120 @@ test('an overflowing spec never reaches the target file or a backup (#153)', () 
   eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup was written');
 });
 
+// ------------------------------------------------------------- frames (#158)
+
+// Membership used to be inferred by testing whether an element fitted inside
+// its node's routing box. A free icon caption and a sublabel sit outside that
+// box by construction, so they lost the frame their node's parent declared;
+// an unrelated node that merely fitted inside a framed node's box gained one
+// (#158). It follows ownership now.
+const frameOf = (scene) => scene.elements.find((el) => el.type === 'frame');
+const textNamed = (scene, what) => scene.elements.find((el) => el.type === 'text' && el.text === what);
+
+test('every element a framed node produces is a member of that frame (#158)', () => {
+  const spec = {
+    boundaries: [{ id: 'f', kind: 'frame', label: 'Frame' }],
+    nodes: [
+      { id: 'a', parent: 'f', kind: 'icon', icon: 'drawio:databases/postgresql', label: 'PostgreSQL' },
+      { id: 'b', parent: 'f', col: 1, kind: 'box', label: 'Worker', sublabel: 'A sublabel far wider than its node' },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const frame = frameOf(scene);
+  assert(frame, 'the frame was drawn');
+
+  const stranded = scene.elements.filter((el) => el !== frame && el.frameId !== frame.id)
+    .map((el) => (el.type === 'text' ? `text "${el.text}"` : el.type));
+  eq(stranded.join(', '), '', 'every element the frame contains declares it');
+
+  // The two the geometric rule always missed, named so a regression says which.
+  for (const caption of ['PostgreSQL', 'A sublabel far wider than its node']) {
+    const el = textNamed(scene, caption);
+    assert(el, `the ${caption === 'PostgreSQL' ? 'icon caption' : 'sublabel'} was drawn`);
+    eq(el.frameId, frame.id, `"${caption}" is a member`);
+  }
+
+  // Excalidraw evicts a member that does not sit inside the frame, so declaring
+  // one that hangs outside would not survive the first interaction.
+  for (const el of scene.elements) {
+    if (el.frameId !== frame.id) continue;
+    const w = el.width ?? 0;
+    const h = el.height ?? 0;
+    assert(el.x >= frame.x && el.y >= frame.y && el.x + w <= frame.x + frame.width && el.y + h <= frame.y + frame.height,
+      `${el.type} at ${Math.round(el.x)},${Math.round(el.y)} is declared a member but falls outside the frame`);
+  }
+});
+
+test('a node that merely overlaps a framed one stays out of the frame (#158)', () => {
+  const { scene } = builder.buildDiagram({
+    boundaries: [{ id: 'f', kind: 'frame', label: 'Frame' }],
+    nodes: [
+      { id: 'big', parent: 'f', kind: 'box', label: 'Big', width: 400, height: 300 },
+      { id: 'small', kind: 'box', label: 'Small', width: 40, height: 30 },
+    ],
+  }, { seed: 1 });
+  const frame = frameOf(scene);
+  const boxes = scene.elements.filter((el) => el.type === 'rectangle');
+  const big = boxes.find((el) => el.width === 400);
+  const small = boxes.find((el) => el.width === 40);
+  assert(big && small, 'both nodes were drawn at the sizes the spec asked for');
+  eq(big.frameId, frame.id, 'the node parented to the frame is a member');
+  eq(small.frameId, null, 'the node that only sits inside its box is not');
+  eq(textNamed(scene, 'Small').frameId, null, 'and neither is its label');
+  assert(small.x >= big.x && small.y >= big.y
+    && small.x + small.width <= big.x + big.width && small.y + small.height <= big.y + big.height,
+    'the small node really does sit inside the framed one, so the geometric rule would have caught it');
+});
+
+test('a scope inside a frame moves with it, and an edge that leaves it does not (#158)', () => {
+  const { scene } = builder.buildDiagram({
+    boundaries: [
+      { id: 'f', kind: 'frame', label: 'Frame' },
+      { id: 's', kind: 'scope', label: 'Scope', parent: 'f' },
+    ],
+    nodes: [
+      { id: 'n', parent: 's', kind: 'box', label: 'Inner', sublabel: 'Note' },
+      { id: 'out', kind: 'box', label: 'Outside', col: 4 },
+      { id: 'also', parent: 's', kind: 'box', label: 'Also', col: 1 },
+    ],
+    edges: [{ from: 'n', to: 'also' }, { from: 'n', to: 'out' }],
+  }, { seed: 1 });
+  const frame = frameOf(scene);
+
+  for (const what of ['Scope', 'Inner', 'Note', 'Also']) {
+    eq(textNamed(scene, what).frameId, frame.id, `"${what}" belongs to the frame through the scope above it`);
+  }
+  eq(textNamed(scene, 'Outside').frameId, null, 'a node outside every boundary belongs to no frame');
+  // The scope's own rectangle, or dragging the frame leaves its box behind.
+  const dashed = scene.elements.filter((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed');
+  assert(dashed.length === 1, `one scope rectangle was drawn, got ${dashed.length}`);
+  eq(dashed[0].frameId, frame.id, "the scope's own rectangle is a member too");
+
+  const arrows = scene.elements.filter((el) => el.type === 'arrow');
+  eq(arrows.length, 2, 'both edges were drawn');
+  eq(arrows.filter((a) => a.frameId === frame.id).length, 1, 'only the edge with both ends in the frame is a member');
+});
+
+// Excalidraw has no nested frames. The inner one is still drawn and still owns
+// what is parented to it; saying so is better than a scene that looks right and
+// groups wrong.
+test('a frame inside a frame is reported, and the innermost one owns its contents (#158)', () => {
+  const { scene, report } = builder.buildDiagram({
+    boundaries: [
+      { id: 'outer', kind: 'frame', label: 'Outer' },
+      { id: 'inner', kind: 'frame', label: 'Inner', parent: 'outer' },
+    ],
+    nodes: [{ id: 'n', parent: 'inner', kind: 'box', label: 'Deep' }],
+  }, { seed: 1 });
+  assert(report.notes.some((n) => /frame inside a frame/.test(n)), `the note is reported: ${report.notes.join('; ')}`);
+  const frames = scene.elements.filter((el) => el.type === 'frame');
+  eq(frames.length, 2, 'both frames are drawn');
+  const inner = frames.find((f) => f.name === 'Inner');
+  eq(textNamed(scene, 'Deep').frameId, inner.id, 'its contents belong to the innermost frame');
+  eq(inner.frameId, null, 'and the inner frame is not itself a member of the outer one');
+});
+
 test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
   const spec = {
     boundaries: [
