@@ -50,6 +50,11 @@ spec that is missing or not valid JSON exits `2` with a one-line reason.
 have is a failure (exit `1`), never a pass over nothing; `analyze --page N` goes
 with `--cells` or `--images` and exits `1` the same way.
 
+Every JSON file you write — a spec, a scene, a library, a style record — may
+start with a UTF-8 byte order mark, which is what Windows PowerShell's
+`Set-Content -Encoding UTF8` and several editors add. One leading mark is
+ignored and nothing else about the text is touched (#156).
+
 `validate` checks that the file is well-formed XML before it checks anything
 else, over the wrapper and over each compressed page once decoded. A mismatched
 or unclosed tag, a repeated attribute, an unquoted value or a raw `&` is a

@@ -20,7 +20,7 @@
 //   node build-diagram.mjs spec.json --out a.excalidraw --defaults   the house style, ignoring the override
 //   node build-diagram.mjs --print-style                             what a build would use
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import {
   emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
@@ -33,6 +33,7 @@ import {
 import { resolveIcon } from './find-icon.mjs';
 import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -940,7 +941,7 @@ function main(argv) {
   // One line, not a stack trace: the message never quotes the spec's content.
   let spec;
   try {
-    spec = JSON.parse(readFileSync(specPath, 'utf8'));
+    spec = readJson(specPath);
   } catch (error) {
     exitUsage(readProblem(specPath, error, 'spec file'));
   }

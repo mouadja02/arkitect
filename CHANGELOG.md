@@ -13,6 +13,15 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A leading UTF-8 byte order mark no longer makes a valid JSON file invalid.
+  Windows PowerShell's `Set-Content -Encoding UTF8` writes one, so a spec saved
+  that way was refused as "not valid JSON", which is the one thing it certainly
+  was. One mark is ignored — and only one, at the very start, so a file that
+  really is malformed stays malformed — by a shared reader every entry point
+  uses: both builders' specs, scenes, libraries, the validator, and the style
+  override, findings and record files that already stripped one separately.
+  Unicode in labels is untouched and a BOM-bearing spec builds a byte-identical
+  diagram to the same spec without one (#156).
 - Excalidraw frame membership follows the spec's `parent` rather than whether
   an element happens to fit inside its node's routing box. A free icon caption
   or a sublabel sits outside that box by construction, so it used to lose the

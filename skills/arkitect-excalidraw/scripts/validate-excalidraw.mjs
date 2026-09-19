@@ -10,7 +10,7 @@
 //
 // Nothing here prints element text, only ids, counts and geometry.
 
-import { readFileSync } from 'node:fs';
+import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
   elementBox, bbox, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
   parseCliOrExit, exitUsage, readProblem,
@@ -451,7 +451,7 @@ export function validateLibrary(doc, { path = '<library>' } = {}) {
 export function validateFile(path) {
   let doc;
   try {
-    doc = JSON.parse(readFileSync(path, 'utf8'));
+    doc = readJson(path);
   } catch (e) {
     // Never Node's JSON message: it quotes the file's own text.
     return { path, ok: false, errors: [readProblem(path, e)], warnings: [], info: {} };

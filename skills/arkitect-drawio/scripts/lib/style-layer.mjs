@@ -12,7 +12,8 @@
 // every value is checked, so a bad file cannot produce a malformed diagram.
 // buildDiagram() never reads it; only an engine's CLI build does.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { readJson } from './read-json.mjs';
 import { storeFile } from './store.mjs';
 
 export const SCHEMA_VERSION = 1;
@@ -191,8 +192,7 @@ export function styleLayer({ engine, label, tokens: T, tokenRules, edgeKindsFor,
     if (!existsSync(file)) return resolveStyle(null, { reason: 'no override' });
     let raw;
     try {
-      // A BOM is what an editor on Windows adds; it is not a reason to ignore the file.
-      raw = JSON.parse(readFileSync(file, 'utf8').replace(/^﻿/, ''));
+      raw = readJson(file);
     } catch (error) {
       return resolveStyle(null, { file, errors: [error instanceof SyntaxError ? 'the file is not valid JSON' : `cannot read it: ${error.code ?? error.message}`] });
     }

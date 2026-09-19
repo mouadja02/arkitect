@@ -24,6 +24,7 @@ import { dirname, join, resolve } from 'node:path';
 import { readScene, sha256 } from './lib/excalidraw-core.mjs';
 import { analyzeScene } from './analyze-excalidraw.mjs';
 import { storeFile, writeJson } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { parseCliOrExit, exitUsage } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -271,7 +272,7 @@ export function buildRecord(analyses, { previous = null } = {}) {
 
 function loadRecord(path) {
   if (!existsSync(path)) return null;
-  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
+  try { return readJson(path); } catch { return null; }
 }
 
 const USAGE = `usage: build-knowledge.mjs --sources <file...> [--merge] [--out p]

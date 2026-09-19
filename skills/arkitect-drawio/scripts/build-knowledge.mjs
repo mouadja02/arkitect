@@ -17,6 +17,7 @@
 // other string drawn from the examples.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readJson } from './lib/read-json.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import {
@@ -289,7 +290,7 @@ function main(argv) {
   const out = options.out ? resolve(options.out) : ownRecord;
 
   const data = collect(files);
-  const prior = merge && existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null;
+  const prior = merge && existsSync(out) ? readJson(out) : null;
 
   const record = {
     schemaVersion: 1,
