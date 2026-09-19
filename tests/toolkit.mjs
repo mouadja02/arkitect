@@ -482,6 +482,16 @@ test('every generation and icon case keeps deterministic graders (#135)', () => 
     if (llm) judged.push(id);
   }
   assert(judged.length > 0, 'no generation or icon case kept an llm grader; the judgement calls were lost');
+
+  // The runner must not flatten those three runs. It once forwarded its own
+  // default of 1 on every call, which overrode every case's `runs:`.
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  const forwarded = sh.split('\n').filter((l) => l.includes('--runs "$RUNS"'));
+  assert(forwarded.length > 0, 'scripts/eval.sh no longer forwards --runs at all');
+  for (const line of forwarded) {
+    assert(/\[\s*-n\s+"\$RUNS"\s*\]/.test(line),
+      `scripts/eval.sh forwards --runs unconditionally, overriding every case's runs: ${line.trim()}`);
+  }
 });
 
 // evals/README.md counts the cases in prose and lists every one of them. Both

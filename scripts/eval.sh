@@ -16,7 +16,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
-TAGS=(); CASE=""; RUNS=1; MODEL="haiku"; JUDGE="sonnet"
+TAGS=(); CASE=""; RUNS=""; MODEL="haiku"; JUDGE="sonnet"
 MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
 
 die() { echo "error: $*" >&2; exit 2; }
@@ -28,7 +28,7 @@ usage() {
 Options:
   --tag <tag>          only cases with this tag (repeatable)
   --case <glob>        only cases whose name matches
-  --runs <n>           runs per case (default 1)
+  --runs <n>           runs per case (default: each case's own runs:)
   --model <model>      model under test (default haiku)
   --judge-model <m>    LLM-grader model (default sonnet; see below)
   --max-cost-usd <n>   hard ceiling, aborts past it (default 5)
@@ -129,12 +129,16 @@ OUT="${OUT:-$ROOT/evals/results/$STAMP}"
 mkdir -p "$OUT" || die "cannot create $OUT"
 
 args=(plugin eval "$ROOT"
-  --runs "$RUNS" --model "$MODEL" --judge-model "$JUDGE"
+  --model "$MODEL" --judge-model "$JUDGE"
   --ablation none --threshold 0
   --max-cost-usd "$MAX_COST" -j "$CONCURRENCY"
   --allow-tools Bash Write Edit WebSearch WebFetch
   --trust-plugin --no-publish
   --json "$OUT/result.json" --report "$OUT/report.html")
+# Without --runs each case keeps its own `runs:`. Forcing a default here would
+# silently flatten the generation and icon cases' three runs to one, which is
+# the spread #135 relies on to show a flapping judge.
+[ -n "$RUNS" ] && args+=(--runs "$RUNS")
 [ "$SCAFFOLD" -eq 1 ] && args+=(--scaffold)
 [ -n "$CASE" ] && args+=(--case "$CASE")
 for t in ${TAGS+"${TAGS[@]}"}; do args+=(--tag "$t"); done
