@@ -6,7 +6,12 @@ constraints in it are the ones from `AGENTS.md` under "What Arkitect optimises
 for", and they are what the audit is scored against.
 
 Run it on a clean checkout, and give the agent `Read`, `Glob`, `Grep` and
-`Bash`. It writes issues, not code.
+`Bash` — `Bash` because it files the issues with `gh`, which needs to be logged
+in. It writes issues, never code.
+
+The deliverable is issues in the tracker, filed only after the existing open
+**and closed** ones have been read. A duplicate costs more than a missed
+finding.
 
 ---
 
@@ -64,33 +69,93 @@ Work from evidence, not impression.
    Do not run the eval suite; it costs money and needs a sandbox.
 4. For each candidate defect, establish: the file and line, what breaks or is
    wasted, and how you know. A claim you cannot point at is not a finding.
-5. Check each finding against the open issues before writing it up — do not
-   re-file what is already tracked. List the issue number instead.
+5. Read the existing issues, open and closed, and classify every candidate
+   against them before you file anything. The next section is that step.
 
-## What to produce
+## Read the existing issues first — before writing anything
 
-A single report, ordered by severity, with every finding in this shape:
+This is the step that decides whether the audit is useful or noise. A duplicate
+costs a maintainer more than a missed finding.
 
-- **What** — one sentence, specific.
-- **Evidence** — path:line, a command's output, or a measured number. Required.
-- **Why it matters** — tied to one of the two constraints above, not to taste.
-- **Fix** — the smallest change that resolves it, and what it costs in bytes,
-  dependencies or model burden. If the fix adds weight, say so plainly.
-- **Release** — patch, minor or major, with the reason for that bucket:
-  - **patch** — a defect with no interface change.
-  - **minor** — new capability, or a doc promise made real.
-  - **major** — a spec, file-format or CLI change that breaks an existing
-    diagram, spec or script.
+```bash
+gh issue list --state open  --limit 100 --json number,title,labels,body
+gh issue list --state closed --limit 100 --json number,title,labels,body
+```
 
-Then a short section, **Not worth doing**, naming what you considered and
-rejected, with the reason. This matters as much as the findings: it stops the
-same ground being re-audited, and it is where "this would add weight for little
-gain" gets recorded.
+Read **closed** issues too. A closed one means the ground is settled: either it
+was fixed, or it was considered and rejected, and re-filing it argues with a
+decision already made. Check the `CHANGELOG.md` `[Unreleased]` section as well —
+something fixed but unreleased will not show as a closed issue.
+
+For every candidate finding, decide and say which it is:
+
+- **new** — nothing covers it. File it.
+- **covered** — an open issue already describes it. Do not file. If you have
+  evidence the issue lacks, add it as a comment on that issue instead.
+- **settled** — a closed issue or a shipped changelog entry covers it. Do not
+  file, do not comment. Say why you dropped it.
+
+## What to produce: filed issues
+
+**The deliverable is issues in the tracker**, one per finding, filed with `gh`.
+Not a report in the chat.
+
+Each issue body, in this order — this is the house shape, follow it:
+
+```markdown
+## What
+One or two sentences. Specific.
+
+## Evidence
+path:line, a command's output, or a measured number. Required. A claim you
+cannot point at is not a finding.
+
+## Why it matters
+Tied to one of the two constraints above, not to taste.
+
+## Fix
+The smallest change that resolves it, and what it costs in bytes, dependencies
+or model burden. If the fix adds weight, say so plainly. Offer the options you
+considered when the choice is not obvious.
+
+## Done when
+- [ ] A checkable condition.
+- [ ] Another, if the first does not cover it.
+
+Effort: XS | S | M | L · Depends on: #n, or none
+```
+
+Title it as the change, not as the complaint: "Say which engine was chosen, and
+why" rather than "Engine choice is broken".
+
+Labels, from the ones that exist — do not invent any:
+
+- exactly one of `release:patch` (defect, no interface change), `release:minor`
+  (new capability, or a doc promise made real), or `release:major` (breaks an
+  existing diagram, spec, CLI or layout);
+- the kind: `fix`, `enhancement`, `docs`, `test`, `maintenance`, `performance`,
+  `icons`, `upstream` — as many as genuinely apply.
+
+File them **worst first**, so the numbers run in severity order.
+
+## Then report back, briefly
+
+In the chat, not as an issue: the list of issues you filed with their numbers
+and one-line titles; what you dropped as **covered** or **settled**, with the
+issue number you deferred to; and a **Not worth doing** section naming what you
+considered and rejected, with the reason. That last part matters as much as the
+findings — it stops the same ground being re-audited, and it is where "this
+would add weight for little gain" gets recorded. If it is substantial, file it
+as one issue titled "Audit: considered and rejected" so it survives the chat.
 
 ## Rules for the audit itself
 
-- **Do not write code, do not open PRs, do not edit files.** The deliverable is
-  the report.
+- **Do not write code, do not open PRs, do not edit files, do not touch
+  `main`.** You file issues and nothing else. If a fix is one line and obvious,
+  it still goes in an issue — the maintainer decides what ships.
+- **Do not close, relabel or edit anyone else's issues.** Comment, at most.
+- **Never file a duplicate.** If you are unsure whether something is covered,
+  comment on the nearest issue rather than opening a new one.
 - **Do not propose a dependency.** If a fix seems to need one, write it as
   rejected, with what it would cost.
 - **Do not propose more prose as a fix for a rule being ignored** unless you
@@ -100,4 +165,6 @@ gain" gets recorded.
   path and loses nothing is worth more than a new feature.
 - **Say when you are unsure.** "I could not verify this without running the
   evals" is a useful sentence; a confident guess is not.
-- **No more than 15 findings.** If you have more, you have stopped ranking.
+- **No more than 15 issues.** If you have more findings than that, you have
+  stopped ranking; fold the small ones together or leave them out.
+- **One finding per issue.** A bundle of five things cannot be closed.
