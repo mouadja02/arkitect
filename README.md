@@ -167,8 +167,6 @@ claude mcp add --scope user drawio -- npx --yes --ignore-scripts @drawio/mcp
 ## Project status
 
 See [completed work, known issues and next priorities](docs/status.md).
-Known Draw.io icon-selection and SVG-sizing bugs remain open; the status page
-links their scope and the planned fixes.
 
 ## Documentation
 

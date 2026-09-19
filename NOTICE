@@ -12,7 +12,7 @@ Draw.io icon packs
 
   skills/arkitect-drawio/assets/libraries/*.drawio
 
-Eighteen libraries, about 4,725 marks, built from the sources pinned in
+Eighteen libraries, about 4,843 marks, built from the sources pinned in
 
   skills/arkitect-drawio/assets/libraries/sources.json
 
@@ -28,7 +28,7 @@ that purpose, and reserve every other right - including the right to withdraw
 permission. Icon shape must not be altered, which is why this repository
 embeds vendor artwork byte-for-byte with no optimisation pass.
 
-  aws     243 icons   AWS Architecture Icons
+  aws     311 icons   AWS Architecture Icons
                       https://aws.amazon.com/architecture/icons/
                       subject also to the AWS Trademark Guidelines at
                       https://aws.amazon.com/trademark-guidelines/
@@ -62,7 +62,7 @@ Google LLC. Apache, Apache Iceberg, Apache Pinot and Apache Beam are trademarks
 of The Apache Software Foundation. Arkitect is not affiliated with, endorsed by,
 or sponsored by any of them.
 
-Sixty-six products are catalogued in references/icon-catalog.json with a source
+160 products are catalogued in references/icon-catalog.json with a source
 URL and a licence note but WITHOUT artwork, because no permissively licensed
 mark for them exists, because the brand owner asked for its removal from the
 source that would otherwise have supplied it, or because the licensed artwork

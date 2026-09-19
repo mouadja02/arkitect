@@ -457,6 +457,20 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
   console.log(`      (context budget: ${measured.join('; ')})`);
 });
 
+// docs/maintenance.md quotes the same measured SKILL.md + largest-pattern totals (#161).
+test('docs/maintenance.md skill-budget table matches measured context budgets (#161)', () => {
+  const md = readFileSync(join(ROOT, 'docs', 'maintenance.md'), 'utf8');
+  for (const engine of ['arkitect-drawio', 'arkitect-excalidraw']) {
+    const { skillBytes, largest } = skillReading(engine);
+    const total = skillBytes + largest;
+    const row = md.match(new RegExp('`' + engine + '`\\s*\\|\\s*([\\d,]+)\\s*\\|\\s*([\\d,]+)\\s*\\|\\s*([\\d,]+)'));
+    assert(row, `docs/maintenance.md missing budget row for ${engine}`);
+    const got = row.slice(1).map((s) => Number(s.replace(/,/g, '')));
+    eq(got.join(','), [skillBytes, largest, total].join(','),
+      `docs/maintenance.md ${engine} budget table`);
+  }
+});
+
 // A committed example must build the same on every machine, so a documented
 // command that rebuilds a template passes --defaults. Without it, a maintainer's
 // personal style override would end up in the repository (#89, #90).

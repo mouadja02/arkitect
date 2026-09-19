@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-19, after the 1.3.0 release.
+Status reviewed on 2026-09-19, after the 1.5.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -78,7 +78,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.3.0 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v1.5.0 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate
