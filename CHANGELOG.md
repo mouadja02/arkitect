@@ -11,6 +11,22 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/eval.sh` runs the eval suite in one command, with the workarounds a
+  run needs already applied. It checks the prerequisites (`--check` does only
+  that, and spends nothing), caps the spend, and writes the JSON, the HTML
+  report, the log and a one-screen summary under `evals/results/<stamp>/`.
+  Two refusals cost an afternoon to find and are now handled rather than
+  rediscovered: on Windows every Bash-granting case is refused, so the script
+  says to use WSL; and the sandbox refuses to start at all when the Docker
+  credential store holds a symlink, which Docker Desktop's WSL integration
+  always creates. `DOCKER_CONFIG` does not move that check, so the run gets an
+  isolated `HOME` linking only `~/.claude` and `~/.claude.json` - your real
+  `~/.docker` is never touched. `scripts/eval-summary.mjs` prints the summary
+  from any `--json` output on its own, and exits 1 if a case scored below 1
+  (#134).
+
 ### Fixed
 
 - The four `stays-manual` eval cases run again. `context.scaffold_script` is the
@@ -20,7 +36,8 @@ separate file, no naming scheme, no required format beyond that.
   started, and all four scored 0 without ever testing what they exist to test —
   that `learn-*` and `apply-*` never fire on their own. Each fixture now lives
   in a `scaffold.sh` beside its `case.yaml`, and a test refuses an inlined,
-  missing, misplaced or CRLF scaffold, since `bash` fails on the `` and a
+  missing, misplaced or CRLF scaffold, since `bash` fails on the `
+` and a
   Windows clone would otherwise produce one (#133).
 
 ## [1.5.2] — 2026-09-19

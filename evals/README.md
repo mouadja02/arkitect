@@ -24,7 +24,34 @@ the report tell the two apart. `--tag generation icons` selects the four
 generation and icon cases.
 
 ```bash
-claude plugin eval <path> --allow-tools Bash Write Edit WebSearch WebFetch --trust-plugin
+scripts/eval.sh --check                              # prerequisites only, no spend
+scripts/eval.sh --tag generation --runs 1 --model haiku
+scripts/eval.sh --case 'drawio-*' --runs 2
+scripts/eval.sh -- --keep-temp                       # after --, straight to claude
+```
+
+`scripts/eval.sh` is the supported route on Linux and macOS. It checks the
+prerequisites, applies the workarounds below, caps the spend
+(`--max-cost-usd`, default 5), and writes `result.json`, `report.html`,
+`run.log` and a one-screen `summary.txt` under `evals/results/<stamp>/`. It
+exits 1 if any case scored below 1, so it can gate a run.
+
+The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
+its own:
+
+```
+12 cases - 298s - $1.222 - model haiku - judge sonnet
+
+    drawio-edit-existing-diagram            0.86
+      FAIL  wrote-a-backup - pattern not found in files
+ok  drawio-generate-architecture            1.00
+
+overall 0.91  -  12/12 cases ran  -  42% of runs perfect
+```
+
+The underlying command, if you would rather drive it yourself:
+
+```bash
 claude plugin eval <path> --tag generation icons --runs 1 --model haiku --ablation none \
   --allow-tools Bash Write Edit WebSearch WebFetch --trust-plugin --no-publish
 ```
@@ -39,9 +66,25 @@ Caveats:
   agent ran the validator (`tool_used` with `input_match`), and a file's content
   with a `regex` grader on `target: { source: file, path }`.
 - Every case grants Bash, because the skills run Node scripts, and an eval run
-  refuses a shell it cannot sandbox. On Windows, run the suite from Linux (WSL) or
-  macOS instead, with the sandbox backend installed (`bubblewrap` and `socat`
-  on Linux).
+  refuses a shell it cannot sandbox. **On Windows every Bash-granting case is
+  refused** - "the Windows sandbox is not active on this session" - so run the
+  suite from WSL or macOS. From Windows: `wsl -d <distro>`, put the plugin on
+  the Linux filesystem rather than under `/mnt/c`, then `scripts/eval.sh`.
+- Prerequisites, all checked by `scripts/eval.sh --check`: Claude Code, logged
+  in once; Node 20+; on Linux `bubblewrap` and `socat` for the sandbox.
+  Optional, for renders: `xvfb` and Draw.io Desktop for `.drawio`, and Chrome,
+  Edge or Chromium for Excalidraw PNGs - without a browser Excalidraw still
+  renders SVG.
+- **Docker Desktop stops the run before it starts.** The sandbox refuses a
+  Docker credential store that holds a symlink, and Docker Desktop's WSL
+  integration always links `contexts` and `features.json` out to Windows: "the
+  Docker (~/.docker, DOCKER_CONFIG) credential store on this machine holds a
+  symbolic link inside it". Setting `DOCKER_CONFIG` elsewhere does **not**
+  help - `~/.docker` is read either way. `scripts/eval.sh` runs with `HOME` set
+  to a temporary directory linking only `~/.claude` and `~/.claude.json`, so
+  `~/.docker` is not there to be refused and your real one is never touched.
+- A background run started from `wsl.exe` with `nohup` and `&` is killed when
+  the WSL session closes. Use `setsid -f`, or keep the session open.
 - `context.scaffold_script` is the **path to a script file** inside the case
   directory, not inline bash. Claude Code resolves it against the case
   directory, so an inlined script fails the case before the agent starts, with

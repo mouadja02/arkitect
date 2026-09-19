@@ -908,6 +908,96 @@ test('the npm package ships the bundled assets and nothing local (#38)', () => {
   assert(bytes < PACKAGE_CEILING, `the package unpacks to ${bytes} bytes, over the ${PACKAGE_CEILING} ceiling`);
 });
 
+// scripts/eval.sh is the supported way to run the eval suite, and the only
+// place the WSL and Docker Desktop workarounds are written down. Neither is
+// exercised here - a real run costs money and needs a sandbox - so what a test
+// can hold is that the script parses, that its options and its --help agree,
+// and that the README still points at it (#134).
+test('scripts/eval.sh parses, and its options match its help and the README (#134)', () => {
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(!sh.includes('\r'), 'scripts/eval.sh has CRLF line endings; it is run by bash');
+  assert(sh.startsWith('#!'), 'scripts/eval.sh has no shebang');
+
+  // Every long option the argument loop accepts, and every one --help prints.
+  const accepted = new Set();
+  for (const m of sh.matchAll(/^\s{4}(-[^)]*)\)/gm)) {
+    for (const opt of m[1].split('|')) {
+      const name = opt.trim();
+      if (name.startsWith('--') && name !== '--') accepted.add(name);
+    }
+  }
+  assert(accepted.size >= 8, `only found ${accepted.size} options in the argument loop`);
+
+  const usage = sh.slice(sh.indexOf("cat <<'USAGE'"), sh.indexOf('USAGE\n}'));
+  for (const opt of accepted) {
+    assert(usage.includes(opt), `scripts/eval.sh accepts ${opt} but --help does not list it`);
+  }
+  for (const required of ['--tag', '--runs', '--model', '--check', '--max-cost-usd']) {
+    assert(accepted.has(required), `scripts/eval.sh no longer accepts ${required}`);
+  }
+
+  // The refusals that make the script worth having, rather than a bare command.
+  assert(/Windows sandbox is not active/.test(sh), 'the Windows refusal no longer explains itself');
+  assert(/DOCKER_CONFIG/.test(sh) && /isolated HOME|SANDBOX_HOME/.test(sh),
+    'the Docker Desktop workaround is gone from scripts/eval.sh');
+
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
+  assert(readme.includes('scripts/eval.sh'), 'evals/README.md no longer points at scripts/eval.sh');
+  for (const prereq of ['bubblewrap', 'socat', 'DOCKER_CONFIG']) {
+    assert(readme.includes(prereq), `evals/README.md no longer names ${prereq}`);
+  }
+
+  // bash -n is a parse, not a run: nothing in the script executes.
+  const bash = spawnSync('bash', ['-n', join(ROOT, 'scripts', 'eval.sh')], { encoding: 'utf8' });
+  if (bash.error) { console.log('      (bash was not found, so the parse check was skipped)'); return 'skip'; }
+  eq(bash.status, 0, `bash rejected scripts/eval.sh: ${(bash.stderr || '').trim().slice(0, 200)}`);
+});
+
+test('the eval summary reports every case and gates on the low ones (#134)', () => {
+  const summary = join(ROOT, 'scripts', 'eval-summary.mjs');
+  const run = (json) => {
+    mkdirSync(TMP, { recursive: true });
+    const file = join(TMP, 'eval-result.json');
+    writeFileSync(file, JSON.stringify(json));
+    return spawnSync(process.execPath, [summary, file], { encoding: 'utf8' });
+  };
+  const graded = (name, score, failed = []) => ({
+    name,
+    arms: { with: [{ score, graders: [{ name: 'ran', passed: true }, ...failed.map((f) => ({ name: f, passed: false, explanation: 'judge votes: FAIL' }))] }] },
+  });
+
+  const clean = run({
+    durationSeconds: 12, costUsd: 0.5, suite: { modelOverride: 'haiku', judgeModel: 'sonnet' },
+    cases: [graded('a-case', 1), graded('b-case', 1)],
+    aggregates: { casesTotal: 2, casesPassed: 2, overallScore: 1, overallPassRate: 1 },
+  });
+  eq(clean.status, 0, 'an all-green run should exit 0');
+  for (const wanted of ['a-case', 'b-case', '$0.500', 'haiku', 'sonnet', 'overall 1.00']) {
+    assert(clean.stdout.includes(wanted), `the summary omitted ${wanted}:\n${clean.stdout}`);
+  }
+
+  const mixed = run({
+    durationSeconds: 30, costUsd: 1.25, suite: { modelOverride: 'haiku', judgeModel: 'sonnet' },
+    cases: [graded('good-case', 1), graded('bad-case', 0.5, ['honest-report'])],
+    aggregates: { casesTotal: 2, casesPassed: 2, overallScore: 0.75, overallPassRate: 0.5 },
+  });
+  eq(mixed.status, 1, 'a run with a case below 1 should exit 1, so it can gate');
+  assert(mixed.stdout.includes('honest-report'), `the failing grader was not named:\n${mixed.stdout}`);
+  assert(/ok\s+good-case/.test(mixed.stdout), `a passing case lost its ok marker:\n${mixed.stdout}`);
+
+  // A case that never started is an error, not a score; it must not read as 0.
+  const errored = run({
+    cases: [{ name: 'broken-case', arms: { with: [{ score: 0, error: 'path "x" does not exist' }] } }],
+    aggregates: { casesTotal: 1, casesPassed: 0, overallScore: 0, overallPassRate: 0 },
+  });
+  eq(errored.status, 1, 'an errored case should exit 1');
+  assert(errored.stdout.includes('ERROR') && errored.stdout.includes('does not exist'),
+    `an errored case was not reported as one:\n${errored.stdout}`);
+
+  const gone = spawnSync(process.execPath, [summary, join(TMP, 'no-such-result.json')], { encoding: 'utf8' });
+  eq(gone.status, 2, 'a missing file should exit 2, not 1');
+});
+
 test('the packed CLI works from outside the checkout (#38)', () => {
   if (!npmCli) return 'skip';
   const { tmp, root } = packOnce();
