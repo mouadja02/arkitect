@@ -14,6 +14,34 @@ to it, and every command is Node 20+ with **no dependencies to install**.
 
 ---
 
+## What Arkitect optimises for — this does not get traded away
+
+Two constraints govern every change, and they outrank any feature:
+
+1. **Stay functional and lightweight.** No dependencies, no services, no build
+   step — Node 20+ and the files in this repository.
+2. **Work with whatever model is driving.** A small local model must get a good
+   diagram out of this, not only a frontier one.
+
+What follows from them, and why:
+
+- **Context is the scarce resource.** Every byte a skill makes an agent read
+  competes with the user's own architecture for the same window. A sentence
+  earns its place only if it changes what gets drawn. The per-skill reading
+  budget is measured and enforced, not aspirational — see `docs/maintenance.md`.
+- **The scripts do the thinking that needs no model.** Layout, icon resolution,
+  validation, backups and pruning are code, so the model spends its budget on
+  the user's system rather than on geometry it would get wrong.
+- **Deterministic beats clever.** A check a script can make is never left to the
+  model, and never left to an LLM judge.
+- **Every capability the docs promise must be reachable** by the documented
+  route, or the promise comes out of the docs.
+
+A change that adds weight, adds a dependency, or works only because a large
+model papers over it does not ship — however good the output looks.
+
+---
+
 ## 1. Pick the engine
 
 | | Draw.io (`.drawio`) | Excalidraw (`.excalidraw`) |

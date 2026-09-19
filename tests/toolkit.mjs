@@ -455,6 +455,38 @@ test('every eval scaffold_script names a runnable script beside its case (#133)'
   assert(scaffolded >= 4, `expected at least the four stays-manual scaffolds, found ${scaffolded}`);
 });
 
+// The two constraints that outrank every feature: functional and lightweight,
+// and good output on whatever model is driving. They are stated in AGENTS.md and
+// repeated wherever someone decides what ships, so a contributor or an agent
+// cannot miss them. Wording may improve; the substance may not quietly leave.
+test('the project identity is stated in every central file', () => {
+  // Prose wraps, and markdown emphasis lands mid-phrase, so match on the words
+  // rather than on the line breaks between them.
+  const flat = (rel) => readFileSync(join(ROOT, rel), 'utf8').replace(/[\s*_]+/g, ' ');
+  const canonical = flat('AGENTS.md');
+  const section = canonical.slice(canonical.indexOf('## What Arkitect optimises for'));
+  assert(section.startsWith('## What Arkitect optimises for'),
+    'AGENTS.md no longer states what the project optimises for');
+  assert(canonical.includes('## What Arkitect optimises for'), 'the identity section lost its heading');
+  for (const claim of [
+    /functional and lightweight/i,
+    /whatever model is driving/i,
+    /small local model/i,
+    /[Cc]ontext is the scarce resource/,
+    /never left to/i,
+  ]) {
+    assert(claim.test(section.slice(0, 2000)), `AGENTS.md's identity section dropped ${claim}`);
+  }
+
+  // Each of these is a place a decision about what ships gets made.
+  for (const rel of ['README.md', 'CONTRIBUTING.md', 'docs/maintenance.md']) {
+    const text = flat(rel);
+    assert(/functional and lightweight|lightweight/i.test(text), `${rel} no longer says the project stays lightweight`);
+    assert(/whatever model is driving/i.test(text), `${rel} no longer says it must work on whatever model is driving`);
+    assert(/small local model/i.test(text), `${rel} no longer says a small local model must get a good diagram`);
+  }
+});
+
 // An `llm` grader votes three times and can still disagree with itself run to
 // run; a `regex` grader cannot. Anything checkable about a report - a heading,
 // a file name, an icon id - belongs in a regex, leaving the judge the one
