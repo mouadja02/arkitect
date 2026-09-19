@@ -415,6 +415,46 @@ test('all six skills are well formed, and only the learning and apply ones are m
   assert(ci.includes(`skills.length !== ${skills.length}`), `ci.yml's plugin job still expects a different skill count than ${skills.length}`);
 });
 
+// Every eval case directory, in a stable order, for the checks below.
+const evalCases = () => {
+  const root = join(ROOT, 'evals');
+  return readdirSync(root)
+    .filter((engine) => statSync(join(root, engine)).isDirectory() && engine !== 'results')
+    .flatMap((engine) => readdirSync(join(root, engine))
+      .filter((name) => existsSync(join(root, engine, name, 'case.yaml')))
+      .map((name) => ({ id: `evals/${engine}/${name}`, dir: join(root, engine, name) })))
+    .sort((a, b) => a.id.localeCompare(b.id));
+};
+
+// `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
+// the case directory - not as inline bash. An inlined script is not run and not
+// reported as skipped: the case errors before the agent starts, with
+// `path "mkdir -p eval-input ..." does not exist`, and scores 0. That looks like
+// a failing plugin rather than a broken case file, so it is worth a test (#133).
+test('every eval scaffold_script names a runnable script beside its case (#133)', () => {
+  const cases = evalCases();
+  assert(cases.length > 0, 'no eval cases were found');
+  let scaffolded = 0;
+  for (const { id, dir } of cases) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8');
+    const declared = yaml.match(/^\s{2}scaffold_script:[ \t]*(.*)$/m);
+    if (!declared) continue;
+    scaffolded++;
+    const value = declared[1].trim();
+    assert(value !== '' && !value.startsWith('|') && !value.startsWith('>'),
+      `${id}: scaffold_script is inlined; it must name a script file in the case directory`);
+    assert(!/[\\/]/.test(value) && !value.startsWith('.'),
+      `${id}: scaffold_script "${value}" must be a plain file name inside the case directory`);
+    const script = join(dir, value);
+    assert(existsSync(script), `${id}: scaffold_script "${value}" does not exist`);
+    const body = readFileSync(script, 'utf8');
+    assert(body.startsWith('#!'), `${id}: ${value} has no shebang`);
+    // CRLF reaches the sandbox verbatim and `bash` fails on `\r`.
+    assert(!body.includes('\r'), `${id}: ${value} has CRLF line endings; the sandbox runs it with bash`);
+  }
+  assert(scaffolded >= 4, `expected at least the four stays-manual scaffolds, found ${scaffolded}`);
+});
+
 // The default drawing path has to fit a small model's window before it has read
 // the user's architecture (#113): SKILL.md plus the one pattern section it sends
 // the agent to, measured in bytes. Everything else sits behind a named condition.

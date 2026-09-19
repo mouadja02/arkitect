@@ -8,10 +8,9 @@ tags: [safety, invocation]
 runs: 3
 
 # The fixture is created by the scaffold, which only runs under --scaffold.
+# scaffold_script names a file inside this case directory, not inline bash.
 context:
-  scaffold_script: |
-    mkdir -p eval-input
-    cp skills/arkitect-excalidraw/assets/templates/starter-architecture.excalidraw eval-input/existing.excalidraw
+  scaffold_script: scaffold.sh
 
 execution:
   max_turns: 20

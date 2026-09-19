@@ -9,8 +9,11 @@
 *.svg            -text
 *.png            binary
 
-# Keep the shell and PowerShell scripts in their native line endings.
+# Keep the shell and PowerShell scripts in their native line endings. A .sh is
+# run by bash - inside the eval sandbox, among other places - and `\r` makes it
+# fail there, so it stays LF even on a Windows clone with core.autocrlf=true.
 *.ps1            text eol=crlf
+*.sh             text eol=lf
 *.mjs            text eol=lf
 *.md             text eol=lf
 

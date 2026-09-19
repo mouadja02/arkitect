@@ -11,6 +11,18 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- The four `stays-manual` eval cases run again. `context.scaffold_script` is the
+  path to a script file, resolved against the case directory, not inline bash:
+  every one of them inlined its fixture, so `claude plugin eval` refused the
+  case with `path "mkdir -p eval-input ..." does not exist` before the agent
+  started, and all four scored 0 without ever testing what they exist to test —
+  that `learn-*` and `apply-*` never fire on their own. Each fixture now lives
+  in a `scaffold.sh` beside its `case.yaml`, and a test refuses an inlined,
+  missing, misplaced or CRLF scaffold, since `bash` fails on the `` and a
+  Windows clone would otherwise produce one (#133).
+
 ## [1.5.2] — 2026-09-19
 
 ### Fixed

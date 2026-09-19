@@ -42,9 +42,13 @@ Caveats:
   refuses a shell it cannot sandbox. On Windows, run the suite from Linux (WSL) or
   macOS instead, with the sandbox backend installed (`bubblewrap` and `socat`
   on Linux).
-- `learning-skill-stays-manual` and `apply-skill-stays-manual` use `scaffold_script`, which only runs under
-  `--scaffold`. Without that flag, create the `eval-input/` fixture by hand
-  first; the script in each case file shows what it needs.
+- `context.scaffold_script` is the **path to a script file** inside the case
+  directory, not inline bash. Claude Code resolves it against the case
+  directory, so an inlined script fails the case before the agent starts, with
+  `path "mkdir -p eval-input ..." does not exist`. The four cases that need a
+  fixture keep it in `scaffold.sh` beside their `case.yaml`.
+- Those scaffolds only run under `--scaffold`. Without that flag, create the
+  `eval-input/` fixture by hand first; `scaffold.sh` shows what it needs.
 
 ## What a good result looks like
 
