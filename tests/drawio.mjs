@@ -3121,6 +3121,107 @@ test('validate --page N validates that page and never reads N as a file (#37)', 
   assert(help.status === 0 && help.stdout.includes('--page'), 'help names --page');
 });
 
+// The tag scanner extractCells needs is forgiving on purpose, and it recovers
+// from a mismatched closing tag rather than seeing one, so the validator used to
+// answer PASS for XML no parser would accept (#155). The page body below is the
+// one from the report, and its only defect is </WRONG>.
+const PAGE_CELLS = '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+  + '<mxCell id="a" vertex="1" parent="1"><mxGeometry x="0" y="0" width="100" height="50" as="geometry"/></mxCell>';
+
+test('the validator refuses XML that is not well-formed (#155)', () => {
+  const malformed = [
+    ['a closing tag that matches nothing',
+      `<mxfile><diagram id="p" name="P"><mxGraphModel><root>${PAGE_CELLS}</WRONG></mxGraphModel></diagram></mxfile>`,
+      /<\/WRONG> closes <root>/],
+    ['an element that is never closed',
+      `<mxfile><diagram id="p" name="P"><mxGraphModel><root>${PAGE_CELLS}</root></mxGraphModel></diagram>`,
+      /<mxfile> is never closed/],
+    ['the same attribute twice',
+      '<mxfile><diagram id="p" name="P"><mxGraphModel><root><mxCell id="0"/>'
+      + '<mxCell id="1" parent="0" parent="0"/></root></mxGraphModel></diagram></mxfile>',
+      /attribute parent appears twice/],
+    ['an unquoted attribute value',
+      '<mxfile><diagram id=p name="P"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+      + '</root></mxGraphModel></diagram></mxfile>',
+      /is not quoted/],
+    ['a raw ampersand in an attribute value',
+      '<mxfile><diagram id="p" name="P"><mxGraphModel><root><mxCell id="0"/>'
+      + '<mxCell id="1" parent="0" value="a & b"/></root></mxGraphModel></diagram></mxfile>',
+      /raw "&"/],
+    ['content after the root element',
+      `<mxfile><diagram id="p" name="P"><mxGraphModel><root>${PAGE_CELLS}</root></mxGraphModel></diagram></mxfile><mxfile/>`,
+      /a second root element/],
+  ];
+  for (const [what, xml, expected] of malformed) {
+    const p = join(TMP, `wellformed-${what.replace(/[^a-z]+/gi, '-')}.drawio`);
+    writeFileSync(p, xml);
+    const r = validator.validateFile(p);
+    eq(r.ok, false, `${what} must fail`);
+    assert(r.errors.some((e) => /not well-formed XML at line \d+, column \d+/.test(e) && expected.test(e)),
+      `${what} must say where and why, got: ${r.errors.join('; ')}`);
+    eq(drawioCli('validate', p).status, 1, `${what} fails on the command line too`);
+  }
+});
+
+// Well-formedness is checked, not tidiness: everything XML actually allows has
+// to keep passing, or the gate becomes a style opinion.
+test('declarations, comments, CDATA and quoting stay acceptable (#155)', () => {
+  const p = join(TMP, 'wellformed-legal.drawio');
+  writeFileSync(p, '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + "<!-- written by hand -->\n"
+    + "<mxfile host='local' agent=\"a &amp; b\">"
+    + '<diagram id="p" name="P"><mxGraphModel><root>'
+    + '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<mxCell id="a" vertex="1" parent="1" value="&lt;b&gt;x&lt;/b&gt;">'
+    + '<mxGeometry x="0" y="0" width="100" height="50" as="geometry"/></mxCell>'
+    + '<![CDATA[free text < & > inside]]>'
+    + '</root></mxGraphModel></diagram></mxfile>\n'
+    + '<!-- and a trailing comment -->\n');
+  const r = validator.validateFile(p);
+  assert(!r.errors.some((e) => /well-formed/.test(e)), `legal XML must not be called malformed: ${r.errors.join('; ')}`);
+  eq(r.ok, true, `legal XML must pass: ${r.errors.join('; ')}`);
+
+  // Well-formed but not a diagram: the parse names the root it did find, which
+  // is what the two wrapper string checks used to do less accurately.
+  const wrong = join(TMP, 'wellformed-wrong-root.drawio');
+  writeFileSync(wrong, '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>');
+  const w = validator.validateFile(wrong);
+  eq(w.ok, false, 'a well-formed non-mxfile document must not pass');
+  assert(w.errors.some((e) => e === 'the root element is <svg>, not <mxfile>'), `errors: ${w.errors.join('; ')}`);
+});
+
+test('a compressed page is checked after it is decoded (#155)', () => {
+  const pack = (inner) => deflateRawSync(Buffer.from(encodeURIComponent(inner), 'binary')).toString('base64');
+  const wrap = (body) => `<mxfile compressed="true"><diagram id="p" name="P">${body}</diagram></mxfile>`;
+
+  const good = join(TMP, 'wellformed-packed-good.drawio');
+  writeFileSync(good, wrap(pack(`<mxGraphModel><root>${PAGE_CELLS}</root></mxGraphModel>`)));
+  const okResult = validator.validateFile(good);
+  eq(okResult.ok, true, `a well-formed compressed page passes: ${okResult.errors.join('; ')}`);
+  eq(okResult.info.pages[0].compressed, true, 'and really was compressed');
+
+  const bad = join(TMP, 'wellformed-packed-bad.drawio');
+  writeFileSync(bad, wrap(pack(`<mxGraphModel><root>${PAGE_CELLS}</WRONG></mxGraphModel>`)));
+  const r = validator.validateFile(bad);
+  eq(r.ok, false, 'a malformed compressed page must fail');
+  assert(r.errors.some((e) => /^page 0: not well-formed XML at line \d+, column \d+/.test(e)),
+    `the error names the page, got: ${r.errors.join('; ')}`);
+});
+
+// The wrapper is not a cheaper place to leak than the cells are: the report
+// says what went wrong with the markup and where, never what the diagram says.
+test('a well-formedness error quotes no attribute value (#155)', () => {
+  const p = join(TMP, 'wellformed-secret.drawio');
+  const secret = 'Acme Bank card issuing';
+  writeFileSync(p, `<mxfile><diagram id="p" name="${secret}"><mxGraphModel><root>`
+    + `<mxCell id="0"/><mxCell id="1" parent="0" value="${secret}" style="a & b"/>`
+    + `</root></mxGraphModel></diagram></mxfile>`);
+  const r = validator.validateFile(p);
+  eq(r.ok, false, 'the raw ampersand fails the file');
+  const said = JSON.stringify(r);
+  assert(!said.includes('Acme'), `the report repeats the diagram's text: ${r.errors.join('; ')}`);
+});
+
 test('validateFile fails a page it cannot check and throws on a malformed index (#37)', () => {
   const broken = join(TMP, 'broken-one-page.drawio');
   writeFileSync(broken, '<mxfile><diagram name="b" id="b"><mxGraphModel><root>'
