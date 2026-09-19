@@ -13,6 +13,16 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Four eval cases for parts of the contract nothing tested: that an edit
+  analyzes the file rather than reading it whole, backs it up, and follows the
+  style of the file in front of it rather than the style guide; that an agent
+  given no engine picks one and says why; that a product with no mark anywhere
+  gets an honest placeholder rather than some other product's logo; and that
+  "for the README" still hands over a real scene rather than a Mermaid block.
+  Each one found real behaviour on its first run. `evals/README.md`'s case
+  count and its tree are now checked against the cases that exist, so neither
+  can go stale unnoticed (#177).
+
 - `scripts/eval.sh` runs the eval suite in one command, with the workarounds a
   run needs already applied. It checks the prerequisites (`--check` does only
   that, and spends nothing), caps the spend, and writes the JSON, the HTML

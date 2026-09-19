@@ -1,0 +1,63 @@
+schema_version: "1.1"
+name: drawio-engine-choice-is-explained
+description: >
+  The user names no engine. An AWS architecture going in front of a client's
+  review board is the Draw.io case, and whichever way the choice goes the agent
+  has to say which engine it picked and why rather than choosing in silence.
+tags: [generation, invocation]
+runs: 2
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    We are presenting our AWS landing zone to the client's architecture review
+    board next week: an Organizations management account, a shared-services
+    account with Transit Gateway and Route 53 resolver endpoints, a security
+    account collecting CloudTrail into S3 and GuardDuty findings, and two
+    workload accounts. Draw it and save it into ./eval-output/ — pick the file
+    name yourself.
+
+graders:
+  # "Solution architecture", "for the client", "AWS" all point at Draw.io.
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: tool_used
+    name: excalidraw-not-used-instead
+    tool: Skill
+    input_match: arkitect-excalidraw
+    min: 0
+    max: 0
+
+  - type: regex
+    name: wrote-a-drawio-file
+    target: files
+    pattern: 'eval-output[\\/][^\s]*\.drawio'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-drawio
+
+  - type: llm
+    name: says-which-engine-and-why
+    criteria: |
+      The response names the format it produced (a .drawio / draw.io file) and
+      gives a reason for choosing it over the alternative - a formal or
+      client-facing audience, AWS vendor icons, a review board, or similar.
+      It also states the architectural assumptions it made, since the request
+      leaves several open. Fail if the engine choice is never explained, or if
+      the response claims to have uploaded the diagram anywhere.
+
+  - type: llm
+    name: accounts-are-boundaries
+    criteria: |
+      The diagram is described as separating the AWS accounts from one another
+      - as containers, boundaries, swimlanes or groups - rather than drawing
+      every service as one flat row of boxes with no account structure. Pass if
+      the response makes clear that the account boundaries are drawn.
