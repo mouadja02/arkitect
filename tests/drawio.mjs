@@ -15,6 +15,7 @@ import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 import { repoFiles } from './repo-files.mjs';
+import * as readJsonLib from '../skills/arkitect-drawio/scripts/lib/read-json.mjs';
 import { createHarness, settle } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -3362,6 +3363,51 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
   assert(thrown instanceof builder.SpecError, 'buildDiagram did not refuse the spec');
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
+});
+
+// ------------------------------------------------------------- UTF-8 BOM (#156)
+
+// Windows PowerShell 5.1's `Set-Content -Encoding UTF8` writes a byte order
+// mark, so a spec written on Windows is ordinary UTF-8 JSON with U+FEFF in
+// front of it. Both builders refused it as "not valid JSON", which is the one
+// thing it certainly was (#156).
+const BOM = '\uFEFF';
+
+test('a spec with a UTF-8 BOM builds exactly the diagram the same spec without one does (#156)', () => {
+  const dir = join(TMP, 'bom');
+  mkdirSync(dir, { recursive: true });
+  const spec = { nodes: [{ id: 'a', label: 'Résumé 数据' }, { id: 'b', col: 1, label: 'Zürich' }], edges: [{ from: 'a', to: 'b' }] };
+  const plain = join(dir, 'plain.json');
+  const marked = join(dir, 'marked.json');
+  writeFileSync(plain, JSON.stringify(spec), 'utf8');
+  writeFileSync(marked, BOM + JSON.stringify(spec), 'utf8');
+  eq(readFileSync(marked)[0], 0xEF, 'the fixture really starts with a UTF-8 BOM');
+
+  eq(JSON.stringify(readJsonLib.readJson(marked)), JSON.stringify(spec), 'the shared reader hands the builder the spec as written');
+
+  // Through the dispatcher, which is how a person hits this.
+  const out = { plain: join(dir, 'plain.drawio'), marked: join(dir, 'marked.drawio') };
+  for (const which of ['plain', 'marked']) {
+    const r = drawioCli('build', which === 'plain' ? plain : marked, '--out', out[which], '--defaults');
+    eq(r.status, 0, `${which}: ${stderrLine(r)}`);
+  }
+  assert(readFileSync(out.plain).equals(readFileSync(out.marked)), 'both specs build byte-identical diagrams');
+  assert(readFileSync(out.marked, 'utf8').includes('Résumé 数据'), 'the Unicode label survives unchanged');
+
+  // Still refused, and still without quoting what is in the file.
+  const broken = join(dir, 'broken.json');
+  writeFileSync(broken, BOM + '{"nodes": [SENTINEL]}', 'utf8');
+  const bad = drawioCli('build', broken, '--out', join(dir, 'broken.drawio'), '--defaults');
+  eq(bad.status, 2, 'malformed JSON behind a BOM is still a usage error');
+  assert(bad.stderr.includes('is not valid JSON') && !bad.stderr.includes('SENTINEL'), `concise, no content: ${stderrLine(bad)}`);
+
+  // One mark, at the very start. A second U+FEFF is content, not an encoding
+  // artefact, and a file that really is malformed must stay malformed.
+  const twice = join(dir, 'twice.json');
+  writeFileSync(twice, BOM + BOM + JSON.stringify(spec), 'utf8');
+  eq(drawioCli('build', twice, '--out', join(dir, 'twice.drawio'), '--defaults').status, 2, 'a second BOM is not stripped');
+  eq(readJsonLib.parseJson('{"a":1}').a, 1, 'text with no BOM is passed through untouched');
+  eq(readJsonLib.parseJson(`${BOM}{"a":"${BOM}x"}`).a, `${BOM}x`, 'and a U+FEFF inside a string is left where it is');
 });
 
 // ------------------------------------------------------------- PowerShell entry point (#157)

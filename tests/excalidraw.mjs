@@ -960,6 +960,58 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
 });
 
+// ------------------------------------------------------------- UTF-8 BOM (#156)
+
+// Windows PowerShell 5.1's `Set-Content -Encoding UTF8` writes a byte order
+// mark, so a spec written on Windows is ordinary UTF-8 JSON with U+FEFF in
+// front of it. Both builders refused it as "not valid JSON", which is the one
+// thing it certainly was (#156).
+const BOM = '\uFEFF';
+
+const arkitect = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+
+test('a BOM is accepted by every reader a scene passes through (#156)', () => {
+  const dir = join(TMP, 'bom');
+  mkdirSync(dir, { recursive: true });
+  const spec = { nodes: [{ id: 'a', kind: 'box', label: 'Résumé 数据' }, { id: 'b', kind: 'box', col: 1, label: 'Zürich' }], edges: [{ from: 'a', to: 'b' }] };
+  const plain = join(dir, 'plain.json');
+  const marked = join(dir, 'marked.json');
+  writeFileSync(plain, JSON.stringify(spec), 'utf8');
+  writeFileSync(marked, BOM + JSON.stringify(spec), 'utf8');
+  eq(readFileSync(marked)[0], 0xEF, 'the fixture really starts with a UTF-8 BOM');
+
+  const out = { plain: join(dir, 'plain.excalidraw'), marked: join(dir, 'marked.excalidraw') };
+  for (const which of ['plain', 'marked']) {
+    const r = arkitect('build', which === 'plain' ? plain : marked, '--out', out[which], '--defaults', '--seed', '1');
+    eq(r.status, 0, `${which}: ${r.stderr.trim().split('\n')[0]}`);
+  }
+  assert(readFileSync(out.plain).equals(readFileSync(out.marked)), 'both specs build byte-identical scenes');
+  assert(readFileSync(out.marked, 'utf8').includes('Résumé 数据'), 'the Unicode label survives unchanged');
+
+  // A scene, a library and the validator all read JSON a person may have saved
+  // the same way, so they answer the same way.
+  const scene = join(dir, 'scene.excalidraw');
+  writeFileSync(scene, BOM + readFileSync(out.plain, 'utf8'), 'utf8');
+  eq(core.readScene(scene).type, 'excalidraw', 'readScene takes a BOM');
+  assert(validator.validateFile(scene).ok, `validate takes a BOM: ${validator.validateFile(scene).errors.join('; ')}`);
+  eq(arkitect('validate', scene).status, 0, 'and so does validate through the dispatcher');
+  eq(arkitect('analyze', scene, '--cells').status, 0, 'and analyze');
+  eq(arkitect('render', scene, '--out', join(dir, 'scene.svg'), '--format', 'svg').status, 0, 'and render');
+
+  const lib = join(dir, 'lib.excalidrawlib');
+  core.writeLibrary(lib, [{ name: 'x', elements: [core.rectangle({ x: 0, y: 0, width: 10, height: 10 })] }]);
+  writeFileSync(lib, BOM + readFileSync(lib, 'utf8'), 'utf8');
+  eq(core.readLibrary(lib).length, 1, 'readLibrary takes a BOM');
+  assert(validator.validateFile(lib).ok, 'and the library still validates');
+
+  // Still refused, and still without quoting what is in the file.
+  const broken = join(dir, 'broken.json');
+  writeFileSync(broken, BOM + '{"nodes": [SENTINEL]}', 'utf8');
+  const bad = arkitect('build', broken, '--out', join(dir, 'broken.excalidraw'), '--defaults');
+  eq(bad.status, 2, 'malformed JSON behind a BOM is still a usage error');
+  assert(bad.stderr.includes('is not valid JSON') && !bad.stderr.includes('SENTINEL'), `concise, no content: ${bad.stderr.trim()}`);
+});
+
 // ------------------------------------------------------------- PowerShell entry point (#157)
 
 const powershell = (script, args) => spawnSync('powershell.exe',

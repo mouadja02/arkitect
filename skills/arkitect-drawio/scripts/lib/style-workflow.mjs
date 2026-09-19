@@ -11,7 +11,8 @@
 // one is written and what is reported - behaves the same for Draw.io and
 // Excalidraw, because it is this code.
 
-import { existsSync, readFileSync, unlinkSync } from 'node:fs';
+import { existsSync, unlinkSync } from 'node:fs';
+import { readJson } from './read-json.mjs';
 import { parseCliOrExit, exitUsage, UsageError } from './drawio-core.mjs';
 import { storeFile, writeJson } from './store.mjs';
 
@@ -64,7 +65,7 @@ export function findingsTools(layer, { deriveFindings, learnSkill }) {
     if (!existsSync(path)) return emptyFindings();
     let file;
     try {
-      file = JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, ''));
+      file = readJson(path);
     } catch {
       throw new Error(`${path} is not valid JSON`);
     }
@@ -157,7 +158,7 @@ export function findingsTools(layer, { deriveFindings, learnSkill }) {
       const recordPath = options.record ?? storeFile(ENGINE, 'record');
       if (!existsSync(recordPath)) fail([`no record at ${recordPath}; build one with ${learnSkill} (build-knowledge.mjs) first`]);
       let record;
-      try { record = JSON.parse(readFileSync(recordPath, 'utf8')); } catch { fail([`${recordPath} is not valid JSON`]); }
+      try { record = readJson(recordPath); } catch { fail([`${recordPath} is not valid JSON`]); }
       const result = mergeDerived(file, record);
       writeJson(path, result.file);
       console.log(JSON.stringify({
@@ -268,7 +269,7 @@ export function applyTools(layer, findingsTool) {
   function readOverride(path = layer.overridesPath()) {
     if (!existsSync(path)) return { raw: null, errors: [] };
     try {
-      const raw = JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, ''));
+      const raw = readJson(path);
       return { raw, errors: layer.validateOverrides(raw) };
     } catch (error) {
       return { raw: null, errors: [error instanceof SyntaxError ? 'the file is not valid JSON' : `cannot read it: ${error.code ?? error.message}`] };

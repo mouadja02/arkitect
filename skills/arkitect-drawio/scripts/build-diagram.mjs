@@ -22,13 +22,14 @@
 // grid snapping - the reference diagrams are placed free-hand, so this is a
 // deliberate normalisation, not an observed convention.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
+import { readJson } from './lib/read-json.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -551,7 +552,7 @@ function main(argv) {
   // One line, not a stack trace: the message never quotes the spec's content.
   let spec;
   try {
-    spec = JSON.parse(readFileSync(specPath, 'utf8'));
+    spec = readJson(specPath);
   } catch (error) {
     exitUsage(error.code === 'ENOENT' ? `no spec file at ${specPath}`
       : error instanceof SyntaxError ? `${specPath} is not valid JSON`

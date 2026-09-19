@@ -7,6 +7,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from '../../../arkitect-drawio/scripts/lib/backups.mjs';
+import { readJson } from '../../../arkitect-drawio/scripts/lib/read-json.mjs';
 export { parseCliOrExit, exitUsage, UsageError } from '../../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -546,7 +547,7 @@ export function reindex(elements) {
 }
 
 export function readScene(path) {
-  const scene = JSON.parse(readFileSync(path, 'utf8'));
+  const scene = readJson(path);
   if (scene.type !== SCENE_TYPE) throw new Error(`not an excalidraw scene: ${path} (type "${scene.type}")`);
   scene.elements ??= [];
   scene.files ??= {};
@@ -601,7 +602,7 @@ export function decodeDataUrl(url) {
 // which is what almost every entry in the public index still uses; version 2 is
 // `libraryItems: [{ id, name, elements, ... }]`. Read both, always write 2.
 export function readLibrary(path) {
-  const raw = JSON.parse(readFileSync(path, 'utf8'));
+  const raw = readJson(path);
   if (raw.type !== LIB_TYPE) throw new Error(`not an excalidraw library: ${path} (type "${raw.type}")`);
   if (Array.isArray(raw.libraryItems)) {
     return raw.libraryItems.map((it, index) => ({
