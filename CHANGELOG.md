@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-09-19
+
 ### Fixed
 
 - A leading UTF-8 byte order mark no longer makes a valid JSON file invalid.
