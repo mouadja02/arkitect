@@ -112,6 +112,14 @@ const CLAIMS = [
 
   { files: ['bin/lib/install-agent.mjs'], facts: ['excalidrawItems'],
     re: /plus ([\d,]+) Excalidraw library items/ },
+
+  // NOTICE (#161): exact shipped counts that previously drifted outside the guard.
+  { files: ['NOTICE'], facts: ['committed'],
+    re: /about ([\d,]+) marks, built from the sources pinned/ },
+  { files: ['NOTICE'], facts: ['pack:aws'],
+    re: /aws\s+([\d,]+) icons\s+AWS Architecture Icons/ },
+  { files: ['NOTICE'], facts: ['onDemand'],
+    re: /([\d,]+) products are catalogued in references\/icon-catalog\.json with a source/ },
 ];
 
 const PACK_TABLE_HEAD = '| Pack | Icons | What is in it |';
