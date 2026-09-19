@@ -122,6 +122,14 @@ many recent ones stay; `0` keeps all. Only that file's own backup names are ever
 deleted. Add `*.backup-*` to your project's `.gitignore` so the ones kept stay
 out of commits.
 
+The two `render-*.ps1` helpers keep their documented parameters and are thin
+adapters over the renderers above, so they inherit staged output, backup and
+restore, and the rule that only a freshly produced image counts as a render.
+An export that fails exits non-zero and never says it rendered, over a stale
+image or otherwise (#157); `render-excalidraw.ps1` leaves an SVG behind when
+it is the PNG rasterisation that failed, and a run that finds no browser now
+exits 1 saying so rather than 0.
+
 ```powershell
 ./skills/arkitect-excalidraw/scripts/render-excalidraw.ps1 `
   -Path docs/arch.excalidraw -OutDir .analysis/renders -Width 2200
@@ -393,7 +401,7 @@ only from committed repository templates.
 
 | | Draw.io | Excalidraw |
 |---|---|---|
-| command | `arkitect drawio render`, or unchanged `render-drawio.ps1` | `arkitect excalidraw render`, or unchanged `render-excalidraw.ps1` |
+| command | `arkitect drawio render`, or `render-drawio.ps1` | `arkitect excalidraw render`, or `render-excalidraw.ps1` |
 | needs | Draw.io Desktop; Xvfb for headless Linux | nothing (SVG) / a local Edge, Chrome or Chromium (PNG) |
 | fidelity | exact | geometry exact; fonts substituted, fills flat |
 

@@ -3364,6 +3364,66 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
 });
 
+// ------------------------------------------------------------- PowerShell entry point (#157)
+
+// powershell.exe, not pwsh: these are the Windows entry points, and Windows
+// PowerShell 5.1 is what ships. -NonInteractive so a prompt can never hang CI.
+const powershell = (script, args) => spawnSync('powershell.exe',
+  ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...args],
+  { encoding: 'utf8', timeout: 180000 });
+
+// The supported Windows helper tested only whether something existed at the
+// output path, so an exporter that produced nothing was reported as "rendered
+// page 0" over whatever PNG was already sitting there - and the run still
+// exited 0. An agent would then look at an old preview and believe its changes
+// had rendered (#157). It is an adapter over render-drawio.mjs now, which backs
+// the previous output up, judges success by a fresh non-empty file, and puts
+// the old one back when the export fails.
+test('the Windows Draw.io helper never calls a stale image a render (#157)', () => {
+  const script = join(SCRIPTS, 'render-drawio.ps1');
+  const source = readFileSync(script, 'utf8');
+  // Checked everywhere: a second implementation must not grow back.
+  assert(/render-drawio\.mjs/.test(source), 'it delegates to the tested renderer');
+  assert(/exit \$code/.test(source), 'and exits with what the renderer said');
+  assert(!/Test-Path \$out\b/.test(source), 'an existing output path is no longer success');
+  assert(!/--page-index \(\$i \+ 1\)/.test(source), 'and there is no second page-index translation to drift');
+  for (const flag of ['--page-index', '--all', '--width', '--out-dir', '--format', '--drawio-exe']) {
+    assert(source.includes(flag), `the documented parameters still map to ${flag}`);
+  }
+  if (process.platform !== 'win32') return;
+
+  const dir = join(TMP, 'ps-render-drawio');
+  mkdirSync(dir, { recursive: true });
+  const diagram = join(dir, 'sample.drawio');
+  writeFileSync(diagram, '<mxfile><diagram id="p" name="P"><mxGraphModel><root>'
+    + '<mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<mxCell id="a" vertex="1" parent="1" value="A" style="rounded=0">'
+    + '<mxGeometry x="20" y="20" width="160" height="60" as="geometry"/></mxCell>'
+    + '</root></mxGraphModel></diagram></mxfile>');
+
+  // node.exe stands in for an exporter that fails and writes nothing: it is a
+  // real executable the renderer can spawn, and Draw.io's flags are not its own.
+  const stale = join(dir, 'sample.p0.png');
+  writeFileSync(stale, 'stale-render');
+  const over = powershell(script, ['-Path', diagram, '-OutDir', dir, '-DrawioExe', process.execPath]);
+  assert(over.status !== 0, `a failed export must exit non-zero, got ${over.status}`);
+  assert(!/rendered page/.test(over.stdout), `it must not say rendered: ${over.stdout.trim()}`);
+  assert(/page 0 FAILED/.test(over.stdout), `it says which page failed: ${over.stdout.trim()}`);
+  eq(readFileSync(stale, 'utf8'), 'stale-render', 'the previous output is put back untouched');
+
+  // The same failure with nothing already there must not invent a file.
+  rmSync(stale, { force: true });
+  for (const f of readdirSync(dir)) if (f.includes('.backup-')) rmSync(join(dir, f), { force: true });
+  const fresh = powershell(script, ['-Path', diagram, '-OutDir', dir, '-DrawioExe', process.execPath]);
+  assert(fresh.status !== 0, `a failed export with no previous output must exit non-zero, got ${fresh.status}`);
+  eq(existsSync(stale), false, 'and leaves no output behind');
+
+  // Parameters really reach the renderer: only it knows the page count.
+  const range = powershell(script, ['-Path', diagram, '-OutDir', dir, '-PageIndex', '5', '-DrawioExe', process.execPath]);
+  assert(range.status !== 0, '-PageIndex past the end fails');
+  assert(/out of range/.test(range.stdout + range.stderr), `-PageIndex reached the renderer: ${(range.stdout + range.stderr).trim()}`);
+});
+
 // ------------------------------------------------------------- spec numbers (#115)
 
 test('a node or boundary without col or row sits at 0, and fractional or negative coordinates still build (#115)', () => {

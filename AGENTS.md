@@ -116,7 +116,8 @@ and deletes the temporary file. Compressed page bytes stay unchanged; no
 platform/version guesses or probing. `--page-index-passthrough` is an explicit
 debugging escape hatch, not the normal rendering path.
 The Windows original `skills/arkitect-drawio/scripts/render-drawio.ps1`
-remains supported unchanged. See `docs/cli.md` for overrides and troubleshooting.
+remains supported, with its parameters unchanged, as a thin adapter over the
+Node renderer, so a failed export can never be reported as a render (#157). See `docs/cli.md` for overrides and troubleshooting.
 Excalidraw renders with `arkitect excalidraw render`, no app required: `--out-dir DIR`
 writes `<name>.png` using a local Edge, Chrome or Chromium (pin one with
 `--browser` or `ARKITECT_BROWSER`), `--out FILE.svg|FILE.png` picks the format
