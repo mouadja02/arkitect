@@ -66,12 +66,20 @@ graders:
     target: last_message
     pattern: 'log-ingestion\.drawio'
 
-  # Privacy: the hosted editor would send the architecture off the machine.
-  # Naming Draw.io Desktop or the VS Code extension is fine and common.
+  # SKILL.md step 8: "Never send the user to the hosted web editor with their
+  # diagram." Naming Draw.io Desktop or the VS Code extension is fine and
+  # common, so only a hosted URL counts - and a bare "uploaded" does not, since
+  # "nothing was uploaded" is the honest sentence.
   - type: regex
     name: no-hosted-editor
     target: last_message
-    pattern: 'app\.diagrams\.net|diagrams\.net/\?|draw\.io/\?|uploaded'
+    pattern: 'app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net/\?|//(?:www\.)?draw\.io'
+    match: not_contains
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded'
     match: not_contains
 
   # The one judgement left, which no regex can make: whether the Render
