@@ -11,6 +11,15 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- Excalidraw validation checks the shape of a document, its elements, bindings,
+  points and embedded files before measuring any of them, so a malformed scene
+  or library comes back as an ordinary structured failure naming the field
+  instead of a stack trace with no result, one bad file no longer costs a batch
+  the files after it, and a non-numeric width or height is an error rather than
+  the same warning a legitimately zero-width arrow gets (#154).
+
 ## [1.5.1] — 2026-09-19
 
 ### Fixed
