@@ -22,6 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import {
   fileMeta, readMxfile, extractCells, graphModelAttrs,
   parseStyle, styleShape, styleSignature, parseDataUri,
+  parseCliOrExit, exitUsage,
 } from './lib/drawio-core.mjs';
 import { storeFile, writeJson } from './lib/store.mjs';
 
@@ -266,16 +267,26 @@ function conventions({ agg, flow, totals, q }) {
   return out;
 }
 
+const USAGE = 'usage: build-knowledge.mjs --sources <file...> [--out p] [--merge]';
+
+// Learning rewrites the style record, so the arguments are checked before a
+// single source is read. `--help` used to be ignored, which meant asking for
+// the usage performed the learn and replaced the record (#151).
 function main(argv) {
-  const files = []; let out = null; let merge = false;
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--sources') { while (argv[i + 1] && !argv[i + 1].startsWith('--')) files.push(argv[++i]); }
-    else if (argv[i] === '--out') out = argv[++i];
-    else if (argv[i] === '--merge') merge = true;
-  }
-  if (!files.length) { console.error('usage: build-knowledge.mjs --sources <file...> [--out p] [--merge]'); process.exit(2); }
+  const { options, positionals } = parseCliOrExit(argv, {
+    variadic: ['--sources'],
+    values: { '--out': null },
+    switches: ['--merge'],
+  }, USAGE);
+  if (positionals.length) exitUsage(`unexpected argument ${positionals[0]}; files go after --sources`, USAGE);
+  const files = options.sources ?? [];
+  if (!files.length) exitUsage('--sources needs at least one file', USAGE);
+  const merge = options.merge === true;
+  const missing = files.filter((f) => !existsSync(f));
+  if (missing.length) exitUsage(`no such file: ${missing[0]}`, USAGE);
+
   const ownRecord = storeFile('drawio', 'record');
-  out = out ? resolve(out) : ownRecord;
+  const out = options.out ? resolve(options.out) : ownRecord;
 
   const data = collect(files);
   const prior = merge && existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null;
