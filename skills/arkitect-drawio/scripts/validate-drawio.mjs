@@ -11,6 +11,7 @@ import {
   readMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs,
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
+import { checkXml } from './lib/xml-check.mjs';
 
 const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
 
@@ -57,8 +58,25 @@ export function validateFile(path, { pageIndex = null } = {}) {
   const info = {};
   const text = readFileSync(path, 'utf8');
 
-  if (!/^\s*<mxfile\b/.test(text)) errors.push('file does not start with <mxfile>');
-  if (!/<\/mxfile>\s*$/.test(text)) errors.push('file does not end with </mxfile>');
+  // A forgiving tag scanner is what extractCells needs - it has to keep going
+  // through a page it only half understands - but it cannot tell a native
+  // Draw.io file from a malformed one, so a mismatched closing tag used to get
+  // a clean PASS (#155). The strict reader the packs check their SVG payloads
+  // with answers that question, here over the wrapper and then over each page
+  // that had to be decoded first. It is dependency-free, reads the text once,
+  // and reports element and attribute names and a position - never an attribute
+  // value - so no label or image payload reaches the output.
+  const wrapper = checkXml(text);
+  if (!wrapper.ok) {
+    errors.push(`not well-formed XML at line ${wrapper.line}, column ${wrapper.column}: ${wrapper.reason}`);
+    return { path, ok: false, errors, warnings, info };
+  }
+  // The wrapper string checks this replaces could not see a declaration or a
+  // comment around the root, both of which XML allows; the parse can.
+  if (wrapper.root.name !== 'mxfile') {
+    errors.push(`the root element is <${wrapper.root.name}>, not <mxfile>`);
+    return { path, ok: false, errors, warnings, info };
+  }
 
   let mx;
   try {
@@ -90,6 +108,15 @@ export function validateFile(path, { pageIndex = null } = {}) {
     } catch (e) {
       errors.push(`${label}: cannot decode page (${e.message})`);
       return;
+    }
+    // An uncompressed page sits inside the wrapper the check above already
+    // read; a compressed one is base64 there and is only XML once decoded.
+    if (page.compressed) {
+      const decoded = checkXml(xml);
+      if (!decoded.ok) {
+        errors.push(`${label}: not well-formed XML at line ${decoded.line}, column ${decoded.column}: ${decoded.reason}`);
+        return;
+      }
     }
     if (!/<mxGraphModel\b/.test(xml)) { errors.push(`${label}: no <mxGraphModel>`); return; }
     if (!/<root>/.test(xml)) errors.push(`${label}: no <root> element`);

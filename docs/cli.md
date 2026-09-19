@@ -50,6 +50,12 @@ spec that is missing or not valid JSON exits `2` with a one-line reason.
 have is a failure (exit `1`), never a pass over nothing; `analyze --page N` goes
 with `--cells` or `--images` and exits `1` the same way.
 
+`validate` checks that the file is well-formed XML before it checks anything
+else, over the wrapper and over each compressed page once decoded. A mismatched
+or unclosed tag, a repeated attribute, an unquoted value or a raw `&` is a
+failure that names the line and column, never a PASS recovered from. A
+declaration, comments around the root and CDATA are XML, and pass.
+
 `build` merges this install's style override, `~/.arkitect/drawio/style-overrides.json`
 (`$ARKITECT_HOME/drawio/`), into every build and says so under `style` in its
 report. `--defaults` draws the shipped house style regardless — use it for

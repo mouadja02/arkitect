@@ -13,6 +13,13 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Draw.io validation checks that the file is well-formed XML before it checks
+  anything else, over the wrapper and over each compressed page once decoded,
+  so a mismatched or unclosed tag, a repeated attribute, an unquoted value or a
+  raw ampersand is a failure naming the line and column instead of a clean PASS
+  recovered from by a forgiving tag scanner. A declaration and comments around
+  the root are XML and now pass, where the two wrapper string checks they
+  replace refused them (#155).
 - Excalidraw validation checks the shape of a document, its elements, bindings,
   points and embedded files before measuring any of them, so a malformed scene
   or library comes back as an ordinary structured failure naming the field
