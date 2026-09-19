@@ -24,9 +24,14 @@ separate file, no naming scheme, no required format beyond that.
   drops it. Nothing was added to either `SKILL.md`: the per-skill reading
   budget is the thing this statement protects.
 - `docs/audit-prompt.md`, the prompt that finds the next patch, minor and major
-  work. It scores against those two constraints rather than against taste, asks
-  for evidence per finding, caps the list at fifteen, and requires a "not worth
-  doing" section so rejected ground is not re-audited.
+  work and **files it as issues**. It scores against those two constraints
+  rather than against taste, requires evidence per finding, and writes each
+  issue in the house shape with one `release:` label. Before filing anything it
+  has to read the existing issues, closed as well as open, and classify every
+  candidate as new, already covered, or settled — a closed issue is a decision
+  already made, and re-filing it argues with that decision. Fifteen issues is
+  the cap, one finding each, and what it rejected is reported too, so the same
+  ground is not audited twice.
 
 - Four eval cases for parts of the contract nothing tested: that an edit
   analyzes the file rather than reading it whole, backs it up, and follows the
