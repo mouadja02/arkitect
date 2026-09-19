@@ -99,6 +99,33 @@ Caveats:
 - Those scaffolds only run under `--scaffold`. Without that flag, create the
   `eval-input/` fixture by hand first; `scaffold.sh` shows what it needs.
 
+## Graders: check what you can, judge what you cannot
+
+An `llm` grader votes three times and can still disagree with itself between
+runs; a `regex` grader cannot. So anything checkable about a report — one of
+the six headings, the saved file name, an icon id — is a `regex`, and each
+`llm` grader is left the single question no pattern can answer.
+
+The generation and icon cases each keep at least twice as many deterministic
+graders as judged ones, and run three times, so a flapping judge shows up as a
+spread rather than as one verdict that happened to land. A test holds that
+shape.
+
+Two of the deterministic graders replaced judgements that had demonstrably
+failed:
+
+- `excalidraw-icon-from-logo` now requires `data-platform:15` and
+  `drawio:observability/grafana` by id. A Haiku judge had passed a run where
+  dbt was drawn as a "self-captioned text label" while the report claimed "no
+  placeholder icons" and "proper branding icons throughout".
+- `drawio-engine-choice-is-explained` checks the built file for `container=1`
+  rather than asking a judge whether the prose implies the AWS accounts were
+  drawn as boundaries. The prose version scored pass, fail, fail on unchanged
+  code.
+
+If a grader's question is answerable from an artifact on disk, it does not go
+to a judge.
+
 ## What a good result looks like
 
 Not just "a file appeared". Each generation case checks that the output is

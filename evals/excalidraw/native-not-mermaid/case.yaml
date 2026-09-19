@@ -5,7 +5,7 @@ description: >
   back a Mermaid block. The deliverable is an editable .excalidraw scene; a
   fenced diagram-as-code block in the reply is not the artifact.
 tags: [generation, honesty]
-runs: 2
+runs: 3
 
 execution:
   max_turns: 45
@@ -55,15 +55,36 @@ graders:
     tool: Bash
     input_match: render-excalidraw
 
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'ci-pipeline\.excalidraw'
+
+  - type: regex
+    name: reports-validation-and-render
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b|[Vv]alidat))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b|[Rr]ender))'
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'uploaded|excalidraw\.com/#json'
+    match: not_contains
+
+  # The approval gate and the failure path are the two flows most easily
+  # dropped; the scene carries their labels.
+  - type: regex
+    name: the-gate-and-the-failure-path-are-drawn
+    target: { source: file, path: ./eval-output/ci-pipeline.excalidraw }
+    pattern: '^(?=[\s\S]*(?:[Aa]pprov))(?=[\s\S]*(?:[Ff]ail|[Rr]eject))'
+
+  # What is left for a judge: whether it pushed a diagram-as-code block at the
+  # user as the thing to put in the README.
   - type: llm
-    name: hands-over-the-scene
+    name: the-scene-is-the-deliverable
     criteria: |
-      The response hands over the saved .excalidraw file as the deliverable:
-      it gives the path, says how to open or edit it, reports the validation
-      result and reports the render as it happened. The approval gate and the
-      failure path back to the developer are both accounted for in the
-      diagram. Fail if the response offers a Mermaid, Graphviz or ASCII
-      diagram as what the user should put in the README, if it suggests the
-      scene needs to be exported by hand before it is usable without also
-      giving the rendered image it already produced, or if it claims to have
-      uploaded anything.
+      Fail only if the response offers a Mermaid, Graphviz, PlantUML or ASCII
+      diagram as what the user should put in the README, or tells them the
+      saved scene is not usable as it stands. Handing over the .excalidraw
+      file, describing what it contains, and saying how to open or export it
+      are all passes.

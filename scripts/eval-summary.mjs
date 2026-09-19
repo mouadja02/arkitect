@@ -34,10 +34,15 @@ lines.push(`${cases.length} cases · ${run.durationSeconds ?? '?'}s · ${money(r
 lines.push('');
 
 let worst = 1;
+let errored = 0;
 const widest = Math.max(0, ...cases.map((c) => (c.name || '').length));
 for (const c of cases) {
   const runs = c.arms?.with ?? [];
-  const scores = runs.map((r) => (typeof r.score === 'number' ? r.score : null));
+  // A run that errored before the agent answered has no score, whatever the
+  // tool reports: its not_contains graders pass on the empty reply, so a
+  // session-limit failure used to read as 0.17 rather than as nothing.
+  const scores = runs.map((r) => (!r.error && typeof r.score === 'number' ? r.score : null));
+  errored += runs.filter((r) => r.error).length;
   const known = scores.filter((s) => s !== null);
   const mean = known.length ? known.reduce((a, b) => a + b, 0) / known.length : null;
   if (mean !== null) worst = Math.min(worst, mean);
@@ -63,6 +68,11 @@ lines.push(`overall ${score(agg.overallScore)}`
   + `  ·  ${agg.casesPassed ?? '?'}/${agg.casesTotal ?? '?'} cases ran`
   + `  ·  ${typeof agg.overallPassRate === 'number' ? Math.round(agg.overallPassRate * 100) : '?'}% of runs perfect`);
 if (run.partial) lines.push('PARTIAL: the cost ceiling stopped the run before every case finished');
+const total = cases.reduce((n, c) => n + (c.arms?.with?.length ?? 0), 0);
+if (errored) {
+  lines.push(`${errored}/${total} runs ERRORED before the agent answered; their scores are not scores,`
+    + ' and the overall line above counts them anyway');
+}
 
 console.log(lines.join('\n'));
-process.exit(worst < 1 ? 1 : 0);
+process.exit(worst < 1 || errored ? 1 : 0);

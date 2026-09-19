@@ -455,6 +455,45 @@ test('every eval scaffold_script names a runnable script beside its case (#133)'
   assert(scaffolded >= 4, `expected at least the four stays-manual scaffolds, found ${scaffolded}`);
 });
 
+// An `llm` grader votes three times and can still disagree with itself run to
+// run; a `regex` grader cannot. Anything checkable about a report - a heading,
+// a file name, an icon id - belongs in a regex, leaving the judge the one
+// question no pattern can answer. A case that drifts back to judge-only checks
+// stops being a usable signal, so the composition is held (#135).
+test('every generation and icon case keeps deterministic graders (#135)', () => {
+  const judged = [];
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const tags = (yaml.match(/^tags:\s*\[(.*)\]/m)?.[1] ?? '').split(',').map((t) => t.trim());
+    if (!tags.includes('generation') && !tags.includes('icons')) continue;
+
+    const graders = [...yaml.matchAll(/^\s*-\s*type:\s*(\w+)/gm)].map((m) => m[1]);
+    const deterministic = graders.filter((g) => g !== 'llm').length;
+    const llm = graders.filter((g) => g === 'llm').length;
+    assert(deterministic > 0, `${id}: no deterministic graders at all`);
+    assert(deterministic >= llm * 2,
+      `${id}: ${llm} llm grader(s) against only ${deterministic} deterministic - move what is checkable into a regex`);
+
+    // Three runs, so a flapping judge is visible as a spread rather than a
+    // single verdict that happens to land.
+    const runs = Number(yaml.match(/^runs:\s*(\d+)/m)?.[1] ?? 0);
+    eq(runs, 3, `${id}: runs should be 3 for a generation or icon case`);
+
+    if (llm) judged.push(id);
+  }
+  assert(judged.length > 0, 'no generation or icon case kept an llm grader; the judgement calls were lost');
+
+  // The runner must not flatten those three runs. It once forwarded its own
+  // default of 1 on every call, which overrode every case's `runs:`.
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  const forwarded = sh.split('\n').filter((l) => l.includes('--runs "$RUNS"'));
+  assert(forwarded.length > 0, 'scripts/eval.sh no longer forwards --runs at all');
+  for (const line of forwarded) {
+    assert(/\[\s*-n\s+"\$RUNS"\s*\]/.test(line),
+      `scripts/eval.sh forwards --runs unconditionally, overriding every case's runs: ${line.trim()}`);
+  }
+});
+
 // evals/README.md counts the cases in prose and lists every one of them. Both
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).
@@ -1062,6 +1101,18 @@ test('the eval summary reports every case and gates on the low ones (#134)', () 
   eq(errored.status, 1, 'an errored case should exit 1');
   assert(errored.stdout.includes('ERROR') && errored.stdout.includes('does not exist'),
     `an errored case was not reported as one:\n${errored.stdout}`);
+
+  // What a session limit looks like: every run errored, yet not_contains
+  // graders passed on the empty reply, so the tool scores it 0.17. That number
+  // is not a score and must not be printed as one (#135).
+  const limited = run({
+    cases: [{ name: 'limited-case', arms: { with: [1, 2, 3].map(() => ({ score: 0.17, error: "exit 1: You've hit your session limit" })) } }],
+    aggregates: { casesTotal: 1, casesPassed: 1, overallScore: 0.17, overallPassRate: 0 },
+  });
+  eq(limited.status, 1, 'a run where every case errored should exit 1');
+  const caseLine = limited.stdout.split('\n').find((l) => l.includes('limited-case')) ?? '';
+  assert(!caseLine.includes('0.17'), `an errored run was printed with a score: ${caseLine}`);
+  assert(/3\/3 runs ERRORED/.test(limited.stdout), `the errored runs were not counted:\n${limited.stdout}`);
 
   const gone = spawnSync(process.execPath, [summary, join(TMP, 'no-such-result.json')], { encoding: 'utf8' });
   eq(gone.status, 2, 'a missing file should exit 2, not 1');

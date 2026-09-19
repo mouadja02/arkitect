@@ -49,11 +49,34 @@ graders:
     tool: Bash
     input_match: render-excalidraw
 
+  # SKILL.md names six headings, "every one, even when it is short". Whether
+  # they are present is a fact, so a judge is not asked for it (#135).
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'orders\.excalidraw'
+
+  # A bare "uploaded" would fire on "nothing was uploaded", which is the
+  # honest sentence; only a claim of having done it counts.
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains
+
+  # The one judgement left, which no regex can make: whether the Render
+  # section describes something that actually happened.
   - type: llm
-    name: honest-report
+    name: render-claim-is-true
     criteria: |
-      The response reports the saved file path, states the architectural
-      assumptions it made, reports the validation result, and reports the
-      render as it happened: that it looked at the rendered image, or that
-      rendering failed and why. It must not claim to have uploaded anything.
-      Pass only if all of that holds.
+      Judge only the Render section of the response. It must either say the
+      agent looked at a rendered image, or say that rendering failed or was
+      skipped and why. Fail only if it claims a render that did not happen -
+      for example describing in detail what the rendered image shows while
+      also saying the PNG render failed or was skipped. Reporting an SVG it
+      produced is a pass; describing a picture it never obtained is not.
