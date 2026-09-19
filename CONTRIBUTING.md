@@ -23,6 +23,17 @@ automated maintainer may and may not do — is in
 
 ## The rules that are not negotiable
 
+**Two constraints outrank every feature: stay functional and lightweight, and
+work with whatever model is driving.** A small local model must get a good
+diagram out of this, not only a frontier one. So context is the scarce
+resource — every byte a skill makes an agent read competes with the user's own
+architecture, and a sentence earns its place only if it changes what gets
+drawn. The thinking that needs no model (layout, icon resolution, validation,
+backups) stays in code, and a check a script can make is never left to the
+model or to an LLM judge. A change that adds weight, adds a dependency, or
+works only because a large model papers over it does not ship. The full
+statement is in `AGENTS.md`, under "What Arkitect optimises for".
+
 **Zero runtime dependencies.** Every script is plain Node 20+. If something
 needs a library, it either does not belong here or belongs written out longhand
 in `scripts/lib/`. This is what makes Arkitect installable by a `git clone` and

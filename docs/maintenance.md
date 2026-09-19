@@ -53,6 +53,14 @@ claude plugin validate --strict .
 
 These do not bend for convenience.
 
+**0. Functional and lightweight, on whatever model is driving.** The two
+constraints that outrank every feature, stated in full in `AGENTS.md` under
+"What Arkitect optimises for". A small local model must get a good diagram out
+of this, not only a frontier one — so context is the scarce resource, the
+thinking that needs no model stays in code, and a check a script can make is
+never left to the model or to an LLM judge. Every invariant below is a
+consequence of this one, and it is the test any release is measured against.
+
 **1. Zero runtime dependencies.** Node 20+ and nothing else. No `npm install`,
 no `package-lock.json`, no vendored `node_modules`. If a change needs a library,
 it is written out longhand in `skills/*/scripts/lib/` or it does not happen.

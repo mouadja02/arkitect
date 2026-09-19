@@ -11,22 +11,22 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
-### Changed
-
-- The eval suite checks what it can and judges only what it cannot. Every
-  generation and icon case gained `regex` graders for the six report headings,
-  the saved file name and each expected icon id, and each `llm` grader was
-  narrowed to the one judgement no pattern can make - usually "does the Render
-  section describe something that actually happened". Two of them replaced
-  judgements that had demonstrably failed: a Haiku judge passed a run where dbt
-  was drawn as a text label while the report claimed proper icons throughout,
-  and the "are the accounts drawn as boundaries" criterion scored pass, fail,
-  fail on unchanged code - it now counts `container=1` in the built file. Those
-  cases run three times, so a flapping judge reads as a spread rather than one
-  verdict that happened to land, and a test holds the composition so a case
-  cannot drift back to judge-only checks (#135).
-
 ### Added
+
+- `AGENTS.md` states what Arkitect optimises for, and it is not a preference:
+  stay functional and lightweight, and give good output on whatever model is
+  driving, a small local one as much as a frontier one. Context is the scarce
+  resource, the thinking that needs no model stays in code, a check a script
+  can make is never left to the model or to an LLM judge, and a capability the
+  docs promise has to be reachable by the documented route. `README.md`,
+  `CONTRIBUTING.md` and `docs/maintenance.md` carry it too, since those are
+  where decisions about what ships get made, and a test fails if any of them
+  drops it. Nothing was added to either `SKILL.md`: the per-skill reading
+  budget is the thing this statement protects.
+- `docs/audit-prompt.md`, the prompt that finds the next patch, minor and major
+  work. It scores against those two constraints rather than against taste, asks
+  for evidence per finding, caps the list at fifteen, and requires a "not worth
+  doing" section so rejected ground is not re-audited.
 
 - Four eval cases for parts of the contract nothing tested: that an edit
   analyzes the file rather than reading it whole, backs it up, and follows the
@@ -51,6 +51,23 @@ separate file, no naming scheme, no required format beyond that.
   `~/.docker` is never touched. `scripts/eval-summary.mjs` prints the summary
   from any `--json` output on its own, and exits 1 if a case scored below 1
   (#134).
+
+### Changed
+
+- The eval suite checks what it can and judges only what it cannot. Every
+  generation and icon case gained `regex` graders for the six report headings,
+  the saved file name and each expected icon id, and each `llm` grader was
+  narrowed to the one judgement no pattern can make - usually "does the Render
+  section describe something that actually happened". Two of them replaced
+  judgements that had demonstrably failed: a Haiku judge passed a run where dbt
+  was drawn as a text label while the report claimed proper icons throughout,
+  and the "are the accounts drawn as boundaries" criterion scored pass, fail,
+  fail on unchanged code - it now counts `container=1` in the built file. Those
+  cases run three times, so a flapping judge reads as a spread rather than one
+  verdict that happened to land, and a test holds the composition so a case
+  cannot drift back to judge-only checks (#135).
+
+
 
 ### Fixed
 

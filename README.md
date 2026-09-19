@@ -32,6 +32,17 @@ The agent workflow includes validation and visual review of a local render.
 
 </div>
 
+## What it optimises for
+
+Two constraints outrank every feature here: **stay functional and lightweight**
+— no dependencies, no services, no build step — and **work with whatever model
+is driving**, so a small local model gets a good diagram out of it and not only
+a frontier one. Context is treated as the scarce resource: the per-skill
+reading budget is measured and enforced, layout and icon resolution and
+validation live in code rather than in prompts, and anything a script can check
+is never left to the model. The full statement is in
+[`AGENTS.md`](AGENTS.md#what-arkitect-optimises-for--this-does-not-get-traded-away).
+
 ## What you get
 
 - **Two engines, one workflow.** Draw.io for formal architecture diagrams;
@@ -182,6 +193,7 @@ See [completed work, known issues and next priorities](docs/status.md).
 | [docs/style.md](docs/style.md) | the house style, and how to replace it with your own |
 | [docs/testing.md](docs/testing.md) | the offline suite, the redaction check, the evals |
 | [docs/maintenance.md](docs/maintenance.md) | the contract for changing this repo — invariants, and what is never automated |
+| [docs/audit-prompt.md](docs/audit-prompt.md) | the prompt that finds the next patch, minor and major work |
 | [docs/privacy.md](docs/privacy.md) | exactly what touches the network, and what never does |
 
 ## The skills
