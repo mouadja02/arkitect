@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-09-19
+
 ### Fixed
 
 - A downloaded Excalidraw library is parsed in a staging file beside the target
