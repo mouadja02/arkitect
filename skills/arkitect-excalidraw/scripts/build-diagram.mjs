@@ -408,6 +408,11 @@ function assemble(spec, style) {
   const childrenOf = new Map();    // boundary id -> [boxes]
   const nodeOf = new Map();        // element id -> node id, to name a crossing
   const edgeOf = new Map();        // arrow id -> "from->to"
+  // Who produced an element, for frame membership (#158). Every element a node,
+  // a boundary or an edge draws is recorded, including the ones that fall
+  // outside the box they belong to.
+  const boundaryOf = new Map();    // element id -> boundary id
+  const edgeEnds = new Map();      // element id -> [from node id, to node id]
 
   const noteChild = (parentId, box) => {
     if (!parentId) return;
@@ -667,6 +672,7 @@ function assemble(spec, style) {
 
   const frameIdFor = new Map();
   for (const b of boundaries) {
+    const drawnScopes = scopes.length;
     const box = resolveBoundary(b);
     const look = accentOf(b.color ?? b.accent ?? 'grey');
     if (b.kind === 'frame') {
@@ -710,22 +716,7 @@ function assemble(spec, style) {
         groupIds: [group],
       }));
     }
-  }
-
-  // Assign frame membership after frames exist.
-  if (frameIdFor.size) {
-    for (const n of spec.nodes ?? []) {
-      const fid = frameIdFor.get(n.parent);
-      if (!fid) continue;
-      const box = geom.get(n.id);
-      for (const el of nodeLayer) {
-        const b = elementBox(el);
-        if (b.x >= box.x - 1 && b.y >= box.y - 1
-          && b.x + b.width <= box.x + box.width + 1 && b.y + b.height <= box.y + box.height + 1) {
-          el.frameId = fid;
-        }
-      }
-    }
+    for (const el of scopes.slice(drawnScopes)) boundaryOf.set(el.id, b.id);
   }
 
   // ------------------------------------------------------------ edges
@@ -777,6 +768,7 @@ function assemble(spec, style) {
     });
     edgeLayer.push(a);
     edgeOf.set(a.id, `${e.from}->${e.to}`);
+    edgeEnds.set(a.id, [e.from, e.to]);
 
     if (e.label) {
       // Free text alongside the line, not a bound label: that is what the
@@ -798,6 +790,7 @@ function assemble(spec, style) {
       });
       if (bound) a.boundElements = [...(a.boundElements ?? []), { id: t.id, type: 'text' }];
       edgeLayer.push(t);
+      edgeEnds.set(t.id, [e.from, e.to]);
     }
   }
 
@@ -841,6 +834,55 @@ function assemble(spec, style) {
         x: lx + 86, y: Math.round(y - m.height / 2), groupIds: [group],
       }));
     });
+  }
+
+  // Frame membership follows ownership, not geometry. It used to be inferred by
+  // testing whether an element fitted inside its node's routing box, so a free
+  // icon caption or a sublabel - which sit outside that box by construction -
+  // lost the frame their node's parent declared, while an unrelated node that
+  // merely overlapped the box could gain one (#158).
+  if (frameIdFor.size) {
+    const parentOfBoundary = new Map(boundaries.map((b) => [b.id, b.parent]));
+    // The nearest frame at or above a boundary. A scope nested in a frame is a
+    // member of it, or dragging the frame would leave the scope's own box and
+    // caption behind. validateSpec refuses a boundary cycle; the seen set only
+    // keeps a malformed call from spinning.
+    const frameAbove = (id) => {
+      const seen = new Set();
+      for (let at = id; at !== undefined && at !== null && !seen.has(at); at = parentOfBoundary.get(at)) {
+        seen.add(at);
+        if (frameIdFor.has(at)) return frameIdFor.get(at);
+      }
+      return null;
+    };
+
+    // Excalidraw has no nested frames. The inner one is still drawn and still
+    // owns what is parented to it; it is simply not a member of the outer one.
+    for (const b of boundaries) {
+      if (b.kind !== 'frame') continue;
+      const outer = frameAbove(b.parent);
+      if (outer) {
+        report.notes.push(`boundary "${b.id}" is a frame inside a frame, which Excalidraw does not support; `
+          + 'its contents are members of it and it is not a member of the outer frame');
+      }
+    }
+
+    const frameOfNode = new Map((spec.nodes ?? []).map((n) => [n.id, frameAbove(n.parent)]));
+    for (const el of [...scopes, ...nodeLayer, ...edgeLayer]) {
+      if (nodeOf.has(el.id)) {
+        const fid = frameOfNode.get(nodeOf.get(el.id));
+        if (fid) el.frameId = fid;
+      } else if (boundaryOf.has(el.id)) {
+        const fid = frameAbove(boundaryOf.get(el.id));
+        if (fid) el.frameId = fid;
+      } else if (edgeEnds.has(el.id)) {
+        // An edge that leaves the frame is not part of it: dragging the frame
+        // would pull one end away from the shape it is bound to.
+        const [from, to] = edgeEnds.get(el.id);
+        const fid = frameOfNode.get(from);
+        if (fid && fid === frameOfNode.get(to)) el.frameId = fid;
+      }
+    }
   }
 
   // Frames behind scopes behind nodes behind arrows: an arrow drawn under a

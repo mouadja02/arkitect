@@ -59,6 +59,11 @@ Real Excalidraw frames, named, stacked as horizontal bands. Frames cannot nest,
 so this is the *outermost* division; use scope boxes inside them. A frame also
 gives you something to export on its own from the app.
 
+Membership follows `parent`, not the drawing: everything a node or a nested
+scope draws moves with the frame, captions and sublabels included, and a node
+that merely overlaps one is not a member. An edge joins only when both ends do.
+A frame parented to a frame is reported under `notes` (#158).
+
 Note the corpus contains **no frames**: bands there are made of dashed
 rectangles and of whitespace. Reach for a frame only when you specifically want
 the app's frame behaviour — per-frame export, and contents that move with it.
