@@ -1102,6 +1102,18 @@ test('the eval summary reports every case and gates on the low ones (#134)', () 
   assert(errored.stdout.includes('ERROR') && errored.stdout.includes('does not exist'),
     `an errored case was not reported as one:\n${errored.stdout}`);
 
+  // What a session limit looks like: every run errored, yet not_contains
+  // graders passed on the empty reply, so the tool scores it 0.17. That number
+  // is not a score and must not be printed as one (#135).
+  const limited = run({
+    cases: [{ name: 'limited-case', arms: { with: [1, 2, 3].map(() => ({ score: 0.17, error: "exit 1: You've hit your session limit" })) } }],
+    aggregates: { casesTotal: 1, casesPassed: 1, overallScore: 0.17, overallPassRate: 0 },
+  });
+  eq(limited.status, 1, 'a run where every case errored should exit 1');
+  const caseLine = limited.stdout.split('\n').find((l) => l.includes('limited-case')) ?? '';
+  assert(!caseLine.includes('0.17'), `an errored run was printed with a score: ${caseLine}`);
+  assert(/3\/3 runs ERRORED/.test(limited.stdout), `the errored runs were not counted:\n${limited.stdout}`);
+
   const gone = spawnSync(process.execPath, [summary, join(TMP, 'no-such-result.json')], { encoding: 'utf8' });
   eq(gone.status, 2, 'a missing file should exit 2, not 1');
 });

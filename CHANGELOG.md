@@ -69,9 +69,19 @@ separate file, no naming scheme, no required format beyond that.
   started, and all four scored 0 without ever testing what they exist to test —
   that `learn-*` and `apply-*` never fire on their own. Each fixture now lives
   in a `scaffold.sh` beside its `case.yaml`, and a test refuses an inlined,
-  missing, misplaced or CRLF scaffold, since `bash` fails on the `
-` and a
+  missing, misplaced or CRLF scaffold, since `bash` fails on the `\r` and a
   Windows clone would otherwise produce one (#133).
+
+- `scripts/eval.sh` no longer overrides a case's `runs:`. It forwarded its own
+  default of 1 on every call, which would have flattened the three runs the
+  generation and icon cases now declare to one. Without `--runs` it passes
+  nothing, and a test fails if `--runs` is forwarded unconditionally again
+  (#135).
+- The eval summary no longer prints a score for a run that errored before the
+  agent answered. Such a run still scores 0.10 to 0.33, because its
+  `not_contains` graders pass on the empty reply - a session-limit failure read
+  as a weak run rather than as no run at all. Errored runs now show `?`, the
+  footer counts them, and the summary exits 1 (#135).
 
 ## [1.5.2] — 2026-09-19
 
