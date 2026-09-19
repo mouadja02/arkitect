@@ -21,7 +21,7 @@ import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { repoFiles } from './repo-files.mjs';
 import * as xml from '../skills/arkitect-drawio/scripts/lib/xml-check.mjs';
-import { createHarness } from './harness.mjs';
+import { createHarness, settle } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -58,6 +58,7 @@ const analyzer = await mod('analyze-excalidraw.mjs');
 const icons = await mod('make-icon.mjs');
 const finder = await mod('find-icon.mjs');
 const libIndex = await mod('index-libraries.mjs');
+const browse = await mod('browse-libraries.mjs');
 const styleTokens = await mod('lib/style-tokens.mjs');
 const findingsTool = await mod('style-findings.mjs');
 const applyTool = await mod('apply-style.mjs');
@@ -2450,6 +2451,84 @@ test('a seeded build is byte-identical across processes, and unseeded builds sta
   let threw = null;
   try { builder.buildDiagram(spec, { seed: -1 }); } catch (error) { threw = error; }
   assert(threw instanceof builder.SpecError, 'the API refuses a bad seed');
+});
+
+// #152: `browse --install --force` wrote the download over the installed
+// library and only then parsed it, so a malformed replacement destroyed a
+// working library while the registry still described the old one - and every
+// icon search that enumerated it threw. Run offline against an injected fetch;
+// nothing here reaches the network.
+const install152 = await (async () => {
+  const slug = 'arkitect-test-152';
+  const source = `${slug}.excalidrawlib`;
+  const file = join(browse.LIB_DIR, source);
+  const registry = join(browse.LIB_DIR, 'installed.json');
+  const library = (name) => JSON.stringify({
+    type: 'excalidrawlib',
+    version: 2,
+    libraryItems: [{ id: name, name, elements: [core.rectangle({ x: 0, y: 0, width: 10, height: 10 })] }],
+  });
+  const realFetch = globalThis.fetch;
+  const priorRegistry = existsSync(registry) ? readFileSync(registry) : null;
+  const serve = (text) => { globalThis.fetch = async () => new Response(text); };
+  const entry = () => (existsSync(registry) ? JSON.parse(readFileSync(registry, 'utf8'))[slug] : undefined);
+  const out = {};
+  try {
+    // A first installation that does not parse.
+    serve('not a library');
+    out.firstFail = await settle(browse.installLibrary(source));
+    out.fileAfterFirstFail = existsSync(file);
+    out.entryAfterFirstFail = entry();
+
+    // A good one.
+    serve(library('one'));
+    out.installed = await settle(browse.installLibrary(source, { force: true }));
+    out.goodBytes = readFileSync(file);
+    out.goodEntry = JSON.stringify(entry());
+
+    // The reported case: a forced replacement that does not parse.
+    serve('not a library');
+    out.replaceFail = await settle(browse.installLibrary(source, { force: true }));
+    out.bytesAfterFail = readFileSync(file);
+    out.entryAfterFail = JSON.stringify(entry());
+    out.itemsAfterFail = await settle((async () => browse.libraryItems(slug))());
+
+    // And a forced replacement that does.
+    serve(library('two'));
+    out.replaceOk = await settle(browse.installLibrary(source, { force: true }));
+    out.bytesAfterOk = readFileSync(file);
+    out.entryAfterOk = JSON.stringify(entry());
+
+    out.strays = readdirSync(browse.LIB_DIR).filter((f) => f.includes('.incoming-'));
+  } finally {
+    globalThis.fetch = realFetch;
+    rmSync(file, { force: true });
+    if (priorRegistry) writeFileSync(registry, priorRegistry);
+    else rmSync(registry, { force: true });
+  }
+  return out;
+})();
+
+test('a library that does not parse never replaces the installed one (#152)', () => {
+  const r = install152;
+  assert(r.firstFail.error, 'a first installation that does not parse fails');
+  eq(r.fileAfterFirstFail, false, 'and leaves no library behind');
+  eq(r.entryAfterFirstFail, undefined, 'and no registry entry');
+
+  assert(!r.installed.error, `a valid library installs: ${r.installed.error?.message}`);
+  eq(r.installed.value.items, 1, 'with its item counted');
+
+  assert(r.replaceFail.error, 'a forced replacement that does not parse fails');
+  assert(r.goodBytes.equals(r.bytesAfterFail), 'and the installed library is byte-identical');
+  eq(r.entryAfterFail, r.goodEntry, 'and its registry entry is unchanged');
+  assert(!r.itemsAfterFail.error, 'so an icon search over it still works');
+  eq(r.itemsAfterFail.value.length, 1, 'and still finds the item');
+
+  assert(!r.replaceOk.error, 'a valid forced replacement still succeeds');
+  assert(!r.goodBytes.equals(r.bytesAfterOk), 'and does replace the bytes');
+  assert(r.entryAfterOk !== r.goodEntry, 'and updates the registry with it');
+
+  eq(r.strays.join(' '), '', 'no staging file is left behind');
 });
 
 test('the docker compose file pins the official image and a port', () => {
