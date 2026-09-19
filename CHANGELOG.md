@@ -13,6 +13,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A downloaded Excalidraw library is parsed in a staging file beside the target
+  and only then put in place, so a malformed `browse --install --force`
+  replacement leaves the installed library and the registry byte-identical
+  instead of destroying a working library and breaking icon search (#152).
 - `learn --help` prints the usage instead of performing the learn and replacing
   your style record; both engines now reject unknown flags, missing and repeated
   values, stray arguments, missing source files and incompatible modes before

@@ -14,7 +14,7 @@
 // find-icon.mjs alongside the house icons. Nothing about a diagram is ever sent
 // anywhere: the only requests are for the public index and the library files.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import {
@@ -82,9 +82,24 @@ function loadInstalled() {
   try { return JSON.parse(readFileSync(INSTALLED_FILE, 'utf8')); } catch { return {}; }
 }
 
+// Write through a staging file beside the target, so a failure part-way leaves
+// what was there before rather than half of something new (#152).
+function writeStaged(path, bytes, check = null) {
+  const staged = `${path}.incoming-${process.pid}-${Date.now()}`;
+  try {
+    writeFileSync(staged, bytes);
+    const checked = check ? check(staged) : undefined;
+    renameSync(staged, path);
+    return checked;
+  } catch (error) {
+    try { if (existsSync(staged)) unlinkSync(staged); } catch { /* staging is not the caller's problem */ }
+    throw error;
+  }
+}
+
 function saveInstalled(map) {
   mkdirSync(LIB_DIR, { recursive: true });
-  writeFileSync(INSTALLED_FILE, `${JSON.stringify(map, null, 2)}\n`);
+  writeStaged(INSTALLED_FILE, `${JSON.stringify(map, null, 2)}\n`);
 }
 
 export function slugFor(source) {
@@ -115,9 +130,13 @@ export async function installLibrary(sourceOrId, { force = false } = {}) {
   if (installed[slug] && !force) throw new Error(`"${slug}" is already installed; pass --force to replace it`);
 
   mkdirSync(LIB_DIR, { recursive: true });
-  writeFileSync(path, body);
+  // The download is parsed in a staging file beside the target, never over it:
+  // writing first meant a malformed replacement destroyed a working library
+  // while the registry still described the old one, and every icon search that
+  // enumerated it then threw (#152).
+  const previous = existsSync(path) ? readFileSync(path) : null;
   // Parse it back so a malformed download fails here rather than mid-diagram.
-  const items = readLibrary(path);
+  const items = writeStaged(path, body, readLibrary);
 
   installed[slug] = {
     slug,
@@ -135,7 +154,16 @@ export async function installLibrary(sourceOrId, { force = false } = {}) {
     sha256: sha256(body),
     installed: new Date().toISOString(),
   };
-  saveInstalled(installed);
+  try {
+    saveInstalled(installed);
+  } catch (error) {
+    // Put the library back, so the file and the registry cannot disagree.
+    try {
+      if (previous) writeFileSync(path, previous);
+      else if (existsSync(path)) unlinkSync(path);
+    } catch { /* the original failure is the one worth reporting */ }
+    throw error;
+  }
   return installed[slug];
 }
 
