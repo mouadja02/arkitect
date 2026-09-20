@@ -79,14 +79,27 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
-| `arkitect-drawio` | 10,355 | 862 | 11,217 |
-| `arkitect-excalidraw` | 10,145 | 882 | 11,027 |
+| `arkitect-drawio` | 10,441 | 862 | 11,303 |
+| `arkitect-excalidraw` | 10,231 | 882 | 11,113 |
 
 The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
 Excalidraw's starter is 3,472 and the large AWS example 14,080. Before #113 the
 mandatory reading was 34,621 bytes for Draw.io and 46,646 for Excalidraw. A
 rule that has to hold on every drawing stays in `SKILL.md`; a rule that holds
 for one situation moves beside that situation.
+
+**2b. A rule lands in the step that performs it.** A rule about what the agent
+*does* does not govern what the agent *writes*, and both have cost a release to
+learn. #186 forbade the hosted editor in step 8, which is about opening a file;
+the failing replies opened nothing — they closed with a link, and the rule only
+bound once it was also in the report step. #180 is the same shape from the other
+side: the reason for an engine choice had nowhere to go in a report shaped
+**File · Assumptions · Icons · Validation · Render · Deviations**, so it was
+never written, four runs out of four, while the choice itself was right every
+time. A rule about the reply belongs in the report step, and where it can, in
+the report's own shape — a missing heading is visible, a forgotten sentence is
+not. Wording that only restates the rule somewhere else is not a fix, and an
+eval run is what tells the two apart.
 
 **3. Output stays native and editable.** `.drawio` XML and `.excalidraw` JSON,
 with icons and images **embedded**, never linked. No change may make the

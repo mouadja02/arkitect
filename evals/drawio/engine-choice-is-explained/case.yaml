@@ -44,6 +44,15 @@ graders:
     tool: Bash
     input_match: validate-drawio
 
+  # The report shape had no slot for the choice, so it was never written while
+  # the choice itself was right every time (#180). The heading is mechanical;
+  # whether the reason is a reason stays with the judge below.
+  - type: regex
+    name: report-has-an-engine-slot
+    target: last_message
+    pattern: '(?:\*\*Engine|#+ *Engine|^Engine\b)'
+    flags: m
+
   - type: llm
     name: says-which-engine-and-why
     criteria: |

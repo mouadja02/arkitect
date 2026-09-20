@@ -11,6 +11,26 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- The report says which engine was chosen and why, when the user named none.
+  The choice itself was right every time — `arkitect-drawio` fires, Excalidraw
+  never does, a valid `.drawio` lands — but the report shape was **File ·
+  Assumptions · Icons · Validation · Render · Deviations**, with nowhere to put
+  the reason, so it was never written in four runs out of four. Both report
+  shapes now carry an **Engine** heading, required only when the user named no
+  engine, and `AGENTS.md` §2 says the same. A mechanical grader checks that the
+  heading is there; whether the reason is a reason stays with the judge (#180).
+
+- `docs/maintenance.md` gains invariant 2b: a rule lands in the step that
+  performs it. A rule about what the agent *does* does not govern what the agent
+  *writes*, and that has now cost two fixes. #186 forbade the hosted editor in
+  the step about opening a file, while the failing replies opened nothing and
+  closed with a link; #180 had no slot in the report for a reason it was asked
+  to give. A rule about the reply belongs in the report step, and where it can,
+  in the report's own shape — a missing heading is visible, a forgotten sentence
+  is not.
+
 ## [1.6.0] — 2026-09-20
 
 ### Added
