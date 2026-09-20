@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-09-20
+
 ### Added
 
 - `AGENTS.md` states what Arkitect optimises for, and it is not a preference:
