@@ -127,7 +127,7 @@ Then ask for a diagram in plain language:
 | looks like | crisp, formal, vendor icons | hand-drawn, sketchy |
 | reach for it when | a client, a review board or an RFC will see it; the design is AWS-heavy; you need multiple pages or an as-is/to-be comparison | it is system design, a component or block diagram, a flow, or art for a README |
 | icons | 18 packs, 4,843 marks + built-in `mxgraph.aws4.*` + fetched product logos | 1,162 native items across 36 libraries + 4,843 shared marks embedded as original artwork |
-| edit it in | Draw.io Desktop, the VS Code extension, app.diagrams.net | the Excalidraw container this repo ships, or excalidraw.com |
+| edit it in | Draw.io Desktop or the VS Code extension, never the hosted editor | the Excalidraw container this repo ships, or excalidraw.com |
 | local viewer | Draw.io Desktop (optional) | `npm run excalidraw:up` (optional) |
 
 <div align="center">

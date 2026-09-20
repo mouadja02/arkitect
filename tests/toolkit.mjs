@@ -587,7 +587,7 @@ const skillReading = (engine) => {
 test('each drawing skill reads at most 12,000 bytes before its example, and names one path per task (#113)', () => {
   const measured = [];
   for (const [engine, mustKeep] of [
-    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs']],
+    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL']],
     ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs']],
   ]) {
     const { dir, skill, sections, skillBytes, largest } = skillReading(engine);
