@@ -24,8 +24,14 @@ blows the context.
 ## Back it up first
 
 `build-diagram.mjs` backs up for you. Any other route — MCP `set_page`, a script,
-a hand edit — means calling `backupExisting()` from `scripts/lib/backups.mjs` or
-copying the file yourself before the first write.
+a hand edit — means one command before the first write:
+
+```bash
+node scripts/backup.mjs "<file>"      # --keep-backups N, 0 keeps all
+```
+
+It writes the same timestamped sibling the builder does and prunes to the same
+retention. In your own code, `backupExisting()` from `scripts/lib/backups.mjs`.
 
 ## Match the file, not the guide
 

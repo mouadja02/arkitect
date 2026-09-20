@@ -70,3 +70,43 @@ export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
   }
   return pruned;
 }
+
+// The builders back up for you. A hand edit, a script or an MCP set_page does
+// not, and "call backupExisting() or copy the file yourself" is two choices and
+// an import - so the same protection is one command (#179). Both engines'
+// scripts/backup.mjs are three lines over this.
+const USAGE = `usage: backup.mjs <file>... [--keep-backups N]
+
+Copies each file beside itself as <stem>.backup-YYYYMMDD-HHMMSS<ext> before you
+edit it, then keeps the oldest backup of that file plus the newest N (default
+${DEFAULT_KEEP_BACKUPS}; 0 keeps all) and deletes the rest. Prints each backup written.`;
+
+export function backupCli(argv) {
+  const files = [];
+  let keep = DEFAULT_KEEP_BACKUPS;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '-h' || arg === '--help') { console.log(USAGE); return 0; }
+    if (arg === '--keep-backups') keep = Number(argv[++i]);
+    else if (arg.startsWith('-')) { console.error(`unknown option: ${arg}`); console.error(USAGE); return 2; }
+    else files.push(arg);
+  }
+  if (!files.length) { console.error(USAGE); return 2; }
+  // Like the builders: a malformed count fails before anything is copied or
+  // deleted, rather than halfway through the list (#49).
+  if (!Number.isSafeInteger(keep) || keep < 0) {
+    console.error(`--keep-backups must be a non-negative whole number, got ${keep}`);
+    return 2;
+  }
+  const missing = files.filter((f) => !existsSync(f));
+  if (missing.length) {
+    for (const f of missing) console.error(`no such file: ${f}`);
+    return 1;
+  }
+  for (const file of files) {
+    console.log(backupExisting(file));
+    const pruned = pruneBackups(file, { keep });
+    if (pruned.length) console.log(`pruned ${pruned.length} older backup${pruned.length > 1 ? 's' : ''}`);
+  }
+  return 0;
+}

@@ -31,6 +31,7 @@ arkitect drawio validate docs/arch.drawio
 arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells
 arkitect drawio analyze docs/arch.drawio --page 0 --images
+arkitect drawio backup docs/arch.drawio                # before any edit the builder does not make
 arkitect drawio packs --verify                        # verify committed packs against the manifest
 arkitect drawio packs --all                           # rebuild packs and icon catalog from pinned sources
 arkitect drawio build spec.json --out docs/arch.drawio --defaults   # the house style, ignoring your own
@@ -90,6 +91,7 @@ arkitect excalidraw make-icon --url https://.../dbt.svg --name dbt --trace
 arkitect excalidraw build spec.json --out docs/arch.excalidraw
 arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw analyze docs/arch.excalidraw --cells
+arkitect excalidraw backup docs/arch.excalidraw        # before any edit the builder does not make
 arkitect excalidraw render docs/arch.excalidraw --out preview.svg
 arkitect excalidraw build spec.json --out docs/arch.excalidraw --defaults   # the house style, ignoring your own
 arkitect excalidraw build spec.json --out docs/arch.excalidraw --seed 7     # the same bytes on every rebuild
@@ -126,6 +128,12 @@ rest and list them under `pruned` in the report. `--keep-backups N` changes how
 many recent ones stay; `0` keeps all. Only that file's own backup names are ever
 deleted. Add `*.backup-*` to your project's `.gitignore` so the ones kept stay
 out of commits.
+
+An edit the builder does not make — a hand edit, a script, MCP `set_page` — gets
+the same protection from `arkitect <engine> backup <file>`, which writes that
+sibling and prunes to the same retention. It prints each backup it wrote, exits
+`1` naming any file that does not exist, and exits `2` on a malformed
+`--keep-backups` before copying or deleting anything (#179).
 
 The two `render-*.ps1` helpers keep their documented parameters and are thin
 adapters over the renderers above, so they inherit staged output, backup and

@@ -88,7 +88,9 @@ shipped guide. Say so in the report.
 
 5. **Never overwrite blind.** The builder backs up an existing file first and
    keeps the oldest backup plus the newest five (`--keep-backups N`; `0` keeps
-   all). Suggest `*.backup-*` for the user's `.gitignore`.
+   all). Every other edit — MCP `set_page`, a hand edit — goes `analyze → back
+   up → edit → validate`, and the backup is `node scripts/backup.mjs "<file>"`
+   before the first write. Suggest `*.backup-*` for the user's `.gitignore`.
 
 6. **Validate.**
    ```bash
