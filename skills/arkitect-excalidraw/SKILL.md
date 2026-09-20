@@ -110,8 +110,10 @@ Do not undo them by hand.
    Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
    `--format svg`, dropping `--width`, which is PNG-only, and say you could not
    look at a PNG. Retry with `--no-sandbox` only when the error names it. Read the PNG back and
-   iterate; a scene that validates but reads badly is not done. The preview is
-   geometry-faithful, not font-faithful: judge layout, not typography. First
+   iterate; a scene that validates but reads badly is not done. The PNG is
+   geometry-faithful, not font-faithful: judge layout from it, not typography.
+   An SVG is markup you read, not a picture you see: it settles nothing about
+   spacing or collisions, so report what you could not check. First
    renders nearly always need, in the spec:
    - a long region label overrunning: one or two words, detail in sublabels;
    - an elbow through a third icon, or two stacked into one line: `"route": "straight"`.
