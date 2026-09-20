@@ -407,10 +407,16 @@ export function run(argv, { log = console.log, error = console.error, platform =
     } catch (e) {
       // Inside another sandbox or a container the browser cannot build its own,
       // and says so; that is the diagnosed failure --no-sandbox exists for (#113).
-      const nested = /Operation not permitted|no usable sandbox|namespace|zygote/i.test(e.message);
-      const hint = platform !== 'linux' || options.noSandbox ? ''
-        : nested ? ' The browser could not start its own sandbox, as happens inside another sandbox or a container: retry with --no-sandbox.'
-          : ' On Linux, a browser that cannot start its sandbox needs --no-sandbox.';
+      // A refused socket() says the same words and is not the same failure: the
+      // host bars the syscall, so no flag reaches a PNG there and only SVG will
+      // draw anything. Sending that one to --no-sandbox costs a wasted run and
+      // then says nothing at all the second time (#136).
+      const denied = /socket\(\) failed/i.test(e.message);
+      const nested = !denied && /Operation not permitted|no usable sandbox|namespace|zygote/i.test(e.message);
+      const hint = denied ? ' The host denies the browser a socket, so no flag gets a PNG here: render with --format svg.'
+        : platform !== 'linux' || options.noSandbox ? ' Render with --format svg, which needs no browser.'
+          : nested ? ' The browser could not start its own sandbox, as happens inside another sandbox or a container: retry with --no-sandbox.'
+            : ' On Linux, a browser that cannot start its sandbox needs --no-sandbox.';
       error(`PNG render failed with ${found.path}: ${e.message}. ${options.out} is unchanged.${hint}`);
       return 1;
     }
@@ -440,7 +446,15 @@ export function run(argv, { log = console.log, error = console.error, platform =
     elements: live.length,
     files: Object.keys(scene.files ?? {}).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
-    note: 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
+    // An SVG is the one output nobody looks at: it is markup, so an agent reads
+    // it back as text and describes the layout from the spec it just wrote.
+    // Three eval runs did exactly that, each claiming a picture it never saw, so
+    // the fact goes where the SVG is handed over rather than into skill prose
+    // (#136). It does not call an SVG a "geometry-faithful preview" either: two
+    // runs quoted that phrase back as the warrant for judging spacing from it.
+    note: options.format === 'svg'
+      ? 'vector markup, not a picture you can look at: nothing here shows you the diagram, so do not report on its spacing, collisions or clarity from this file. Render a PNG to judge those, or say you could not see it. Fonts are substituted and fills are flat either way.'
+      : 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
   }, null, 2));
   return 0;
 }

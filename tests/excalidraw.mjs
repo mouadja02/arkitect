@@ -1700,6 +1700,15 @@ test('render checks its arguments before writing, and the extension decides the 
   eq(svg.status, 0, 'an SVG render succeeds');
   eq(JSON.parse(svg.stdout).format, 'svg', 'and reports its format');
   assert(readFileSync(join(dir, 'preview.svg'), 'utf8').startsWith('<?xml'), 'an SVG is written');
+
+  // Markup reads back as text, so an SVG is the one output that invites a
+  // report describing a picture nobody looked at. The handover says so, and
+  // the PNG's note stays clear of it (#136).
+  const svgNote = JSON.parse(svg.stdout).note;
+  assert(/not a picture you can look at/.test(svgNote) && /render a PNG/i.test(svgNote),
+    `the SVG handover says it cannot be looked at, and what to do instead: ${svgNote}`);
+  assert(!/geometry-faithful/.test(svgNote),
+    `and does not call an SVG a preview an agent can judge layout from: ${svgNote}`);
 });
 
 test('a PNG render proves a real PNG before replacing the previous preview (#39)', () => {
@@ -1775,6 +1784,27 @@ test('a PNG render proves a real PNG before replacing the previous preview (#39)
     }
   }
   eq(readdirSync(dir).join(','), 'preview.png', 'no temporary file is left beside the preview');
+
+  // A refused socket() and a sandbox that cannot nest print the same three
+  // words. --no-sandbox fixes the second and can do nothing about the first,
+  // so the first is sent to SVG rather than round the same loop again - which
+  // is what it did inside `claude plugin eval`, twice, before saying nothing
+  // at all (#136).
+  const denied = (exe, args, { log }) => {
+    writeFileSync(log, 'Check failed: . socket() failed: Operation not permitted (1)\n');
+    const e = new Error('crashed');
+    e.status = 1;
+    throw e;
+  };
+  for (const argv of [[scenePath, '--out', out], [scenePath, '--out', out, '--no-sandbox']]) {
+    errors.length = 0;
+    eq(renderer.run(argv, deps(denied)), 1, `a denied socket exits 1 (${argv.join(' ')})`);
+    const said = errors.join(' ');
+    assert(said.includes('socket() failed'), `the browser's own words survive: ${said}`);
+    assert(said.includes('--format svg'), `and a way out is named: ${said}`);
+    assert(!said.includes('retry with --no-sandbox'),
+      `a denied socket is not sent round the --no-sandbox loop: ${said}`);
+  }
 
   errors.length = 0;
   const never = join(dir, 'never.png');

@@ -24,9 +24,11 @@ parameters and is a thin adapter over this renderer, so browser discovery and
 exits non-zero, leaves the previous preview untouched and writes the SVG instead,
 rather than reporting a stale image as rendered (#157).
 
-The preview is geometry-faithful, not pixel-faithful: Excalidraw's fonts are not
+The PNG is geometry-faithful, not pixel-faithful: Excalidraw's fonts are not
 installed outside the app, so text is substituted and runs a little wide, and
-fills are flat. Judge layout from it, not typography. `--style clean`
+fills are flat. Judge layout from it, not typography. An SVG is not a preview
+in that sense at all — it is markup, which you read rather than see, so it
+settles nothing about spacing, collisions or how the diagram reads. `--style clean`
 (`-Style clean` in the PowerShell helper) drops the hand-drawn stroke and is
 easier to read when the question is whether something collides.
 

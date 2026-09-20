@@ -11,6 +11,24 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- An eval run now reads a render instead of only watching the renderer being
+  called, so a layout regression can no longer score 1.00. No PNG can be made
+  inside `claude plugin eval`'s sandbox — Chrome exits SIGABRT on
+  `socket() failed: Operation not permitted`, with or without `--no-sandbox`,
+  and Draw.io's `xvfb-run` exits 1 without saying why — but `--format svg`
+  needs no browser, so `excalidraw-generate-architecture` asks for an SVG
+  beside the scene and grades the file itself. `evals/README.md` records what
+  renders inside a run and what does not, with the measurements (#136).
+
+- A PNG render that fails because the host refuses the browser a socket is sent
+  to `--format svg` instead of to `--no-sandbox`, which cannot help: the two
+  failures share the words "Operation not permitted", and the wrong advice cost
+  a run in the sandbox, then said nothing at all the second time. Every failed
+  PNG now names a way out, and the Excalidraw skill's own fallback drops
+  `--width`, which is PNG-only and made the documented retry exit 2 (#136).
+
 ## [1.6.1] — 2026-09-20
 
 ### Changed

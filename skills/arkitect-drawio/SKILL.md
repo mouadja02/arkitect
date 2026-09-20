@@ -124,7 +124,8 @@ shipped guide. Say so in the report.
    the user did not name) · **Icons** (each id and pack; any not confident or not
    found; logos downloaded and from where; lifecycle caveats) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
-   "rendered" for a render that failed) · **Deviations** from the style guide.
+   "rendered" for a render that failed, and never a description of a
+   picture you did not see) · **Deviations** from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export,
    and no link to the hosted editor. **Draw.io Desktop** and **the VS Code
    extension** are the two things a reply names, as plain text, never a URL.

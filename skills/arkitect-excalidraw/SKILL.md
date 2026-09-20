@@ -108,10 +108,12 @@ Do not undo them by hand.
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
    Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
-   `--format svg` and say you could not look at a PNG. If the error says to
-   retry with `--no-sandbox`, do so once. Read the PNG back and
-   iterate; a scene that validates but reads badly is not done. The preview is
-   geometry-faithful, not font-faithful: judge layout, not typography. First
+   `--format svg`, dropping `--width`, which is PNG-only, and say you could not
+   look at a PNG. Retry with `--no-sandbox` only when the error names it. Read the PNG back and
+   iterate; a scene that validates but reads badly is not done. The PNG is
+   geometry-faithful, not font-faithful: judge layout from it, not typography.
+   An SVG is markup you read, not a picture you see: it settles nothing about
+   spacing or collisions, so report what you could not check. First
    renders nearly always need, in the spec:
    - a long region label overrunning: one or two words, detail in sublabels;
    - an elbow through a third icon, or two stacked into one line: `"route": "straight"`.
@@ -126,7 +128,8 @@ Do not undo them by hand.
    user did not name) · **Icons** (each ref and where it came from: bundled
    library, shared pack, a logo you built; every placeholder) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
-   "rendered" for a render that failed) · **Deviations** from the style guide.
+   "rendered" for a render that failed, and never a description of a
+   picture you did not see) · **Deviations** from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first

@@ -79,9 +79,9 @@ Caveats:
   the Linux filesystem rather than under `/mnt/c`, then `scripts/eval.sh`.
 - Prerequisites, all checked by `scripts/eval.sh --check`: Claude Code, logged
   in once; Node 20+; on Linux `bubblewrap` and `socat` for the sandbox.
-  Optional, for renders: `xvfb` and Draw.io Desktop for `.drawio`, and Chrome,
-  Edge or Chromium for Excalidraw PNGs - without a browser Excalidraw still
-  renders SVG.
+  `xvfb`, Draw.io Desktop and a browser are checked too, because they matter
+  outside the sandbox - but none of them renders anything inside a run. See
+  "What renders inside the sandbox" below.
 - **Docker Desktop stops the run before it starts.** The sandbox refuses a
   Docker credential store that holds a symlink, and Docker Desktop's WSL
   integration always links `contexts` and `features.json` out to Windows: "the
@@ -99,6 +99,38 @@ Caveats:
   fixture keep it in `scaffold.sh` beside their `case.yaml`.
 - Those scaffolds only run under `--scaffold`. Without that flag, create the
   `eval-input/` fixture by hand first; `scaffold.sh` shows what it needs.
+
+## What renders inside the sandbox
+
+"Render it and actually look at it" is required by both skills, and it was the
+one step no eval could observe: a layout regression scored 1.00 like anything
+else. Measured on Ubuntu 24.04 under `claude plugin eval` 2.1.278, with
+`xvfb-run`, `/usr/bin/drawio` and `/usr/bin/google-chrome` all present on the
+host (#136):
+
+| | inside a run | what happens |
+|---|---|---|
+| `excalidraw render --format svg` | **works** | pure Node, no browser, no display; wrote a 19 KB SVG of 42 elements |
+| `excalidraw render` (PNG) | never | Chrome exits SIGABRT: `Check failed: . socket() failed: Operation not permitted (1)` |
+| `drawio render` (PNG or SVG) | never | no `DISPLAY`, so `xvfb-run -a`, which exits 1 and prints nothing to explain itself |
+
+`--no-sandbox` does not rescue the PNG. That flag exists for a browser that
+cannot nest its own sandbox, and the message used to recommend it here because
+the two failures share the words "Operation not permitted" - but a refused
+`socket()` is the host barring the syscall, and no flag reaches a PNG through
+that. The renderer now says so and names `--format svg` instead.
+
+So the suite's render is the SVG. `excalidraw-generate-architecture` asks for
+one beside the scene and grades it: `file_exists` that it landed, and a regex
+over the file itself for a real canvas, drawn shapes, drawn text and the one
+product the prompt names. Draw.io has no equivalent - nothing in that path runs
+without Draw.io Desktop and a display - so its cases still stop at "the agent
+ran the renderer and reported the result honestly".
+
+If a browser ever starts inside the sandbox, the PNG needs no new machinery: a
+regex grader refuses an image and says so, pointing at an `llm` grader with
+`focus: { source: file, path: … }`, which puts the picture itself in front of
+the judge.
 
 ## Graders: check what you can, judge what you cannot
 
