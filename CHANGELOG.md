@@ -86,6 +86,17 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- An assumption no longer covers for changing what the user said. Asked for two
+  workload accounts, an agent drew three — "I included a third for better visual
+  balance in the landing zone pattern" — and listed it under Assumptions, where
+  a reader looks for gaps that were filled, not facts that were changed. Both
+  skills now say an assumption fills a gap and never overrides a stated fact,
+  and that a component the user specified is never added, removed or renumbered:
+  if the stated count draws awkwardly, draw the stated count and say the layout
+  is tight. The same reply also offered a PowerPoint and PDF export that does
+  not exist, so both report steps say to offer nothing Arkitect cannot do. A
+  grader on the landing-zone case fails a third workload boundary (#183).
+
 - A reply no longer offers the user the hosted draw.io editor. Step 8 of the
   Draw.io skill said what the agent may open, and a closing sentence about where
   the file can be opened did not read as governed by it; it now names Draw.io

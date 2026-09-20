@@ -50,7 +50,10 @@ shipped guide. Say so in the report.
 
    Spec fragments for most of them are in `assets/templates/patterns.json`.
    Write every architectural assumption down; it goes in the report and, where
-   it matters, in a note on the canvas.
+   it matters, in a note on the canvas. **An assumption fills a gap the user
+   left open; it never overrides a stated fact.** Never add, remove or renumber
+   a component they specified: if the stated count draws awkwardly, draw the
+   stated count and say the layout is tight.
 
 3. **Resolve icons — bundled packs first.**
    ```bash
@@ -120,6 +123,7 @@ shipped guide. Say so in the report.
    found; logos downloaded and from where; lifecycle caveats) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
    "rendered" for a render that failed) · **Deviations** from the style guide.
+   Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first
 
