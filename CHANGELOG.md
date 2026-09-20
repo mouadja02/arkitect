@@ -11,6 +11,18 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- Every workflow pins an action that declares Node 24, and no job rides
+  `ubuntu-latest`. GitHub forces `checkout@v4` and `setup-node@v4` onto Node 24
+  and annotates every run saying so; those are now v7, and `cache` is v6 — v5
+  is the first major of each to declare node24. `ubuntu-latest` becomes Ubuntu
+  26 on 19 October 2026, which would move the image everything is verified on
+  without anyone choosing it, so the test matrix names both `ubuntu-24.04` and
+  `ubuntu-26.04`, the Draw.io Desktop export runs on both, and every other job
+  is pinned to 24.04. Dropping one then takes a line and has green evidence
+  behind it. A test holds the pins and the labels (#122).
+
 ## [1.6.2] — 2026-09-20
 
 ### Fixed

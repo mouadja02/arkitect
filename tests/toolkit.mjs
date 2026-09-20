@@ -1340,6 +1340,46 @@ test('a CRLF draft validates and inserts exactly like its LF twin (#121)', () =>
   assert(/unknown heading "Highlights"/.test(err?.message), `a bad CRLF heading still fails: ${err?.message}`);
 });
 
+// GitHub forces an action declaring Node 20 onto Node 24 and annotates every
+// run saying so; v5 is the first major of each of these to declare node24,
+// read from the published action.yml at that tag. And `ubuntu-latest` becomes
+// Ubuntu 26 on 19 October 2026, which would move the image every job here is
+// verified on without anyone choosing it. So no job rides the moving label,
+// and both images are named until the migration is over (#122).
+test('every workflow pins a Node 24 action and names its Ubuntu image (#122)', () => {
+  const dir = join(ROOT, '.github', 'workflows');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.yml'));
+  assert(files.length > 0, 'no workflows were found');
+
+  const FLOOR = { 'actions/checkout': 5, 'actions/setup-node': 5, 'actions/cache': 5 };
+  const images = new Set();
+  const labels = (yml) => [
+    ...[...yml.matchAll(/runs-on:\s*(\S+)/g)].map((m) => m[1]),
+    ...[...yml.matchAll(/^\s*os:\s*\[([^\]]+)\]/gm)].flatMap((m) => m[1].split(',').map((s) => s.trim())),
+  ].filter((l) => !l.startsWith('${{'));
+
+  for (const file of files) {
+    const yml = readFileSync(join(dir, file), 'utf8');
+    for (const [, action, major] of yml.matchAll(/uses:\s*(actions\/[\w-]+)@v(\d+)/g)) {
+      const floor = FLOOR[action];
+      assert(floor !== undefined,
+        `${file}: ${action} is not in this test's floor table - check which major declares node24 and add it`);
+      assert(Number(major) >= floor,
+        `${file}: ${action}@v${major} declares Node 20, which CI annotates on every run; v${floor} or newer declares node24`);
+    }
+    for (const label of labels(yml)) {
+      assert(label !== 'ubuntu-latest',
+        `${file}: ubuntu-latest becomes Ubuntu 26 on 19 October 2026; name the image instead`);
+      if (label.startsWith('ubuntu-')) images.add(label);
+    }
+  }
+
+  for (const image of ['ubuntu-24.04', 'ubuntu-26.04']) {
+    assert(images.has(image),
+      `no workflow runs on ${image}; both run until ubuntu-latest has migrated and the older one is dropped deliberately`);
+  }
+});
+
 test('the release workflows are started by a person, gated by a merged pull request, and never publish to npm (#88)', () => {
   const read = (f) => readFileSync(join(ROOT, '.github', 'workflows', f), 'utf8');
   const prepare = read('release-prepare.yml');
