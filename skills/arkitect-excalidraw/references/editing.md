@@ -18,9 +18,16 @@ Then make a targeted edit and re-validate with `validate-excalidraw.mjs`.
 
 ## Back it up first
 
-`build-diagram.mjs` backs up for you. Any other route means calling
-`backupExisting()` from `scripts/lib/excalidraw-core.mjs` or copying the file
-yourself before the first write.
+`build-diagram.mjs` backs up for you. Any other route means one command before
+the first write:
+
+```bash
+node scripts/backup.mjs "<file>"      # --keep-backups N, 0 keeps all
+```
+
+It writes the same timestamped sibling the builder does and prunes to the same
+retention. In your own code, `backupExisting()` from
+`scripts/lib/excalidraw-core.mjs`.
 
 ## Keep bindings two-sided
 

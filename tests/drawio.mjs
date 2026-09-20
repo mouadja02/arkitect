@@ -3122,6 +3122,39 @@ test('validate --page N validates that page and never reads N as a file (#37)', 
   assert(help.status === 0 && help.stdout.includes('--page'), 'help names --page');
 });
 
+// The one route the builders do not cover: an edit made by hand, by a script or
+// through MCP set_page. Both engines run the same shared library (#179).
+test('backup copies a file beside itself before an edit, in both engines (#179)', () => {
+  const dir = join(TMP, 'backup-cli');
+  mkdirSync(dir, { recursive: true });
+  const target = join(dir, 'checkout.drawio');
+  const original = '<mxfile>hand-edited</mxfile>';
+  writeFileSync(target, original);
+
+  const r = drawioCli('backup', target);
+  eq(r.status, 0, `backup status (stderr: ${stderrLine(r)})`);
+  const written = r.stdout.trim();
+  assert(/checkout[.]backup-\d{8}-\d{6}[.]drawio$/.test(written), `printed ${written}`);
+  eq(readFileSync(written, 'utf8'), original, 'the backup is not a copy of the file');
+
+  const scene = join(dir, 'scene.excalidraw');
+  writeFileSync(scene, '{}');
+  const ex = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', 'backup', scene], { encoding: 'utf8' });
+  eq(ex.status, 0, `excalidraw backup status (stderr: ${ex.stderr})`);
+  assert(existsSync(ex.stdout.trim()), 'the excalidraw side wrote no backup');
+
+  const missing = drawioCli('backup', join(dir, 'nope.drawio'));
+  eq(missing.status, 1, 'a file that does not exist exits 1');
+  assert(missing.stderr.includes('no such file'), `said "${stderrLine(missing)}"`);
+
+  for (const bad of [[], ['--keep-backups'], ['--keep-backups', 'two'], ['--keep-backups', '-1'], ['--nope']]) {
+    const u = drawioCli('backup', ...(bad.length ? [target, ...bad] : []));
+    eq(u.status, 2, `${bad.join(' ') || 'no file'}: usage status`);
+    assert(!hasStack(u), `${bad.join(' ')}: no stack trace`);
+  }
+  eq(readdirSync(dir).filter((f) => f.startsWith('checkout.backup-')).length, 1, 'a refused flag writes no backup');
+});
+
 // The tag scanner extractCells needs is forgiving on purpose, and it recovers
 // from a mismatched closing tag rather than seeing one, so the validator used to
 // answer PASS for XML no parser would accept (#155). The page body below is the

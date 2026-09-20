@@ -95,7 +95,8 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    before replacing an existing file, then keep the oldest backup and the newest
    five of that file and delete the rest, listed under `pruned` in the report
    (`--keep-backups N`; `0` keeps all). Suggest `*.backup-*` for the project's
-   `.gitignore`. Any other edit route means copying the file yourself first.
+   `.gitignore`. Any other edit route means `arkitect <engine> backup <file>`
+   before the first write.
 6. **Validate.** Errors block delivery. Warnings about overlap and tight labels
    are judgement calls — check them against the render.
 7. **Render it and actually look at the PNG.** Read the image back. Iterate on
@@ -205,6 +206,7 @@ run to megabytes; one file can blow your entire window.
 ```bash
 node bin/arkitect.mjs drawio analyze <file> --page 0 --cells     # geometry, no labels
 node bin/arkitect.mjs excalidraw analyze <file> --cells
+node bin/arkitect.mjs drawio backup <file>                       # before the first write
 ```
 
 Then make a targeted, backup-protected edit and re-validate. **Match the file

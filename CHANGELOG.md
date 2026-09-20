@@ -43,6 +43,16 @@ separate file, no naming scheme, no required format beyond that.
   count and its tree are now checked against the cases that exist, so neither
   can go stale unnoticed (#177).
 
+- `arkitect drawio backup <file>` and `arkitect excalidraw backup <file>` write
+  the same timestamped sibling the builders write, for the one editing route
+  they do not cover: a hand edit, a script, MCP `set_page`. The editing step in
+  both skills now reads `analyze → back up → edit → validate` and names that
+  command. It used to say "call `backupExisting()` or copy the file yourself",
+  which is two choices and an import, in a reference file a small model does not
+  carry into the edit — an agent asked to add a cache to an existing diagram
+  wrote no backup in three runs out of three, on the one route where the user
+  already has work worth losing (#179).
+
 - `scripts/eval.sh` runs the eval suite in one command, with the workarounds a
   run needs already applied. It checks the prerequisites (`--check` does only
   that, and spends nothing), caps the spend, and writes the JSON, the HTML
