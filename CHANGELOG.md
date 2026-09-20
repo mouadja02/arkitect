@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.6.2] — 2026-09-20
+
 ### Fixed
 
 - An eval run now reads a render instead of only watching the renderer being
@@ -28,6 +30,22 @@ separate file, no naming scheme, no required format beyond that.
   a run in the sandbox, then said nothing at all the second time. Every failed
   PNG now names a way out, and the Excalidraw skill's own fallback drops
   `--width`, which is PNG-only and made the documented retry exit 2 (#136).
+
+- A render that succeeds and still cannot be looked at no longer invites a
+  report describing it. Making the eval's render work showed three runs in three
+  writing sentences like "the layout is clean: no label collision, adequate
+  spacing between nodes" while holding only an SVG — markup, which reads back as
+  text, so the layout in them came from the spec the agent had just written. The
+  SVG handover now says what the file is and is not good for, and both skills'
+  **Render** heading rules out describing a picture you did not see (#136).
+
+- An SVG is no longer called a "geometry-faithful preview". Two runs quoted that
+  phrase as their warrant for judging spacing from it, and `SKILL.md` and
+  `references/rendering.md` both told their reader to judge layout from "the
+  preview". Both sentences now name the PNG, where the claim is true, and say
+  what an SVG is instead. The residual — report headings that get dropped,
+  merged or renamed, and a Render section that still overreaches about once in
+  three runs, on `main` as much as here — is measured in #208 (#136).
 
 ## [1.6.1] — 2026-09-20
 
