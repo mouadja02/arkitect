@@ -13,6 +13,11 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- `evals/README.md` counts each engine separately, and the test that keeps it
+  honest no longer holds the two equal. Their contents have never mirrored each
+  other case for case, and a count that has to stay even is a reason not to
+  cover something (#201).
+
 - The landing-zone eval case asks the judge one question at a time. Its
   `says-which-engine-and-why` grader wanted three things at once — name the
   format, give a reason over the alternative, state the assumptions — so a red
@@ -24,6 +29,15 @@ separate file, no naming scheme, no required format beyond that.
   directions on materially the same sentence (#180).
 
 ### Fixed
+
+- A diagram wanted "for the README" is drawn in Excalidraw again. A skill is
+  selected on its `description`, before `AGENTS.md` §1 is read, and the two
+  disagreed: §1 routes the README to Excalidraw, the trigger text never mentioned
+  it, and Draw.io claimed every unqualified architecture request. Both runs of a
+  README-leaning prompt drew Draw.io — and cited the README as the reason. Each
+  description now carries its own signals from §1, a test reads those signals out
+  of §1 rather than repeating them, and the Excalidraw half of the engine-choice
+  case is in the suite (#201).
 
 - The report says which engine was chosen and why, when the user named none.
   The choice itself was right every time — `arkitect-drawio` fires, Excalidraw

@@ -1,0 +1,85 @@
+schema_version: "1.1"
+name: excalidraw-engine-choice-is-explained
+description: >
+  The mirror of the Draw.io case. The user names no engine, and "for the
+  README" is the Excalidraw side of the rule in AGENTS.md §1 - the signal that
+  picked Draw.io twice out of two before #201.
+tags: [generation, invocation]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    I am writing the README for our platform and want a diagram of how it hangs
+    together: a React front end calls a Go API, the API reads and writes
+    Postgres and publishes events to NATS, and a worker consumes those events
+    and sends notifications. Draw it and save it as
+    ./eval-output/platform-overview with whichever file extension is right for
+    what you draw.
+
+graders:
+  # "For the README" points at Excalidraw the way "review board" points at
+  # Draw.io. Skill selection happens on the description, before §1 is read, so
+  # this is the grader that fails when the two disagree.
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  - type: tool_used
+    name: drawio-not-used-instead
+    tool: Skill
+    input_match: arkitect-drawio
+    min: 0
+    max: 0
+
+  - type: regex
+    name: wrote-an-excalidraw-file
+    target: files
+    pattern: 'platform-overview\.excalidraw'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-excalidraw
+
+  # The report headings are facts about the text; only the reasons below are
+  # judged (#180).
+  - type: regex
+    name: report-has-an-engine-slot
+    target: last_message
+    pattern: '(?:\*\*Engine|#+ *Engine|^Engine\b)'
+    flags: m
+
+  - type: regex
+    name: report-has-an-assumptions-slot
+    target: last_message
+    pattern: '(?:\*\*Assumptions|#+ *Assumptions|^Assumptions\b)'
+    flags: m
+
+  - type: llm
+    name: says-which-engine-and-why
+    criteria: |
+      Judge only what the response says about the engine or format it chose.
+      It names what it produced (an .excalidraw scene) and gives a reason that
+      separates Excalidraw from Draw.io: a README, a sketch or hand-drawn
+      look, a whiteboard or system-design audience, a quick informal diagram,
+      or similar. Naming Draw.io itself is not required. Fail only if the
+      choice is never explained, if every reason it gives would fit either
+      engine equally well - "editable", "professional", "clear",
+      "collaborative" - or if the response claims to have uploaded the diagram
+      anywhere.
+
+  - type: llm
+    name: states-its-assumptions
+    criteria: |
+      The request leaves things open: how the front end reaches the API, where
+      notifications go, whether anything else consumes the events. Anything
+      the response settled for itself is presented as its own assumption or
+      choice, not as something the user specified. Pass if it states the
+      assumptions it made, wherever they appear in the reply. Fail only if it
+      decided something the prompt left open and passed it off as given, or if
+      it states no assumptions at all.

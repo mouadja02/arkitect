@@ -1,6 +1,6 @@
 ---
 name: arkitect-drawio
-description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. Use whenever the request involves a Draw.io/diagrams.net diagram, an AWS or cloud architecture diagram, a monitoring or observability architecture, a data-ingestion or data-pipeline architecture, an agentic/LLM system architecture, a solution-options or as-is/to-be comparison diagram, a flow or decision diagram wanted as .drawio, or an edit to an existing .drawio file.
+description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. Use whenever the request involves a Draw.io/diagrams.net diagram, a solution architecture for a client or a review board, an AWS or cloud architecture diagram, an as-is/to-be or solution-options comparison, a multi-page diagram, a monitoring, data-pipeline or agentic/LLM architecture wanted formally or with vendor icons, or an edit to an existing .drawio file.
 ---
 
 # Draw.io architecture diagrams
