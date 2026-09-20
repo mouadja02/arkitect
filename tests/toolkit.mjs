@@ -558,6 +558,34 @@ test('every generation and icon case keeps deterministic graders (#135)', () => 
   }
 });
 
+// "Render it and actually look at it" is required by both skills and was the
+// one step no eval could observe: every case watched the renderer being called
+// and none read what came out, so a layout regression scored 1.00 like anything
+// else. No PNG can be made inside the eval sandbox, but `--format svg` needs no
+// browser and writes text a grader can read, so at least one case reads one
+// (#136). The evidence for what does and does not render lives in the README,
+// because the next person to find an empty renders directory needs it.
+test('an eval case reads a render the run produced (#136)', () => {
+  const reading = [];
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    for (const [, kind, path] of yaml.matchAll(/^\s*(?:-\s*type:\s*(file_exists)[\s\S]*?^\s*path:\s*(\S+))/gm)) {
+      if (/\.(?:svg|png)$/i.test(path)) reading.push(`${id} (${kind} ${path})`);
+    }
+    for (const [, path] of yaml.matchAll(/source:\s*file,\s*path:\s*(\S+?)\s*\}/g)) {
+      if (/\.(?:svg|png)$/i.test(path)) reading.push(`${id} (regex ${path})`);
+    }
+  }
+  assert(reading.length > 0,
+    'no eval case reads a rendered .svg or .png, so the render step is unobserved again');
+
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
+  assert(readme.includes('What renders inside the sandbox'),
+    'evals/README.md no longer records what renders inside a run, and what does not');
+  assert(readme.includes('socket() failed'),
+    'evals/README.md no longer names the failure that rules a PNG out of an eval run');
+});
+
 // evals/README.md counts the cases in prose and lists every one of them. Both
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).

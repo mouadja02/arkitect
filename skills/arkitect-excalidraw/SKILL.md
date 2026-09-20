@@ -108,8 +108,8 @@ Do not undo them by hand.
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
    Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
-   `--format svg` and say you could not look at a PNG. If the error says to
-   retry with `--no-sandbox`, do so once. Read the PNG back and
+   `--format svg`, dropping `--width`, which is PNG-only, and say you could not
+   look at a PNG. Retry with `--no-sandbox` only when the error names it. Read the PNG back and
    iterate; a scene that validates but reads badly is not done. The preview is
    geometry-faithful, not font-faithful: judge layout, not typography. First
    renders nearly always need, in the spec:
