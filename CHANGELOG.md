@@ -86,6 +86,16 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A reply no longer offers the user the hosted draw.io editor. Step 8 of the
+  Draw.io skill said what the agent may open, and a closing sentence about where
+  the file can be opened did not read as governed by it; it now names Draw.io
+  Desktop and the VS Code extension as the only two places a reply may point at,
+  and says that offering a hosted-editor URL is the same act as opening one.
+  `AGENTS.md` and `README.md` listed `app.diagrams.net` as a place to edit later,
+  which told every agent reading the contract the opposite of the rule. The
+  mechanical grader that catches it by URL (#185) now runs on all three Draw.io
+  cases that write a closing sentence, not one (#186).
+
 - `scripts/eval.sh` is executable in a fresh clone. It was committed 0644,
   because git records that by default for a file authored on Windows, so the
   command `evals/README.md` documents answered `Permission denied`. A test now

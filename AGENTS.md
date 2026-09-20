@@ -49,7 +49,7 @@ model papers over it does not ship — however good the output looks.
 | looks like | crisp, formal, vendor icons | hand-drawn, sketchy |
 | best for | solution architecture for a client or a review board, AWS-heavy designs, multi-page decks, as-is/to-be comparisons | system design, whiteboard-style architecture, component and block diagrams, flows and decision paths, anything for a README |
 | icons | 18 packs, 4,843 marks — 311 AWS Architecture Icons, Azure, Google Cloud and curated product packs — + built-in `mxgraph.aws4.*` + real product logos fetched from the web | 1,162 native items across 36 bundled libraries plus the 4,843 shared marks as embedded original artwork |
-| edit later in | Draw.io Desktop, VS Code extension, app.diagrams.net | the Excalidraw container this repo ships, or excalidraw.com |
+| edit later in | Draw.io Desktop or the VS Code extension, never the hosted editor | the Excalidraw container this repo ships, or excalidraw.com |
 
 If the person did not say which, ask once in a single line, or infer: "solution
 architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
