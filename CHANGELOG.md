@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.6.2] — 2026-09-20
+
 ### Fixed
 
 - An eval run now reads a render instead of only watching the renderer being
