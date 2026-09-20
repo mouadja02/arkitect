@@ -118,8 +118,9 @@ shipped guide. Say so in the report.
    closing sentence is the same act as opening it there.
 
 9. **Report** under these headings, every one, even when it is short:
-   **File** · **Engine** (only when the user named none: Draw.io, and why it
-   over Excalidraw) · **Assumptions** (every one, asked or not, and any product
+   **File** · **Engine** (only when the user named none: Draw.io, and what made
+   it Draw.io rather than Excalidraw — the audience, the vendor icons, the pages;
+   never a generic virtue) · **Assumptions** (every one, asked or not, and any product
    the user did not name) · **Icons** (each id and pack; any not confident or not
    found; logos downloaded and from where; lifecycle caveats) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
