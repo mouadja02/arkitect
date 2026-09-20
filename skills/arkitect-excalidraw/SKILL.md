@@ -47,6 +47,10 @@ Do not undo them by hand.
    components. Prefer 11–17, the corpus's own shapes, when the system fits.
    Spec fragments: `assets/templates/patterns.json`. Write every assumption
    down for the report and, where it matters, a note on the canvas.
+   **An assumption fills a gap the user left open; it never overrides a stated
+   fact.** Never add, remove or renumber a component they specified: if the
+   stated count draws awkwardly, draw the stated count and say the layout is
+   tight.
 
 3. **Resolve icons — bundled libraries first.**
    ```bash
@@ -121,6 +125,7 @@ Do not undo them by hand.
    library, shared pack, a logo you built; every placeholder) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
    "rendered" for a render that failed) · **Deviations** from the style guide.
+   Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first
 

@@ -65,6 +65,17 @@ graders:
     target: { source: file, path: ./eval-output/landing-zone.drawio }
     pattern: '^(?=(?:[\s\S]*?container=1){4})'
 
+  # The prompt says two workload accounts. A third was once added "for better
+  # visual balance" and disclosed as an assumption, which is not what an
+  # assumption is (#183). One-directional on purpose: it fails only when a third
+  # workload boundary is actually drawn, and says nothing when the agent names
+  # the accounts something else, so a correct diagram can never turn it red.
+  - type: regex
+    name: no-account-the-prompt-did-not-name
+    target: { source: file, path: ./eval-output/landing-zone.drawio }
+    pattern: '(?:[\s\S]*?value="[^"]*[Ww]orkload[^"]*"[^>]*container=1){3}'
+    match: not_contains
+
   # The rule is about where a reply points the user, not only about what the
   # agent opens: a closing sentence offering the hosted editor is the same act
   # (#186). Mechanical, because a judge read one as an ordinary recommendation.
