@@ -104,7 +104,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    but reads badly is not done.
 8. **Report.** File path, assumptions, validation and render results, which
    icons came from where, anything unresolved, and any deliberate deviation
-   from the style guide.
+   from the style guide. When the user named no engine, which one you chose and
+   why it over the other — §1 asks for the reason, and the report is where it
+   goes.
 
 ## 3. Commands
 

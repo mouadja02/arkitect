@@ -120,7 +120,9 @@ Do not undo them by hand.
    looks right in Excalidraw itself: `references/rendering.md`.
 
 9. **Report** under these headings, every one, even when it is short:
-   **File** · **Assumptions** (every one, asked or not, and any product the
+   **File** · **Engine** (only when the user named none: Excalidraw, and what
+   made it Excalidraw rather than Draw.io — the audience, the sketch style, the
+   README; never a generic virtue) · **Assumptions** (every one, asked or not, and any product the
    user did not name) · **Icons** (each ref and where it came from: bundled
    library, shared pack, a logo you built; every placeholder) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
