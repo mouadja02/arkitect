@@ -123,7 +123,9 @@ shipped guide. Say so in the report.
    found; logos downloaded and from where; lifecycle caveats) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
    "rendered" for a render that failed) · **Deviations** from the style guide.
-   Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
+   Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export,
+   and no link to the hosted editor. **Draw.io Desktop** and **the VS Code
+   extension** are the two things a reply names, as plain text, never a URL.
 
 ## Interview first
 
