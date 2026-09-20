@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-19, after the 1.5.0 release.
+Status reviewed on 2026-09-20, at the 1.6.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -27,6 +27,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Product lifecycle | Twelve discontinued, renamed, absorbed, acquired or archived products carry a verified `status` that search and build reports surface as a caveat with a successor, and the drift check lists statuses due for a re-check | [#83](https://github.com/mouadja02/arkitect/issues/83), [PR #108](https://github.com/mouadja02/arkitect/pull/108) |
 | Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), [PR #109](https://github.com/mouadja02/arkitect/pull/109) |
 | Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release; no npm publish. Used for v1.2.0, v1.2.1 and v1.3.0 | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110), [v1.3.0](https://github.com/mouadja02/arkitect/releases/tag/v1.3.0) |
+| Agent behaviour, from evals | The one editing route with no backup got a command (`arkitect <engine> backup`); a reply no longer points at the hosted draw.io editor; an assumption no longer covers for changing a count the user stated | [#179](https://github.com/mouadja02/arkitect/issues/179), [#186](https://github.com/mouadja02/arkitect/issues/186), [#183](https://github.com/mouadja02/arkitect/issues/183), [PR #194](https://github.com/mouadja02/arkitect/pull/194), [PR #195](https://github.com/mouadja02/arkitect/pull/195), [PR #196](https://github.com/mouadja02/arkitect/pull/196), [PR #197](https://github.com/mouadja02/arkitect/pull/197) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -39,6 +40,15 @@ the work listed below.
 No implementation PR remains open at this snapshot. The two diagram-correctness
 bugs this page listed as next are fixed on main by PR #98. The items below are
 recommended priorities, not work already started or assigned.
+
+The open issues are now mostly what the eval suite and the audit found, and the
+three carrying `release:major` all change generated Excalidraw geometry: visible
+self-loops ([#159](https://github.com/mouadja02/arkitect/issues/159)), boundaries
+sized from full caption bounds ([#191](https://github.com/mouadja02/arkitect/issues/191))
+and frame children emitted before their frame
+([#192](https://github.com/mouadja02/arkitect/issues/192)). They are a 2.0.0
+together, and specs have to be rebuilt after them, which is why 1.6.0 shipped
+without them.
 
 ## Remaining work
 
@@ -78,7 +88,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.5.0 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v1.6.0 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate
