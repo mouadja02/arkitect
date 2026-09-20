@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-20, at the 1.6.0 release.
+Status reviewed on 2026-09-20, at the 1.6.1 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -28,6 +28,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), [PR #109](https://github.com/mouadja02/arkitect/pull/109) |
 | Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release; no npm publish. Used for v1.2.0, v1.2.1 and v1.3.0 | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110), [v1.3.0](https://github.com/mouadja02/arkitect/releases/tag/v1.3.0) |
 | Agent behaviour, from evals | The one editing route with no backup got a command (`arkitect <engine> backup`); a reply no longer points at the hosted draw.io editor; an assumption no longer covers for changing a count the user stated | [#179](https://github.com/mouadja02/arkitect/issues/179), [#186](https://github.com/mouadja02/arkitect/issues/186), [#183](https://github.com/mouadja02/arkitect/issues/183), [PR #194](https://github.com/mouadja02/arkitect/pull/194), [PR #195](https://github.com/mouadja02/arkitect/pull/195), [PR #196](https://github.com/mouadja02/arkitect/pull/196), [PR #197](https://github.com/mouadja02/arkitect/pull/197) |
+| Engine choice, from evals | A report with no slot for the engine choice never carried one, four runs out of four; the report shape now has one and says what counts as a reason. A README request drew Draw.io twice out of two, because a skill is selected on its description before the routing rule is read; each description now carries its own signals, parsed out of `AGENTS.md` §1 by a test | [#180](https://github.com/mouadja02/arkitect/issues/180), [#201](https://github.com/mouadja02/arkitect/issues/201), [PR #199](https://github.com/mouadja02/arkitect/pull/199), [PR #200](https://github.com/mouadja02/arkitect/pull/200), [PR #202](https://github.com/mouadja02/arkitect/pull/202) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -47,8 +48,16 @@ self-loops ([#159](https://github.com/mouadja02/arkitect/issues/159)), boundarie
 sized from full caption bounds ([#191](https://github.com/mouadja02/arkitect/issues/191))
 and frame children emitted before their frame
 ([#192](https://github.com/mouadja02/arkitect/issues/192)). They are a 2.0.0
-together, and specs have to be rebuilt after them, which is why 1.6.0 shipped
-without them.
+together, and specs have to be rebuilt after them, which is why neither 1.6.0
+nor 1.6.1 shipped them.
+
+The eval suite is the other open thread. The landing-zone case fails about a
+third of its runs ([#203](https://github.com/mouadja02/arkitect/issues/203)),
+and reading a kept run showed why: an agent can draw five account boundaries as
+plain boxes that contain nothing, and neither builder says a word
+([#204](https://github.com/mouadja02/arkitect/issues/204)), nor does either
+mention a spec field it ignored ([#205](https://github.com/mouadja02/arkitect/issues/205)).
+Both are arithmetic the builder can do, so neither costs a line of skill prose.
 
 ## Remaining work
 
@@ -88,7 +97,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.6.0 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v1.6.1 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate

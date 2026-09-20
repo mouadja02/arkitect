@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.6.1] — 2026-09-20
+
 ### Changed
 
 - `evals/README.md` counts each engine separately, and the test that keeps it
