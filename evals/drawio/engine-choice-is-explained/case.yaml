@@ -53,15 +53,43 @@ graders:
     pattern: '(?:\*\*Engine|#+ *Engine|^Engine\b)'
     flags: m
 
+  # The same for the other heading this case used to police through the judge:
+  # whether an Assumptions section exists is a fact about the text.
+  - type: regex
+    name: report-has-an-assumptions-slot
+    target: last_message
+    pattern: '(?:\*\*Assumptions|#+ *Assumptions|^Assumptions\b)'
+    flags: m
+
+  # One grader, one claim. This one asked for three - name the format, give a
+  # reason over the alternative, state the assumptions - so a red said nothing
+  # about which had failed, and a run with a good engine sentence failed a
+  # grader called says-which-engine-and-why for writing no Assumptions heading.
+  # The judge also split 3-0 in both directions on materially the same sentence,
+  # so what counts as a reason is now named: a property that tells the two
+  # engines apart, not a virtue they share (#180).
   - type: llm
     name: says-which-engine-and-why
     criteria: |
-      The response names the format it produced (a .drawio / draw.io file) and
-      gives a reason for choosing it over the alternative - a formal or
-      client-facing audience, AWS vendor icons, a review board, or similar.
-      It also states the architectural assumptions it made, since the request
-      leaves several open. Fail if the engine choice is never explained, or if
-      the response claims to have uploaded the diagram anywhere.
+      Judge only what the response says about the engine or format it chose.
+      It names what it produced (a .drawio / draw.io file) and gives a reason
+      that separates Draw.io from Excalidraw: a formal, client-facing or
+      review-board audience, AWS or vendor icons, several pages, or similar.
+      Naming Excalidraw itself is not required. Fail only if the choice is
+      never explained, if every reason it gives would fit either engine
+      equally well - "editable", "professional", "clear", "collaborative" -
+      or if the response claims to have uploaded the diagram anywhere.
+
+  - type: llm
+    name: states-its-assumptions
+    criteria: |
+      The request leaves several things open: the region, how the accounts
+      connect, what the workload accounts run. Anything the response settled
+      for itself is presented as its own assumption or choice, not as
+      something the user specified. Pass if it states the assumptions it made,
+      wherever they appear in the reply. Fail only if it decided something the
+      prompt left open and passed it off as given, or if it states no
+      assumptions at all.
 
   # Whether the accounts are drawn as boundaries is a fact about the file, not
   # something to infer from the prose - the prose version of this grader

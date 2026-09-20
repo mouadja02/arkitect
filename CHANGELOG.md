@@ -11,6 +11,18 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- The landing-zone eval case asks the judge one question at a time. Its
+  `says-which-engine-and-why` grader wanted three things at once — name the
+  format, give a reason over the alternative, state the assumptions — so a red
+  said nothing about which had failed, and a run whose engine sentence was fine
+  failed it for writing no Assumptions heading. That heading is now a `regex`
+  like the Engine one, the assumptions are a judgement of their own, and the
+  engine criterion says what counts as a reason: a property that tells the two
+  engines apart, not a virtue they share. The judge had split 3–0 in both
+  directions on materially the same sentence (#180).
+
 ### Fixed
 
 - The report says which engine was chosen and why, when the user named none.
