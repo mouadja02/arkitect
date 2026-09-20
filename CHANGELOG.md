@@ -102,6 +102,9 @@ separate file, no naming scheme, no required format beyond that.
   the file can be opened did not read as governed by it; it now names Draw.io
   Desktop and the VS Code extension as the only two places a reply may point at,
   and says that offering a hosted-editor URL is the same act as opening one.
+  The same rule is in the report step, where the closing sentence is actually
+  written: an eval run still produced "Open it in [Draw.io](https://app.diagrams.net)"
+  once in four runs with the rule only in step 8.
   `AGENTS.md` and `README.md` listed `app.diagrams.net` as a place to edit later,
   which told every agent reading the contract the opposite of the rule. The
   mechanical grader that catches it by URL (#185) now runs on all three Draw.io
