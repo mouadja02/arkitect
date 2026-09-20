@@ -450,9 +450,10 @@ export function run(argv, { log = console.log, error = console.error, platform =
     // it back as text and describes the layout from the spec it just wrote.
     // Three eval runs did exactly that, each claiming a picture it never saw, so
     // the fact goes where the SVG is handed over rather than into skill prose
-    // (#136).
+    // (#136). It does not call an SVG a "geometry-faithful preview" either: two
+    // runs quoted that phrase back as the warrant for judging spacing from it.
     note: options.format === 'svg'
-      ? 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat. This SVG is markup, not a picture you can look at: render a PNG to judge the layout, or say you could not see it - never describe the render from the spec.'
+      ? 'vector markup, not a picture you can look at: nothing here shows you the diagram, so do not report on its spacing, collisions or clarity from this file. Render a PNG to judge those, or say you could not see it. Fonts are substituted and fills are flat either way.'
       : 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
   }, null, 2));
   return 0;
