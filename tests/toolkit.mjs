@@ -415,6 +415,38 @@ test('all six skills are well formed, and only the learning and apply ones are m
   assert(ci.includes(`skills.length !== ${skills.length}`), `ci.yml's plugin job still expects a different skill count than ${skills.length}`);
 });
 
+// A skill is selected on its description, before AGENTS.md §1 is read, so the
+// trigger text has to route the way §1 does. It did not: "for the README" is an
+// Excalidraw signal in §1 and appeared in neither description, while Draw.io
+// claimed every unqualified architecture request. Both runs of a README-leaning
+// prompt drew Draw.io, and cited the README as the reason (#201). The signals
+// are read out of §1 rather than repeated here, so moving one moves both.
+test('each skill description carries the routing signals AGENTS.md §1 gives it (#201)', () => {
+  const flat = (s) => s.replace(/\s+/g, ' ');
+  const rule = flat(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8'));
+  const split = rule.match(/or infer:(.*?)→ Draw\.io\.(.*?)→ Excalidraw\./);
+  assert(split, 'AGENTS.md §1 no longer infers an engine from the request');
+  const quoted = (s) => [...s.matchAll(/"([^"]+)"/g)].map((m) => m[1].replace(/^for the /, ''));
+  const signals = { 'arkitect-drawio': quoted(split[1]), 'arkitect-excalidraw': quoted(split[2]) };
+  assert(signals['arkitect-drawio'].length >= 3 && signals['arkitect-excalidraw'].length >= 3,
+    'AGENTS.md §1 lists fewer signals than it used to; check the parse');
+
+  const described = {};
+  for (const skill of Object.keys(signals)) {
+    const md = readFileSync(join(ROOT, 'skills', skill, 'SKILL.md'), 'utf8');
+    described[skill] = flat(md.slice(md.indexOf('description:'), md.indexOf('\n---', 10))).toLowerCase();
+  }
+  for (const [skill, own] of Object.entries(signals)) {
+    const other = skill === 'arkitect-drawio' ? 'arkitect-excalidraw' : 'arkitect-drawio';
+    for (const signal of own) {
+      assert(described[skill].includes(signal.toLowerCase()),
+        `${skill}: §1 routes "${signal}" here, but the description never says it`);
+      assert(!described[other].includes(signal.toLowerCase()),
+        `${other}: the description claims "${signal}", which §1 routes to ${skill}`);
+    }
+  }
+});
+
 // Every eval case directory, in a stable order, for the checks below.
 const evalCases = () => {
   const root = join(ROOT, 'evals');
@@ -542,20 +574,27 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
     const engine = id.split('/')[1];
     perEngine.set(engine, (perEngine.get(engine) ?? 0) + 1);
   }
-  const counts = [...perEngine.values()];
-  assert(counts.length > 0, 'no eval engines were found');
+  assert(perEngine.size > 0, 'no eval engines were found');
 
-  const quoted = readme.match(/^(\w+) cases, (\w+) for each engine/mi);
-  assert(quoted, 'evals/README.md no longer opens with "<N> cases, <M> for each engine"');
+  // The opening line names each engine's count separately. It used to say "for
+  // each engine" and this test held the two equal, which was a coincidence
+  // dressed as a rule - Draw.io carries the editing case, Excalidraw the
+  // Mermaid and placeholder ones, and they have never mirrored each other case
+  // for case. #201 needed a seventh on one side, and a number that has to stay
+  // even is a reason not to cover something. The staleness guard is unchanged:
+  // every number is still checked against the directories that exist.
+  const quoted = readme.match(/^(\w+) cases, (\w+) for Draw\.io and (\w+) for Excalidraw/mi);
+  assert(quoted, 'evals/README.md no longer opens with "<N> cases, <A> for Draw.io and <B> for Excalidraw"');
   const total = NUMBER_WORDS[cases.length];
   assert(total, `${cases.length} cases is past the words this test knows`);
   eq(quoted[1].toLowerCase(), total,
     `evals/README.md says ${quoted[1]} cases; there are ${cases.length}, so write ${total}`);
 
-  assert(counts.every((n) => n === counts[0]),
-    `the engines no longer hold the same number of cases (${[...perEngine].map(([e, n]) => `${e}: ${n}`).join(', ')})`);
-  eq(quoted[2].toLowerCase(), NUMBER_WORDS[counts[0]],
-    `evals/README.md says ${quoted[2]} per engine; there are ${counts[0]}`);
+  for (const [i, engine] of ['drawio', 'excalidraw'].entries()) {
+    const n = perEngine.get(engine) ?? 0;
+    eq(quoted[i + 2].toLowerCase(), NUMBER_WORDS[n],
+      `evals/README.md says ${quoted[i + 2]} for ${engine}; there are ${n}`);
+  }
 
   // The tree lists each directory by name, once, and nothing that is not there.
   const tree = readme.slice(readme.indexOf('evals/\n'), readme.indexOf('```', readme.indexOf('evals/\n')));

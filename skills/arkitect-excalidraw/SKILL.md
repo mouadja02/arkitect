@@ -1,6 +1,6 @@
 ---
 name: arkitect-excalidraw
-description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and solution architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, an architecture or block diagram wanted in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file.
+description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file.
 ---
 
 # Architecture diagrams in Excalidraw
