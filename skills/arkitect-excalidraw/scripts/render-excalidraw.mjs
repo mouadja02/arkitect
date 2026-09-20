@@ -446,7 +446,14 @@ export function run(argv, { log = console.log, error = console.error, platform =
     elements: live.length,
     files: Object.keys(scene.files ?? {}).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
-    note: 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
+    // An SVG is the one output nobody looks at: it is markup, so an agent reads
+    // it back as text and describes the layout from the spec it just wrote.
+    // Three eval runs did exactly that, each claiming a picture it never saw, so
+    // the fact goes where the SVG is handed over rather than into skill prose
+    // (#136).
+    note: options.format === 'svg'
+      ? 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat. This SVG is markup, not a picture you can look at: render a PNG to judge the layout, or say you could not see it - never describe the render from the spec.'
+      : 'geometry-faithful preview; hand-drawn fonts are substituted and fills are flat',
   }, null, 2));
   return 0;
 }

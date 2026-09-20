@@ -1700,6 +1700,13 @@ test('render checks its arguments before writing, and the extension decides the 
   eq(svg.status, 0, 'an SVG render succeeds');
   eq(JSON.parse(svg.stdout).format, 'svg', 'and reports its format');
   assert(readFileSync(join(dir, 'preview.svg'), 'utf8').startsWith('<?xml'), 'an SVG is written');
+
+  // Markup reads back as text, so an SVG is the one output that invites a
+  // report describing a picture nobody looked at. The handover says so, and
+  // the PNG's note stays clear of it (#136).
+  const svgNote = JSON.parse(svg.stdout).note;
+  assert(/not a picture you can look at/.test(svgNote) && /--format svg|render a PNG/.test(svgNote),
+    `the SVG handover says it cannot be looked at: ${svgNote}`);
 });
 
 test('a PNG render proves a real PNG before replacing the previous preview (#39)', () => {

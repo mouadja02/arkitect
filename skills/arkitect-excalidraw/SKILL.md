@@ -126,7 +126,8 @@ Do not undo them by hand.
    user did not name) · **Icons** (each ref and where it came from: bundled
    library, shared pack, a logo you built; every placeholder) · **Validation**
    · **Render** (you looked at the PNG, or it failed and why — never
-   "rendered" for a render that failed) · **Deviations** from the style guide.
+   "rendered" for a render that failed, and never a description of a
+   picture you did not see) · **Deviations** from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first
