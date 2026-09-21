@@ -28,6 +28,14 @@ separate file, no naming scheme, no required format beyond that.
   wrapped past its box. Widths now come from a table of per-character
   advances measured with the app's own fonts; our PNG renders never showed
   the clipping. Both committed examples are rebuilt (#222).
+- An Excalidraw edge from a node to itself is drawn as a loop over one of the
+  node's corners, bound at both ends, instead of two points at its centre that
+  drew a bare arrowhead over its label. A loop is always an elbow arrow, the
+  one kind the app re-routes whole when the node moves. Loops take the
+  top-right, top-left, bottom-right and bottom-left corners in turn; a fifth on
+  one node is refused, and a bottom loop that crosses a caption is listed under
+  `notes`. The validator warns about a zero-length connector, which every loop
+  built before this has (#159).
 
 ## [1.7.0] — 2026-09-21
 
