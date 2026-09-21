@@ -24,7 +24,8 @@ contradiction and is reported instead of resolved (#95).
 `--compact` prints one line: a confident answer as its id and a spec `node`,
 with an `onDemand` next step or a `lifecycle` caveat when the mark has one; an
 unsure one as `needsAChoice` and at most four `choices`, counting the rest
-under `more` (#117). The rest of the detail is the same search without it.
+under `more` (#117). A generic word that only a cloud vendor's mark matches
+gets a `node` that draws a labelled box, and vendor-neutral `choices` only (#231). The rest of the detail is the same search without it.
 
 `--cell`/`--style`/`--data` print the raw XML cell, style string or data URI for
 an icon and exist only for hand-written XML (see `editing.md`). Redirect their

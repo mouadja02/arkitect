@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { readLibrary, normalizeTitle, fitCell, ICON_FOOTPRINT } from './lib/drawio-core.mjs';
 import { caveat } from './lib/lifecycle.mjs';
-import { onlyGenericWords, VENDOR_PACKS, GENERIC_VENDOR } from './lib/generic-words.mjs';
+import { onlyGenericWords, VENDOR_PACKS, GENERIC_VENDOR, KEEP_PLACEHOLDER } from './lib/generic-words.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -327,11 +327,20 @@ export function compactAnswer(r, catalog = loadCatalog()) {
       node: { kind: 'icon', icon: r.icon.id } };
   }
   const all = r.groups.flatMap((g) => g.variants.map((v) => ({ v, g })));
-  const choices = all.slice(0, COMPACT_CHOICES).map(({ v, g }) => ({
+  const pick = (list) => list.slice(0, COMPACT_CHOICES).map(({ v, g }) => ({
     id: v.id, title: g.title, strength: g.best,
     ...(v.bytes === 'on-demand' ? { onDemand: true } : {}),
     ...(v.status ? { lifecycle: v.status.state } : {}),
   }));
+  // A generic word matched a vendor's mark: those marks are the wrong answer,
+  // so they are not offered. The node keeps the name and draws a labelled box
+  // the report lists (#231).
+  if (r.reason === GENERIC_VENDOR) {
+    const neutral = pick(all.filter(({ v }) => !VENDOR_PACKS.has(v.pack)));
+    return { query: r.query, confident: false, needsAChoice: r.reason, node: { kind: 'icon', icon: r.query },
+      ...(neutral.length ? { choices: neutral } : {}), next: KEEP_PLACEHOLDER };
+  }
+  const choices = pick(all);
   return { query: r.query, confident: false, needsAChoice: r.reason, choices,
     ...(all.length > choices.length ? { more: all.length - choices.length } : {}),
     next: 'Pick one id deliberately, or narrow with --pack / --context; drop --compact for detail.' };

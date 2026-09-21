@@ -385,7 +385,7 @@ test('without shared packs a name inside a different product still gets a placeh
 // A generic word drew a cloud vendor's own mark: an invented internal service
 // came out as AWS's "Service" glyph, twice, in the 2.0.0 eval batch (#231).
 test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate ref still does (#231)', () => {
-  const reason = "a generic word matches a cloud vendor's own icon; pick one deliberately, or keep the placeholder";
+  const reason = "a generic word matches a cloud vendor's own icon, which would say the component runs there";
   const entries = finder.catalog();
   for (const q of ['service', 'storage', 'function', 'container', 'app service']) {
     const v = finder.unattended(q, { entries });
@@ -396,9 +396,15 @@ test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate
   eq(finder.unattended('server', { entries }).entry?.library, 'architecture-diagram-components', 'a vendor-neutral mark still draws');
   assert(finder.resolveIcon('aws-architecture-icons:102'), 'a deliberate ref resolves');
 
+  // Offered first among the choices, the AWS mark was taken anyway, two runs
+  // in three; the compact answer offers the placeholder instead.
   const out = JSON.parse(node('find-icon.mjs', ['service', '--compact']));
   eq(out.placeholder, reason, 'the compact answer gives the reason');
-  assert(out.choices.some((c) => c.ref === 'aws-architecture-icons:102'), 'and still lists the vendor mark as a choice');
+  eq(JSON.stringify(out.node), '{"kind":"placeholder"}', 'and the placeholder as the node to copy');
+  assert(!(out.choices ?? []).some((c) => /^(aws|azure|microsoft-azure|gcp|google)|^drawio:(aws|azure|gcp)\//.test(c.ref)),
+    `and offers no vendor mark: ${JSON.stringify(out.choices)}`);
+  const storage = JSON.parse(node('find-icon.mjs', ['storage', '--compact']));
+  assert(storage.choices.length && storage.choices.every((c) => !c.ref.startsWith('google-icons:')), 'neutral choices stay');
 
   const { report } = builder.buildDiagram({ nodes: [{ id: 's', kind: 'icon', label: 'Storage' }] }, { seed: 1 });
   eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
