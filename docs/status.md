@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-21, at the 1.7.0 release.
+Status reviewed on 2026-09-21, at the 2.0.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -37,6 +37,9 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Fake boundaries | A plain box laid over nodes it does not own, or a node sized in grid cells rather than pixels, is named under `looksLikeBoundary` in both builders' reports, with a hint pointing at `boundaries` | [#204](https://github.com/mouadja02/arkitect/issues/204), [PR #217](https://github.com/mouadja02/arkitect/pull/217) |
 | Draw.io pages | A spec builds several pages with `pages`, ids per page, an edge across pages refused; an as-is/to-be template with a PNG per page. Proved by an eval case whose control on main showed agents stitching single-page builds with their own scripts | [#184](https://github.com/mouadja02/arkitect/issues/184), [PR #218](https://github.com/mouadja02/arkitect/pull/218) |
 | Codex | `install codex` also writes a Codex skill with absolute paths that works from any project; the deprecated custom prompt is gone | [#127](https://github.com/mouadja02/arkitect/issues/127), [PR #219](https://github.com/mouadja02/arkitect/pull/219) |
+| Excalidraw geometry | Boundaries are sized from everything their nodes draw, captions and sublabels in both axes; text is measured as wide as the app draws it, from the app's own fonts, where it ran 18% narrow and the app clipped it; an edge from a node to itself is a loop over a corner, not a bare arrowhead; each frame comes after its own members. Found and checked in the local Excalidraw app | [#191](https://github.com/mouadja02/arkitect/issues/191), [#222](https://github.com/mouadja02/arkitect/issues/222), [#159](https://github.com/mouadja02/arkitect/issues/159), [#192](https://github.com/mouadja02/arkitect/issues/192), [PR #223](https://github.com/mouadja02/arkitect/pull/223), [PR #224](https://github.com/mouadja02/arkitect/pull/224), [PR #225](https://github.com/mouadja02/arkitect/pull/225), [PR #226](https://github.com/mouadja02/arkitect/pull/226) |
+| Icon nodes | A node with an `icon` and no `kind` draws its icon in both builders, where it drew a plain box and nobody was told; found by the 2.0.0 eval batch, where an agent reported three icons over a file with none | [#228](https://github.com/mouadja02/arkitect/issues/228), [PR #229](https://github.com/mouadja02/arkitect/pull/229) |
+| Generic words | A component named only in generic words (`service`, `storage`, `function`) no longer draws an AWS, Azure or GCP mark in either search; it comes back flagged, and the builder draws a placeholder. Found by the same batch: an internal service drawn with AWS's Service glyph, twice | [#231](https://github.com/mouadja02/arkitect/issues/231), [PR #232](https://github.com/mouadja02/arkitect/pull/232) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -46,19 +49,17 @@ the work listed below.
 
 ## In progress
 
-No implementation PR is open at this snapshot. Next is opt-in
+No implementation PR is open at this snapshot. Next are two patches, a
+misspelled top-level spec key reported instead of ignored
+([#221](https://github.com/mouadja02/arkitect/issues/221)) and icon captions grouped with
+their artwork ([#190](https://github.com/mouadja02/arkitect/issues/190)), then opt-in
 obstacle-avoiding routing for Excalidraw connectors
-([#124](https://github.com/mouadja02/arkitect/issues/124)), whose tests are to include a
-self-loop and a long caption so the 2.0.0 work below lands against them.
+([#124](https://github.com/mouadja02/arkitect/issues/124)), which can now route around
+real caption bounds and corner loops.
 
-The open issues are now mostly what the eval suite and the audit found, and the
-three carrying `release:major` all change generated Excalidraw geometry: visible
-self-loops ([#159](https://github.com/mouadja02/arkitect/issues/159)), boundaries
-sized from full caption bounds ([#191](https://github.com/mouadja02/arkitect/issues/191))
-and frame children emitted before their frame
-([#192](https://github.com/mouadja02/arkitect/issues/192)). They are a 2.0.0
-together, and specs have to be rebuilt after them, which is why no 1.6.x
-release shipped them.
+2.0.0 changed generated output, Excalidraw's four ways and both engines' two -
+an `icon` with no `kind`, and a generic word that drew a vendor's mark - so
+specs have to be rebuilt to pick it up; saved files are untouched.
 
 The eval suite is the other open thread. Its blind spot is closed: an eval run
 now reads a render. No PNG can be made inside `claude plugin eval`'s sandbox —
@@ -123,7 +124,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.7.0 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v2.0.0 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate
