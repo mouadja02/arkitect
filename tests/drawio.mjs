@@ -3745,6 +3745,37 @@ test('an unknown spec field is named in the build report, and the build still su
   ]), 'the CLI prints them and exits 0');
 });
 
+// Pattern 7 offered a recipe the builder cannot execute: filled blue circles
+// sat on the connectors, drawn from a raw ellipse style. A model following the
+// selector reached an unknown kind and an unfilled rectangle, or hand-written
+// XML - inventing ids, styles and connector-relative placement, which is the
+// work the scripts are supposed to own. A sequence keeps its meaning in the
+// edge labels, and that is a fragment the builder draws (#193).
+test('the numbered-flow pattern builds numbered edge labels, with no unknown kind (#193)', () => {
+  const fragments = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'patterns.json'), 'utf8'));
+  const frag = fragments['numbered-flow'];
+  assert(frag, 'patterns.json has no numbered-flow fragment');
+  eq(frag.pattern, 7, 'the fragment names the catalog section it belongs to');
+
+  const { xml, report } = builder.buildDiagram({ nodes: frag.nodes, edges: frag.edges });
+  eq(report.unknownKinds.length, 0, `the fragment uses supported kinds: ${JSON.stringify(report.unknownKinds)}`);
+  eq(report.unknownFields.length, 0, `and supported fields: ${JSON.stringify(report.unknownFields)}`);
+
+  const numbered = [...xml.matchAll(/value="([^"]*)"/g)].map((m) => m[1]).filter((v) => /^\d+\.\s/.test(v));
+  eq(numbered.join(' | '), '1. Submit request | 2. Persist | 3. Confirm',
+    'the numbers reach the generated XML as edge labels, in reading order');
+
+  // The recipe is gone from the default reading path, and the evidence for what
+  // the corpus actually did is kept off it, in the style guide.
+  const catalog = readFileSync(join(SKILL, 'references', 'pattern-catalog.md'), 'utf8');
+  const section = catalog.slice(catalog.indexOf('## 7. Numbered flow'), catalog.indexOf('## 8. Legend'));
+  assert(!/ellipse;fillColor/.test(section), 'the raw badge style is back on the default reading path');
+  assert(section.includes('numbered-flow'), 'section 7 does not point at the fragment that draws it');
+  assert(Buffer.byteLength(section) < 369, `section 7 is ${Buffer.byteLength(section)} bytes; it was 369`);
+  assert(/ellipse;fillColor/.test(readFileSync(join(SKILL, 'references', 'style-guide.md'), 'utf8')),
+    'the badge evidence was dropped rather than moved to the style guide');
+});
+
 // ------------------------------------------------------------- logos
 
 // Minimal valid PNG, so the logo tests stay offline and deterministic.
