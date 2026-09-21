@@ -70,8 +70,10 @@ builder does not draw its best guess: the node gets a labelled box, listed under
 `missing`. A vendor-neutral mark for the same words still draws, and so does the
 vendor's own when `context.packs` names it or the node gives the exact id. Azure's
 **App Service**, **Function App** and **Log Analytics** are named entirely in generic
-words, so they need one or the other. The Excalidraw search follows the same list
-(#231).
+words, so they need one or the other. `--compact` answers such a query with that
+node and vendor-neutral choices only: with the vendor's mark listed first, agents
+took it two runs in three. The Excalidraw search follows the same list, and its
+compact answer gives a placeholder node (#231).
 
 Neither rule changes a score, only whether the top result may be used without asking.
 Lowering the score instead would widen the margin over the runner-up and hand confidence

@@ -26,7 +26,7 @@ import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
 import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef } from './lib/shared-icons.mjs';
 import { loadCatalog as loadSharedCatalog, byExactId, lifecycleOf } from '../../arkitect-drawio/scripts/find-icon.mjs';
-import { onlyGenericWords, vendorOf, GENERIC_VENDOR } from '../../arkitect-drawio/scripts/lib/generic-words.mjs';
+import { onlyGenericWords, vendorOf, GENERIC_VENDOR, KEEP_PLACEHOLDER } from '../../arkitect-drawio/scripts/lib/generic-words.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath } from 'node:path';
 
@@ -256,6 +256,13 @@ export function compactAnswer(query, hits, verdict) {
       ...(life ? { lifecycle: life.caveat } : {}),
       node: { kind: 'icon', icon: ref },
       ...(others.length ? { others } : {}) };
+  }
+  // A generic word matched a vendor's mark: those marks are the wrong answer,
+  // so they are not offered, and the placeholder is the node to copy (#231).
+  if (verdict.reason === GENERIC_VENDOR) {
+    const neutral = hits.filter((h) => !vendorOf(h)).slice(0, COMPACT_CHOICES).map(choice);
+    return { query, placeholder: verdict.reason, node: { kind: 'placeholder' },
+      ...(neutral.length ? { choices: neutral } : {}), next: KEEP_PLACEHOLDER };
   }
   return { query, placeholder: verdict.reason, choices: hits.slice(0, COMPACT_CHOICES).map(choice),
     ...(hits.length > COMPACT_CHOICES ? { more: hits.length - COMPACT_CHOICES } : {}),

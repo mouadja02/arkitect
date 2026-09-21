@@ -26,7 +26,11 @@ export const GENERIC_WORDS = new Set([
 export const VENDOR_PACKS = new Set(['aws', 'azure', 'gcp']);
 const VENDOR_LIBRARY = /^(aws|amazon|azure|microsoft-azure|gcp|google)(-|$)/;
 
-export const GENERIC_VENDOR = "a generic word matches a cloud vendor's own icon; pick one deliberately, or keep the placeholder";
+export const GENERIC_VENDOR = "a generic word matches a cloud vendor's own icon, which would say the component runs there";
+
+// What a compact answer says instead of offering the vendor's marks: offered
+// first in a list of choices, the mark was taken anyway two runs in three.
+export const KEEP_PLACEHOLDER = "Keep the placeholder. A vendor's mark belongs only on a component that runs on that vendor, and then by its exact ref.";
 
 export function onlyGenericWords(query) {
   const words = String(query ?? '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);

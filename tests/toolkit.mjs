@@ -1658,10 +1658,12 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
   eq(postgres.node.icon, postgres.draws, 'excalidraw: a spec node');
   assert(postgres.others.length <= 3, 'excalidraw: alternatives are bounded');
 
-  // Ambiguity stays a question, with bounded choices, in both engines.
-  const monitor = ask('drawio', 'monitor');
-  eq(monitor.confident, false, 'drawio: an ambiguous search is not settled');
-  assert(!('node' in monitor) && monitor.needsAChoice && monitor.choices.length === 4 && monitor.more > 0, 'drawio: choices, not a node');
+  // Ambiguity stays a question, with bounded choices, in both engines. It was
+  // "monitor" until that became a generic word, answered with a placeholder
+  // node instead (#231).
+  const kinesis = ask('drawio', 'kinesis');
+  eq(kinesis.confident, false, 'drawio: an ambiguous search is not settled');
+  assert(!('node' in kinesis) && kinesis.needsAChoice && kinesis.choices.length === 4 && kinesis.more > 0, 'drawio: choices, not a node');
   const queue = ask('excalidraw', 'queue');
   assert(!('draws' in queue) && !('node' in queue) && queue.placeholder && queue.choices.length <= 4, 'excalidraw: choices, not a node');
 

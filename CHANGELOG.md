@@ -55,7 +55,10 @@ separate file, no naming scheme, no required format beyond that.
   gets a placeholder or labelled box; a vendor-neutral mark still draws, and so
   does the vendor's own when a Draw.io spec's `context` names it or the node
   gives the exact ref. Azure's App Service, Function App and Log Analytics are
-  named in generic words only, so they now need one or the other (#231).
+  named in generic words only, so they now need one or the other. The
+  compact answer for such a query offers the placeholder node and only
+  vendor-neutral choices: while it listed the vendor's mark first, agents
+  took it two runs in three (#231).
 
 ## [1.7.0] — 2026-09-21
 

@@ -1971,13 +1971,20 @@ test('a name that only starts a different product flags itself instead of resolv
 
 // A generic word drew a cloud vendor's own mark: "function" was GCP's (#231).
 test('a generic word never draws a cloud vendor\'s mark unattended, unless the spec names the vendor (#231)', () => {
-  const reason = "a generic word matches a cloud vendor's own icon; pick one deliberately, or keep the placeholder";
+  const reason = "a generic word matches a cloud vendor's own icon, which would say the component runs there";
   for (const q of ['function', 'functions', 'users', 'app service']) {
     const r = finder.resolve(q);
     assert(!r.confident, `"${q}" drew ${r.icon?.id} unattended`);
     eq(r.reason, reason, `"${q}" says why`);
   }
   assert(finder.resolve('function', { packs: ['gcp'] }).confident, 'a GCP spec still draws GCP\'s mark');
+  // Offered first among the choices, a vendor's mark was taken anyway; the
+  // compact answer offers only neutral ones and a node that keeps the name.
+  const compact = finder.compactAnswer(finder.resolve('function'));
+  eq(JSON.stringify(compact.node), '{"kind":"icon","icon":"function"}', 'the node to copy draws a labelled box');
+  assert(!(compact.choices ?? []).some((c) => /^(aws|azure|gcp)\//.test(c.id)), `no vendor choice: ${JSON.stringify(compact.choices)}`);
+  // Azure's Monitor ties the neutral one; the neutral one is what is offered.
+  eq(finder.compactAnswer(finder.resolve('monitor')).choices[0].id, 'primitives/monitor', '"monitor" offers the neutral mark');
   for (const q of ['lambda', 's3', 'bigquery', 'cloud storage']) assert(finder.resolve(q).confident, `the product "${q}" still draws`);
   eq(finder.resolve('server').icon.id, 'primitives/server', 'a vendor-neutral mark still draws');
   assert(finder.resolve('server').confident, 'and draws unattended');
