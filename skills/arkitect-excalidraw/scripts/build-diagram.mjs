@@ -34,6 +34,7 @@ import { resolveIcon } from './find-icon.mjs';
 import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
+import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -430,7 +431,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), crossings: [],
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const colX = (c) => L.originX + c * L.colPitch;
@@ -457,6 +458,7 @@ function assemble(spec, style) {
   // outside the box they belong to.
   const boundaryOf = new Map();    // element id -> boundary id
   const edgeEnds = new Map();      // element id -> [from node id, to node id]
+  const footprints = [];          // for looksLikeBoundary (#204)
 
   const noteChild = (parentId, box) => {
     if (!parentId) return;
@@ -671,10 +673,16 @@ function assemble(spec, style) {
 
     for (const el of produced) nodeOf.set(el.id, n.id);
     geom.set(n.id, box);
+    footprints.push({
+      field: `nodes[${i}]`, id: n.id, width: n.width, height: n.height, box,
+      plain: !['text', 'note', 'icon', 'placeholder', 'actor'].includes(n.kind),
+    });
     if (anchor) anchorFor.set(n.id, anchor);
     noteChild(n.parent, extent ?? box);
     nodeLayer.push(...produced);
   }
+
+  report.looksLikeBoundary = looksLikeBoundary(footprints);
 
   // ------------------------------------------------------------ boundaries
   //
@@ -1042,6 +1050,9 @@ function main(argv) {
     // Written, and not drawn at all: a key this builder has no use for. Same
     // treatment - fix it or report it; do not let it stand as done (#205).
     unknownFields: report.unknownFields,
+    // A plain shape laid over nodes it does not own, or sized in grid cells.
+    // Drawn as asked; fix it or say why it stays (#204).
+    looksLikeBoundary: report.looksLikeBoundary,
     // A connector drawn through a node it does not connect (#125).
     crossings: report.crossings,
     notes: report.notes,
