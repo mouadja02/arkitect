@@ -85,8 +85,10 @@ shipped guide. Say so in the report.
    problem (exit 1), a spec whose edges or parents name something that does not
    exist, or whose numbers are not numbers (a string `col`, a size of 0 or
    less). Fix the spec; never drop the edge. A missing `col` or `row` is 0. An
-   unknown node or edge `kind` still builds and is listed under `unknownKinds`:
-   fix it or report it. Hand-written XML is only for what the spec cannot
+   unknown node or edge `kind` still builds and is listed under `unknownKinds`,
+   and a key no part of a spec takes — `style` above all — under
+   `unknownFields`: fix either or report it, and never treat a field the
+   builder dropped as applied. Hand-written XML is only for what the spec cannot
    express — see `references/editing.md`.
 
 5. **Never overwrite blind.** The builder backs up an existing file first and

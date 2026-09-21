@@ -86,8 +86,11 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    anything is written, every problem listed; fix the spec, never drop the edge.
    A missing `col` or `row` is 0.
    A `kind` the builder does not know still builds, drawn as a default, and is
-   listed under `unknownKinds` in the report; treat a non-empty list like an
-   unresolved icon: fix the spec, or report it. Run `drawio build --print-style`
+   listed under `unknownKinds` in the report; a key no part of a spec takes —
+   `style` above all, which is not a field in either engine — builds too and is
+   listed under `unknownFields`. Treat either non-empty list like an
+   unresolved icon: fix the spec, or report it. A field the builder dropped is
+   not a field that applied, whatever the diagram happens to look like. Run `drawio build --print-style`
    or `excalidraw build --print-style` before writing the spec: an install can
    carry the user's own applied style, where an edge `kind` may mean something
    else or extra kinds exist — pick kinds by their `meaning` there.

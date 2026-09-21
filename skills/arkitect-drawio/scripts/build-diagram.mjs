@@ -54,6 +54,45 @@ const CAPTION_LINE = 15;
 // named in the build report so a typo cannot silently change the diagram (#48).
 const NODE_KINDS = ['box', 'icon', 'aws4', 'logo', 'note', 'text'];
 
+// Every key each part of a spec may carry. An unknown key is not a broken
+// spec - one written against a field this builder does not have yet still has
+// to build - so it is reported rather than refused. What it must never be is
+// silent: an agent that writes a field and is told nothing believes it took
+// effect, and the diagram it describes is not the diagram it got (#205).
+const BOUNDARY_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'cols', 'rows',
+  'color', 'dashed', 'grIcon', 'padLeft', 'padRight', 'padTop', 'padBottom'];
+const NODE_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'width', 'height',
+  'icon', 'pack', 'logo', 'size', 'resIcon', 'color', 'fontSize', 'bold', 'align'];
+const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'labelPos'];
+
+// A raw style string is what an agent reaches for when it wants something the
+// house style will not give it, and it is the one field worth answering rather
+// than only naming.
+const FIELD_HINTS = {
+  style: 'not a field: the look comes from `kind`, and from color, fontSize, bold or align',
+  fill: 'not a field: pick the `kind` that means it, or set `color`',
+  note: 'not a field: a note is a node with kind "note"',
+};
+
+export function unknownFields(spec) {
+  const out = [];
+  const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  for (const [part, valid] of [['boundaries', BOUNDARY_FIELDS], ['nodes', NODE_FIELDS], ['edges', EDGE_FIELDS]]) {
+    const list = isObject(spec) && Array.isArray(spec[part]) ? spec[part] : [];
+    for (const [i, item] of list.entries()) {
+      if (!isObject(item)) continue;
+      for (const key of Object.keys(item)) {
+        if (valid.includes(key)) continue;
+        out.push({
+          field: `${part}[${i}].${key}`, value: item[key], valid,
+          ...(FIELD_HINTS[key] ? { hint: FIELD_HINTS[key] } : {}),
+        });
+      }
+    }
+  }
+  return out;
+}
+
 export const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -300,7 +339,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [],
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec),
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const drawnIcons = [];
@@ -591,6 +630,9 @@ function main(argv) {
     // Drawn, but not as the spec said. Treat it like an unresolved icon: fix the
     // kind and rebuild, or say why it stays (#48).
     unknownKinds: report.unknownKinds,
+    // Written, and not drawn at all: a key this builder has no use for. Same
+    // treatment - fix it or report it; do not let it stand as done (#205).
+    unknownFields: report.unknownFields,
     // Which style drew this: the house style, or this install's override (#89).
     style: styleSummary(style),
   }, null, 2));

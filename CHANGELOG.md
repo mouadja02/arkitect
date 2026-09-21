@@ -13,6 +13,19 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A spec field neither builder knows is named in the build report instead of
+  being dropped in silence. It was the one spec mistake that passed without a
+  word: a missing edge target is refused, an unknown `kind` is listed, but an
+  invented or misspelled key built cleanly and the agent that wrote it believed
+  it had taken effect. An eval run put `"style": "strokeColor=#232f3e;..."` on
+  five boundaries, got house colours back, and was never told. Unknown keys on
+  nodes, edges and boundaries now appear under `unknownFields` with their path,
+  their value and the fields that part does take; `style` — what an agent
+  reaches for when the house style will not give it what it wants — is answered
+  rather than only named. The build still succeeds, because a spec written
+  against a field a later version adds still has to build. Both engines, and a
+  test that no committed template warns (#205).
+
 - Every workflow pins an action that declares Node 24, and no job rides
   `ubuntu-latest`. GitHub forces `checkout@v4` and `setup-node@v4` onto Node 24
   and annotates every run saying so; those are now v7, and `cache` is v6 — v5

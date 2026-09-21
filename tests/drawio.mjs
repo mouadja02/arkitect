@@ -3688,6 +3688,63 @@ test('an unknown node or edge kind is named in the build report with what it was
     'the CLI prints them and the build still succeeds');
 });
 
+// A misspelled or invented field was the one spec mistake that passed in
+// silence: the build succeeded, the report said nothing, and the agent that
+// wrote a deliberate visual choice was never told it had no effect. An eval run
+// wrote `"style": "strokeColor=#232f3e;..."` on five boundaries and got house
+// colours back without a word (#205).
+test('an unknown spec field is named in the build report, and the build still succeeds (#205)', () => {
+  const spec = {
+    boundaries: [{ id: 'scope', label: 'Scope', col: 0, row: 0, cols: 2, tint: 'blue' }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A', col: 0, row: 0, parent: 'scope',
+        style: 'strokeColor=#232f3e;fillColor=#ffffff;strokeWidth=2' },
+      { id: 'b', kind: 'box', label: 'B', col: 1, row: 0, parent: 'scope', fill: '#eee', constructor: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'x', thickness: 3 }],
+  };
+  const { xml, report } = builder.buildDiagram(spec);
+  assert(xml.includes('<mxCell'), 'the build still succeeds; an unknown field is not a broken spec');
+
+  eq(JSON.stringify(report.unknownFields.map((u) => [u.field, u.value])), JSON.stringify([
+    ['boundaries[0].tint', 'blue'],
+    ['nodes[0].style', 'strokeColor=#232f3e;fillColor=#ffffff;strokeWidth=2'],
+    ['nodes[1].fill', '#eee'],
+    ['nodes[1].constructor', 1],
+    ['edges[0].thickness', 3],
+  ]), 'every unknown key, in spec order, with the value that was written');
+
+  // An inherited name is a key like any other, as it is for kinds.
+  assert(report.unknownFields.some((u) => u.field.endsWith('.constructor')), 'an inherited name counts as unknown');
+  for (const u of report.unknownFields) {
+    assert(Array.isArray(u.valid) && u.valid.includes('id') && !u.valid.includes(u.field.split('.').pop()),
+      `${u.field} lists the fields that part does take`);
+  }
+  // `style` is what an agent reaches for when the house style will not give it
+  // what it wants, so that one is answered rather than only named.
+  const styled = report.unknownFields.find((u) => u.field === 'nodes[0].style');
+  assert(/kind/.test(styled.hint), `the style hint points at kind: ${styled.hint}`);
+
+  // Every documented field stays silent, including the ones no template uses.
+  eq(builder.buildDiagram({
+    boundaries: [{ id: 's', label: 'S', kind: 'lane', col: 0, row: 0, cols: 2, rows: 1, color: '#333', dashed: false,
+      padLeft: 10, padRight: 10, padTop: 10, padBottom: 10 }],
+    nodes: [
+      { id: 'a', kind: 'text', label: 'A', parent: 's', col: 0, row: 0, width: 80, height: 40,
+        color: '#333', fontSize: 14, bold: true, align: 'left' },
+      { id: 'b', kind: 'icon', label: 'B', icon: 'aws/lambda', pack: 'aws', size: 60, col: 1, row: 0 },
+    ],
+    edges: [{ id: 'e', kind: 'async', from: 'a', to: 'b', label: 'x', labelPos: -0.2 }],
+  }).report.unknownFields.length, 0, 'no documented field is reported');
+
+  const specPath = join(TMP, 'unknown-fields.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-fields.drawio')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.unknownFields.map((u) => u.field)), JSON.stringify([
+    'boundaries[0].tint', 'nodes[0].style', 'nodes[1].fill', 'nodes[1].constructor', 'edges[0].thickness',
+  ]), 'the CLI prints them and exits 0');
+});
+
 // ------------------------------------------------------------- logos
 
 // Minimal valid PNG, so the logo tests stay offline and deterministic.

@@ -86,7 +86,9 @@ Do not undo them by hand.
    parent names something missing or a number is not one (a string `col`, a
    size ≤ 0). Edges connect nodes, not boundaries. Fix the spec; never drop the
    edge. A missing `col` or `row` is 0. The report lists an unknown `kind` under
-   `unknownKinds` (fix or report it) and an edge through a node it does not
+   `unknownKinds`, a key no part of a spec takes — `style` above all — under
+   `unknownFields` (fix either or report it; never treat a field the builder
+   dropped as applied), and an edge through a node it does not
    connect under `crossings` (move that node). Hand-written JSON only for what
    the spec cannot express: `references/editing.md`.
 

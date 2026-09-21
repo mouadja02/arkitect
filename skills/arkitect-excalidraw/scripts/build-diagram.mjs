@@ -51,6 +51,49 @@ export { STYLE, T, HOUSE_ACCENTS, EDGE_KINDS, resolveStyle, loadStyle, validateO
 // the diagram (#48).
 export const NODE_KINDS = ['box', 'round', 'ellipse', 'diamond', 'cylinder', 'actor', 'note', 'text', 'icon', 'placeholder'];
 
+// Every key each part of a spec may carry. An unknown key is not a broken
+// spec - one written against a field this builder does not have yet still has
+// to build - so it is reported rather than refused. What it must never be is
+// silent: an agent that writes a field and is told nothing believes it took
+// effect, and the diagram it describes is not the diagram it got (#205).
+const BOUNDARY_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'cols', 'rows',
+  'padLeft', 'padRight', 'padTop', 'padBottom', 'color', 'accent', 'dashed', 'fill',
+  'fontSize', 'labelPlacement', 'roughness', 'strokeStyle', 'strokeWidth'];
+const NODE_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'width', 'height',
+  'icon', 'size', 'sublabel', 'accent', 'align', 'fill', 'fillStyle', 'fontFamily',
+  'fontSize', 'labelColor', 'roughness', 'strokeStyle', 'strokeWidth'];
+const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'route', 'routing', 'gap',
+  'color', 'endArrowhead', 'startArrowhead', 'labelBound', 'labelColor', 'labelSize',
+  'roughness', 'strokeStyle', 'strokeWidth'];
+
+// A raw style string is what an agent reaches for when it wants something the
+// house style will not give it, and it is the one field worth answering rather
+// than only naming.
+const FIELD_HINTS = {
+  style: 'not a field: the look comes from `kind`, and from accent, fill, strokeWidth or roughness',
+  note: 'not a field: a note is a node with kind "note"',
+  text: 'not a field: the caption is `label`, and a paragraph is a node with kind "text"',
+};
+
+export function unknownFields(spec) {
+  const out = [];
+  const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  for (const [part, valid] of [['boundaries', BOUNDARY_FIELDS], ['nodes', NODE_FIELDS], ['edges', EDGE_FIELDS]]) {
+    const list = isObject(spec) && Array.isArray(spec[part]) ? spec[part] : [];
+    for (const [i, item] of list.entries()) {
+      if (!isObject(item)) continue;
+      for (const key of Object.keys(item)) {
+        if (valid.includes(key)) continue;
+        out.push({
+          field: `${part}[${i}].${key}`, value: item[key], valid,
+          ...(FIELD_HINTS[key] ? { hint: FIELD_HINTS[key] } : {}),
+        });
+      }
+    }
+  }
+  return out;
+}
+
 function accentOf(name) {
   if (!name) return { stroke: PALETTE.black.stroke, bg: 'transparent' };
   if (typeof name === 'object') return { stroke: name.stroke ?? PALETTE.black.stroke, bg: name.bg ?? 'transparent' };
@@ -387,7 +430,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], crossings: [],
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const colX = (c) => L.originX + c * L.colPitch;
@@ -996,6 +1039,9 @@ function main(argv) {
     // Drawn, but not as the spec said. Treat it like a placeholder: fix the kind
     // and rebuild, or say why it stays (#48).
     unknownKinds: report.unknownKinds,
+    // Written, and not drawn at all: a key this builder has no use for. Same
+    // treatment - fix it or report it; do not let it stand as done (#205).
+    unknownFields: report.unknownFields,
     // A connector drawn through a node it does not connect (#125).
     crossings: report.crossings,
     notes: report.notes,
