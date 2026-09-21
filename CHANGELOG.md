@@ -41,6 +41,12 @@ separate file, no naming scheme, no required format beyond that.
   wrote every frame first. Scopes outside any frame stay at the back, and an
   edge between frames stays on top. The validator warns about a frame ahead of
   its children, which every frame scene built before this has (#192).
+- In both builders, a node with an `icon` and no `kind` draws as an icon, as
+  the Excalidraw skill already said it would. It drew as a plain box and
+  nothing reported it: in the 2.0.0 eval batch an agent followed the skill,
+  got three boxes, and reported three icons. A node that names another kind as
+  well draws that kind, and the report's `notes` names the icon it left out;
+  the Draw.io report gains `notes` for it (#228).
 
 ## [1.7.0] — 2026-09-21
 
