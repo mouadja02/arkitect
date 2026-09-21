@@ -77,6 +77,32 @@ Read \`${join(root, 'AGENTS.md')}\` first — it is the contract. Then:
 $ARGUMENTS
 `;
 
+// Codex discovers skills in .agents/skills of the repository, or of the user's
+// home for every project (#127). The engine guides are written for Claude Code
+// and name their scripts under ${CLAUDE_PLUGIN_ROOT}, which Codex never sets,
+// so the skill says what that means here rather than leave a model to guess.
+const codexSkill = (root) => `---
+name: arkitect
+description: Draw editable Draw.io (.drawio) and Excalidraw (.excalidraw) architecture, system, component and flow diagrams, or edit an existing .drawio or .excalidraw file, with Arkitect.
+---
+
+${body(root)}
+## Engine guides
+
+Once the engine is chosen, read its guide and follow it:
+
+- Draw.io: \`${join(root, 'skills', 'arkitect-drawio', 'SKILL.md')}\`
+- Excalidraw: \`${join(root, 'skills', 'arkitect-excalidraw', 'SKILL.md')}\`
+
+Every path in a guide is relative to its own folder, and \`\${CLAUDE_PLUGIN_ROOT}\`
+in a guide means \`${root}\`. Run its \`node scripts/...\` commands from that
+folder, or use the dispatcher above from anywhere.
+
+The learning and apply skills (\`learn-drawio-style\`, \`learn-excalidraw-style\`,
+\`apply-drawio-style\`, \`apply-excalidraw-style\`) run only when the user asks
+for them by name.
+`;
+
 export const ADAPTERS = {
   agents: {
     file: 'AGENTS.md',
@@ -108,10 +134,17 @@ export const ADAPTERS = {
     render: command,
     merge: false,
   },
+  'codex-skill': {
+    file: join('.agents', 'skills', 'arkitect', 'SKILL.md'),
+    hosts: 'Codex ($arkitect)',
+    render: codexSkill,
+    merge: false,
+  },
 };
 
+// An alias names one adapter or several.
 export const ALIASES = {
-  codex: 'agents',
+  codex: ['agents', 'codex-skill'],
   antigravity: 'agents',
   pi: 'agents',
   gemini: 'agents',
@@ -144,7 +177,7 @@ export function install(root, argv) {
     return 2;
   }
   const target = parsed.options.dir ?? process.cwd();
-  const names = parsed.positionals.map((name) => Object.hasOwn(ALIASES, name) ? ALIASES[name] : name);
+  const names = parsed.positionals.flatMap((name) => Object.hasOwn(ALIASES, name) ? ALIASES[name] : name);
   // Validate the whole request before writing even the first adapter.
   const unknown = names.filter((name) => name !== '--all' && !Object.hasOwn(ADAPTERS, name));
   if (!parsed.help && unknown.length) {
@@ -162,7 +195,8 @@ export function install(root, argv) {
     for (const [name, a] of Object.entries(ADAPTERS)) {
       console.log(`  ${name.padEnd(w)}  ${a.file.padEnd(34)} ${a.hosts}`);
     }
-    console.log('\naliases: ' + Object.entries(ALIASES).filter(([, v]) => v !== '--all').map(([k, v]) => `${k} -> ${v}`).join(', '));
+    console.log('\naliases: ' + Object.entries(ALIASES).filter(([, v]) => v !== '--all')
+      .map(([k, v]) => `${k} -> ${[v].flat().join(' + ')}`).join(', '));
     console.log('\nClaude Code needs none of these - it loads Arkitect as a plugin:');
     console.log('  claude plugin marketplace add mouadja02/arkitect');
     console.log('  claude plugin install arkitect@arkitect');
@@ -205,8 +239,11 @@ export function install(root, argv) {
   }
 
   if (!parsed.options.print && chosen.includes('agents')) {
-    console.log('\nCodex also reads ~/.codex/prompts/*.md for slash commands, and Antigravity');
-    console.log('and Pi read AGENTS.md from the project root - which is what was just written.');
+    console.log('\nCodex, Antigravity and Pi read AGENTS.md from the project root - which is what was just written.');
+  }
+  if (!parsed.options.print && chosen.includes('codex-skill')) {
+    console.log('Codex runs the skill as $arkitect, or picks it from its description. For every');
+    console.log(`project at once: node ${join(root, 'bin', 'arkitect.mjs')} install codex-skill --dir ~`);
   }
   return 0;
 }

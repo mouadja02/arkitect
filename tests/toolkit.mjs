@@ -178,9 +178,11 @@ test('every adapter renders a block naming the install path and the engines', ()
 });
 
 test('every alias resolves to a real adapter', () => {
-  for (const [alias, target] of Object.entries(adapters.ALIASES)) {
-    if (target.startsWith('--')) continue;
-    assert(adapters.ADAPTERS[target], `alias ${alias} points at unknown adapter ${target}`);
+  for (const [alias, targets] of Object.entries(adapters.ALIASES)) {
+    for (const target of [targets].flat()) {
+      if (target.startsWith('--')) continue;
+      assert(adapters.ADAPTERS[target], `alias ${alias} points at unknown adapter ${target}`);
+    }
   }
 });
 
@@ -243,7 +245,6 @@ test('this repository ships the adapters it advertises', () => {
     '.cursor/rules/arkitect.mdc',
     '.cursor/commands/diagram.md',
     '.opencode/command/diagram.md',
-    '.codex/prompts/diagram.md',
     '.github/copilot-instructions.md',
     'AGENTS.md',
   ]) {
@@ -262,6 +263,57 @@ test('prototype names are usage errors at each dispatcher level', () => {
       assert(!result.stderr.includes('TypeError'), 'leaked stack trace');
     }
   }
+});
+
+// Codex's reusable-command route was a custom prompt: deprecated upstream in
+// favour of skills, documented here with the wrong invocation, and written with
+// paths that only resolve inside the Arkitect checkout. The skill it gets now is
+// generated with absolute paths, and has to work from an unrelated project whose
+// path has spaces in it, with CLAUDE_PLUGIN_ROOT unset - which is how Codex runs
+// it (#127).
+test('install codex writes a Codex skill whose every path resolves from another project (#127)', () => {
+  const project = join(TMP, 'codex project with spaces');
+  mkdirSync(project, { recursive: true });
+  const out = cli(['install', 'codex'], { cwd: project });
+  assert(existsSync(join(project, 'AGENTS.md')), 'install codex no longer writes AGENTS.md');
+  const skillPath = join(project, '.agents', 'skills', 'arkitect', 'SKILL.md');
+  assert(existsSync(skillPath), `no skill at ${skillPath}`);
+  assert(out.includes('$arkitect'), 'the installer does not say how to invoke the skill');
+
+  const skill = readFileSync(skillPath, 'utf8');
+  const front = /^---\nname: (\S+)\ndescription: (.+)\n---\n/.exec(skill);
+  assert(front, 'the skill does not open with name and description frontmatter');
+  eq(front[1], 'arkitect', 'skill name');
+  assert(front[2].length <= 1024 && /\.drawio/.test(front[2]) && /\.excalidraw/.test(front[2]), `description: ${front[2]}`);
+
+  const paths = [...skill.matchAll(/`([^`\n]+)`/g)].map((m) => m[1])
+    .concat([...skill.matchAll(/node "([^"]+)"/g)].map((m) => m[1]))
+    .filter((p) => resolve(p) === p);
+  for (const guide of ['arkitect-drawio', 'arkitect-excalidraw']) {
+    const at = join(ROOT, 'skills', guide, 'SKILL.md');
+    assert(paths.includes(at), `the skill does not name ${guide}'s guide by its absolute path`);
+    // What the guide calls ${CLAUDE_PLUGIN_ROOT} is the root the skill names.
+    const scripts = /`\$\{CLAUDE_PLUGIN_ROOT\}\/([^`]+)`/.exec(readFileSync(at, 'utf8'))[1];
+    assert(existsSync(join(ROOT, scripts)), `${guide}: ${scripts} does not exist under the root`);
+  }
+  assert(skill.includes('`${CLAUDE_PLUGIN_ROOT}`') && paths.includes(ROOT), 'the skill does not say what ${CLAUDE_PLUGIN_ROOT} means');
+  for (const p of paths) assert(existsSync(p), `the skill names ${p}, which does not exist`);
+
+  const dispatcher = paths.find((p) => p.endsWith('arkitect.mjs'));
+  const run = spawnSync(process.execPath, [dispatcher, 'drawio', 'icon', 'bedrock'],
+    { cwd: project, encoding: 'utf8', env: { ...process.env, CLAUDE_PLUGIN_ROOT: '' } });
+  eq(run.status, 0, `the dispatcher the skill names fails from the project: ${run.stderr}`);
+  assert(run.stdout.includes('aws/amazon-bedrock'), 'bedrock did not resolve from the project');
+
+  // Existing installs stay compatible: a rerun updates AGENTS.md and leaves the skill.
+  const again = cli(['install', 'codex'], { cwd: project });
+  assert(/update\s+AGENTS\.md/.test(again) && /skip\s+\.agents/.test(again), again);
+
+  // The docs name the current route and the legacy one's real spelling.
+  const agents = readFileSync(join(ROOT, 'docs', 'agents.md'), 'utf8');
+  const codex = agents.slice(agents.indexOf('## Codex'), agents.indexOf('\n## ', agents.indexOf('## Codex') + 1));
+  assert(codex.includes('$arkitect') && codex.includes('/prompts:diagram'), 'docs/agents.md: Codex invocation');
+  assert(!/cp .*\.codex\/prompts/.test(agents) && !existsSync(join(ROOT, '.codex')), 'the deprecated prompt is still shipped');
 });
 
 test('install rejects malformed requests before writing any adapter', () => {
@@ -298,7 +350,7 @@ test('install help never writes even when adapters were selected', () => {
 test('install deduplicates adapter aliases and supports options before names', () => {
   const dir = join(TMP, 'install-aliases');
   const out = cli(['install', '--dir', dir, 'agents', 'codex', 'pi']);
-  eq(out.split('write ').length - 1, 1, 'same adapter written more than once');
+  eq(out.split('write ').length - 1, 2, 'AGENTS.md once, and the Codex skill once');
   assert(!out.includes('update '), 'aliases triggered duplicate updates');
   assert(readFileSync(join(dir, 'AGENTS.md'), 'utf8').includes('Arkitect'), 'adapter missing');
 });

@@ -147,7 +147,7 @@ in whatever format your tool reads.
 | agent | how it loads | command |
 |---|---|---|
 | **Claude Code** | plugin — 6 skills, model-invoked | `claude plugin install arkitect@arkitect` |
-| **Codex** | `AGENTS.md` (+ `~/.codex/prompts/` for `/diagram`) | `arkitect install codex` |
+| **Codex** | `AGENTS.md` + `.agents/skills/arkitect` (`$arkitect`) | `arkitect install codex` |
 | **Cursor** | `.cursor/rules/arkitect.mdc` + `/diagram` command | `arkitect install cursor cursor-command` |
 | **OpenCode** | `AGENTS.md` + `.opencode/command/diagram.md` | `arkitect install opencode agents` |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | `arkitect install copilot` |
