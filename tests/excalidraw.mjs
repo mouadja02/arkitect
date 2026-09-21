@@ -188,6 +188,28 @@ test('a label wraps to the usable width of a diamond, not its bounding box', () 
   assert(t.text.includes('\n'), 'a long diamond label has to wrap');
 });
 
+// The app keeps the width a file gives a text element and clips free text to
+// it, so a narrow estimate cuts letters off. The fixture is what the app itself
+// measured for every line of both committed examples (#222).
+test('text is measured as wide as the app draws it, in every family a style can pick (#222)', () => {
+  const fx = JSON.parse(readFileSync(join(HERE, 'excalidraw-text-widths.json'), 'utf8'));
+  for (const family of Object.values(core.FONT_FAMILY)) {
+    const app = fx.widths[family];
+    assert(app, `the fixture measures family ${family}`);
+    fx.lines.forEach((line, i) => {
+      const ratio = core.measureLine(line, 20, family) / app[i];
+      assert(ratio >= 0.99, `family ${family}: "${line}" measures ${Math.round(ratio * app[i])}px, the app draws ${app[i]}px`);
+      assert(ratio <= 1.035, `family ${family}: "${line}" measures ${Math.round(ratio * app[i])}px, the app ${app[i]}px`);
+    });
+  }
+});
+
+test('a character the width table lacks is measured by its base letter, or as a full em (#222)', () => {
+  eq(core.measureLine('ô', 20), core.measureLine('o', 20), 'an accent takes its base letter');
+  eq(core.measureLine('数据', 20), 40, 'a CJK character is one em');
+  assert(core.measureLine('Ω', 20) >= core.measureLine('O', 20) * 0.8, 'anything else is about a capital');
+});
+
 test('cloning rewrites internal references and drops external ones', () => {
   const r = core.rectangle({ x: 0, y: 0, width: 100, height: 50 });
   const t = core.bindLabel(r, 'label');

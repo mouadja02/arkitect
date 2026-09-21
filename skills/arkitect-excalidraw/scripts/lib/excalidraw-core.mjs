@@ -10,6 +10,7 @@ export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from '../../../ark
 import { readJson } from '../../../arkitect-drawio/scripts/lib/read-json.mjs';
 export { parseCliOrExit, exitUsage, UsageError } from '../../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { createHash, randomBytes } from 'node:crypto';
+import { CHARS, ADVANCE } from './text-widths.mjs';
 
 export const SCENE_TYPE = 'excalidraw';
 export const LIB_TYPE = 'excalidrawlib';
@@ -295,24 +296,31 @@ export function image(o = {}) {
 
 export const LINE_HEIGHT = { 1: 1.25, 2: 1.15, 3: 1.2 };
 
-// Excalidraw measures text on a canvas; there is no canvas here. This estimate
-// is deliberately slightly generous, so the layout checker errs towards warning
-// about a tight label rather than missing one.
-const CHAR_WIDTH = { 1: 0.52, 2: 0.5, 3: 0.6 };
-const NARROW = new Set(['i', 'l', 'j', 't', 'f', 'I', 'r', '.', ',', ':', ';', "'", '`', '|', '!', '(', ')', '[', ']', '{', '}', ' ']);
-const WIDE = new Set(['M', 'W', 'm', 'w', '@', '%']);
+// Excalidraw measures text on a canvas and there is none here, so a line is
+// the sum of per-character widths taken from the app's own fonts. Summing
+// drops kerning, which errs a little wide: that costs space, where a narrow
+// width costs letters, since the app clips free text to it (#222).
+const AT = new Map([...CHARS].map((c, i) => [c, i]));
+// CJK, Hangul, full-width forms and emoji draw about one em in every family.
+const FULL_WIDTH = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u;
+// Anything else unlisted, an average capital: wide rather than clipped.
+const OTHER = Object.fromEntries(Object.entries(ADVANCE).map(([f, t]) => {
+  const caps = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map((c) => t[AT.get(c)]);
+  return [f, caps.reduce((a, b) => a + b, 0) / caps.length];
+}));
+
+function advance(ch, family) {
+  const t = ADVANCE[family] ?? ADVANCE[FONT_FAMILY.hand];
+  const at = AT.get(ch) ?? AT.get(ch.normalize('NFD')[0]);
+  if (at !== undefined) return t[at];
+  if (FULL_WIDTH.test(ch)) return 1;
+  return OTHER[family] ?? OTHER[FONT_FAMILY.hand];
+}
 
 export function measureLine(s, fontSize, fontFamily = FONT_FAMILY.hand) {
-  const unit = fontSize * (CHAR_WIDTH[fontFamily] ?? 0.52);
   let w = 0;
-  for (const ch of String(s)) {
-    if (NARROW.has(ch)) w += unit * 0.45;
-    else if (WIDE.has(ch)) w += unit * 1.45;
-    else if (ch >= '0' && ch <= '9') w += unit * 0.95;
-    else if (ch === ch.toUpperCase() && ch !== ch.toLowerCase()) w += unit * 1.15;
-    else w += unit;
-  }
-  return w;
+  for (const ch of String(s)) w += advance(ch, fontFamily);
+  return w * fontSize;
 }
 
 export function measureText(s, fontSize, fontFamily = FONT_FAMILY.hand) {
