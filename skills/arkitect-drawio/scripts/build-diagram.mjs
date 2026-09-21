@@ -37,6 +37,7 @@ import {
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
+import { GENERIC_VENDOR } from './lib/generic-words.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- tokens
@@ -203,6 +204,14 @@ export function resolveIcon(node, catalog, report, contextPacks) {
 
   const g = r.groups[0];
   const chosen = g.variants[0];
+
+  // Any other doubt still draws the leader and lists it. Here the leader is
+  // the harm - a vendor's mark on a component named in generic words - so the
+  // node gets the labelled box instead (#231).
+  if (r.reason === GENERIC_VENDOR) {
+    report.missing.push({ query, reason: r.reason, alternatives: r.groups.slice(0, 4).map((x) => x.variants[0].id) });
+    return null;
+  }
 
   if (!r.confident) {
     report.ambiguous.push({

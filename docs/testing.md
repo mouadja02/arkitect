@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `348 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `350 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -40,6 +40,7 @@ process, so they cannot tread on each other.
 | Update safety | a timestamped backup is written before an existing file is replaced; repeated updates in the same second, with a backup name already taken, each keep their own version (#35); after a successful write each builder keeps the oldest backup of that target and the newest five, counting `-10` as newer than `-2` and any later second as newer than every counter, never reusing a counter that pruning freed, and never touches another file's backups, a lookalike stem, another extension or a hand-named copy; `--keep-backups N` sets the count, `0` keeps all, and a malformed value exits 2 before any backup is written or deleted (#49) |
 | Honesty | an unresolvable icon degrades to a named placeholder or labelled box and is reported, never substituted |
 | Icon nodes | in both engines a node with an `icon` and no `kind` draws as an icon, or as the engine's placeholder or labelled box when it does not resolve; a node that names another kind as well draws that kind, and `notes` names the icon it did not draw (#228) |
+| Generic words | in both engines a query made only of generic words (`service`, `storage`, `function`, `users`, `app service`) takes no AWS, Azure or GCP mark unattended and says why; product names (`lambda`, `s3`, `bigquery`, `cloud storage`) and vendor-neutral marks still draw; a Draw.io spec naming the vendor, or an exact id or ref, still draws the vendor's mark; a builder node named that way gets the labelled box or placeholder (#231) |
 | Analysis | structure and style emitted; labels, element text and image payloads never |
 | Compact icon search | `icon --compact` in both engines prints one line of at most 1,000 bytes with the full search's verdict and a spec node; an ambiguous query keeps four bounded choices and no node; a lifecycle caveat, its successor and an on-demand next step survive; a miss says what to do; the full output is unchanged (#117) |
 | Plugin shape | the manifest is valid, all six skills are well formed, the learning and apply skills are user-invoked only, CI expects the same skill count, no hard-coded install paths |

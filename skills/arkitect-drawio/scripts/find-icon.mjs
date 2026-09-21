@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { readLibrary, normalizeTitle, fitCell, ICON_FOOTPRINT } from './lib/drawio-core.mjs';
 import { caveat } from './lib/lifecycle.mjs';
+import { onlyGenericWords, VENDOR_PACKS, GENERIC_VENDOR } from './lib/generic-words.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -146,15 +147,21 @@ export function resolve(query, opts = {}) {
   const decidedByContext = Boolean(next && opts.packs?.length
     && opts.packs.includes(top.pack) && !opts.packs.includes(next.pack)
     && margin >= CONTEXT_BONUS);
+  // A generic word never draws a cloud vendor's own mark unattended, unless
+  // the spec names that vendor's stack (#231).
+  const vendorForGeneric = VENDOR_PACKS.has(top.pack) && onlyGenericWords(query)
+    && !opts.packs?.includes(top.pack);
   const confident = top.best >= CONFIDENT_AT
     && !top.doubt
+    && !vendorForGeneric
     && (margin >= CLEAR_MARGIN || groups.length === 1 || decidedByContext)
     && top.variants.length === 1;
   const reason = confident ? null
     : top.best < CONFIDENT_AT ? 'weak match'
       : top.doubt ? top.doubt
-        : top.variants.length > 1 ? 'several icons share this title'
-          : 'runner-up is too close';
+        : vendorForGeneric ? GENERIC_VENDOR
+          : top.variants.length > 1 ? 'several icons share this title'
+            : 'runner-up is too close';
   return { query, confident, reason, icon: top.variants[0], groups };
 }
 

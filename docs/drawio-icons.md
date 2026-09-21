@@ -61,6 +61,18 @@ comes back flagged, because Grafana Tempo is a different product. A plural the b
 generated for a one-word vendor title is treated the same way: Azure's `Cubes` answers to
 `cube`, but a bare common noun is not a product name, so it is never used unattended.
 
+### A generic word is not a vendor's product
+
+A query made only of generic words — `service`, `storage`, `function`, `users` —
+never takes an AWS, Azure or GCP mark unattended: that would say an internal
+component runs on that vendor. It comes back flagged with the reason, and here the
+builder does not draw its best guess: the node gets a labelled box, listed under
+`missing`. A vendor-neutral mark for the same words still draws, and so does the
+vendor's own when `context.packs` names it or the node gives the exact id. Azure's
+**App Service**, **Function App** and **Log Analytics** are named entirely in generic
+words, so they need one or the other. The Excalidraw search follows the same list
+(#231).
+
 Neither rule changes a score, only whether the top result may be used without asking.
 Lowering the score instead would widen the margin over the runner-up and hand confidence
 to a *different* wrong answer — `delta` would become the airline.

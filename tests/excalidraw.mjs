@@ -382,6 +382,28 @@ test('without shared packs a name inside a different product still gets a placeh
   }
 });
 
+// A generic word drew a cloud vendor's own mark: an invented internal service
+// came out as AWS's "Service" glyph, twice, in the 2.0.0 eval batch (#231).
+test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate ref still does (#231)', () => {
+  const reason = "a generic word matches a cloud vendor's own icon; pick one deliberately, or keep the placeholder";
+  const entries = finder.catalog();
+  for (const q of ['service', 'storage', 'function', 'container', 'app service']) {
+    const v = finder.unattended(q, { entries });
+    assert(!v.entry, `"${q}" drew ${v.entry?.ref} unattended`);
+    eq(v.reason, reason, `"${q}" says why`);
+  }
+  for (const q of ['lambda', 's3', 'bigquery', 'cloud storage']) assert(finder.unattended(q, { entries }).entry, `the product "${q}" still draws`);
+  eq(finder.unattended('server', { entries }).entry?.library, 'architecture-diagram-components', 'a vendor-neutral mark still draws');
+  assert(finder.resolveIcon('aws-architecture-icons:102'), 'a deliberate ref resolves');
+
+  const out = JSON.parse(node('find-icon.mjs', ['service', '--compact']));
+  eq(out.placeholder, reason, 'the compact answer gives the reason');
+  assert(out.choices.some((c) => c.ref === 'aws-architecture-icons:102'), 'and still lists the vendor mark as a choice');
+
+  const { report } = builder.buildDiagram({ nodes: [{ id: 's', kind: 'icon', label: 'Storage' }] }, { seed: 1 });
+  eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
+});
+
 test('icon resolution answer key: never draws a different product unattended (#22)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'excalidraw-icon-queries.json'), 'utf8'));
   const entries = finder.catalog({ shared: false });

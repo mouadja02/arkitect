@@ -47,6 +47,15 @@ separate file, no naming scheme, no required format beyond that.
   got three boxes, and reported three icons. A node that names another kind as
   well draws that kind, and the report's `notes` names the icon it left out;
   the Draw.io report gains `notes` for it (#228).
+- Neither icon search draws a cloud vendor's own mark for a query made only of
+  generic words. `service` drew AWS's Service glyph, `storage` Google Cloud
+  Storage and `function` GCP's Cloud Functions, so an internal service came
+  out labelled as running on that vendor, twice in the 2.0.0 eval batch. Such a
+  query now comes back flagged with the reason, and a node named that way
+  gets a placeholder or labelled box; a vendor-neutral mark still draws, and so
+  does the vendor's own when a Draw.io spec's `context` names it or the node
+  gives the exact ref. Azure's App Service, Function App and Log Analytics are
+  named in generic words only, so they now need one or the other (#231).
 
 ## [1.7.0] — 2026-09-21
 

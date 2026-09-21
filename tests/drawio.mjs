@@ -1969,6 +1969,29 @@ test('a name that only starts a different product flags itself instead of resolv
   assert(!finder.resolve('delta').confident, '"delta" became confident');
 });
 
+// A generic word drew a cloud vendor's own mark: "function" was GCP's (#231).
+test('a generic word never draws a cloud vendor\'s mark unattended, unless the spec names the vendor (#231)', () => {
+  const reason = "a generic word matches a cloud vendor's own icon; pick one deliberately, or keep the placeholder";
+  for (const q of ['function', 'functions', 'users', 'app service']) {
+    const r = finder.resolve(q);
+    assert(!r.confident, `"${q}" drew ${r.icon?.id} unattended`);
+    eq(r.reason, reason, `"${q}" says why`);
+  }
+  assert(finder.resolve('function', { packs: ['gcp'] }).confident, 'a GCP spec still draws GCP\'s mark');
+  for (const q of ['lambda', 's3', 'bigquery', 'cloud storage']) assert(finder.resolve(q).confident, `the product "${q}" still draws`);
+  eq(finder.resolve('server').icon.id, 'primitives/server', 'a vendor-neutral mark still draws');
+  assert(finder.resolve('server').confident, 'and draws unattended');
+
+  const { report } = builder.buildDiagram({ nodes: [
+    { id: 'f', kind: 'icon', icon: 'function' },
+    { id: 'g', kind: 'icon', icon: 'gcp/cloud-functions', col: 1 },
+  ] });
+  eq(report.missing.map((m) => m.query).join(','), 'function', 'a node named by the generic word is not drawn');
+  eq(report.used.map((u) => u.id).join(','), 'gcp/cloud-functions', 'the deliberate id is');
+  const inContext = builder.buildDiagram({ context: { packs: ['gcp'] }, nodes: [{ id: 'f', kind: 'icon', icon: 'function' }] }).report;
+  eq(inContext.used.map((u) => u.id).join(','), 'gcp/cloud-functions', 'and a GCP spec draws it by name');
+});
+
 test('icon resolution corpus: never confidently wrong, and precision at rank 1 holds its floor (#15)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'icon-queries.json'), 'utf8'));
   const m = { answerable: 0, top1: 0, gated: 0, refusals: 0, held: 0 };

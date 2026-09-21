@@ -26,6 +26,7 @@ import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
 import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef } from './lib/shared-icons.mjs';
 import { loadCatalog as loadSharedCatalog, byExactId, lifecycleOf } from '../../arkitect-drawio/scripts/find-icon.mjs';
+import { onlyGenericWords, vendorOf, GENERIC_VENDOR } from '../../arkitect-drawio/scripts/lib/generic-words.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath } from 'node:path';
 
@@ -167,6 +168,16 @@ function unattendedExisting(query, entries) {
 }
 
 export function unattended(query, { entries = catalog() } = {}) {
+  const verdict = unattendedAny(query, entries);
+  // A generic word never draws a cloud vendor's own mark unattended; a
+  // deliberate ref still does (#231).
+  if (verdict.entry && vendorOf(verdict.entry) && onlyGenericWords(query)) {
+    return { entry: null, candidate: verdict.entry, reason: GENERIC_VENDOR };
+  }
+  return verdict;
+}
+
+function unattendedAny(query, entries) {
   const existing = unattendedExisting(query, entries.filter((e) => e.provider !== 'drawio'));
   if (existing.entry || existing.ambiguous) return existing;
   const shared = entries.filter((e) => e.provider === 'drawio');
