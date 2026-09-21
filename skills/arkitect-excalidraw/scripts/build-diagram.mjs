@@ -35,6 +35,7 @@ import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
+import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -509,7 +510,10 @@ function assemble(spec, style) {
 
   // ------------------------------------------------------------ nodes
 
-  for (const [i, n] of (spec.nodes ?? []).entries()) {
+  for (const [i, node] of (spec.nodes ?? []).entries()) {
+    const n = iconKind(node);
+    const unused = unusedIcon(node, `nodes[${i}]`, ['icon', 'placeholder']);
+    if (unused) report.notes.push(unused);
     if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
       report.unknownKinds.push({ field: `nodes[${i}].kind`, value: n.kind, drawnAs: S.rounded ? 'round' : 'box', valid: NODE_KINDS });
     }

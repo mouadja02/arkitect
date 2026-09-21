@@ -3788,6 +3788,22 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
 // nothing, and validates. An eval run drew five AWS accounts that way; its spec
 // gave each `width: 2, height: 2`, a count of grid cells read as pixels, which
 // draws a 2px dot. Both mistakes are arithmetic the builder can do (#204).
+// A node with an icon and no kind drew a plain box, and the agent reported
+// the icon anyway (#228).
+test('a node that names an icon draws it without kind "icon", and a box that names one says so (#228)', () => {
+  const { xml, report } = builder.buildDiagram({ nodes: [
+    { id: 'p', icon: 'databases/postgresql', label: 'Postgres' },
+    { id: 'q', icon: 'nothing-like-this-exists', label: 'Quillrose Ledger', col: 1 },
+    { id: 'b', kind: 'box', icon: 'databases/postgresql', label: 'Box', col: 2 },
+  ] });
+  const style = (id) => xml.match(new RegExp(`<mxCell id="${id}"[^>]*style="([^"]*)"`))[1];
+  assert(style('p').startsWith('shape=image;'), `the kind-less node draws its icon: ${style('p').slice(0, 40)}`);
+  eq(report.used.map((u) => u.id).join(','), 'databases/postgresql', 'resolved and reported');
+  eq(report.missing.map((m) => m.query).join(','), 'nothing-like-this-exists', 'an unresolvable one is reported missing');
+  assert(!style('b').startsWith('shape=image;'), 'an explicit box stays a box');
+  eq(report.notes.join('; '), 'nodes[2].icon is not drawn: the node\'s kind is "box"; leave kind out, or set it to "icon"', 'and says so');
+});
+
 test('a box drawn where a boundary was meant is named in the build report (#204)', () => {
   const spec = {
     nodes: [

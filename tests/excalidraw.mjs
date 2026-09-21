@@ -1446,6 +1446,21 @@ test('a frame inside a frame is reported, and the innermost one owns its content
   eq(inner.frameId, null, 'and the inner frame is not itself a member of the outer one');
 });
 
+// A node with an icon and no kind drew a plain box, and the agent reported
+// the icon anyway (#228).
+test('a node that names an icon draws it without kind "icon", and a box that names one says so (#228)', () => {
+  const { scene, report } = builder.buildDiagram({ nodes: [
+    { id: 'p', icon: 'drawio:databases/postgresql', label: 'Postgres' },
+    { id: 'q', icon: 'nothing-like-this-exists', label: 'Quillrose Ledger', col: 1 },
+    { id: 'b', kind: 'box', icon: 'drawio:databases/postgresql', label: 'Box', col: 2 },
+  ] }, { seed: 1 });
+  eq(scene.elements.filter((el) => el.type === 'image').length, 1, 'the kind-less node draws its icon, and only it');
+  eq(report.icons.map((i) => i.node).join(','), 'p', 'resolved and reported');
+  eq(report.missingIcons.join(','), 'nothing-like-this-exists', 'an unresolvable one is a placeholder');
+  assert(scene.elements.some((el) => el.type === 'rectangle' && el.strokeStyle === 'dotted'), 'drawn as the dotted slot');
+  eq(report.notes.join('; '), 'nodes[2].icon is not drawn: the node\'s kind is "box"; leave kind out, or set it to "icon"', 'the box says so');
+});
+
 // Excalidraw wants a frame straight after its own children; the builder wrote
 // every frame first (#192).
 const FRAMED = {

@@ -36,6 +36,7 @@ import {
 } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
+import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- tokens
@@ -402,7 +403,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [],
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], notes: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const drawnIcons = [];
@@ -476,7 +477,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     // Where each node landed on the page, and whether a caption hangs below it.
     const placed = new Map();
     const footprints = [];
-    for (const [i, n] of (spec.nodes ?? []).entries()) {
+    for (const [i, node] of (spec.nodes ?? []).entries()) {
+      const n = iconKind(node);
+      const unused = unusedIcon(node, `${at}nodes[${i}]`, ['icon']);
+      if (unused) report.notes.push(unused);
       const parent = n.parent ?? '1';
       if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
         report.unknownKinds.push({ field: `${at}nodes[${i}].kind`, value: n.kind, drawnAs: 'box', valid: NODE_KINDS });
@@ -716,6 +720,7 @@ function main(argv) {
     // A plain box laid over nodes it does not own, or sized in grid cells.
     // Drawn as asked; fix it or say why it stays (#204).
     looksLikeBoundary: report.looksLikeBoundary,
+    notes: report.notes,
     // Which style drew this: the house style, or this install's override (#89).
     style: styleSummary(style),
   }, null, 2));
