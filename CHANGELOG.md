@@ -21,6 +21,13 @@ separate file, no naming scheme, no required format beyond that.
   in `aws-data-platform` and the "Analytics warehouse" caption in
   `starter-architecture` sat across their scope's edge. Saved scenes are
   untouched; rebuild a spec to pick it up (#191).
+- Excalidraw text is measured as wide as the app draws it. The estimate ran
+  narrow in every font family (Virgil: 18% at the median, 46% at worst), and
+  the app clips free text to the width in the file, so captions, legend
+  entries, scope labels and titles opened with letters missing, and note text
+  wrapped past its box. Widths now come from a table of per-character
+  advances measured with the app's own fonts; our PNG renders never showed
+  the clipping. Both committed examples are rebuilt (#222).
 
 ## [1.7.0] — 2026-09-21
 
