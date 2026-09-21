@@ -99,9 +99,8 @@ rather than one arrow per logo.
 **Use for**: walking a reader through a sequence during a review.
 **Seen in**: 1 reference (exploratory register).
 
-Filled blue circles (`ellipse;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff`)
-sat on the connectors, numbered in reading order. Drop these for presentation-ready
-diagrams — they mark a diagram as work in progress.
+Number the edge labels in reading order — `"label": "1. Submit request"`. The
+fragment is `numbered-flow` in `assets/templates/patterns.json`.
 
 ---
 

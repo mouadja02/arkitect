@@ -182,3 +182,11 @@ The corpus contains both, and they differ systematically:
 | Extra pages | scratch pages with a handful of cells | single page |
 
 Ask which register is wanted when it is not obvious; default to presentation-ready.
+
+The one exploratory reference numbered its steps with filled blue circles sat on
+the connectors (`ellipse;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff`),
+in reading order. The builder has no badge, and a sequence does not need a new
+drawing primitive to keep its meaning: number the edge labels instead —
+`"label": "1. Submit request"`, the `numbered-flow` fragment in
+`assets/templates/patterns.json`. The circles are recorded here because they are
+what the corpus did, not because they are what to draw (#193).

@@ -49,6 +49,20 @@
     ]
   },
 
+  "numbered-flow": {
+    "pattern": 7,
+    "nodes": [
+      { "id": "client", "kind": "box", "label": "Client", "col": 0, "row": 0 },
+      { "id": "api", "kind": "box", "label": "API", "col": 1, "row": 0 },
+      { "id": "store", "kind": "box", "label": "Store", "col": 2, "row": 0 }
+    ],
+    "edges": [
+      { "from": "client", "to": "api", "kind": "flow", "label": "1. Submit request" },
+      { "from": "api", "to": "store", "kind": "flow", "label": "2. Persist" },
+      { "from": "store", "to": "client", "kind": "async", "label": "3. Confirm" }
+    ]
+  },
+
   "agentic-runtime": {
     "pattern": 10,
     "boundaries": [

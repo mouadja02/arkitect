@@ -13,6 +13,18 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The numbered-flow pattern is a recipe the builder can execute. Section 7 of
+  the Draw.io catalog taught filled blue circles sat on the connectors, drawn
+  from a raw ellipse style, and the builder has no such kind: a model following
+  the selector reached an unknown kind and an unfilled rectangle, or
+  hand-written XML — inventing ids, styles and connector-relative placement,
+  which is the work the scripts are supposed to own. A sequence keeps its
+  meaning in the edge labels, so the section now says to number them
+  (`"label": "1. Submit request"`) and points at a `numbered-flow` fragment in
+  `patterns.json` that builds. What the corpus actually drew is recorded in the
+  style guide, off the default reading path. Section 7 is 288 bytes, down from
+  369 (#193).
+
 - A spec field neither builder knows is named in the build report instead of
   being dropped in silence. It was the one spec mistake that passed without a
   word: a missing edge target is refused, an unknown `kind` is listed, but an
