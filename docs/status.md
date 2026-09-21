@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-21, at the 1.6.3 release.
+Status reviewed on 2026-09-21, at the 1.7.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -34,6 +34,9 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Builder reports | A spec field neither builder knows is named under `unknownFields`, and `style` is answered rather than dropped; the numbered-flow pattern builds from edge labels instead of needing hand-written XML | [#205](https://github.com/mouadja02/arkitect/issues/205), [#193](https://github.com/mouadja02/arkitect/issues/193), [PR #211](https://github.com/mouadja02/arkitect/pull/211), [PR #212](https://github.com/mouadja02/arkitect/pull/212) |
 | Release resume | Either release workflow can be re-run after a partial failure, and resumes only a remote state that matches; 1.6.3 is the first release cut with it | [#120](https://github.com/mouadja02/arkitect/issues/120), [PR #213](https://github.com/mouadja02/arkitect/pull/213) |
 | Report graders | Two render graders that failed correct runs are fixed: a `file_exists` that could not see a file that was there, and a pattern that never matched "PostgreSQL". The report step writes its headings out first | [#208](https://github.com/mouadja02/arkitect/issues/208), [PR #214](https://github.com/mouadja02/arkitect/pull/214) |
+| Fake boundaries | A plain box laid over nodes it does not own, or a node sized in grid cells rather than pixels, is named under `looksLikeBoundary` in both builders' reports, with a hint pointing at `boundaries` | [#204](https://github.com/mouadja02/arkitect/issues/204), [PR #217](https://github.com/mouadja02/arkitect/pull/217) |
+| Draw.io pages | A spec builds several pages with `pages`, ids per page, an edge across pages refused; an as-is/to-be template with a PNG per page. Proved by an eval case whose control on main showed agents stitching single-page builds with their own scripts | [#184](https://github.com/mouadja02/arkitect/issues/184), [PR #218](https://github.com/mouadja02/arkitect/pull/218) |
+| Codex | `install codex` also writes a Codex skill with absolute paths that works from any project; the deprecated custom prompt is gone | [#127](https://github.com/mouadja02/arkitect/issues/127), [PR #219](https://github.com/mouadja02/arkitect/pull/219) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -43,12 +46,10 @@ the work listed below.
 
 ## In progress
 
-1.7.0 is under way: a box drawn where a boundary was meant
-([#204](https://github.com/mouadja02/arkitect/issues/204)), multi-page Draw.io
-specs ([#184](https://github.com/mouadja02/arkitect/issues/184)) and a Codex
-skill entry point ([#127](https://github.com/mouadja02/arkitect/issues/127)), in
-that order. Obstacle-avoiding Excalidraw routing
-([#124](https://github.com/mouadja02/arkitect/issues/124)) follows it.
+No implementation PR is open at this snapshot. Next is opt-in
+obstacle-avoiding routing for Excalidraw connectors
+([#124](https://github.com/mouadja02/arkitect/issues/124)), whose tests are to include a
+self-loop and a long caption so the 2.0.0 work below lands against them.
 
 The open issues are now mostly what the eval suite and the audit found, and the
 three carrying `release:major` all change generated Excalidraw geometry: visible
@@ -79,8 +80,8 @@ The landing-zone case fails about a third of its runs
 ([#203](https://github.com/mouadja02/arkitect/issues/203)),
 and reading a kept run showed why: an agent can draw five account boundaries as
 plain boxes that contain nothing, and neither builder says a word
-([#204](https://github.com/mouadja02/arkitect/issues/204)), nor did either
-mention a spec field it ignored ([#205](https://github.com/mouadja02/arkitect/issues/205),
+([#204](https://github.com/mouadja02/arkitect/issues/204), fixed in 1.7.0), nor did
+either mention a spec field it ignored ([#205](https://github.com/mouadja02/arkitect/issues/205),
 fixed in 1.6.3). Both are arithmetic the builder can do, so neither costs a
 paragraph of skill prose.
 
@@ -122,7 +123,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.6.3 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v1.7.0 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate
