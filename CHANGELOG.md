@@ -13,6 +13,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [2.0.0] — 2026-09-21
 
+Every change is to generated Excalidraw output, which is what makes this a
+major. Saved scenes are untouched and still open and validate; rebuild a spec
+to get the new layout. A scene built before 2.0.0 can draw a validator warning
+for a frame ahead of its children or a zero-length connector, and a rebuild
+clears both. Draw.io output is unchanged.
+
 ### Changed
 
 - Excalidraw boundaries are sized from everything their nodes draw, in both
