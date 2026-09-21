@@ -1424,6 +1424,82 @@ test('a frame inside a frame is reported, and the innermost one owns its content
   eq(inner.frameId, null, 'and the inner frame is not itself a member of the outer one');
 });
 
+// Sizing used to count a caption's height and not its width (#191).
+test('long captions and sublabels fit their scope or frame, with its padding (#191)', () => {
+  const caption = 'PostgreSQL reporting database';
+  const sublabel = 'Read-only analytical replica, far wider than any node';
+  const kinds = [
+    { kind: 'icon', icon: 'drawio:databases/postgresql', label: caption, sublabel },
+    { kind: 'placeholder', label: caption, sublabel },
+    { kind: 'cylinder', label: caption, sublabel },
+    { kind: 'box', label: 'Worker', sublabel },
+  ];
+  const within = (el, b, pad, what) => {
+    assert(el.x - b.x >= pad - 1 && b.x + b.width - (el.x + el.width) >= pad - 1,
+      `${what}: "${el.text}" spans ${Math.round(el.x)}..${Math.round(el.x + el.width)}, `
+      + `its boundary ${b.x}..${b.x + b.width}`);
+    assert(el.y + el.height <= b.y + b.height, `${what}: "${el.text}" hangs below its boundary`);
+  };
+  for (const node of kinds) {
+    for (const kind of ['frame', 'scope']) {
+      const { scene } = builder.buildDiagram({
+        boundaries: [{ id: 'b', kind, label: 'B' }],
+        nodes: [{ id: 'n', parent: 'b', ...node }],
+      }, { seed: 1 });
+      const b = kind === 'frame' ? frameOf(scene)
+        : scene.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed');
+      for (const t of [node.kind === 'box' ? null : caption, sublabel].filter(Boolean)) {
+        within(textNamed(scene, t), b, 34, `${node.kind} in a ${kind}`);
+      }
+    }
+  }
+
+  // Nested: the inner scope holds the text, and the outer one holds the inner.
+  const { scene } = builder.buildDiagram({
+    boundaries: [{ id: 'outer', label: 'Outer' }, { id: 'inner', parent: 'outer', label: 'Inner' }],
+    nodes: [{ id: 'n', parent: 'inner', kind: 'placeholder', label: caption, sublabel }],
+  }, { seed: 1 });
+  const [outer, inner] = scene.elements.filter((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed')
+    .sort((p, q) => q.width - p.width);
+  within(textNamed(scene, sublabel), inner, 34, 'nested, inner');
+  assert(inner.x - outer.x >= 33 && outer.x + outer.width - (inner.x + inner.width) >= 33,
+    'the inner scope sits inside the outer one with its padding');
+});
+
+test('routing still starts at the artwork, not at a wide caption (#191)', () => {
+  const { scene } = builder.buildDiagram({
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'drawio:databases/postgresql', label: 'PostgreSQL reporting database' },
+      { id: 'b', col: 1, label: 'Worker' },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  }, { seed: 1 });
+  const img = scene.elements.find((el) => el.type === 'image');
+  const a = scene.elements.find((el) => el.type === 'arrow');
+  eq(a.x, img.x + img.width + 8, 'the arrow leaves the image edge, one gap out');
+});
+
+test("a scope is at least as wide as its own inside label, contents kept centred (#191)", () => {
+  const label = 'Production account, eu-west-1, analytics';
+  const build = (labelPlacement) => builder.buildDiagram({
+    boundaries: [{ id: 's', label, labelPlacement }],
+    nodes: [{ id: 'n', parent: 's', label: 'DB' }],
+  }, { seed: 1 }).scene;
+  const scene = build('inside');
+  const scope = scene.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed');
+  const t = textNamed(scene, label);
+  assert(t.x >= scope.x + 14 && t.x + t.width <= scope.x + scope.width - 14,
+    `the label spans ${Math.round(t.x)}..${Math.round(t.x + t.width)}, the scope ${scope.x}..${scope.x + scope.width}`);
+  const node = scene.elements.find((el) => el.type === 'rectangle' && el !== scope);
+  assert(Math.abs((node.x + node.width / 2) - (scope.x + scope.width / 2)) <= 1, 'the contents stay centred');
+
+  // An outside label is a large word set clear of the box, and does not size it.
+  const out = build('outside');
+  const plain = builder.buildDiagram({ boundaries: [{ id: 's' }], nodes: [{ id: 'n', parent: 's', label: 'DB' }] }, { seed: 1 }).scene;
+  const width = (s) => s.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed').width;
+  eq(width(out), width(plain), 'an outside label leaves the width alone');
+});
+
 test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
   const spec = {
     boundaries: [

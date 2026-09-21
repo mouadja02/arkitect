@@ -500,16 +500,12 @@ function assemble(spec, style) {
     const captionOpts = { ...labelOpts, fontSize: n.fontSize ?? S.captionSize };
     const produced = [];
     let anchor = null;
-    // `box` stays the shape itself, so arrows anchor on its centre line.
-    // `extent` grows to cover captions, so a boundary drawn around this node
-    // leaves room for them.
+    // `box` stays the shape itself, so arrows anchor on its centre line. Text
+    // stacks underneath it, each piece below the last.
     let box = { x, y, width: w, height: h };
-    let extent = null;
-    const grow = (extraHeight) => {
-      const cur = extent ?? box;
-      extent = { ...cur, height: cur.height + extraHeight };
-    };
-    const bottom = () => { const cur = extent ?? box; return cur.y + cur.height; };
+    let below = null;
+    const bottom = () => below ?? box.y + box.height;
+    const grow = (extraHeight) => { below = bottom() + extraHeight; };
 
     if (n.kind === 'icon' || n.kind === 'placeholder') {
       const resolved = n.kind === 'placeholder' ? null : resolveIcon(n.icon ?? n.label);
@@ -678,7 +674,10 @@ function assemble(spec, style) {
       plain: !['text', 'note', 'icon', 'placeholder', 'actor'].includes(n.kind),
     });
     if (anchor) anchorFor.set(n.id, anchor);
-    noteChild(n.parent, extent ?? box);
+    // A boundary has to hold everything the node drew, in both axes. Counting
+    // only the height let a caption or sublabel wider than its icon hang out
+    // of its own scope (#191).
+    noteChild(n.parent, bbox([{ ...box, type: 'rectangle' }, ...produced]));
     nodeLayer.push(...produced);
   }
 
@@ -687,8 +686,9 @@ function assemble(spec, style) {
   // ------------------------------------------------------------ boundaries
   //
   // A boundary is sized from what it actually contains, not from the grid, so a
-  // wide box or a tall caption cannot poke out of its own scope.
+  // wide box or a long caption cannot poke out of its own scope.
 
+  const INSET = 14;                // an inside label's distance from the left edge
   const boundaryBox = new Map();
   const resolveBoundary = (b, seen = new Set()) => {
     if (boundaryBox.has(b.id)) return boundaryBox.get(b.id);
@@ -717,6 +717,16 @@ function assemble(spec, style) {
         width: Math.round(colX((b.col ?? 0) + (b.cols ?? 1) - 1) + L.cell + pad.right - left),
         height: Math.round(rowY((b.row ?? 0) + (b.rows ?? 1) - 1) + L.cell + pad.bottom - top),
       };
+    }
+    // Its own name has to fit as well. The box widens about its middle, so the
+    // contents stay centred. A frame's name is the app's to draw, and an
+    // outside label stands clear of the box on purpose (#191).
+    if (b.label && b.kind !== 'frame' && (b.labelPlacement ?? 'inside') === 'inside') {
+      const need = Math.ceil(measureText(b.label, b.fontSize ?? FONT.M, S.fontFamily).width) + 2 * INSET;
+      if (box.width < need) {
+        box.x = Math.round(box.x - (need - box.width) / 2);
+        box.width = need;
+      }
     }
     boundaryBox.set(b.id, box);
     return box;
@@ -763,7 +773,7 @@ function assemble(spec, style) {
         text: b.label, fontSize: size, fontFamily: S.fontFamily,
         textAlign: 'left', strokeColor: look.stroke,
         width: m.width, height: m.height,
-        x: Math.round(box.x + (outside ? 0 : 14)),
+        x: Math.round(box.x + (outside ? 0 : INSET)),
         y: Math.round(outside ? box.y - m.height - 10 : box.y + 12),
         groupIds: [group],
       }));
