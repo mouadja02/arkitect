@@ -154,12 +154,12 @@ answers or that cannot change the drawing:
 1. **Purpose and audience** — who reads it, what decision it supports. Everything below depends on it.
 2. **Scope** — what is inside, and what is deliberately outside.
 3. **Level** — one box per service, container or team; never mixed.
-4. **State** — as-is, to-be, or both (two pages or one comparison).
+4. **State** — as-is, to-be, or both (two frames or one comparison).
 5. **Components by real product name** — "Snowflake", not "the warehouse"; this decides the icons.
 6. **Flows** — what moves, which way, sync or event-driven; only those worth an arrow.
 7. **Boundaries** — trust, network, ownership, account; they become the containers.
 8. **What must be visible** — failure paths, multi-region, HA/DR, a control under review.
-9. **Pages** — split by lifecycle stage or audience, not by how much fits.
+9. **Frames** — split by lifecycle stage or audience, not by how much fits.
 10. **Unknowns** — agree up front: a stated assumption or a labelled placeholder, never invention.
 
 **Stop when** the remaining unknowns could not change the drawing: a three-box

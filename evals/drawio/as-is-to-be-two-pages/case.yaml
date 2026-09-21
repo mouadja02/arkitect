@@ -1,0 +1,49 @@
+schema_version: "1.1"
+name: drawio-as-is-to-be-two-pages
+description: >
+  An as-is and a to-be asked for on two pages should come out as one .drawio
+  with two pages, built from one spec with `pages` - not hand-written XML and
+  not two single-page builds stitched together by hand (#184).
+tags: [generation, pages]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    For the architecture review board, draw our ticket-booking system in Draw.io
+    on two pages. Page one is the as-is: a monolith on an on-premises VM with a
+    MySQL database, backed up nightly to tape. Page two is the to-be, in AWS: an
+    Application Load Balancer in front of an ECS Fargate service, Aurora for the
+    data and S3 for backups. Save it to ./eval-output/booking.drawio, with the
+    spec you build it from beside it as ./eval-output/booking.spec.json.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: regex
+    name: two-pages-in-one-file
+    target: { source: file, path: ./eval-output/booking.drawio }
+    pattern: '<diagram\b[\s\S]*<diagram\b'
+
+  # The builder stamps its name on the file. Alone this would pass two
+  # single-page builds merged by hand, so the spec is read as well.
+  - type: regex
+    name: built-by-the-builder
+    target: { source: file, path: ./eval-output/booking.drawio }
+    pattern: 'agent="arkitect-drawio"'
+
+  - type: regex
+    name: one-spec-with-pages
+    target: { source: file, path: ./eval-output/booking.spec.json }
+    pattern: '"pages"\s*:\s*\['
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-drawio

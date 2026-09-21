@@ -230,6 +230,23 @@ cells. Edge `kind` is `flow`, `async`, `error`, `success` or `light` — plus an
 kind this install's style override adds, as `build --print-style` lists — and a
 legend is generated once more than one is used; an unknown kind draws as `flow`.
 
+More than one page is a `pages` array. Each page carries its own `name`, `id`,
+`title`, `boundaries`, `nodes`, `edges` and `legend`; `layout` and `context`
+stay at the top and are shared. Ids are per page, so a component drawn on both
+pages keeps its id, and an edge cannot cross pages. A spec without `pages` is
+one page, built exactly as before. Report paths name the page:
+`pages[1].nodes[3].style`.
+
+```json
+{
+  "context": { "packs": ["aws"] },
+  "pages": [
+    { "name": "As-is", "title": "Today", "nodes": [], "edges": [] },
+    { "name": "To-be", "title": "Target", "boundaries": [], "nodes": [], "edges": [] }
+  ]
+}
+```
+
 The build refuses a spec that names something that does not exist, before it
 backs up or writes anything, and lists every problem at once (exit `1`, JSON on
 stderr): an edge `from`/`to` that is not a node or boundary id, a `parent` that
@@ -244,8 +261,9 @@ Numbers are checked the same way, each problem naming its field
 `cols`/`rows` at least 1 and its paddings at least 0. A number written as a
 string is refused, not converted.
 
-Worked example:
-`skills/arkitect-drawio/assets/templates/starter-architecture.spec.json`.
+Worked examples:
+`skills/arkitect-drawio/assets/templates/starter-architecture.spec.json`, and
+`as-is-to-be.spec.json` beside it for two pages.
 Fragments matching the pattern catalog: `assets/templates/patterns.json`.
 
 ## Excalidraw spec

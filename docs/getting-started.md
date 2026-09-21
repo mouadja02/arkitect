@@ -48,6 +48,7 @@ Start from a worked spec rather than a blank file:
 | `skills/arkitect-excalidraw/assets/templates/starter-architecture.spec.json` | the vocabulary: every node kind, every connector kind, the generated legend |
 | `skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json` | the shape of a real answer: 48 nodes, phase regions, an error lane, a cross-cutting band |
 | `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json` | the same tour, in Draw.io |
+| `skills/arkitect-drawio/assets/templates/as-is-to-be.spec.json` | two pages in one Draw.io file: the as-is, then the to-be |
 
 Each has a PNG beside it. **Look at the PNG first** — it is faster than reasoning
 about the rules, and it is what the output is supposed to look like.

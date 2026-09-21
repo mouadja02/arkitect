@@ -17,6 +17,7 @@ Read only what the task needs. Every path is relative to this skill.
 | Task | Read |
 |---|---|
 | Draw a new diagram | this file, the one pattern you pick in step 2, and `assets/templates/starter-architecture.spec.json` with its PNG |
+| Two pages, e.g. as-is and to-be | add `assets/templates/as-is-to-be.spec.json` and its PNGs |
 | Edit an existing `.drawio` | `references/editing.md` |
 | An icon the search cannot settle, a product logo, the pack list | `references/icons.md` |
 | Rendering fails, or you must explain how pages export | `references/rendering.md` |
@@ -73,7 +74,8 @@ shipped guide. Say so in the report.
    node scripts/build-diagram.mjs --print-style
    node scripts/build-diagram.mjs my-spec.json --out "path/to/diagram.drawio"
    ```
-   Write the spec next to the output file, never inside this skill's folder.
+   Write the spec next to the output file, never inside this skill's folder;
+   more than one page is `pages: [{ name, nodes, edges }]`.
    With `"source": "override"` the user applied their own conventions: pick each
    edge `kind` by its `meaning` there, and do not fight the tokens it changed. A
    non-empty `style.errors` in the build report means the override was ignored:
