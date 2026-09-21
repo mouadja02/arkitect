@@ -13,6 +13,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- `arkitect install codex` also writes a Codex skill,
+  `.agents/skills/arkitect/SKILL.md`, which Codex picks up from its
+  description or runs as `$arkitect`. Its paths are absolute, so it works from
+  any folder of the project, and it says what the engine guides mean by
+  `${CLAUDE_PLUGIN_ROOT}`, which Codex never sets. `install codex-skill --dir ~`
+  puts it in the user scope for every project. `AGENTS.md` is still written, and
+  the `codex` alias now names both adapters (#127).
+
 - A Draw.io spec can build more than one page. The docs offered pages three
   times - the engine table, the interview ladder, "two pages or one
   comparison" - and the builder wrote exactly one `<diagram>`, so an agent
@@ -37,6 +45,13 @@ separate file, no naming scheme, no required format beyond that.
   `boundaries`. The build still succeeds; a backdrop with nothing inside, a
   note, a text and a real boundary stay silent, and so does every committed
   template (#204).
+
+### Removed
+
+- `.codex/prompts/diagram.md` and the instructions to copy it. Codex has
+  deprecated custom prompts for skills; the docs invoked it as `/diagram` where
+  Codex spells it `/prompts:diagram`; and its paths resolved only inside the
+  Arkitect checkout. A copy already installed keeps working (#127).
 
 ## [1.6.3] — 2026-09-21
 

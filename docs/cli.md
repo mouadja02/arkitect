@@ -159,7 +159,7 @@ bin/
   arkitect.mjs          the dispatcher
   lib/install-agent.mjs the agent adapters
 .claude-plugin/         plugin + marketplace manifests (Claude Code)
-.cursor/ .opencode/ .codex/ .github/
+.cursor/ .opencode/ .github/
                         this repository's own agent adapters
 docker/
   docker-compose.yml    the local Excalidraw app

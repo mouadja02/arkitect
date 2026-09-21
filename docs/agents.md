@@ -7,7 +7,7 @@ in whatever file format your tool happens to read.
 | agent | reads | install |
 |---|---|---|
 | [Claude Code](#claude-code) | plugin skills | `claude plugin install arkitect@arkitect` |
-| [Codex](#codex) | `AGENTS.md` | `arkitect install codex` |
+| [Codex](#codex) | `AGENTS.md`, `.agents/skills/` | `arkitect install codex` |
 | [Cursor](#cursor) | `.cursor/rules/*.mdc` | `arkitect install cursor cursor-command` |
 | [OpenCode](#opencode) | `AGENTS.md`, `.opencode/command/` | `arkitect install opencode agents` |
 | [GitHub Copilot](#github-copilot) | `.github/copilot-instructions.md` | `arkitect install copilot` |
@@ -69,22 +69,32 @@ claude mcp add --scope user drawio -- npx --yes --ignore-scripts @drawio/mcp
 
 ## Codex
 
-Codex reads `AGENTS.md` from the repository root.
-
 ```bash
 cd ~/my-project
 node ~/arkitect/bin/arkitect.mjs install codex
 ```
 
-For a slash command, copy the prompt template into your Codex prompts
-directory — Codex exposes each file there as `/<filename>`:
+That writes two files:
+
+- `AGENTS.md` — the contract, which Codex reads from the repository root.
+- `.agents/skills/arkitect/SKILL.md` — a skill. Codex picks it when a request
+  matches its description, or run it yourself:
+  `$arkitect draw the ingestion pipeline as excalidraw`, or choose it from
+  `/skills`. Every path in it is absolute, so it works from any folder, and it
+  says what the engine guides mean by `${CLAUDE_PLUGIN_ROOT}`.
+
+For every project on the machine, put the skill in your user scope instead:
 
 ```bash
-mkdir -p ~/.codex/prompts
-cp ~/arkitect/.codex/prompts/diagram.md ~/.codex/prompts/diagram.md
+node ~/arkitect/bin/arkitect.mjs install codex-skill --dir ~
 ```
 
-Then `/diagram draw the ingestion pipeline as excalidraw`.
+A rerun refreshes `AGENTS.md` and leaves an existing skill alone; pass
+`--force` to replace it after updating Arkitect.
+
+Earlier versions shipped a custom prompt to copy into `~/.codex/prompts`.
+Codex has deprecated custom prompts for skills, and Arkitect no longer ships
+one. A copy you still have runs as `/prompts:diagram`, not `/diagram`.
 
 MCP servers live in `~/.codex/config.toml`:
 
