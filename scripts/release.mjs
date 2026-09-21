@@ -42,6 +42,64 @@ export function nextVersion(current, bump) {
   throw new Error(`bump must be patch, minor or major, not "${bump}"`);
 }
 
+// ---------------------------------------------------------------- resuming
+//
+// A release is two workflows and a merge, and any step of either can fail after
+// the one before it succeeded: a branch pushed and the pull request not opened,
+// a tag pushed and the release not created. Re-running used to make it worse -
+// prepare refused the branch it had pushed itself, publish tripped over its own
+// tag - so a transient GitHub failure had to be repaired by hand (#120).
+//
+// Nothing below mutates anything. The workflow observes what is on the remote,
+// these decide what a rerun should do, and the workflow acts on the answer. Two
+// states are never papered over: a branch whose manifests disagree with the
+// version, and a tag that points somewhere other than the merge commit. Both
+// mean two different releases are in flight, and the fix is a person's - never
+// a force-push, never a moved tag.
+
+const ACTIONS = ['commit-push-open', 'open-only', 'tag-and-release', 'release-only', 'noop', 'conflict'];
+
+export function prepareAction({ version, branchExists, branchVersion, tagExists, prState }) {
+  const branch = `release/v${version}`;
+  const say = (action, reason) => ({ action, reason });
+  if (tagExists) {
+    return say('conflict', `v${version} is already tagged, so it is already released; prepare the next version instead`);
+  }
+  if (!branchExists) return say('commit-push-open', `${branch} does not exist yet; this is a first run`);
+  if (branchVersion !== version) {
+    return say('conflict', `${branch} says ${branchVersion || 'nothing'}, not ${version}; settle that branch by hand before re-running`);
+  }
+  if (prState === 'MERGED') {
+    return say('conflict', `${branch} is already merged; what is missing is the publish, not the prepare`);
+  }
+  if (prState === 'CLOSED') {
+    return say('conflict', `the pull request for ${branch} was closed unmerged; re-open it yourself, or delete the branch and start again`);
+  }
+  if (prState === 'OPEN') return say('noop', `${branch} is pushed and its pull request is open; nothing to do`);
+  return say('open-only', `${branch} is pushed and says ${version}, but has no pull request; opening one from the branch as it stands`);
+}
+
+export function publishAction({ version, tagSha, headSha, releaseExists }) {
+  const say = (action, reason) => ({ action, reason });
+  if (!headSha) return say('conflict', 'no merge commit to tag');
+  if (tagSha && tagSha !== headSha) {
+    return say('conflict', `v${version} already points at ${tagSha.slice(0, 12)}, not the merge commit ${headSha.slice(0, 12)}; a published tag is never moved`);
+  }
+  if (releaseExists && !tagSha) {
+    return say('conflict', `a release v${version} exists with no tag behind it; settle that by hand`);
+  }
+  if (releaseExists) return say('noop', `v${version} is tagged at the merge commit and its release is published; nothing to do`);
+  if (tagSha) return say('release-only', `v${version} is already tagged at the merge commit; only the release is missing`);
+  return say('tag-and-release', `v${version} is not tagged yet; this is a first run`);
+}
+
+// GitHub step outputs, so a workflow can append the answer and branch on it.
+// The reason is one line by construction - a newline here would end the value.
+export function outputLines({ action, reason }) {
+  if (!ACTIONS.includes(action)) throw new Error(`unknown action "${action}"`);
+  return `action=${action}\nreason=${String(reason).replace(/\s+/g, ' ').trim()}\n`;
+}
+
 // The [Unreleased] section: where its body starts and ends in the file.
 function unreleasedSpan(changelog) {
   const head = /^## \[Unreleased\][^\n]*\n/m.exec(changelog);
@@ -181,6 +239,37 @@ async function main([command, arg, ...rest]) {
     console.log(`ok  ${arg}`);
     return;
   }
+  // The next version, without writing anything. A rerun has to know which
+  // version it is resuming before it may touch a file (#120).
+  if (command === 'next') {
+    const pkg = readJson(FILES.pkg);
+    const plugin = readJson(FILES.plugin);
+    if (pkg.version !== plugin.version) throw new Error(`package.json says ${pkg.version}, plugin.json ${plugin.version}`);
+    console.log(nextVersion(pkg.version, arg));
+    return;
+  }
+  if (command === 'resume-prepare' || command === 'resume-publish') {
+    const flags = {};
+    for (const [, key, value] of [arg, ...rest].join(' ').matchAll(/--([\w-]+)(?:[= ]([^-\s][^\s]*))?/g)) {
+      flags[key] = value ?? '';
+    }
+    const decide = command === 'resume-prepare'
+      ? prepareAction({
+        version: flags.version,
+        branchExists: flags.branch === 'true',
+        branchVersion: flags['branch-version'] ?? '',
+        tagExists: flags.tag === 'true',
+        prState: (flags.pr ?? '').toUpperCase(),
+      })
+      : publishAction({
+        version: flags.version,
+        tagSha: flags['tag-sha'] ?? '',
+        headSha: flags['head-sha'] ?? '',
+        releaseExists: flags.release === 'true',
+      });
+    process.stdout.write(outputLines(decide));
+    return;
+  }
   if (command === 'draft') {
     const commits = commitsSinceRelease(changelog);
     if (!commits) throw new Error('no commits since the last release: nothing to draft');
@@ -210,7 +299,10 @@ async function main([command, arg, ...rest]) {
     console.log(version);
     return;
   }
-  console.error('usage: release.mjs prepare <patch|minor|major> [--date <iso-date>] | empty | draft | notes <X.Y.Z> | check <X.Y.Z>');
+  console.error('usage: release.mjs prepare <patch|minor|major> [--date <iso-date>] | next <patch|minor|major>'
+    + ' | empty | draft | notes <X.Y.Z> | check <X.Y.Z>'
+    + '\n       release.mjs resume-prepare --version X.Y.Z --branch <bool> --branch-version <X.Y.Z> --tag <bool> --pr <state>'
+    + '\n       release.mjs resume-publish --version X.Y.Z --tag-sha <sha> --head-sha <sha> --release <bool>');
   process.exit(2);
 }
 

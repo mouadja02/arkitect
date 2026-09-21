@@ -13,6 +13,19 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Either release workflow can be re-run after a partial failure. Prepare used to
+  refuse the branch it had pushed itself, so a `gh pr create` that failed left a
+  release branch with no pull request and no way forward but by hand; publish
+  created and pushed the tag before the release, so a failed `gh release create`
+  left a tag a rerun tripped over. Both now look at what is already on the remote
+  before they change anything, and resume only a state that matches: the branch
+  is taken **as it stands**, with any correction made on it, and opened as a
+  draft so the same person still reads it. A branch naming another version, a tag
+  pointing anywhere but the merge commit, and a pull request closed unmerged are
+  refused with the reason — nothing is force-pushed, no tag is moved, no branch
+  is deleted. The decisions are `release.mjs resume-prepare` and
+  `resume-publish`, unit-tested on every state (#120).
+
 - The numbered-flow pattern is a recipe the builder can execute. Section 7 of
   the Draw.io catalog taught filled blue circles sat on the connectors, drawn
   from a raw ellipse style, and the builder has no such kind: a model following

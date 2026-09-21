@@ -62,47 +62,97 @@ jobs:
           ARKITECT_BROWSER: /usr/bin/google-chrome
         run: node tests/run-tests.mjs
 
+      # Which version this run is about, and whether [Unreleased] would need a
+      # model, both decided before a single file is touched. A rerun has to know
+      # what it is resuming before it may write anything (#120), and asking the
+      # model before we know we need it costs a call the resume path discards.
+      - name: The version this run is about
+        id: version
+        run: |
+          version=$(node scripts/release.mjs next "${{ inputs.bump }}")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if node scripts/release.mjs empty; then
+            echo "needs-draft=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs-draft=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Observe; decide; then act. scripts/release.mjs makes the decision and is
+      # unit-tested on every state this can be in.
+      - name: What is already on the remote
+        id: resume
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          branch="release/v$VERSION"
+          exists=false
+          branch_version=""
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            exists=true
+            # checkout configures a refspec for main alone, so name this one.
+            git fetch --quiet origin "+refs/heads/$branch:refs/remotes/origin/$branch"
+            branch_version=$(git show "origin/$branch:package.json" | node -pe 'JSON.parse(require("fs").readFileSync(0, "utf8")).version' || echo "")
+          fi
+          tag=false
+          if git ls-remote --exit-code --tags origin "v$VERSION" >/dev/null 2>&1; then tag=true; fi
+          pr=$(gh pr list --head "$branch" --state all --json state --jq '.[0].state // ""')
+          node scripts/release.mjs resume-prepare --version "$VERSION" --branch "$exists" \
+            --branch-version "$branch_version" --tag "$tag" --pr "$pr" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Stop on a state a person has to settle
+        if: steps.resume.outputs.action == 'conflict'
+        run: |
+          echo "::error::${{ steps.resume.outputs.reason }}"
+          exit 1
+
+      - name: Already prepared
+        if: steps.resume.outputs.action == 'noop'
+        run: echo "::notice::${{ steps.resume.outputs.reason }}"
+
       - name: Draft an empty [Unreleased] from the commit log
-        id: draft
+        if: steps.resume.outputs.action == 'commit-push-open' && steps.version.outputs.needs-draft == 'true'
         env:
           RELEASE_LLM_BASE_URL: ${{ vars.RELEASE_LLM_BASE_URL }}
           RELEASE_LLM_MODEL: ${{ vars.RELEASE_LLM_MODEL }}
           RELEASE_LLM_API_KEY: ${{ secrets.RELEASE_LLM_API_KEY }}
-        run: |
-          if node scripts/release.mjs empty; then
-            node scripts/release.mjs draft
-            echo "drafted=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "drafted=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: node scripts/release.mjs draft
 
-      - name: Bump both manifests and date the section
-        id: version
-        run: |
-          version=$(node scripts/release.mjs prepare "${{ inputs.bump }}")
-          node scripts/release.mjs check "$version"
-          if git ls-remote --exit-code --heads origin "release/v$version" >/dev/null; then
-            echo "::error::release/v$version already exists"
-            exit 1
-          fi
-          if git ls-remote --exit-code --tags origin "v$version" >/dev/null; then
-            echo "::error::tag v$version already exists"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Open the release pull request
+      - name: Bump both manifests, date the section, push the branch
+        if: steps.resume.outputs.action == 'commit-push-open'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
-          DRAFTED: ${{ steps.draft.outputs.drafted }}
         run: |
+          prepared=$(node scripts/release.mjs prepare "${{ inputs.bump }}")
+          test "$prepared" = "$VERSION"
+          node scripts/release.mjs check "$VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git switch -c "release/v$VERSION"
           git add package.json .claude-plugin/plugin.json CHANGELOG.md
           git commit -m "Release $VERSION"
           git push origin "release/v$VERSION"
+
+      # The branch is already pushed and agrees with the version, so it is taken
+      # as it stands - any correction a person made to CHANGELOG.md on it is
+      # what gets published, and nothing here rewrites it.
+      - name: Take the branch that is already pushed
+        if: steps.resume.outputs.action == 'open-only'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git fetch --quiet origin "+refs/heads/release/v$VERSION:refs/remotes/origin/release/v$VERSION"
+          git switch --force-create "release/v$VERSION" "origin/release/v$VERSION"
+          node scripts/release.mjs check "$VERSION"
+
+      - name: Open the release pull request
+        if: steps.resume.outputs.action == 'commit-push-open' || steps.resume.outputs.action == 'open-only'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DRAFTED: ${{ steps.version.outputs.needs-draft }}
+          RESUMED: ${{ steps.resume.outputs.action == 'open-only' }}
+        run: |
           {
             if [ "$DRAFTED" = "true" ]; then
               echo "> [!WARNING]"
@@ -110,10 +160,16 @@ jobs:
               echo "> Read and correct them in CHANGELOG.md before marking this ready. Merging publishes them verbatim."
               echo
             fi
+            if [ "$RESUMED" = "true" ]; then
+              echo "> [!NOTE]"
+              echo "> The branch was already pushed by an earlier run that did not get as far as this pull request."
+              echo "> It is taken exactly as it stands, edits and all. Opened as a draft, so the same person still reads it."
+              echo
+            fi
             echo "Merging this tags \`v$VERSION\` and publishes a GitHub Release whose body is exactly this section:"
             echo
             node scripts/release.mjs notes "$VERSION"
           } > body.md
           draft_flag=""
-          if [ "$DRAFTED" = "true" ]; then draft_flag="--draft"; fi
+          if [ "$DRAFTED" = "true" ] || [ "$RESUMED" = "true" ]; then draft_flag="--draft"; fi
           gh pr create --base main --head "release/v$VERSION" --title "Release $VERSION" --body-file body.md $draft_flag
