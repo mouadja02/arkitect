@@ -63,6 +63,15 @@ separate file, no naming scheme, no required format beyond that.
   is pinned to 24.04. Dropping one then takes a line and has green evidence
   behind it. A test holds the pins and the labels (#122).
 
+- Both skills write the seven report headings out as a bare list before
+  qualifying them. Step 9 named each one in bold with a parenthetical, nine
+  lines in all, and about a third of runs dropped or renamed one. The Render
+  heading now says what to cite when only an SVG exists: the validator's own
+  overlap, label and crossing findings, quoted as the validator's, not a
+  description of a picture nobody saw. Two eval graders that failed correct
+  runs are fixed. What is left - a run that drops the headings altogether - is
+  #215 (#208).
+
 ## [1.6.2] — 2026-09-20
 
 ### Fixed
