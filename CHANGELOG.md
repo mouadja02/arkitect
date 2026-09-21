@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.6.3] — 2026-09-21
+
 ### Fixed
 
 - Either release workflow can be re-run after a partial failure. Prepare used to
