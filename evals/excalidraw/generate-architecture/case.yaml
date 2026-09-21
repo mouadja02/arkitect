@@ -63,7 +63,11 @@ graders:
   - type: regex
     name: render-draws-the-scene
     target: { source: file, path: ./eval-output/orders.svg }
-    pattern: '^(?=[\s\S]*<svg[^>]*width="\d{3,})(?=[\s\S]*viewBox=)(?=[\s\S]*<path)(?=[\s\S]*<text)(?=[\s\S]*[Pp]ostgres)'
+    # `[Pp]ostgre`, not `[Pp]ostgres`: "PostgreSQL" is Postgre + SQL, with a
+    # capital S, so the tighter spelling failed every run that used the
+    # product's real name - which is what the style guide asks for. The grader
+    # was marking the agent down for doing as it was told (#208).
+    pattern: '^(?=[\s\S]*<svg[^>]*width="\d{3,})(?=[\s\S]*viewBox=)(?=[\s\S]*<path)(?=[\s\S]*<text)(?=[\s\S]*[Pp]ostgre)'
 
   # SKILL.md names six headings, "every one, even when it is short". Whether
   # they are present is a fact, so a judge is not asked for it (#135).
