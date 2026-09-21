@@ -121,11 +121,24 @@ the two failures share the words "Operation not permitted" - but a refused
 that. The renderer now says so and names `--format svg` instead.
 
 So the suite's render is the SVG. `excalidraw-generate-architecture` asks for
-one beside the scene and grades it: `file_exists` that it landed, and a regex
-over the file itself for a real canvas, drawn shapes, drawn text and the one
-product the prompt names. Draw.io has no equivalent - nothing in that path runs
-without Draw.io Desktop and a display - so its cases still stop at "the agent
-ran the renderer and reported the result honestly".
+one beside the scene and grades the file itself: a real canvas, drawn shapes,
+drawn text and the one product the prompt names. Draw.io has no equivalent -
+nothing in that path runs without Draw.io Desktop and a display - so its cases
+still stop at "the agent ran the renderer and reported the result honestly".
+
+**A `file_exists` grader does not resolve a relative path the way a `regex`
+grader's `{source: file, path}` does.** In one batch of three runs, a
+`file_exists` on `./eval-output/orders.svg` reported it missing in all three,
+while the regex grader on the identical path read that file and matched it in
+two of them — and the file was there in the kept sandbox for all three. Reading
+a file proves it exists, and an unreadable one fails with its own message, so
+the case keeps the regex and drops the `file_exists` (#208). Be wary of trusting
+a `file_exists` path that has not been shown to work.
+
+**The run summary does not always list every failing grader.** The batch above
+printed three failures where `result.json` recorded five. Read `result.json` for
+anything you are going to quote; `scripts/eval-summary.mjs` is for reading at a
+glance, not for evidence.
 
 If a browser ever starts inside the sandbox, the PNG needs no new machinery: a
 regex grader refuses an image and says so, pointing at an `llm` grader with
