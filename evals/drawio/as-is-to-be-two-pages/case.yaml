@@ -1,0 +1,53 @@
+schema_version: "1.1"
+name: drawio-as-is-to-be-two-pages
+description: >
+  An as-is and a to-be asked for on two pages should come out as one .drawio
+  with two pages, built from one spec with `pages` - not hand-written XML and
+  not two single-page builds stitched together by hand (#184).
+tags: [generation, pages]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    For the architecture review board, draw our ticket-booking system in Draw.io
+    on two pages. Page one is the as-is: a monolith on an on-premises VM with a
+    MySQL database, backed up nightly to tape. Page two is the to-be, in AWS: an
+    Application Load Balancer in front of an ECS Fargate service, Aurora for the
+    data and S3 for backups. Save it to ./eval-output/booking.drawio, with the
+    spec you build it from beside it as ./eval-output/booking.spec.json.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: regex
+    name: two-pages-in-one-file
+    target: { source: file, path: ./eval-output/booking.drawio }
+    pattern: '<diagram\b[\s\S]*<diagram\b'
+
+  # Before #184, both control runs on main passed a check for the builder's
+  # `agent=` stamp and a spec mentioning "pages": they built two single-page
+  # files and stitched them with their own script, one after writing a `pages`
+  # spec the builder ignored, the other with "pages" only in a `_meta` note.
+  # Only a multi-page build writes the page count on <mxfile>; a stitched file
+  # copies a single-page header that has none.
+  - type: regex
+    name: built-as-one-multi-page-file
+    target: { source: file, path: ./eval-output/booking.drawio }
+    pattern: '<mxfile [^>]*\bagent="arkitect-drawio"[^>]*\bpages="2"'
+
+  - type: regex
+    name: one-spec-with-pages
+    target: { source: file, path: ./eval-output/booking.spec.json }
+    pattern: '"pages"\s*:\s*\[\s*\{'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-drawio

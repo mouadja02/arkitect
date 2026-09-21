@@ -13,6 +13,19 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- A Draw.io spec can build more than one page. The docs offered pages three
+  times - the engine table, the interview ladder, "two pages or one
+  comparison" - and the builder wrote exactly one `<diagram>`, so an agent
+  that asked and heard yes was left with hand-written XML or a silent single
+  page. `pages: [{ name, id, title, boundaries, nodes, edges, legend }]` builds
+  one page each, sharing `layout` and `context`; ids are per page, an edge
+  across pages is refused and says which page the other end is on, and every
+  report path names its page; the file carries its page count, as Draw.io's
+  own do. A spec without `pages` builds byte-identical.
+  The new `as-is-to-be` template is the worked example, with a PNG per page,
+  and Excalidraw's ladder now offers two frames, the pages it can build
+  (#184).
+
 - Both builders name a box drawn where a boundary was meant, under
   `looksLikeBoundary` in the build report. A boundary owns what is inside it;
   a plain box laid over the same nodes draws much the same picture, owns

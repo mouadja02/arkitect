@@ -2437,26 +2437,33 @@ test('AWS and Google Cloud captions their file names mangled are corrected, and 
 const SPEC = join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json');
 const OUT = join(TMP, 'generated.drawio');
 
-// Agents read the committed example, and its PNG, before writing a spec, so a
-// stale one teaches the wrong output. Draw.io output is deterministic, so the
-// committed file must be exactly what its spec builds today (#50).
-test('the committed Draw.io starter is exactly what its spec builds (#50)', () => {
-  const committedPath = join(SKILL, 'assets', 'templates', 'starter-architecture.drawio');
-  assert(existsSync(join(SKILL, 'assets', 'templates', 'starter-architecture.png')), 'a rendered PNG ships beside the example');
-  const build = () => builder.buildDiagram(JSON.parse(readFileSync(SPEC, 'utf8'))).xml;
-  const xml = build();
-  eq(build(), xml, 'two builds of the same spec are identical');
-  const committed = readFileSync(committedPath, 'utf8');
-  if (xml === committed) return;
-  const a = committed.split('\n');
-  const b = xml.split('\n');
-  let line = a.findIndex((l, i) => l !== b[i]);
-  if (line === -1) line = Math.min(a.length, b.length);
-  const cell = /<mxCell id="([^"]+)"/.exec(a[line] ?? b[line] ?? '')?.[1];
-  const column = [...(a[line] ?? '')].findIndex((c, i) => c !== (b[line] ?? '')[i]) + 1;
-  throw new Error(`starter-architecture.drawio is stale: line ${line + 1}${cell ? `, cell "${cell}"` : ''}, column ${column} differs from a fresh build. `
-    + 'Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/starter-architecture.spec.json --out <tmp> --defaults), '
-    + 'copy it over, and re-render starter-architecture.png in the same pull request.');
+// Agents read the committed examples, and their PNGs, before writing a spec, so
+// a stale one teaches the wrong output. Draw.io output is deterministic, so each
+// committed file must be exactly what its spec builds today (#50). A two-page
+// example ships one PNG per page, named as `render --all` names them (#184).
+test('every committed Draw.io template is exactly what its spec builds (#50)', () => {
+  const dir = join(SKILL, 'assets', 'templates');
+  const names = readdirSync(dir).filter((f) => f.endsWith('.spec.json')).map((f) => f.slice(0, -'.spec.json'.length));
+  assert(names.includes('starter-architecture') && names.includes('as-is-to-be'), `templates: ${names.join(', ')}`);
+  for (const name of names) {
+    const build = () => builder.buildDiagram(JSON.parse(readFileSync(join(dir, `${name}.spec.json`), 'utf8'))).xml;
+    const xml = build();
+    eq(build(), xml, `${name}: two builds of the same spec are identical`);
+    const pages = (xml.match(/<diagram /g) ?? []).length;
+    const pngs = pages === 1 ? [`${name}.png`] : Array.from({ length: pages }, (_, n) => `${name}.p${n}.png`);
+    for (const png of pngs) assert(existsSync(join(dir, png)), `${png} ships beside the example`);
+    const committed = readFileSync(join(dir, `${name}.drawio`), 'utf8');
+    if (xml === committed) continue;
+    const a = committed.split('\n');
+    const b = xml.split('\n');
+    let line = a.findIndex((l, i) => l !== b[i]);
+    if (line === -1) line = Math.min(a.length, b.length);
+    const cell = /<mxCell id="([^"]+)"/.exec(a[line] ?? b[line] ?? '')?.[1];
+    const column = [...(a[line] ?? '')].findIndex((c, i) => c !== (b[line] ?? '')[i]) + 1;
+    throw new Error(`${name}.drawio is stale: line ${line + 1}${cell ? `, cell "${cell}"` : ''}, column ${column} differs from a fresh build. `
+      + `Rebuild it (node bin/arkitect.mjs drawio build skills/arkitect-drawio/assets/templates/${name}.spec.json --out <tmp> --defaults), `
+      + `copy it over, and re-render ${pngs.join(' and ')} in the same pull request.`);
+  }
 });
 
 // ------------------------------------------------------------- per-install style (#89)
@@ -3833,6 +3840,63 @@ test('a box drawn where a boundary was meant is named in the build report (#204)
   eq(JSON.stringify(out.looksLikeBoundary.map((u) => u.field)), JSON.stringify([
     'nodes[0].width', 'nodes[0].height', 'nodes[2]', 'nodes[5]',
   ]), 'the CLI prints them and exits 0');
+});
+
+// The docs offered multiple pages three times - the engine table, the interview
+// ladder, SKILL.md's "two pages or one comparison" - and the builder wrote
+// exactly one <diagram>. An agent that asked and got "yes" had hand-written XML
+// or a silent single page to choose from (#184).
+test('a spec with pages builds one Draw.io page each, and refuses what cannot be drawn (#184)', () => {
+  const box = (id, col = 0) => ({ id, kind: 'box', label: id, col, row: 0 });
+  const { xml, report } = builder.buildDiagram({
+    pages: [
+      { name: 'As-is', title: 'Today', nodes: [box('db'), box('app', 1)], edges: [{ from: 'app', to: 'db' }] },
+      { name: 'To-be', id: 'target', nodes: [box('db'), box('api', 1)], edges: [{ from: 'api', to: 'db', kind: 'async' }, { from: 'db', to: 'api' }] },
+    ],
+  });
+  eq(JSON.stringify([...xml.matchAll(/<diagram name="([^"]*)" id="([^"]*)">/g)].map((m) => [m[1], m[2]])),
+    JSON.stringify([['As-is', 'generated-page-1'], ['To-be', 'target']]), 'one <diagram> per page, named, with a default id');
+  assert(/^<mxfile [^>]*\bpages="2">/.test(xml), 'the file carries its page count, as Draw.io writes it');
+  const [first, second] = xml.split('<diagram ').slice(1);
+  assert(first.includes('value="Today"') && !second.includes('value="Today"'), 'a title belongs to its own page');
+  assert(!first.includes('id="legend"') && second.includes('id="legend"'), 'a page gets a legend only for its own connector kinds');
+  eq(report.unknownKinds.length + report.unknownFields.length, 0, 'nothing unknown');
+
+  const path = join(TMP, 'pages.drawio');
+  writeFileSync(path, xml);
+  const v = validator.validateFile(path);
+  assert(v.ok, `the two-page file validates, with the id "db" on both pages: ${JSON.stringify(v.errors)}`);
+
+  // Each page's mistakes are named with its page.
+  const r = builder.buildDiagram({
+    pages: [
+      { name: 'A', nodes: [{ ...box('a'), kind: 'panel' }] },
+      { name: 'B', tint: 'blue', nodes: [{ ...box('b'), style: 'x', width: 2 }], edges: [] },
+    ],
+  }).report;
+  eq(JSON.stringify([r.unknownKinds.map((u) => u.field), r.unknownFields.map((u) => u.field), r.looksLikeBoundary.map((u) => u.field)]),
+    JSON.stringify([['pages[0].nodes[0].kind'], ['pages[1].tint', 'pages[1].nodes[0].style'], ['pages[1].nodes[0].width']]),
+    'report paths name the page');
+
+  const refused = (spec) => {
+    try { builder.buildDiagram(spec); } catch (error) { return error.errors; }
+    throw new Error(`built: ${JSON.stringify(spec)}`);
+  };
+  eq(JSON.stringify(refused({ nodes: [box('a')], title: 'T', pages: [{ nodes: [box('b')] }] })),
+    JSON.stringify(['pages: nodes, title belong on a page in a spec with pages']), 'top-level page content beside pages');
+  eq(JSON.stringify(refused({ pages: [{ nodes: [box('a')], edges: [{ from: 'a', to: 'b' }] }, { nodes: [box('b')] }] })),
+    JSON.stringify(['pages[0].edges[0].to: "b" is on pages[1]; an edge cannot cross pages']), 'an edge across pages');
+  eq(JSON.stringify(refused({ pages: [{ name: 'X', id: 'p' }, { name: 'X', id: 'p' }] })), JSON.stringify([
+    'pages[1].id: "p" is already the id of pages[0]', 'pages[1].name: "X" is already the name of pages[0]',
+  ]), 'two pages with one id or one name');
+  eq(JSON.stringify(refused({ pages: [] })), JSON.stringify(['pages: expected a non-empty array of page objects']), 'no pages');
+  eq(JSON.stringify(refused({ pages: [{ nodes: [{ ...box('a'), col: 'x' }] }] })),
+    JSON.stringify(['pages[0].nodes[0].col: expected a finite number, got "x"']), 'a number is checked on its page');
+
+  const specPath = join(TMP, 'pages.spec.json');
+  writeFileSync(specPath, JSON.stringify({ pages: [{ nodes: [box('a')] }, { nodes: [box('a')] }] }));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'pages-cli.drawio')], { encoding: 'utf8' }));
+  eq((readFileSync(out.wrote, 'utf8').match(/<diagram /g) ?? []).length, 2, 'the CLI writes both pages');
 });
 
 // ------------------------------------------------------------- logos

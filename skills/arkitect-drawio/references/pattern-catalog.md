@@ -55,8 +55,8 @@ Two stacked bands, each a full pipeline:
 - A right-hand column holds **Strengths** (green dashed box) and **Weaknesses** (red
   dashed box), each with bold sub-headings and plain body lines.
 
-This is the most distinctive pattern in the corpus. Reach for it whenever the user is
-weighing options rather than documenting a decided design.
+The corpus's most distinctive pattern: use it when options are being weighed.
+On two pages: `../assets/templates/as-is-to-be.spec.json`.
 
 ---
 
