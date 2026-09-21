@@ -1005,9 +1005,18 @@ function assemble(spec, style) {
     }
   }
 
-  // Frames behind scopes behind nodes behind arrows: an arrow drawn under a
-  // filled box disappears, and a scope drawn last hides its own contents.
-  scene.elements = [...frames, ...scopes, ...nodeLayer, ...edgeLayer, ...chrome];
+  // Scopes behind nodes behind arrows: an arrow drawn under a filled box
+  // disappears, and a scope drawn last hides its own contents. Excalidraw also
+  // wants each frame straight after its own members, which its renderer relies
+  // on to clip them (#192). So: the scopes no frame holds, then each frame's
+  // members in those same layers followed by the frame, then the rest.
+  const layers = [...scopes, ...nodeLayer, ...edgeLayer];
+  const unframed = (list) => list.filter((el) => !el.frameId);
+  scene.elements = [
+    ...unframed(scopes),
+    ...frames.flatMap((fr) => [...layers.filter((el) => el.frameId === fr.id), fr]),
+    ...unframed(nodeLayer), ...unframed(edgeLayer), ...chrome,
+  ];
   reindex(scene.elements);
   // Reported, not rerouted: the fix is a layout change the spec's author makes (#125).
   for (const c of connectorCrossings(scene.elements)) {

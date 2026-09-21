@@ -1446,6 +1446,67 @@ test('a frame inside a frame is reported, and the innermost one owns its content
   eq(inner.frameId, null, 'and the inner frame is not itself a member of the outer one');
 });
 
+// Excalidraw wants a frame straight after its own children; the builder wrote
+// every frame first (#192).
+const FRAMED = {
+  title: 'Frames',
+  boundaries: [
+    { id: 'outer', label: 'Account' },
+    { id: 'f1', kind: 'frame', label: 'One', parent: 'outer' },
+    { id: 'inner', label: 'Inner', parent: 'f1' },
+    { id: 'f2', kind: 'frame', label: 'Two' },
+  ],
+  nodes: [
+    { id: 'a', label: 'A', parent: 'inner' },
+    { id: 'b', kind: 'icon', icon: 'drawio:databases/postgresql', label: 'PostgreSQL', sublabel: 'primary', parent: 'f1', col: 1 },
+    { id: 'c', label: 'C', parent: 'f2', col: 4 },
+    { id: 'd', label: 'D', parent: 'f2', col: 5 },
+    { id: 'e', label: 'E', col: 7 },
+  ],
+  edges: [
+    { from: 'a', to: 'b', label: 'inside one' }, { from: 'c', to: 'd', label: 'inside two' },
+    { from: 'b', to: 'c', label: 'across' }, { from: 'd', to: 'e' },
+  ],
+};
+
+test('each frame comes straight after its own members, the other layers in their order (#192)', () => {
+  const { scene } = builder.buildDiagram(FRAMED, { seed: 1 });
+  const els = scene.elements;
+  const frames = els.filter((el) => el.type === 'frame');
+  eq(frames.length, 2, 'two frames');
+  for (const fr of frames) {
+    const at = els.indexOf(fr);
+    const members = els.map((el, i) => (el.frameId === fr.id ? i : -1)).filter((i) => i >= 0);
+    assert(members.length >= 3, `frame "${fr.name}" has its members`);
+    eq(members.join(','), members.map((_, k) => at - members.length + k).join(','),
+      `frame "${fr.name}" follows its members, which sit together right before it`);
+    // Inside the block, the builder's layers: scopes, then nodes, then edges.
+    const kinds = members.map((i) => (els[i].type === 'arrow' ? 2 : els[i].strokeStyle === 'dashed' ? 0 : 1));
+    assert(kinds.every((k, i) => i === 0 || k >= kinds[i - 1] || els[members[i]].type === 'text'),
+      `frame "${fr.name}": scopes, then nodes, then edges`);
+  }
+  const index = (pred) => els.findIndex(pred);
+  const outer = index((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed' && !el.frameId);
+  assert(outer >= 0 && outer < Math.min(...frames.map((fr) => els.indexOf(fr))) - 3, 'the scope around a frame is behind it');
+  const across = textNamed(scene, 'across');
+  assert(!across.frameId && els.indexOf(across) > Math.max(...frames.map((fr) => els.indexOf(fr))), 'an edge between frames comes after both');
+  eq(els.at(-1).text, 'Frames', 'the title stays last');
+  const v = validator.validateScene(scene);
+  assert(v.ok && !v.warnings.some((w) => w.includes('comes before')), `validation: ${[...v.errors, ...v.warnings].join('; ')}`);
+});
+
+test('a frame drawn before its children is a warning, never an error (#192)', () => {
+  const { scene } = builder.buildDiagram(FRAMED, { seed: 1 });
+  const fr = scene.elements.find((el) => el.type === 'frame');
+  const children = scene.elements.filter((el) => el.frameId === fr.id).length;
+  scene.elements = [fr, ...scene.elements.filter((el) => el !== fr)];
+  core.reindex(scene.elements);
+  const v = validator.validateScene(scene);
+  assert(v.ok, `the old order still validates: ${v.errors.join('; ')}`);
+  assert(v.warnings.includes(`frame "${fr.id}" comes before ${children} of its children; Excalidraw expects children first. `
+    + 'A scene built before 2.0.0 does this: rebuild it from its spec'), `warned: ${v.warnings.join('; ')}`);
+});
+
 // Sizing used to count a caption's height and not its width (#191).
 test('long captions and sublabels fit their scope or frame, with its padding (#191)', () => {
   const caption = 'PostgreSQL reporting database';

@@ -258,6 +258,16 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
       break;
     }
   }
+  // A frame comes after all of its children: Excalidraw's renderer relies on
+  // the order to clip them (#192).
+  const at = new Map(live.map((el, i) => [el.id, i]));
+  for (const fr of live.filter((el) => el.type === 'frame' || el.type === 'magicframe')) {
+    const late = live.filter((el) => el.frameId === fr.id && at.get(el.id) > at.get(fr.id)).length;
+    if (late) {
+      warnings.push(`frame "${fr.id}" comes before ${late} of its children; Excalidraw expects children first. `
+        + 'A scene built before 2.0.0 does this: rebuild it from its spec');
+    }
+  }
 
   // ------------------------------------------------------------ layout
 

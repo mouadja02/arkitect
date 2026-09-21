@@ -36,6 +36,11 @@ separate file, no naming scheme, no required format beyond that.
   one node is refused, and a bottom loop that crosses a caption is listed under
   `notes`. The validator warns about a zero-length connector, which every loop
   built before this has (#159).
+- An Excalidraw frame comes straight after its own members in the scene,
+  as the app expects and its renderer relies on to clip them. The builder
+  wrote every frame first. Scopes outside any frame stay at the back, and an
+  edge between frames stays on top. The validator warns about a frame ahead of
+  its children, which every frame scene built before this has (#192).
 
 ## [1.7.0] — 2026-09-21
 
