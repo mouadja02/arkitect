@@ -11,6 +11,20 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- Both builders name a box drawn where a boundary was meant, under
+  `looksLikeBoundary` in the build report. A boundary owns what is inside it;
+  a plain box laid over the same nodes draws much the same picture, owns
+  nothing, and validated cleanly. The eval run behind this issue went further
+  than that: its accounts were `width: 2, height: 2`, grid cells read as
+  pixels, which draws a 2px dot with its label lost behind an icon. So the list
+  carries both - a plain shape bigger than another node and around its centre,
+  and any width or height under 10px - each with a hint pointing at
+  `boundaries`. The build still succeeds; a backdrop with nothing inside, a
+  note, a text and a real boundary stay silent, and so does every committed
+  template (#204).
+
 ## [1.6.3] — 2026-09-21
 
 ### Fixed

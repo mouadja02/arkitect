@@ -3776,6 +3776,65 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
     'the badge evidence was dropped rather than moved to the style guide');
 });
 
+// A boundary owns what is inside it: the nodes are its children and move with
+// it. A plain box laid over the same nodes draws much the same picture, owns
+// nothing, and validates. An eval run drew five AWS accounts that way; its spec
+// gave each `width: 2, height: 2`, a count of grid cells read as pixels, which
+// draws a 2px dot. Both mistakes are arithmetic the builder can do (#204).
+test('a box drawn where a boundary was meant is named in the build report (#204)', () => {
+  const spec = {
+    nodes: [
+      { id: 'mgmt', kind: 'box', label: 'Management Account', col: 0, row: 1, width: 2, height: 2 },
+      { id: 'org', kind: 'box', label: 'Organizations', col: 0, row: 1 },
+      { id: 'security', kind: 'box', label: 'Security Account', col: 3, row: 1, width: 520, height: 320 },
+      { id: 'gd', kind: 'box', label: 'GuardDuty', col: 3, row: 1 },
+      { id: 'sh', kind: 'box', label: 'Security Hub', col: 4, row: 1 },
+      { id: 'panel', kind: 'panel', label: 'Unknown kind, drawn as a box', col: 0, row: 4, width: 520, height: 320 },
+      { id: 'inside', kind: 'icon', icon: 'aws/aws-lambda', label: 'Lambda', col: 0, row: 4 },
+    ],
+  };
+  const { xml, report } = builder.buildDiagram(spec);
+  assert(xml.includes('value="Security Account"'), 'the build still succeeds; the box is drawn as asked');
+  eq(JSON.stringify(report.looksLikeBoundary.map(({ hint, ...r }) => r)), JSON.stringify([
+    { field: 'nodes[0].width', node: 'mgmt', value: 2 },
+    { field: 'nodes[0].height', node: 'mgmt', value: 2 },
+    { field: 'nodes[2]', node: 'security', covers: ['gd'] },
+    { field: 'nodes[5]', node: 'panel', covers: ['inside'] },
+  ]), 'the grid-cell size and both covering boxes, in spec order; the dot covers nothing it is smaller than');
+  const [cells, , covering] = report.looksLikeBoundary;
+  assert(/pixels/.test(cells.hint) && /boundaries/.test(cells.hint), `the size hint names the unit and the fix: ${cells.hint}`);
+  assert(/`boundaries`/.test(covering.hint) && /`parent`/.test(covering.hint), `the cover hint names the fix: ${covering.hint}`);
+
+  // What is not a boundary claim stays silent.
+  eq(JSON.stringify(builder.buildDiagram({
+    boundaries: [{ id: 'acct', kind: 'scope', label: 'A real boundary', col: 0, row: 0, cols: 2 }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A child', parent: 'acct', col: 0, row: 0 },
+      { id: 'b', kind: 'box', label: 'Another', parent: 'acct', col: 1, row: 0 },
+      { id: 'backdrop', kind: 'box', label: 'Backdrop, nothing inside', col: 6, row: 0, width: 520, height: 320 },
+      { id: 'clip', kind: 'box', label: 'Wide, clips a neighbour', col: 0, row: 3, width: 500 },
+      { id: 'neighbour', kind: 'box', label: 'Neighbour', col: 1, row: 3 },
+      { id: 'note', kind: 'note', label: 'A note over things', col: 0, row: 5, width: 520, height: 320 },
+      { id: 'text', kind: 'text', label: 'A heading over things', col: 1, row: 5, width: 900, height: 320 },
+      { id: 'twin', kind: 'box', label: 'Same size, same cell', col: 0, row: 5 },
+      { id: 'under', kind: 'box', label: 'Under the note', col: 0, row: 5 },
+    ],
+  }).report.looksLikeBoundary), '[]', 'a real boundary, a backdrop, a clipped neighbour, a note, a text and two same-size boxes are not flagged');
+
+  const templates = join(SKILL, 'assets', 'templates');
+  for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
+    eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.looksLikeBoundary.length, 0,
+      `${f} is flagged: a template is what agents copy`);
+  }
+
+  const specPath = join(TMP, 'looks-like-boundary.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'looks-like-boundary.drawio')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.looksLikeBoundary.map((u) => u.field)), JSON.stringify([
+    'nodes[0].width', 'nodes[0].height', 'nodes[2]', 'nodes[5]',
+  ]), 'the CLI prints them and exits 0');
+});
+
 // ------------------------------------------------------------- logos
 
 // Minimal valid PNG, so the logo tests stay offline and deterministic.

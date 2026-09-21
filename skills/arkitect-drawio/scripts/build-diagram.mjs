@@ -35,6 +35,7 @@ import {
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
 } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
+import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- tokens
@@ -339,7 +340,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec),
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const drawnIcons = [];
@@ -408,6 +409,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const nodeBox = new Map();
   // Where each node landed on the page, and whether a caption hangs below it.
   const placed = new Map();
+  const footprints = [];
   for (const [i, n] of (spec.nodes ?? []).entries()) {
     const parent = n.parent ?? '1';
     if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
@@ -459,10 +461,17 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       caption: Boolean(n.label) && style.includes('verticalLabelPosition=bottom'),
       lines: String(n.label ?? '').split('\n').length,
     });
+    footprints.push({
+      field: `nodes[${i}]`, id: n.id, width: n.width, height: n.height,
+      plain: n.kind == null || n.kind === 'box' || !NODE_KINDS.includes(n.kind),
+      box: { x: x + origin.x, y: y + origin.y, width: box.w, height: box.h },
+    });
     push(`<mxCell id="${esc(n.id)}" value="${esc(n.label ?? '')}" style="${style}" vertex="1" parent="${esc(parent)}">`
       + `<mxGeometry x="${Math.round(x)}" y="${Math.round(y)}" width="${box.w}" height="${box.h}" as="geometry" /></mxCell>`);
     if (parent === '1') track(x, y, box.w, box.h);
   }
+
+  report.looksLikeBoundary = looksLikeBoundary(footprints);
 
   // An unknown kind draws as a plain flow. It used to crash on the edge label.
   const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');
@@ -633,6 +642,9 @@ function main(argv) {
     // Written, and not drawn at all: a key this builder has no use for. Same
     // treatment - fix it or report it; do not let it stand as done (#205).
     unknownFields: report.unknownFields,
+    // A plain box laid over nodes it does not own, or sized in grid cells.
+    // Drawn as asked; fix it or say why it stays (#204).
+    looksLikeBoundary: report.looksLikeBoundary,
     // Which style drew this: the house style, or this install's override (#89).
     style: styleSummary(style),
   }, null, 2));

@@ -756,6 +756,62 @@ test('an unknown spec field is named in the report, and the build still succeeds
   ]), 'the CLI prints them and exits 0');
 });
 
+// A boundary owns what is inside it; a plain shape laid over the same nodes
+// draws much the same picture and owns nothing. An eval run drew five accounts
+// that way, sized `width: 2, height: 2` - grid cells read as pixels. Both
+// engines share the spec shape, so both report it (#204).
+test('a shape drawn where a boundary was meant is named in the report (#204)', () => {
+  const spec = {
+    nodes: [
+      { id: 'mgmt', kind: 'box', label: 'Management Account', col: 0, row: 1, width: 2, height: 2 },
+      { id: 'org', kind: 'box', label: 'Organizations', col: 0, row: 1 },
+      { id: 'security', kind: 'round', label: 'Security Account', col: 3, row: 1, width: 520, height: 320 },
+      { id: 'gd', kind: 'box', label: 'GuardDuty', col: 3, row: 1 },
+      { id: 'sh', kind: 'box', label: 'Security Hub', col: 4, row: 1 },
+      { id: 'panel', kind: 'panel', label: 'Unknown kind', col: 0, row: 4, width: 520, height: 320 },
+      { id: 'inside', kind: 'placeholder', label: 'Lambda', col: 0, row: 4 },
+    ],
+  };
+  const r = builder.buildDiagram(spec);
+  assert(r.scene.elements.length > 0, 'the build still succeeds; the shape is drawn as asked');
+  eq(JSON.stringify(r.report.looksLikeBoundary.map(({ hint, ...x }) => x)), JSON.stringify([
+    { field: 'nodes[0].width', node: 'mgmt', value: 2 },
+    { field: 'nodes[0].height', node: 'mgmt', value: 2 },
+    { field: 'nodes[2]', node: 'security', covers: ['gd'] },
+    { field: 'nodes[5]', node: 'panel', covers: ['inside'] },
+  ]), 'the grid-cell size and both covering shapes, in spec order');
+  assert(r.report.looksLikeBoundary.every((x) => /`boundaries`/.test(x.hint)), 'every entry points at the boundaries array');
+
+  eq(JSON.stringify(builder.buildDiagram({
+    boundaries: [{ id: 'acct', label: 'A real boundary', col: 0, row: 0, cols: 2 }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A child', parent: 'acct', col: 0, row: 0 },
+      { id: 'b', kind: 'box', label: 'Another', parent: 'acct', col: 1, row: 0 },
+      { id: 'backdrop', kind: 'box', label: 'Backdrop, nothing inside', col: 6, row: 0, width: 520, height: 320 },
+      { id: 'clip', kind: 'box', label: 'Wide, clips a neighbour', col: 0, row: 3, width: 500 },
+      { id: 'neighbour', kind: 'box', label: 'Neighbour', col: 1, row: 3 },
+      { id: 'note', kind: 'note', label: 'A note over things', col: 0, row: 5, width: 520, height: 320 },
+      { id: 'text', kind: 'text', label: 'A heading over things', col: 1, row: 5, width: 900, height: 320 },
+      { id: 'under', kind: 'box', label: 'Under the note', col: 0, row: 5 },
+      { id: 'twin', kind: 'box', label: 'Same size, same cell', col: 0, row: 5 },
+    ],
+  }).report.looksLikeBoundary), '[]', 'a real boundary, a backdrop, a clipped neighbour, a note, a text and two same-size boxes are not flagged');
+
+  const templates = join(SKILL, 'assets', 'templates');
+  for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
+    eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.looksLikeBoundary.length, 0,
+      `${f} is flagged: a template is what agents copy`);
+  }
+
+  const specPath = join(TMP, 'looks-like-boundary.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath,
+    [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'looks-like-boundary.excalidraw')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.looksLikeBoundary.map((x) => x.field)), JSON.stringify([
+    'nodes[0].width', 'nodes[0].height', 'nodes[2]', 'nodes[5]',
+  ]), 'the CLI prints them and exits 0');
+});
+
 // ------------------------------------------------------------- bundled libraries
 
 test('the bundled index matches the libraries on disk', () => {
