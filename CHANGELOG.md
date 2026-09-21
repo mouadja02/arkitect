@@ -11,6 +11,17 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- Excalidraw boundaries are sized from everything their nodes draw, in both
+  axes. Only a caption's height was counted, so a caption or sublabel wider
+  than its icon, box or cylinder hung out of its own scope or frame while
+  validation passed. A scope is also at least as wide as its own inside label.
+  Arrows still leave the artwork. Both committed examples moved: eight texts
+  in `aws-data-platform` and the "Analytics warehouse" caption in
+  `starter-architecture` sat across their scope's edge. Saved scenes are
+  untouched; rebuild a spec to pick it up (#191).
+
 ## [1.7.0] — 2026-09-21
 
 ### Added

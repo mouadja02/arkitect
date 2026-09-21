@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `335 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `338 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -107,6 +107,7 @@ artwork audit (#18/#33).
 | Scene model | every field the app requires; `transparent` not `none`; index keys sorting past the single-digit boundary; relative arrow points |
 | Bindings | bound text recorded on both sides; cloning rewrites internal references and drops external ones; `repairBindings` makes a one-sided binding whole |
 | Labels | a diamond label wraps to the usable width, not the bounding box |
+| Boundaries | a scope or frame holds every caption and sublabel its nodes draw, in both axes and with its padding, for icons, placeholders, cylinders and boxes, nested scopes included; a scope is at least as wide as its own inside label, contents kept centred, and an outside label sizes nothing; arrows still leave the artwork, not the caption (#191) |
 | Libraries | v1 and v2 both read back; v1 items genuinely have no name; the index and the files agree |
 | SVG tracing | every path command including arcs; nested transforms; nonzero winding; even-odd parity; overlapping siblings not mistaken for holes; gradients and text reported rather than dropped |
 | Hand-drawn stroke | deterministic per seed; roughness 0 draws straight |
