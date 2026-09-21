@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-21
+
 ### Changed
 
 - Excalidraw boundaries are sized from everything their nodes draw, in both
