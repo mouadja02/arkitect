@@ -13,6 +13,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [2.0.0] — 2026-09-21
 
+Every change is to generated output, which is what makes this a major: four
+to Excalidraw's, and two to both engines' - a node with an `icon` and no
+`kind`, and a node named only in generic words, which no longer draws a
+cloud vendor's mark. Saved scenes and diagrams are untouched and still open
+and validate; rebuild a spec to get the new output. A scene built before
+2.0.0 can draw a validator warning for a frame ahead of its children or a
+zero-length connector, and a rebuild clears both.
+
 ### Changed
 
 - Excalidraw boundaries are sized from everything their nodes draw, in both
