@@ -1340,6 +1340,33 @@ test('a CRLF draft validates and inserts exactly like its LF twin (#121)', () =>
   assert(/unknown heading "Highlights"/.test(err?.message), `a bad CRLF heading still fails: ${err?.message}`);
 });
 
+// The allowed-field lists are written by hand, so the way they go wrong is by
+// omitting a real field - and then the build report cries wolf at a spec that
+// was right all along. The worked examples are the specs agents copy, so they
+// are the ones that must never warn (#205).
+const specBuilders = {
+  'arkitect-drawio': await import(pathToFileURL(join(ROOT, 'skills', 'arkitect-drawio', 'scripts', 'build-diagram.mjs')).href),
+  'arkitect-excalidraw': await import(pathToFileURL(join(ROOT, 'skills', 'arkitect-excalidraw', 'scripts', 'build-diagram.mjs')).href),
+};
+
+test('no committed template spec reports an unknown field (#205)', () => {
+  let checked = 0;
+  for (const [engine, builder] of Object.entries(specBuilders)) {
+    assert(typeof builder.unknownFields === 'function', `${engine} no longer exports unknownFields`);
+    const dir = join(ROOT, 'skills', engine, 'assets', 'templates');
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+      let spec;
+      try { spec = JSON.parse(readFileSync(join(dir, file), 'utf8')); } catch { continue; }
+      if (!spec || typeof spec !== 'object' || Array.isArray(spec)) continue;
+      checked++;
+      const unknown = builder.unknownFields(spec);
+      eq(unknown.length, 0,
+        `${engine}/${file} would warn about ${unknown.map((u) => u.field).join(', ')} - add the field to the builder's list, or fix the template`);
+    }
+  }
+  assert(checked > 0, 'no template specs were checked');
+});
+
 // GitHub forces an action declaring Node 20 onto Node 24 and annotates every
 // run saying so; v5 is the first major of each of these to declare node24,
 // read from the published action.yml at that tag. And `ubuntu-latest` becomes
