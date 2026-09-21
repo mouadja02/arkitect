@@ -416,7 +416,8 @@ export function bindArrow(a, from, to, { gap = 6, focus = 0, fixedPoints = null 
   if (to) {
     a.endBinding = { elementId: to.id, focus, gap };
     if (fixedPoints?.[1]) a.endBinding.fixedPoint = fixedPoints[1];
-    addBound(to, { id: a.id, type: 'arrow' });
+    // A loop binds both ends to one shape, which lists the arrow once.
+    if (to !== from) addBound(to, { id: a.id, type: 'arrow' });
   }
   return a;
 }

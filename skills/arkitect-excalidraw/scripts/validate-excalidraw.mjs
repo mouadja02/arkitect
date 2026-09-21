@@ -216,6 +216,13 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
     } else if ((!el.startBinding || !el.endBinding) && !decorative) {
       warnings.push(`arrow "${el.id}" is bound at only one end`);
     }
+    // Every point in one place draws a bare arrowhead. Builds before 2.0.0 made
+    // one for each edge from a node to itself (#159).
+    const pts = el.points ?? [];
+    if (!decorative && pts.length > 1 && pts.every(([x, y]) => x === pts[0][0] && y === pts[0][1])) {
+      warnings.push(`arrow "${el.id}" has zero length and draws as a bare arrowhead; `
+        + 'a loop built before 2.0.0 does this, and a rebuild draws it over a corner');
+    }
   }
 
   // ------------------------------------------------------------ files

@@ -1522,6 +1522,94 @@ test("a scope is at least as wide as its own inside label, contents kept centred
   eq(width(out), width(plain), 'an outside label leaves the width alone');
 });
 
+// An edge from a node to itself used to be two points at the node's centre,
+// drawn as a bare arrowhead over its label (#159).
+const loopsOf = (scene) => scene.elements.filter((el) => el.type === 'arrow'
+  && el.startBinding && el.startBinding.elementId === el.endBinding?.elementId);
+const outside = (a, box) => a.points.slice(1, -1).every(([px, py]) => {
+  const x = a.x + px;
+  const y = a.y + py;
+  return x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height;
+});
+
+test('an edge from a node to itself loops over its top-right corner, bound at both ends (#159)', () => {
+  const { scene } = builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'Worker' }],
+    edges: [{ from: 'a', to: 'a', label: 'retry' }],
+  }, { seed: 1 });
+  const node = scene.elements.find((el) => el.type === 'rectangle');
+  const [loop] = loopsOf(scene);
+  assert(loop, 'the loop is bound to its node at both ends');
+  eq(loop.startBinding.elementId, node.id, 'bound to the node');
+  assert(loop.width > 0 && loop.height > 0, `the loop has size, not ${loop.width}x${loop.height}`);
+  eq(loop.points.length, 5, 'out, up, across and back in');
+  assert(loop.elbowed, 'an elbow arrow, which the app re-routes whole');
+  eq(JSON.stringify([loop.startBinding.fixedPoint, loop.endBinding.fixedPoint]), '[[1,0.3],[0.7,0]]', 'right side high, top right of centre');
+  assert(outside(loop, node), 'no corner of the loop inside the node');
+  eq(node.boundElements.filter((b) => b.id === loop.id).length, 1, 'the node lists the loop once');
+
+  const label = textNamed(scene, 'retry');
+  assert(label.y + label.height <= node.y, 'the label sits above the node, clear of its own label');
+  const v = validator.validateScene(scene);
+  assert(v.ok && v.warnings.length === 0, `validation: ${[...v.errors, ...v.warnings].join('; ')}`);
+});
+
+test('loops take a corner each, a bottom one under text is noted, and a fifth is refused (#159)', () => {
+  const four = (node) => builder.buildDiagram({
+    nodes: [node],
+    edges: ['one', 'two', 'three', 'four'].map((label) => ({ from: node.id, to: node.id, label })),
+  }, { seed: 1 });
+  const { scene, report } = four({ id: 'db', kind: 'icon', icon: 'drawio:databases/postgresql', label: 'PostgreSQL', sublabel: 'primary' });
+  const img = scene.elements.find((el) => el.type === 'image');
+  const loops = loopsOf(scene);
+  eq(loops.length, 4, 'four loops');
+  eq(new Set(loops.map((a) => JSON.stringify(a.startBinding.fixedPoint))).size, 4, 'each leaves from its own corner');
+  for (const a of loops) assert(outside(a, img), 'no loop has a corner inside the icon');
+  eq(report.notes.filter((n) => /loops under "db"/.test(n)).map((n) => n.slice(0, 8)).join(' '), 'edges[2] edges[3]',
+    'the two bottom loops cross the caption, and say so');
+  eq(four({ id: 'w', label: 'Worker' }).report.notes.length, 0, 'a box has nothing under it to cross');
+
+  let thrown = null;
+  try {
+    builder.buildDiagram({ nodes: [{ id: 'a' }], edges: Array.from({ length: 5 }, () => ({ from: 'a', to: 'a' })) });
+  } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'a fifth loop is refused');
+  eq(thrown.errors.join('; '), 'edges[4]: "a" already loops back to itself 4 times; each loop takes a corner of its node', 'the refusal');
+});
+
+test('a loop is an elbow arrow whatever the routing asks for (#159)', () => {
+  const build = (edge, style) => builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1, row: 1 }],
+    edges: [{ from: 'a', to: 'a', ...edge }, { from: 'a', to: 'b', ...edge }],
+    ...(style ? { style } : {}),
+  }, { seed: 1 }).scene;
+  for (const [what, scene] of [
+    ['routing: points', build({ routing: 'points' })],
+    ['route: straight', build({ route: 'straight' })],
+    ['a style with edgeRouting: points', build({}, { edgeRouting: 'points' })],
+  ]) {
+    const [loop] = loopsOf(scene);
+    assert(loop.elbowed && loop.startBinding.fixedPoint, `${what}: the loop is still elbowed`);
+    const other = scene.elements.find((el) => el.type === 'arrow' && el !== loop);
+    assert(!other.elbowed, `${what}: the ordinary edge follows the setting`);
+  }
+  const spec = { nodes: [{ id: 'a', label: 'A' }], edges: [{ from: 'a', to: 'a' }, { from: 'a', to: 'a' }] };
+  eq(JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene), JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene),
+    'a seeded build with loops is identical');
+});
+
+test('a zero-length connector is a warning, never an error (#159)', () => {
+  const { scene } = builder.buildDiagram({ nodes: [{ id: 'a', label: 'Worker' }], edges: [{ from: 'a', to: 'a' }] }, { seed: 1 });
+  const [loop] = loopsOf(scene);
+  Object.assign(loop, { points: [[0, 0], [0, 0]], width: 0, height: 0 });
+  const v = validator.validateScene(scene);
+  assert(v.ok, `a pre-2.0.0 loop still validates: ${v.errors.join('; ')}`);
+  assert(v.warnings.some((w) => w.includes(loop.id) && w.includes('zero length')), `warned: ${v.warnings.join('; ')}`);
+
+  loop.groupIds = ['glyph'];
+  assert(!validator.validateScene(scene).warnings.some((w) => w.includes('zero length')), 'a grouped arrow is decoration');
+});
+
 test('a nested-boundary spec builds with every requested arrow bound (#36)', () => {
   const spec = {
     boundaries: [

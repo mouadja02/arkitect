@@ -195,6 +195,34 @@ function routePoints(a, b, mode, gap) {
   return [start, { x: start.x, y: midY }, { x: end.x, y: midY }, end];
 }
 
+// An edge from a node to itself goes over one of its corners, in this order.
+// Each loop needs a corner of its own: the app re-routes an elbow arrow with
+// the same clearance every time, so two loops sharing a corner merge on the
+// first drag (#159). A loop leaves a side a little off its middle and comes
+// back into the top or bottom, clear of the points other edges bind to.
+export const LOOP_CORNERS = [
+  { start: [1, 0.3], end: [0.7, 0] },
+  { start: [0, 0.3], end: [0.3, 0] },
+  { start: [1, 0.7], end: [0.7, 1] },
+  { start: [0, 0.7], end: [0.3, 1] },
+];
+// What Excalidraw's router leaves between an elbow arrow and its shape, so the
+// first drag in the app does not move the loop.
+const LOOP_CLEARANCE = 42;
+
+function loopPoints(box, corner, gap) {
+  const { start: [su, sv], end: [eu, ev] } = LOOP_CORNERS[corner];
+  const out = su === 1 ? 1 : -1;
+  const down = ev === 1 ? 1 : -1;
+  const side = box.x + box.width * su;
+  const edge = box.y + box.height * ev;
+  const s = { x: side + out * gap, y: box.y + box.height * sv };
+  const e = { x: box.x + box.width * eu, y: edge + down * gap };
+  const cx = side + out * LOOP_CLEARANCE;
+  const cy = edge + down * LOOP_CLEARANCE;
+  return [s, { x: cx, y: s.y }, { x: cx, y: cy }, { x: e.x, y: cy }, e];
+}
+
 // ---------------------------------------------------------------- node shapes
 
 // An empty slot where a product's mark should go, for a component no bundled
@@ -385,6 +413,15 @@ export function validateSpec(spec) {
       else if (!nodeIds.has(ref)) errors.push(`edges[${i}].${end}: ${show(ref)} is not a node id`);
     }
   });
+  const loops = new Map();
+  edges.forEach((e, i) => {
+    if (!isObject(e) || e.from !== e.to || !nodeIds.has(e.from)) return;
+    loops.set(e.from, (loops.get(e.from) ?? 0) + 1);
+    if (loops.get(e.from) > LOOP_CORNERS.length) {
+      errors.push(`edges[${i}]: ${show(e.from)} already loops back to itself ${LOOP_CORNERS.length} times; `
+        + 'each loop takes a corner of its node');
+    }
+  });
 
   // Geometry and style numbers the builder lays out with; a missing col or row
   // is 0 (#115). The style block's vocabulary is the override validator's job.
@@ -459,6 +496,7 @@ function assemble(spec, style) {
   const boundaryOf = new Map();    // element id -> boundary id
   const edgeEnds = new Map();      // element id -> [from node id, to node id]
   const footprints = [];          // for looksLikeBoundary (#204)
+  const textBelow = new Set();     // nodes with a caption or sublabel under them
 
   const noteChild = (parentId, box) => {
     if (!parentId) return;
@@ -678,6 +716,7 @@ function assemble(spec, style) {
     // only the height let a caption or sublabel wider than its icon hang out
     // of its own scope (#191).
     noteChild(n.parent, bbox([{ ...box, type: 'rectangle' }, ...produced]));
+    if (below !== null) textBelow.add(n.id);
     nodeLayer.push(...produced);
   }
 
@@ -784,6 +823,7 @@ function assemble(spec, style) {
   // ------------------------------------------------------------ edges
 
   const usedKinds = new Set();
+  const loopsOn = new Map();       // node id -> loops drawn on it so far
   for (const [i, e] of (spec.edges ?? []).entries()) {
     const from = geom.get(e.from);
     const to = geom.get(e.to);
@@ -799,18 +839,30 @@ function assemble(spec, style) {
     usedKinds.add(kind);
     const k = EDGE_KINDS[kind];
     const gap = e.gap ?? 8;
-    const pts = routePoints(from, to, e.route ?? 'auto', gap);
+    const startAnchor = anchorFor.get(e.from);
+    const endAnchor = anchorFor.get(e.to);
+    // A loop is drawn around the shape its ends bind to, since that is what
+    // the app measures its fixed points against.
+    const corner = e.from === e.to ? loopsOn.get(e.from) ?? 0 : null;
+    if (corner !== null) loopsOn.set(e.from, corner + 1);
+    const pts = corner === null
+      ? routePoints(from, to, e.route ?? 'auto', gap)
+      : loopPoints(startAnchor ? elementBox(startAnchor) : from, corner, gap);
     const ox = pts[0].x;
     const oy = pts[0].y;
 
     // An elbow arrow hands routing to the app, which keeps the corners square
     // when a box moves. It only works on a bound arrow: without a shape at each
-    // end there is nothing to route between, so fall back to fixed points.
-    const startAnchor = anchorFor.get(e.from);
-    const endAnchor = anchorFor.get(e.to);
+    // end there is nothing to route between, so fall back to fixed points. A
+    // loop is elbowed whatever the routing says: the app moves only the two
+    // ends of any other arrow, which folds a loop over itself.
     const routing = e.routing ?? S.edgeRouting;
-    const elbowed = routing === 'elbow' && !!startAnchor && !!endAnchor
-      && (e.route ?? 'auto') !== 'straight';
+    const elbowed = !!startAnchor && !!endAnchor
+      && (corner !== null || (routing === 'elbow' && (e.route ?? 'auto') !== 'straight'));
+    if (corner !== null && LOOP_CORNERS[corner].end[1] === 1 && textBelow.has(e.from)) {
+      report.notes.push(`edges[${i}] loops under "${e.from}", across its caption or sublabel; `
+        + 'the app routes it the same way when the node moves');
+    }
 
     const a = arrow({
       x: Math.round(ox),
@@ -826,7 +878,8 @@ function assemble(spec, style) {
     });
     bindArrow(a, startAnchor, endAnchor, {
       gap,
-      fixedPoints: elbowed ? edgePointsBetween(from, to) : null,
+      fixedPoints: corner !== null ? [[...LOOP_CORNERS[corner].start], [...LOOP_CORNERS[corner].end]]
+        : elbowed ? edgePointsBetween(from, to) : null,
     });
     edgeLayer.push(a);
     edgeOf.set(a.id, `${e.from}->${e.to}`);
@@ -838,7 +891,11 @@ function assemble(spec, style) {
       const bound = e.labelBound ?? (S.edgeLabelBound && !elbowed);
       const size = e.labelSize ?? FONT.S;
       const m = measureText(e.label, size, S.fontFamily);
-      const mid = polylineMidpoint(pts);
+      // A loop's caption goes on the far side of its outer run, away from the
+      // node and its own caption.
+      const mid = corner === null ? polylineMidpoint(pts)
+        : { x: (pts[2].x + pts[3].x) / 2, y: pts[2].y, horizontal: true };
+      const under = corner !== null && !bound && LOOP_CORNERS[corner].end[1] === 1;
       // Sit above a horizontal run, beside a vertical one, so the line stays
       // unbroken instead of being knocked out by the text.
       const t = text({
@@ -848,7 +905,8 @@ function assemble(spec, style) {
         containerId: bound ? a.id : null,
         width: m.width, height: m.height,
         x: Math.round(mid.x - m.width / 2 + (bound || mid.horizontal ? 0 : m.width / 2 + 14)),
-        y: Math.round(mid.y - m.height / 2 - (bound || !mid.horizontal ? 0 : m.height / 2 + 10)),
+        y: Math.round(under ? mid.y + 10
+          : mid.y - m.height / 2 - (bound || !mid.horizontal ? 0 : m.height / 2 + 10)),
       });
       if (bound) a.boundElements = [...(a.boundElements ?? []), { id: t.id, type: 'text' }];
       edgeLayer.push(t);
