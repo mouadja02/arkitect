@@ -35,15 +35,51 @@ jobs:
           node scripts/release.mjs check "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Tag and publish
+      # Tagging and publishing are two calls, and the second can fail after the
+      # first has succeeded. A rerun used to trip over the tag it pushed itself,
+      # so observe first, then act on the answer (#120). A tag that points
+      # anywhere but this merge commit is never moved.
+      - name: What is already published
+        id: resume
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
-          node scripts/release.mjs notes "$VERSION" > notes.md
+          peeled=$(git ls-remote origin "refs/tags/v$VERSION^{}" | awk '{print $1}')
+          plain=$(git ls-remote origin "refs/tags/v$VERSION" | awk '{print $1}')
+          tag_sha="${peeled:-$plain}"
+          release=false
+          if gh release view "v$VERSION" --json tagName >/dev/null 2>&1; then release=true; fi
+          node scripts/release.mjs resume-publish --version "$VERSION" --tag-sha "$tag_sha" \
+            --head-sha "$SHA" --release "$release" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Stop on a state a person has to settle
+        if: steps.resume.outputs.action == 'conflict'
+        run: |
+          echo "::error::${{ steps.resume.outputs.reason }}"
+          exit 1
+
+      - name: Already published
+        if: steps.resume.outputs.action == 'noop'
+        run: echo "::notice::${{ steps.resume.outputs.reason }}"
+
+      - name: Tag the merge commit
+        if: steps.resume.outputs.action == 'tag-and-release'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git tag -a "v$VERSION" -m "Arkitect $VERSION" "$SHA"
           git push origin "v$VERSION"
+
+      - name: Publish the release
+        if: steps.resume.outputs.action == 'tag-and-release' || steps.resume.outputs.action == 'release-only'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node scripts/release.mjs notes "$VERSION" > notes.md
           gh release create "v$VERSION" --title "Arkitect $VERSION" --notes-file notes.md --verify-tag

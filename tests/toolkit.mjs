@@ -1407,6 +1407,85 @@ test('every workflow pins a Node 24 action and names its Ubuntu image (#122)', (
   }
 });
 
+// A release is two workflows and a merge, and either can fail after the step
+// before it has already succeeded. Both used to make a rerun worse: prepare
+// refused the branch it had pushed itself, publish tripped over its own tag, so
+// a transient GitHub failure had to be repaired by hand. The decision is made
+// here, off the network, and the workflows only observe and act (#120).
+test('a rerun resumes a half-finished release, and refuses to force one (#120)', () => {
+  const prepare = (state) => release.prepareAction({ version: '1.6.3', branchExists: false, branchVersion: '', tagExists: false, prState: '', ...state });
+  const publish = (state) => release.publishAction({ version: '1.6.3', tagSha: '', headSha: 'abc123abc123', releaseExists: false, ...state });
+
+  // Prepare: the first run, and the two ways a rerun recovers.
+  eq(prepare({}).action, 'commit-push-open', 'nothing on the remote is a first run');
+  eq(prepare({ branchExists: true, branchVersion: '1.6.3' }).action, 'open-only',
+    'the branch pushed and the pull request missing is the failure this exists for');
+  eq(prepare({ branchExists: true, branchVersion: '1.6.3', prState: 'OPEN' }).action, 'noop',
+    'a finished run is harmless to re-run');
+
+  // Prepare: every state a person has to settle, and none of them mutates.
+  for (const [state, expected] of [
+    [{ tagExists: true }, /already tagged/],
+    [{ branchExists: true, branchVersion: '1.6.2' }, /says 1\.6\.2, not 1\.6\.3/],
+    [{ branchExists: true, branchVersion: '' }, /says nothing/],
+    [{ branchExists: true, branchVersion: '1.6.3', prState: 'MERGED' }, /the publish, not the prepare/],
+    [{ branchExists: true, branchVersion: '1.6.3', prState: 'CLOSED' }, /closed unmerged/],
+  ]) {
+    const got = prepare(state);
+    eq(got.action, 'conflict', `${JSON.stringify(state)} must not be resumed automatically`);
+    assert(expected.test(got.reason), `and says why: ${got.reason}`);
+  }
+  // A tag wins over everything: a released version is never re-prepared, even
+  // with its branch and pull request still sitting there.
+  eq(prepare({ tagExists: true, branchExists: true, branchVersion: '1.6.3', prState: 'OPEN' }).action, 'conflict',
+    'an existing tag is checked before anything else');
+
+  // Publish: the first run, the recovery, and the finished run.
+  eq(publish({}).action, 'tag-and-release', 'nothing published yet is a first run');
+  eq(publish({ tagSha: 'abc123abc123' }).action, 'release-only',
+    'the tag pushed and the release missing is the failure this exists for');
+  eq(publish({ tagSha: 'abc123abc123', releaseExists: true }).action, 'noop', 'a finished run is harmless to re-run');
+
+  // Publish: a tag somewhere else is two releases in flight, and is never moved.
+  const moved = publish({ tagSha: 'ffff9999ffff' });
+  eq(moved.action, 'conflict', 'a tag on another commit is not resumed');
+  assert(/never moved/.test(moved.reason), `and says why: ${moved.reason}`);
+  eq(publish({ releaseExists: true }).action, 'conflict', 'a release with no tag behind it is settled by hand');
+  eq(publish({ headSha: '' }).action, 'conflict', 'nothing to tag is a conflict, not a tag of nothing');
+
+  // The workflows read the answer as step outputs, so the reason stays one line.
+  const lines = release.outputLines(prepare({ branchExists: true, branchVersion: '1.6.3' }));
+  assert(/^action=open-only\nreason=\S.*\n$/.test(lines), `two output lines, no stray newline: ${JSON.stringify(lines)}`);
+  assert(/^action=/.test(release.outputLines({ action: 'noop', reason: 'a\nb\n  c' })), 'a multi-line reason is flattened');
+  let bad; try { release.outputLines({ action: 'force-push', reason: 'x' }); } catch (e) { bad = e; }
+  assert(/unknown action/.test(bad?.message ?? ''), 'an action the workflows cannot branch on is refused');
+
+  // And the workflows actually use it, rather than deciding in bash.
+  const yml = (f) => readFileSync(join(ROOT, '.github', 'workflows', f), 'utf8');
+  const prepareYml = yml('release-prepare.yml');
+  const publishYml = yml('release-publish.yml');
+  assert(prepareYml.includes('release.mjs resume-prepare'), 'prepare no longer asks what is already on the remote');
+  assert(publishYml.includes('release.mjs resume-publish'), 'publish no longer asks what is already published');
+  for (const [name, text] of [['prepare', prepareYml], ['publish', publishYml]]) {
+    assert(/steps\.resume\.outputs\.action == 'conflict'/.test(text), `${name} does not stop on a conflict`);
+    assert(/steps\.resume\.outputs\.action == 'noop'/.test(text), `${name} does not treat a finished run as a no-op`);
+    // Not `--force` anywhere: `git switch --force-create` is a local branch,
+    // and harmless. What must never appear is a rewrite of something published.
+    assert(!/push[^\n]*(?:--force|--delete|\s-f\b)|tag[^\n]*\s-f\b|--force-with-lease/.test(text),
+      `${name} force-pushes, moves a tag or deletes a remote ref`);
+  }
+  // The version is known before anything is written, or a rerun cannot ask.
+  const nextAt = prepareYml.indexOf('release.mjs next');
+  assert(nextAt > 0 && nextAt < prepareYml.indexOf('release.mjs prepare'), 'prepare writes before it knows which version it is resuming');
+  assert(prepareYml.indexOf('resume-prepare') < prepareYml.indexOf('release.mjs draft'),
+    'the model is called before the run knows whether it needs one');
+  // A resumed branch is published as it stands, and still read by a person.
+  assert(/git switch --force-create "release\/v\$VERSION" "origin\/release\/v\$VERSION"/.test(prepareYml),
+    'a resumed run does not take the branch as it stands');
+  assert(/RESUMED.*=.*true.*\]; then draft_flag|\[ "\$RESUMED" = "true" \]/.test(prepareYml),
+    'a resumed pull request skips the human-review gate');
+});
+
 test('the release workflows are started by a person, gated by a merged pull request, and never publish to npm (#88)', () => {
   const read = (f) => readFileSync(join(ROOT, '.github', 'workflows', f), 'utf8');
   const prepare = read('release-prepare.yml');

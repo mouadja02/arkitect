@@ -358,6 +358,23 @@ A release is two workflows and one merge (#88):
    the merge commit `vX.Y.Z`, and publishes a GitHub Release whose body is that
    version's `CHANGELOG.md` section, verbatim. Closing it unmerged does nothing.
 
+**Either workflow can be re-run** (#120). Each looks at what is already on the
+remote before it changes anything, and `scripts/release.mjs resume-prepare` /
+`resume-publish` decide what a rerun should do:
+
+| what is already there | what a rerun does |
+|---|---|
+| nothing | the whole thing, as a first run |
+| the branch is pushed, the pull request is missing | opens it from the branch **as it stands**, edits and all, as a draft |
+| the branch is pushed, the pull request is open | nothing, and says so |
+| the tag is pushed, the release is missing | publishes the release against the existing tag |
+| the tag and the release are both there | nothing, and says so |
+
+Three states it refuses instead: a branch whose manifests name another version,
+a tag pointing anywhere but the merge commit, and a pull request someone closed
+unmerged. Each means two releases are in flight, and each is settled by a
+person — nothing is force-pushed, no tag is moved, no branch is deleted.
+
 If `[Unreleased]` is empty when the release is prepared, one OpenAI-compatible chat
 completion drafts it from the commit log since the last tag (or, before the first
 tag, since the newest dated section). The draft must use the four headings and
@@ -374,7 +391,7 @@ Nothing is published to npm. Setup, once, in the repository settings:
 | `RELEASE_LLM_MODEL` | variable | the model name that endpoint expects |
 | `RELEASE_LLM_API_KEY` | secret | only needed when `[Unreleased]` can be empty |
 
-The same steps run locally: `node scripts/release.mjs empty | draft | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`.
+The same steps run locally: `node scripts/release.mjs empty | draft | next <bump> | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`, and `resume-prepare` / `resume-publish` answer what a rerun would do from state you pass on the command line.
 
 ## What is never automated
 
