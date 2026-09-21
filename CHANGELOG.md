@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-09-21
+
 ### Added
 
 - `arkitect install codex` also writes a Codex skill,
