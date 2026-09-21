@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-20, at the 1.6.2 release.
+Status reviewed on 2026-09-21, at the 1.6.3 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -30,6 +30,10 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Agent behaviour, from evals | The one editing route with no backup got a command (`arkitect <engine> backup`); a reply no longer points at the hosted draw.io editor; an assumption no longer covers for changing a count the user stated | [#179](https://github.com/mouadja02/arkitect/issues/179), [#186](https://github.com/mouadja02/arkitect/issues/186), [#183](https://github.com/mouadja02/arkitect/issues/183), [PR #194](https://github.com/mouadja02/arkitect/pull/194), [PR #195](https://github.com/mouadja02/arkitect/pull/195), [PR #196](https://github.com/mouadja02/arkitect/pull/196), [PR #197](https://github.com/mouadja02/arkitect/pull/197) |
 | Engine choice, from evals | A report with no slot for the engine choice never carried one, four runs out of four; the report shape now has one and says what counts as a reason. A README request drew Draw.io twice out of two, because a skill is selected on its description before the routing rule is read; each description now carries its own signals, parsed out of `AGENTS.md` §1 by a test | [#180](https://github.com/mouadja02/arkitect/issues/180), [#201](https://github.com/mouadja02/arkitect/issues/201), [PR #199](https://github.com/mouadja02/arkitect/pull/199), [PR #200](https://github.com/mouadja02/arkitect/pull/200), [PR #202](https://github.com/mouadja02/arkitect/pull/202) |
 | Renders, from evals | No render survives the eval sandbox — Chrome is refused a socket whatever the flags, and Draw.io's `xvfb-run` exits 1 — but `--format svg` needs no browser, so the Excalidraw generation case now grades the SVG it asked for, and the wording that let a report describe a picture nobody saw is gone from the renderer and both skills | [#136](https://github.com/mouadja02/arkitect/issues/136), [PR #207](https://github.com/mouadja02/arkitect/pull/207), [#208](https://github.com/mouadja02/arkitect/issues/208) |
+| CI images | Every action declares Node 24, and no job rides `ubuntu-latest`: the matrix names Ubuntu 24.04 and 26.04, so the October image switch is a decision rather than a date | [#122](https://github.com/mouadja02/arkitect/issues/122), [PR #210](https://github.com/mouadja02/arkitect/pull/210) |
+| Builder reports | A spec field neither builder knows is named under `unknownFields`, and `style` is answered rather than dropped; the numbered-flow pattern builds from edge labels instead of needing hand-written XML | [#205](https://github.com/mouadja02/arkitect/issues/205), [#193](https://github.com/mouadja02/arkitect/issues/193), [PR #211](https://github.com/mouadja02/arkitect/pull/211), [PR #212](https://github.com/mouadja02/arkitect/pull/212) |
+| Release resume | Either release workflow can be re-run after a partial failure, and resumes only a remote state that matches; 1.6.3 is the first release cut with it | [#120](https://github.com/mouadja02/arkitect/issues/120), [PR #213](https://github.com/mouadja02/arkitect/pull/213) |
+| Report graders | Two render graders that failed correct runs are fixed: a `file_exists` that could not see a file that was there, and a pattern that never matched "PostgreSQL". The report step writes its headings out first | [#208](https://github.com/mouadja02/arkitect/issues/208), [PR #214](https://github.com/mouadja02/arkitect/pull/214) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -39,9 +43,12 @@ the work listed below.
 
 ## In progress
 
-No implementation PR remains open at this snapshot. The two diagram-correctness
-bugs this page listed as next are fixed on main by PR #98. The items below are
-recommended priorities, not work already started or assigned.
+1.7.0 is under way: a box drawn where a boundary was meant
+([#204](https://github.com/mouadja02/arkitect/issues/204)), multi-page Draw.io
+specs ([#184](https://github.com/mouadja02/arkitect/issues/184)) and a Codex
+skill entry point ([#127](https://github.com/mouadja02/arkitect/issues/127)), in
+that order. Obstacle-avoiding Excalidraw routing
+([#124](https://github.com/mouadja02/arkitect/issues/124)) follows it.
 
 The open issues are now mostly what the eval suite and the audit found, and the
 three carrying `release:major` all change generated Excalidraw geometry: visible
@@ -49,8 +56,8 @@ self-loops ([#159](https://github.com/mouadja02/arkitect/issues/159)), boundarie
 sized from full caption bounds ([#191](https://github.com/mouadja02/arkitect/issues/191))
 and frame children emitted before their frame
 ([#192](https://github.com/mouadja02/arkitect/issues/192)). They are a 2.0.0
-together, and specs have to be rebuilt after them, which is why neither 1.6.0
-nor 1.6.1 shipped them.
+together, and specs have to be rebuilt after them, which is why no 1.6.x
+release shipped them.
 
 The eval suite is the other open thread. Its blind spot is closed: an eval run
 now reads a render. No PNG can be made inside `claude plugin eval`'s sandbox —
@@ -62,17 +69,20 @@ beside the scene and grades the file itself
 succeed showed what nothing had been watching: three reports in three described
 a picture they had never seen, quoting the renderer's own "geometry-faithful
 preview" as the warrant. That phrase, and the two skill sentences that told
-their reader to judge layout from "the preview", are gone. What the fix did not
-reach is filed with its measurements
-([#208](https://github.com/mouadja02/arkitect/issues/208)).
+their reader to judge layout from "the preview", are gone. Two graders that
+failed correct runs are fixed in 1.6.3
+([#208](https://github.com/mouadja02/arkitect/issues/208)); a report that
+abandons its seven headings, and a render claim still red one run in three,
+are [#215](https://github.com/mouadja02/arkitect/issues/215).
 
 The landing-zone case fails about a third of its runs
 ([#203](https://github.com/mouadja02/arkitect/issues/203)),
 and reading a kept run showed why: an agent can draw five account boundaries as
 plain boxes that contain nothing, and neither builder says a word
-([#204](https://github.com/mouadja02/arkitect/issues/204)), nor does either
-mention a spec field it ignored ([#205](https://github.com/mouadja02/arkitect/issues/205)).
-Both are arithmetic the builder can do, so neither costs a line of skill prose.
+([#204](https://github.com/mouadja02/arkitect/issues/204)), nor did either
+mention a spec field it ignored ([#205](https://github.com/mouadja02/arkitect/issues/205),
+fixed in 1.6.3). Both are arithmetic the builder can do, so neither costs a
+paragraph of skill prose.
 
 ## Remaining work
 
@@ -112,7 +122,7 @@ remain refactoring candidates, with no implementation scheduled in this snapshot
   locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
 - **Releases:** merged work is available on main, but is not automatically a tagged
   release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v1.6.1 the latest at this snapshot. Nothing is
+  first tagged GitHub Release and v1.6.3 the latest at this snapshot. Nothing is
   published to npm.
 
 ## Keeping this accurate
