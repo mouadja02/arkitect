@@ -110,12 +110,11 @@ Do not undo them by hand.
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
    Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
-   `--format svg`, dropping `--width`, which is PNG-only, and say you could not
-   look at a PNG. Retry with `--no-sandbox` only when the error names it. Read the PNG back and
+   `--format svg`, dropping `--width`, which is PNG-only. Retry with
+   `--no-sandbox` only when the error names it. Read the PNG back and
    iterate; a scene that validates but reads badly is not done. The PNG is
-   geometry-faithful, not font-faithful: judge layout from it, not typography.
-   An SVG is markup you read, not a picture you see: it settles nothing about
-   spacing or collisions, so report what you could not check. First
+   geometry-faithful, not font-faithful: judge layout from it, not typography;
+   an SVG is markup you read, not a picture you see, and settles neither. First
    renders nearly always need, in the spec:
    - a long region label overrunning: one or two words, detail in sublabels;
    - an elbow through a third icon, or two stacked into one line: `"route": "straight"`.
@@ -123,15 +122,19 @@ Do not undo them by hand.
 8. **Open it in the real app** when the user wants to, and before claiming it
    looks right in Excalidraw itself: `references/rendering.md`.
 
-9. **Report** under these headings, every one, even when it is short:
-   **File** · **Engine** (only when the user named none: Excalidraw, and what
-   made it Excalidraw rather than Draw.io — the audience, the sketch style, the
-   README; never a generic virtue) · **Assumptions** (every one, asked or not, and any product the
-   user did not name) · **Icons** (each ref and where it came from: bundled
-   library, shared pack, a logo you built; every placeholder) · **Validation**
-   · **Render** (you looked at the PNG, or it failed and why — never
-   "rendered" for a render that failed, and never a description of a
-   picture you did not see) · **Deviations** from the style guide.
+9. **Report.** Write all seven headings out first, in order, then fill them in.
+   Each one appears even where it is a single line:
+
+   **File** · **Engine** · **Assumptions** · **Icons** · **Validation** · **Render** · **Deviations**
+
+   **Engine** only when the user named none: what made it Excalidraw rather than
+   Draw.io — the audience, the sketch style, the README; never a generic virtue.
+   **Assumptions**: every one, asked or not, and any product the user did not
+   name. **Icons**: each ref and its source — bundled library, shared pack, a
+   logo you built; every placeholder. **Render**: you looked at the PNG, or it
+   failed and why; never "rendered" for a render that failed, and never a
+   picture you did not see. With only an SVG, say so — spacing and crossings are
+   then the validator's findings, quoted as its. **Deviations** from the guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first

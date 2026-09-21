@@ -54,18 +54,20 @@ graders:
   # sandbox - Chrome dies with "socket() failed: Operation not permitted"
   # whatever the flags - but --format svg needs no browser, and the SVG it
   # writes is text a grader can read. evals/README.md holds the evidence.
-  - type: file_exists
-    name: render-landed-beside-the-scene
-    path: ./eval-output/orders.svg
-
-  # Until now nothing looked at the picture, so a layout regression still
-  # scored 1.00. This reads it: a real canvas, drawn shapes, drawn text, and
-  # the one product the prompt names arriving as a label rather than staying
-  # in the scene JSON (#136).
+  #
+  # One grader, not two: a `file_exists` on this same path reported it missing
+  # in all three runs of a batch where this one read it and matched, so the two
+  # do not resolve a relative path the same way. Reading the file proves it
+  # exists - an unreadable one fails differently, naming the file - so the
+  # weaker check was the one to drop (#208).
   - type: regex
     name: render-draws-the-scene
     target: { source: file, path: ./eval-output/orders.svg }
-    pattern: '^(?=[\s\S]*<svg[^>]*width="\d{3,})(?=[\s\S]*viewBox=)(?=[\s\S]*<path)(?=[\s\S]*<text)(?=[\s\S]*[Pp]ostgres)'
+    # `[Pp]ostgre`, not `[Pp]ostgres`: "PostgreSQL" is Postgre + SQL, with a
+    # capital S, so the tighter spelling failed every run that used the
+    # product's real name - which is what the style guide asks for. The grader
+    # was marking the agent down for doing as it was told (#208).
+    pattern: '^(?=[\s\S]*<svg[^>]*width="\d{3,})(?=[\s\S]*viewBox=)(?=[\s\S]*<path)(?=[\s\S]*<text)(?=[\s\S]*[Pp]ostgre)'
 
   # SKILL.md names six headings, "every one, even when it is short". Whether
   # they are present is a fact, so a judge is not asked for it (#135).
