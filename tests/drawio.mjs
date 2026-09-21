@@ -3856,6 +3856,7 @@ test('a spec with pages builds one Draw.io page each, and refuses what cannot be
   });
   eq(JSON.stringify([...xml.matchAll(/<diagram name="([^"]*)" id="([^"]*)">/g)].map((m) => [m[1], m[2]])),
     JSON.stringify([['As-is', 'generated-page-1'], ['To-be', 'target']]), 'one <diagram> per page, named, with a default id');
+  assert(/^<mxfile [^>]*\bpages="2">/.test(xml), 'the file carries its page count, as Draw.io writes it');
   const [first, second] = xml.split('<diagram ').slice(1);
   assert(first.includes('value="Today"') && !second.includes('value="Today"'), 'a title belongs to its own page');
   assert(!first.includes('id="legend"') && second.includes('id="legend"'), 'a page gets a legend only for its own connector kinds');

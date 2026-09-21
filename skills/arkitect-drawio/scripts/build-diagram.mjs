@@ -630,7 +630,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     if (ids.length > 1) report.sameArtwork.push({ ids, nodes: group.map((d) => d.node) });
   }
 
-  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3">\n`
+  // Draw.io writes the page count on a multi-page file. A single page leaves it
+  // off, so a spec without `pages` builds exactly what it always did.
+  const count = Array.isArray(spec.pages) ? ` pages="${diagrams.length}"` : '';
+  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count}>\n`
     + diagrams.join('\n') + '\n</mxfile>\n';
 
   return { xml, report };

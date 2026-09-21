@@ -20,7 +20,8 @@ separate file, no naming scheme, no required format beyond that.
   page. `pages: [{ name, id, title, boundaries, nodes, edges, legend }]` builds
   one page each, sharing `layout` and `context`; ids are per page, an edge
   across pages is refused and says which page the other end is on, and every
-  report path names its page. A spec without `pages` builds byte-identical.
+  report path names its page; the file carries its page count, as Draw.io's
+  own do. A spec without `pages` builds byte-identical.
   The new `as-is-to-be` template is the worked example, with a PNG per page,
   and Excalidraw's ladder now offers two frames, the pages it can build
   (#184).
