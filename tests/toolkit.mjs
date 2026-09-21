@@ -558,6 +558,57 @@ test('every generation and icon case keeps deterministic graders (#135)', () => 
   }
 });
 
+// The seven report headings were one sentence carrying seven bold names through
+// nine lines of interleaved parentheticals, and about a third of runs dropped,
+// merged or renamed one: `Deviations` missing, `Design notes` in its place, or
+// `Validation & Rendering` standing for two. The list is now written out bare
+// before the qualifications, so it can be copied rather than extracted (#208).
+// The names are read back out of the skills here, not repeated, so moving one
+// moves the check with it.
+test('both skills list their report headings bare, and the evals check that list (#208)', () => {
+  const bare = /^\s*\*\*File\*\*(?: · \*\*\w+\*\*)+\s*$/;
+  const headingsOf = (engine) => {
+    const line = readFileSync(join(ROOT, 'skills', engine, 'SKILL.md'), 'utf8')
+      .split('\n').find((l) => bare.test(l));
+    assert(line, `${engine}: SKILL.md no longer writes its report headings out as a bare list`);
+    return [...line.matchAll(/\*\*(\w+)\*\*/g)].map((m) => m[1]);
+  };
+  const expected = ['File', 'Engine', 'Assumptions', 'Icons', 'Validation', 'Render', 'Deviations'];
+  const listed = {};
+  for (const engine of ['arkitect-drawio', 'arkitect-excalidraw']) {
+    listed[engine] = headingsOf(engine);
+    eq(listed[engine].join(' · '), expected.join(' · '), `${engine}: the report headings, in order`);
+    // The list is the thing to copy, so the qualifications must come after it.
+    const skill = readFileSync(join(ROOT, 'skills', engine, 'SKILL.md'), 'utf8');
+    const lines = skill.split('\n');
+    const at = lines.findIndex((l) => bare.test(l));
+    assert(/\*\*Report\*\*|\*\*Report\.\*\*/.test(lines.slice(Math.max(0, at - 4), at).join(' ')),
+      `${engine}: the bare list is not in the report step`);
+  }
+
+  // Each generation case checks a subset of the same names - every one but
+  // Engine, which is required only where the user named no engine and has its
+  // own grader there. A name the skills stopped listing would go unchecked.
+  let cases = 0;
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8');
+    const grader = yaml.match(/name: reports-under-every-heading[\s\S]*?pattern: '([^']+)'/);
+    if (!grader) continue;
+    cases++;
+    const engine = id.startsWith('evals/drawio') ? 'arkitect-drawio' : 'arkitect-excalidraw';
+    const required = [...grader[1].matchAll(/\\\*\\\*(\w+)\\b/g)].map((m) => m[1]);
+    assert(required.length > 0, `${id}: the heading grader names no headings`);
+    for (const name of required) {
+      assert(listed[engine].includes(name), `${id} requires a "${name}" heading that ${engine} no longer lists`);
+    }
+    for (const name of listed[engine]) {
+      if (name === 'Engine') continue;
+      assert(required.includes(name), `${id} does not check the "${name}" heading that ${engine} promises`);
+    }
+  }
+  assert(cases > 0, 'no eval case checks the report headings any more');
+});
+
 // "Render it and actually look at it" is required by both skills and was the
 // one step no eval could observe: every case watched the renderer being called
 // and none read what came out, so a layout regression scored 1.00 like anything

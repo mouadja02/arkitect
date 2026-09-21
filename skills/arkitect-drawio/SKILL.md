@@ -119,15 +119,20 @@ shipped guide. Say so in the report.
    `draw.io`) belongs in a reply about the user's diagram: offering one in a
    closing sentence is the same act as opening it there.
 
-9. **Report** under these headings, every one, even when it is short:
-   **File** · **Engine** (only when the user named none: Draw.io, and what made
-   it Draw.io rather than Excalidraw — the audience, the vendor icons, the pages;
-   never a generic virtue) · **Assumptions** (every one, asked or not, and any product
-   the user did not name) · **Icons** (each id and pack; any not confident or not
-   found; logos downloaded and from where; lifecycle caveats) · **Validation**
-   · **Render** (you looked at the PNG, or it failed and why — never
-   "rendered" for a render that failed, and never a description of a
-   picture you did not see) · **Deviations** from the style guide.
+9. **Report.** Write all seven headings out first, in order, then fill them in.
+   Each one appears even where it is a single line:
+
+   **File** · **Engine** · **Assumptions** · **Icons** · **Validation** · **Render** · **Deviations**
+
+   **Engine** only when the user named none: what made it Draw.io rather than
+   Excalidraw — the audience, the vendor icons, the pages; never a generic
+   virtue. **Assumptions**: every one, asked or not, and any product the user did
+   not name. **Icons**: each id and pack; any not confident or not found; logos
+   downloaded and from where; lifecycle caveats. **Render**: you looked at the
+   PNG, or it failed and why; never "rendered" for a render that failed, and
+   never a picture you did not see. With only an SVG, say so — spacing and
+   crossings are then the validator's findings, quoted as its. **Deviations**
+   from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export,
    and no link to the hosted editor. **Draw.io Desktop** and **the VS Code
    extension** are the two things a reply names, as plain text, never a URL.
