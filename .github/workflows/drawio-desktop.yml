@@ -27,24 +27,31 @@ permissions:
 
 jobs:
   desktop:
-    name: Draw.io Desktop export
-    runs-on: ubuntu-latest
+    name: Draw.io Desktop export · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # The .deb is installed with apt, and Xvfb drives a real Electron app:
+      # the two things most likely to move between images. 26 is proven here
+      # before `ubuntu-latest` migrates to it (#122).
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
     env:
       DRAWIO_VERSION: 31.4.5
       # GitHub's published digest for drawio-amd64-31.4.5.deb. Bump both together.
       DRAWIO_SHA256: 296729ee18f781dc82deb757de2b3399fbe04fe0ddad3093909013e707ee2ae4
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
       - name: Cache the Desktop package
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/drawio-desktop
-          key: drawio-desktop-${{ env.DRAWIO_VERSION }}-amd64
+          key: drawio-desktop-${{ matrix.os }}-${{ env.DRAWIO_VERSION }}-amd64
 
       - name: Install Draw.io Desktop (pinned, checksum verified)
         run: |

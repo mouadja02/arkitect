@@ -10,7 +10,7 @@ node tests/run-tests.mjs toolkit
 Offline, deterministic, no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner.
 
-On a fresh clone expect `324 passed, 0 failed, 7 skipped`. The skips are
+On a fresh clone expect `325 passed, 0 failed, 7 skipped`. The skips are
 the tests that need reference diagrams of your own — a clone has none. That is
 the correct result, not a problem. Point them at your files with
 `.analysis/sources.local.json`
@@ -199,6 +199,14 @@ LLM graders. See [../evals/README.md](../evals/README.md).
 `.github/workflows/ci.yml` runs the suite on Ubuntu, Windows and macOS against
 Node 20, 22 and 24, on every push and pull request. It is the same command you
 run locally, with no sources present — so CI always sees the fresh-clone result.
+
+No job runs on `ubuntu-latest`. That label becomes Ubuntu 26 on 19 October 2026,
+which would move the image everything is verified on without anyone choosing it,
+so the matrix names **both** `ubuntu-24.04` and `ubuntu-26.04` and every other
+job is pinned to 24.04. Dropping one is then a one-line decision with green
+evidence behind it, not a date. A test holds this, and holds every `actions/*`
+pin at a major that declares Node 24 — GitHub forces an action declaring Node 20
+onto 24 and annotates every run until it is bumped (#122).
 Each of those jobs uses the npm bundled with its Node, so one more job upgrades
 Node 22 to the newest npm and runs the suite again; the packaging tests call the
 npm beside Node, and a change in npm's output (npm 12's `npm pack --json`, #54)
@@ -206,8 +214,8 @@ turns CI red instead of only a fresh install.
 
 `.github/workflows/drawio-desktop.yml` is the one place a real Draw.io runs. When
 a change touches `skills/arkitect-drawio/`, `tests/drawio.mjs` or the workflow
-itself, it installs Draw.io Desktop on Ubuntu — a pinned `.deb`, checked against
-its published sha256 and cached — and runs the Draw.io suite with
+itself, it installs Draw.io Desktop on both Ubuntu images — a pinned `.deb`,
+checked against its published sha256 and cached — and runs the Draw.io suite with
 `ARKITECT_DRAWIO_SMOKE=required`. `required` turns a missing or unlaunchable
 Desktop into a failure rather than a skip, so a broken install cannot pass.
 

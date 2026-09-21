@@ -16,12 +16,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # `ubuntu-latest` becomes Ubuntu 26 on 19 October 2026, which would
+        # switch the image everything here is verified on without anyone
+        # choosing it. Both are named instead, so 26 is proven green beside 24
+        # and the switch is a one-line decision rather than a date (#122).
+        os: [ubuntu-24.04, ubuntu-26.04, windows-latest, macos-latest]
         node: ['20', '22', '24']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
 
@@ -44,12 +48,12 @@ jobs:
   # sees a new npm. npm 12 changed `npm pack --json` and broke the packaging
   # tests on a fresh install while every job above stayed green (#54).
   npm-latest:
-    name: ubuntu-latest · node 22 · npm latest
-    runs-on: ubuntu-latest
+    name: ubuntu-24.04 · node 22 · npm latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -70,11 +74,11 @@ jobs:
 
   plugin:
     name: plugin manifest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
