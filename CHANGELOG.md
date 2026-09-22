@@ -11,14 +11,17 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-09-22
+
 ### Fixed
 
 - The `.gitignore` advice names Draw.io Desktop's own autosave, `.$*.bkp`, a
   full copy of the diagram left beside any file it has open, as well as our
   `*.backup-*`. This repository ignores it too, and `docs/privacy.md` lists it
   (#252).
-- The Draw.io skill's default reading is 300 bytes under its 12,000-byte
-  budget, where it was 13 before #256. The comparison pattern says the same in
+- The Draw.io skill's default reading was brought 300 bytes under its
+  12,000-byte budget, where it was 13 before #256; #252 then took 17, leaving
+  283. The comparison pattern says the same in
   fewer words, and `SKILL.md` drops a non-negotiable that step 4 already states
   and shortens one sentence. This makes room for #240, #248 and #252 (#253).
 - An Excalidraw node and the caption or sublabel under it share a group, so
