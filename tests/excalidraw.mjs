@@ -833,6 +833,50 @@ test('an unknown top-level spec key is named, and a _comment is not (#221)', () 
   eq(JSON.stringify(out.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'pages', 'edge']), 'the CLI prints them');
 });
 
+// A caption and a sublabel are free text under their node. Nothing tied them
+// to it, so dragging an icon in the app left its name behind (#190).
+test('a node and the text under it share one outer group, and no two nodes share one (#190)', () => {
+  const r = builder.buildDiagram({
+    nodes: [
+      { id: 'db', kind: 'icon', icon: 'drawio:databases/postgresql', label: 'PostgreSQL', sublabel: 'Replica' },
+      { id: 'lib', kind: 'icon', icon: 'data-platform:9', label: 'Library item', col: 1 },
+      { id: 'slot', kind: 'placeholder', label: 'Unknown product', col: 2 },
+      { id: 'svc', kind: 'box', label: 'Service', sublabel: 'internal', col: 3 },
+      { id: 'plain', kind: 'box', label: 'Plain', col: 4 },
+    ],
+    edges: [{ from: 'db', to: 'lib' }],
+  }, { seed: 1 });
+  const els = r.scene.elements;
+  const byText = (t) => els.find((e) => e.type === 'text' && e.text === t);
+  const outer = (e) => e.groupIds.at(-1);
+
+  const image = els.find((e) => e.type === 'image');
+  eq(new Set([image, byText('PostgreSQL'), byText('Replica')].map(outer)).size, 1, 'embedded mark, caption and sublabel share a group');
+  assert(outer(image), 'and it is a real group');
+
+  // A library item keeps its own group inside the node's.
+  const caption = byText('Library item');
+  const item = els.filter((e) => e.groupIds.includes(outer(caption)) && e !== caption);
+  assert(item.length > 1 && item.every((e) => e.groupIds.length >= 2 && e.groupIds.at(-1) === outer(caption)),
+    'the library group stays, with the node group outermost');
+
+  const slotCaption = byText('Unknown product');
+  assert(els.filter((e) => e.groupIds.includes(outer(slotCaption))).length >= 3, 'the placeholder slot and its caption move together');
+  assert(byText('internal').groupIds.length === 1, 'a box and its sublabel share a group');
+  eq(els.find((e) => e.type === 'text' && e.text === 'Plain').groupIds.length, 0, 'a box with only its bound label is left as it was');
+
+  const outers = ['PostgreSQL', 'Library item', 'Unknown product', 'internal'].map((t) => outer(byText(t)));
+  eq(new Set(outers).size, outers.length, 'every node has a group of its own');
+  const arrow = els.find((e) => e.type === 'arrow');
+  eq(arrow.groupIds.length, 0, 'arrows join no group');
+  assert(arrow.startBinding && arrow.endBinding, 'and stay bound at both ends');
+
+  eq(JSON.stringify(builder.buildDiagram({ nodes: [{ id: 'a', kind: 'placeholder', label: 'A' }] }, { seed: 7 }).scene),
+    JSON.stringify(builder.buildDiagram({ nodes: [{ id: 'a', kind: 'placeholder', label: 'A' }] }, { seed: 7 }).scene), 'a seeded build is still byte for byte');
+  const v = validator.validateScene(r.scene);
+  assert(v.ok, `the grouped scene validates: ${JSON.stringify(v.errors)}`);
+});
+
 // A boundary owns what is inside it; a plain shape laid over the same nodes
 // draws much the same picture and owns nothing. An eval run drew five accounts
 // that way, sized `width: 2, height: 2` - grid cells read as pixels. Both

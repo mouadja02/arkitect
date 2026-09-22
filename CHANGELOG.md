@@ -17,6 +17,11 @@ separate file, no naming scheme, no required format beyond that.
   budget, where it was 13 before #256. The comparison pattern says the same in
   fewer words, and `SKILL.md` drops a non-negotiable that step 4 already states
   and shortens one sentence. This makes room for #240, #248 and #252 (#253).
+- An Excalidraw node and the caption or sublabel under it share a group, so
+  dragging an icon in the app takes its name with it. A library item keeps its
+  own group inside the node's. It adds `groupIds` and moves no coordinate, so
+  it ships as a patch; the committed examples are rebuilt and draw the same
+  (#190).
 - Draw.io renders leave a 20px margin round the drawing. Desktop's border
   defaults to 0, so every PNG was cropped flush and the legend or the last
   caption touched its edge. `--padding N` changes it and `0` restores the old
