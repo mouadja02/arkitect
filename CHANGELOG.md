@@ -13,6 +13,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The Draw.io skill's default reading is 300 bytes under its 12,000-byte
+  budget, where it was 13 before #256. The comparison pattern says the same in
+  fewer words, and `SKILL.md` drops a non-negotiable that step 4 already states
+  and shortens one sentence. This makes room for #240, #248 and #252 (#253).
 - Draw.io renders leave a 20px margin round the drawing. Desktop's border
   defaults to 0, so every PNG was cropped flush and the legend or the last
   caption touched its edge. `--padding N` changes it and `0` restores the old

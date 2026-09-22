@@ -44,18 +44,16 @@ stroke colour. Nest inside the cloud boundary, never more than two deep.
 **Use for**: solution options, as-is/to-be, migration proposals.
 **Seen in**: 2 references.
 
-Two stacked bands, each a full pipeline:
+Two stacked bands, each a full pipeline in a scope box of its own colour, with
+a bold heading in that colour **above and left** of it: green for the current
+approach, magenta for the proposed one.
 
-- Heading text **above and left** of each band, bold, in the band's colour:
-  green for the current approach, magenta for the proposed one.
-- Each band is a scope box in the matching colour.
-- The proposed band commonly nests mode variants inside it (e.g. a green "DELTA RUN" box
-  and a red "RECOVERY RUN" box), each with a filled tab-style label at top-left carrying
-  white bold text.
-- A right-hand column holds **Strengths** (green dashed box) and **Weaknesses** (red
-  dashed box), each with bold sub-headings and plain body lines.
+- The proposed band often nests mode variants (a green "DELTA RUN", a red
+  "RECOVERY RUN"), each with a filled tab label at top-left in white bold.
+- A right-hand column holds **Strengths** (green dashed box) and **Weaknesses**
+  (red dashed box), with bold sub-headings and plain lines.
 
-The corpus's most distinctive pattern: use it when options are being weighed.
+The corpus's most distinctive pattern.
 On two pages: `../assets/templates/as-is-to-be.spec.json`.
 
 ---
