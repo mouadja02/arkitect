@@ -95,12 +95,12 @@ function rejects(fn, pattern) {
 test('renderer parses defaults, explicit options and rejects invalid CLI input', () => {
   assert(typeof renderer.parseArgs === 'function', 'renderer parseArgs is missing');
   const defaults = renderer.parseArgs(['a.drawio']);
-  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false }), 'defaults');
+  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, padding: 20, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false }), 'defaults');
   const opts = renderer.parseArgs(['--all', 'a.drawio', '--page-index', '2', '--width', '800', '--out-dir', 'with spaces', '--format', 'svg', '--drawio-exe', '/custom app', '--disable-gpu', '--no-sandbox']);
   eq(opts.pageIndex, 2, 'page index'); eq(opts.width, 800, 'width');
   eq(opts.outDir, 'with spaces', 'directory'); eq(opts.format, 'svg', 'format');
   eq(opts.drawioExe, '/custom app', 'override'); assert(opts.all && opts.disableGpu && opts.noSandbox, 'switches');
-  for (const args of [[], ['a', 'b'], ['a', '--unknown'], ['a', '--width'], ['a', '--width', '0'], ['a', '--width', '1.5'], ['a', '--page-index', '-1'], ['a', '--page-index', 'NaN'], ['a', '--page-index', '9007199254740992'], ['a', '--out-dir'], ['a', '--format', '../png'], ['a', '--drawio-exe']]) {
+  for (const args of [[], ['a', 'b'], ['a', '--unknown'], ['a', '--width'], ['a', '--width', '0'], ['a', '--width', '1.5'], ['a', '--page-index', '-1'], ['a', '--padding', '-1'], ['a', '--padding', 'x'], ['a', '--page-index', 'NaN'], ['a', '--page-index', '9007199254740992'], ['a', '--out-dir'], ['a', '--format', '../png'], ['a', '--drawio-exe']]) {
     rejects(() => renderer.parseArgs(args), /usage|unknown|expected|positive|non-negative|format/i);
   }
   assert(renderer.parseArgs(['--help']).help, 'help without file');
@@ -191,7 +191,7 @@ test('renderer splits zero-based pages on all platforms and preserves opt-in Ele
     eq(calls.length, 2, 'all diagram elements'); eq(lines.length, 2, 'one report per page');
     calls.forEach(({ exe, args, opts, input, bytes, count, mode }, i) => {
       eq(exe, '/custom app', 'no shell splitting');
-      eq(JSON.stringify(args), JSON.stringify(['-x', '-f', 'svg', '--width', '600', '-o', join(outDir, `two pages.p${i}.svg`), input, '--disable-gpu', '--no-sandbox']), 'argv without Desktop index');
+      eq(JSON.stringify(args), JSON.stringify(['-x', '-f', 'svg', '--width', '600', '-b', '20', '-o', join(outDir, `two pages.p${i}.svg`), input, '--disable-gpu', '--no-sandbox']), 'argv without Desktop index');
       assert(input !== file && input.endsWith('.drawio'), 'private split input');
       eq(count, 1, 'exactly one page per input');
       assert(bytes.equals(Buffer.from(opening + raw[i] + '</mxfile>')), 'wrapper and payload bytes preserved');
@@ -209,6 +209,28 @@ test('renderer splits zero-based pages on all platforms and preserves opt-in Ele
   assert(result.ok, 'single page succeeds'); eq(calls.length, 1, 'one selected page');
   assert(!calls[0].includes('--disable-gpu') && !calls[0].includes('--no-sandbox'), 'flags never enabled implicitly');
   assert(!calls[0].includes('--page-index'), 'selected page also omits Desktop index');
+});
+
+// Desktop's border defaults to 0, so every export was cropped flush to the
+// drawing and the legend touched the image edge (#249). --padding 0 is the
+// one way back to exactly the arguments Desktop used to get.
+test('renderer pads the export by 20px, and --padding 0 sends Desktop what it got before (#249)', () => {
+  const file = join(TMP, 'padding.drawio');
+  writeFileSync(file, '<mxfile><diagram id="a"><mxGraphModel/></diagram></mxfile>');
+  const argsFor = (extra) => {
+    let seen;
+    renderer.render(renderer.parseArgs([file, '--out-dir', join(TMP, 'padding'), ...extra]), {
+      platform: 'win32', env: {}, isExecutable: (p) => p === '/drawio', log: () => {},
+      runner: (exe, args) => { seen = args; writeFileSync(args[args.indexOf('-o') + 1], 'png'); return { status: 0 }; },
+    });
+    return seen;
+  };
+  const dflt = argsFor(['--drawio-exe', '/drawio']);
+  eq(dflt.slice(dflt.indexOf('-b'), dflt.indexOf('-b') + 2).join(' '), '-b 20', 'a default render asks for a 20px border');
+  eq(renderer.parseArgs(['a', '--padding', '0']).padding, 0, 'zero is accepted');
+  const flush = argsFor(['--drawio-exe', '/drawio', '--padding', '0']);
+  assert(!flush.includes('-b'), `--padding 0 sends no border flag at all: ${flush.join(' ')}`);
+  eq(argsFor(['--drawio-exe', '/drawio', '--padding', '48']).join(' ').match(/-b (\d+)/)[1], '48', 'an explicit padding is passed through');
 });
 
 test('renderer debug passthrough uses the original source and exact raw index on every platform', () => {
@@ -447,6 +469,42 @@ if (smokeEnabled) test('installed Desktop exports distinct synthetic pages as re
   assert(!pages[0].equals(pages[1]), 'both exports selected the same page');
 });
 
+// The margin is measured on a real export: the drawing's ink stops at least
+// 16px short of every edge by default, and runs to within a few pixels of the
+// edge with --padding 0 (#249).
+if (smokeEnabled) test('a default Desktop render leaves a margin on every side (#249)', () => {
+  const exe = desktopOrSkip();
+  if (!exe) return 'skip';
+  const file = join(TMP, 'desktop-margin.drawio');
+  writeFileSync(file, '<mxfile><diagram id="m" name="m"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<mxCell id="2" value="" style="fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="300" height="100" as="geometry"/></mxCell>'
+    + '</root></mxGraphModel></diagram></mxfile>');
+  const inkBounds = (png) => {
+    const { width, height, channels, pixels } = png;
+    let l = width; let r = -1; let t = height; let b = -1;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const at = (y * width + x) * channels;
+        const alpha = channels === 4 ? pixels[at + 3] : 255;
+        const dark = channels >= 3 ? Math.min(pixels[at], pixels[at + 1], pixels[at + 2]) : pixels[at];
+        if (alpha > 32 && dark < 128) { l = Math.min(l, x); r = Math.max(r, x); t = Math.min(t, y); b = Math.max(b, y); }
+      }
+    }
+    return [l, width - 1 - r, t, height - 1 - b];
+  };
+  for (const [extra, check] of [
+    [[], (m) => m.every((side) => side >= 16)],
+    [['--padding', '0'], (m) => m.every((side) => side <= 4)],
+  ]) {
+    const outDir = join(TMP, `desktop-margin${extra.length ? '-flush' : ''}`);
+    const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'render', file, '--width', '400',
+      ...extra, '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags], { encoding: 'utf8', timeout: 120000 });
+    eq(result.status, 0, `Desktop export: ${result.stdout} ${result.stderr}`);
+    const margins = inkBounds(decodePng(readFileSync(join(outDir, 'desktop-margin.p0.png'))));
+    assert(check(margins), `${extra.join(' ') || 'default'}: left, right, top, bottom margins ${margins.join(', ')}`);
+  }
+});
+
 // A PNG as Desktop exports it - 8-bit, non-interlaced grey/RGB/RGBA - decoded to
 // pixels, written out longhand because the toolkit takes no dependencies.
 function decodePng(buf) {
@@ -608,8 +666,9 @@ if (smokeEnabled) test('every committed mark, the masked GCP marks among them, e
   const file = join(TMP, 'every-mark.drawio');
   writeFileSync(file, `<mxfile>${pages.map((p) => p.xml).join('')}</mxfile>`);
   const outDir = join(TMP, 'every-mark');
+  // Flush, so each tile sits where it was laid out (#249).
   const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'render', file, '--all',
-    '--width', String(pages[0].width), '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
+    '--width', String(pages[0].width), '--padding', '0', '--out-dir', outDir, '--drawio-exe', exe, ...electronFlags],
   { encoding: 'utf8', timeout: 1200000 });
   eq(result.status, 0, `Desktop export: ${result.stdout} ${result.stderr}`);
   const problems = [];

@@ -364,8 +364,10 @@ arkitect drawio render docs/arch.drawio --all --drawio-exe /path/to/drawio
 ```
 
 Options: `<file>` is required; `--page-index N` is 0-based (default `0`),
-`--all` selects every `<diagram>`, `--width` defaults to `2200`, `--out-dir`
-to `.`, and `--format` to `png`. Output names are `<base>.p<N>.<format>`.
+`--all` selects every `<diagram>`, `--width` defaults to `2200`, `--padding` to
+`20` (Desktop's `-b`; `0` crops flush to the drawing, as Desktop does alone),
+`--out-dir` to `.`, and `--format` to `png`, or `pdf` for a PDF. Output names
+are `<base>.p<N>.<format>`.
 The portable entry point is `skills/arkitect-drawio/scripts/render-drawio.mjs`.
 The `.ps1` invocation above is the Windows original and remains unchanged.
 
