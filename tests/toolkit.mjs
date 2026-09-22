@@ -783,6 +783,25 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
   console.log(`      (context budget: ${measured.join('; ')})`);
 });
 
+// "Offer nothing Arkitect cannot do" (#183) has to be true itself: the Draw.io
+// skill said there was no PDF export while its renderer wrote one (#256).
+test('neither drawing skill denies an export format its renderer accepts (#256)', () => {
+  for (const [engine, script, list] of [
+    ['arkitect-drawio', 'render-drawio.mjs', /\[--format ([a-z|]+)\]/],
+    ['arkitect-excalidraw', 'render-excalidraw.mjs', /--format ([a-z|]+)\]/],
+  ]) {
+    const skill = readFileSync(join(ROOT, 'skills', engine, 'SKILL.md'), 'utf8');
+    const source = readFileSync(join(ROOT, 'skills', engine, 'scripts', script), 'utf8');
+    const formats = list.exec(source)[1].split('|');
+    const denied = [...skill.matchAll(/there is no ([^.,;:]+?) export/gi)]
+      .flatMap((m) => m[1].split(/\s+or\s+|,\s*/)).map((w) => w.trim().toLowerCase());
+    assert(denied.length, `${engine}: SKILL.md no longer says which exports do not exist`);
+    for (const word of denied) assert(!formats.includes(word), `${engine}: SKILL.md denies a ${word} export, and ${script} accepts --format ${word}`);
+  }
+  const rendering = readFileSync(join(ROOT, 'skills', 'arkitect-drawio', 'references', 'rendering.md'), 'utf8');
+  assert(rendering.includes('--format pdf'), 'references/rendering.md does not show the PDF export');
+});
+
 // docs/maintenance.md quotes the same measured SKILL.md + largest-pattern totals (#161).
 test('docs/maintenance.md skill-budget table matches measured context budgets (#161)', () => {
   const md = readFileSync(join(ROOT, 'docs', 'maintenance.md'), 'utf8');

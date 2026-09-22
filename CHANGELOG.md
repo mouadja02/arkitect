@@ -11,6 +11,13 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- The Draw.io skill no longer says there is no PDF export: `render --format pdf`
+  has written one since the renderer was added, and `references/rendering.md`
+  now shows it. A test fails if either skill denies a format its renderer
+  accepts (#256).
+
 ## [2.0.0] — 2026-09-21
 
 Every change is to generated output, which is what makes this a major: four

@@ -22,6 +22,10 @@ A failed export exits non-zero and never reports a page as rendered, whatever
 was at the output path before (#157). `-DrawioExe` now defaults to empty, so
 discovery works as it does here; pass it to pin a build.
 
+For a PDF, say for a review board, add `--format pdf`: the same Desktop export
+writes `<base>.p<N>.pdf`, one page per file, with its text kept as text. It is a
+copy to hand round; the `.drawio` stays the deliverable.
+
 To open a diagram for the user on Windows:
 `& 'C:\Program Files\draw.io\draw.io.exe' "<file>"`.
 
