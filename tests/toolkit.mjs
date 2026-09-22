@@ -802,6 +802,18 @@ test('neither drawing skill denies an export format its renderer accepts (#256)'
   assert(rendering.includes('--format pdf'), 'references/rendering.md does not show the PDF export');
 });
 
+// Draw.io Desktop leaves `.$<name>.drawio.bkp`, a full copy of the diagram,
+// beside any file it has open; the ignore advice named only our own backups
+// (#252).
+test('the ignore advice and this repository cover Draw.io Desktop\'s own .bkp (#252)', () => {
+  for (const path of ['AGENTS.md', 'docs/cli.md', 'skills/arkitect-drawio/SKILL.md']) {
+    const text = readFileSync(join(ROOT, path), 'utf8');
+    assert(text.includes('`*.backup-*`') && text.includes('`.$*.bkp`'), `${path} does not suggest both patterns`);
+  }
+  assert(readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/).includes('.$*.bkp'), '.gitignore has no .$*.bkp line');
+  assert(readFileSync(join(ROOT, 'docs', 'privacy.md'), 'utf8').includes('| `.$*.bkp` |'), 'docs/privacy.md does not list .$*.bkp');
+});
+
 // docs/maintenance.md quotes the same measured SKILL.md + largest-pattern totals (#161).
 test('docs/maintenance.md skill-budget table matches measured context budgets (#161)', () => {
   const md = readFileSync(join(ROOT, 'docs', 'maintenance.md'), 'utf8');

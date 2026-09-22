@@ -99,7 +99,8 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    before replacing an existing file, then keep the oldest backup and the newest
    five of that file and delete the rest, listed under `pruned` in the report
    (`--keep-backups N`; `0` keeps all). Suggest `*.backup-*` for the project's
-   `.gitignore`. Any other edit route means `arkitect <engine> backup <file>`
+   `.gitignore`, and `.$*.bkp` for the autosave Draw.io Desktop leaves beside a
+   file it has open. Any other edit route means `arkitect <engine> backup <file>`
    before the first write.
 6. **Validate.** Errors block delivery. Warnings about overlap and tight labels
    are judgement calls — check them against the render.
