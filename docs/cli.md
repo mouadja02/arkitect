@@ -127,7 +127,8 @@ is written they keep the oldest of those backups and the newest five, delete the
 rest and list them under `pruned` in the report. `--keep-backups N` changes how
 many recent ones stay; `0` keeps all. Only that file's own backup names are ever
 deleted. Add `*.backup-*` to your project's `.gitignore` so the ones kept stay
-out of commits.
+out of commits, and `.$*.bkp`: Draw.io Desktop's own autosave, a full copy of
+the diagram it leaves beside any file it has open.
 
 An edit the builder does not make — a hand edit, a script, MCP `set_page` — gets
 the same protection from `arkitect <engine> backup <file>`, which writes that

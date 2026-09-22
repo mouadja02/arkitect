@@ -110,6 +110,7 @@ The `.gitignore` is part of the design, not housekeeping:
 | `skills/*/assets/logos/`, `assets/icons/` | third-party marks with their own trademark terms |
 | `skills/arkitect-excalidraw/assets/libraries/*` (non-bundled) | other people's libraries, re-installable in one command |
 | `*.backup-*.drawio`, `*.backup-*.excalidraw` | the safety copies taken before an in-place edit |
+| `.$*.bkp` | Draw.io Desktop's own autosave: a full copy of a diagram it has open, images included |
 
 ## The redaction check
 
