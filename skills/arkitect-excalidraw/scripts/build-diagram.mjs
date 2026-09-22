@@ -77,9 +77,28 @@ const FIELD_HINTS = {
   text: 'not a field: the caption is `label`, and a paragraph is a node with kind "text"',
 };
 
+// What the spec itself may carry. A misspelled `edges` dropped every arrow in
+// silence (#221). A key starting with `_` is a comment: the committed templates
+// use `_comment`, and agents copy them.
+const SPEC_FIELDS = ['title', 'layout', 'style', 'canvasBackground', 'boundaries', 'nodes', 'edges',
+  'legend', 'legendX', 'legendY'];
+const SPEC_HINTS = {
+  edge: 'not a field: arrows go in `edges`',
+  node: 'not a field: nodes go in `nodes`',
+  boundary: 'not a field: boundaries go in `boundaries`',
+  pages: 'not a field: an Excalidraw scene is one canvas; build one file per page',
+  context: 'not read here: pick an icon by its exact id, e.g. "drawio:aws/aws-lambda"',
+};
+
 export function unknownFields(spec) {
   const out = [];
   const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (isObject(spec)) {
+    for (const key of Object.keys(spec)) {
+      if (key.startsWith('_') || SPEC_FIELDS.includes(key)) continue;
+      out.push({ field: key, value: spec[key], valid: SPEC_FIELDS, ...(SPEC_HINTS[key] ? { hint: SPEC_HINTS[key] } : {}) });
+    }
+  }
   for (const [part, valid] of [['boundaries', BOUNDARY_FIELDS], ['nodes', NODE_FIELDS], ['edges', EDGE_FIELDS]]) {
     const list = isObject(spec) && Array.isArray(spec[part]) ? spec[part] : [];
     for (const [i, item] of list.entries()) {

@@ -806,6 +806,33 @@ test('an unknown spec field is named in the report, and the build still succeeds
   ]), 'the CLI prints them and exits 0');
 });
 
+// One level up from #205: a misspelled `edges` dropped every arrow and the
+// report said nothing (#221). A key starting with `_` is a comment.
+test('an unknown top-level spec key is named, and a _comment is not (#221)', () => {
+  const spec = {
+    _meta: 'x', legned: true, pages: [],
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1 }],
+    edge: [{ from: 'a', to: 'b' }],
+  };
+  const r = builder.buildDiagram(spec, { seed: 1 });
+  eq(r.scene.elements.filter((e) => e.type === 'arrow').length, 0, 'the misspelled list still draws nothing');
+  eq(JSON.stringify(r.report.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'pages', 'edge']),
+    'each unknown top-level key, bare, in spec order; _meta is a comment');
+  assert(/`edges`/.test(r.report.unknownFields.find((u) => u.field === 'edge').hint), 'edge points at edges');
+  assert(/one file per page/.test(r.report.unknownFields.find((u) => u.field === 'pages').hint), 'pages says Excalidraw has none');
+
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const template = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'));
+    eq(JSON.stringify(builder.unknownFields(template)), '[]', `${file} reports nothing unknown`);
+  }
+
+  const specPath = join(TMP, 'unknown-top-level.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath,
+    [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-top-level.excalidraw')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'pages', 'edge']), 'the CLI prints them');
+});
+
 // A boundary owns what is inside it; a plain shape laid over the same nodes
 // draws much the same picture and owns nothing. An eval run drew five accounts
 // that way, sized `width: 2, height: 2` - grid cells read as pixels. Both

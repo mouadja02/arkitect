@@ -1480,10 +1480,19 @@ test('no committed template spec reports an unknown field (#205)', () => {
       let spec;
       try { spec = JSON.parse(readFileSync(join(dir, file), 'utf8')); } catch { continue; }
       if (!spec || typeof spec !== 'object' || Array.isArray(spec)) continue;
-      checked++;
-      const unknown = builder.unknownFields(spec);
-      eq(unknown.length, 0,
-        `${engine}/${file} would warn about ${unknown.map((u) => u.field).join(', ')} - add the field to the builder's list, or fix the template`);
+      // patterns.json is a map of fragments, each a partial spec tagged with the
+      // catalog section it belongs to; since #221 its fragment names would read
+      // as unknown top-level keys, and its fragments were never checked at all.
+      const specs = file === 'patterns.json'
+        ? Object.entries(spec).filter(([, v]) => v && typeof v === 'object' && !Array.isArray(v))
+          .map(([name, { pattern, ...fragment }]) => [`${file} ${name}`, fragment])
+        : [[file, spec]];
+      for (const [where, s] of specs) {
+        checked++;
+        const unknown = builder.unknownFields(s);
+        eq(unknown.length, 0,
+          `${engine}/${where} would warn about ${unknown.map((u) => u.field).join(', ')} - add the field to the builder's list, or fix the template`);
+      }
     }
   }
   assert(checked > 0, 'no template specs were checked');

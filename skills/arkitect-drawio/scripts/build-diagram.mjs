@@ -69,6 +69,16 @@ const NODE_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'width', 'he
 const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'labelPos'];
 // What a page of a multi-page spec may carry (#184).
 const PAGE_FIELDS = ['name', 'id', 'title', 'titleColor', 'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
+// What the spec itself may carry. A misspelled `edges` dropped every connector
+// in silence (#221). A key starting with `_` is a comment: the committed
+// templates use `_comment`, and agents copy them.
+const SPEC_FIELDS = ['pages', 'layout', 'context', 'page', 'pageId', 'title', 'titleColor',
+  'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
+const SPEC_HINTS = {
+  edge: 'not a field: connectors go in `edges`',
+  node: 'not a field: nodes go in `nodes`',
+  boundary: 'not a field: boundaries go in `boundaries`',
+};
 
 // A raw style string is what an agent reaches for when it wants something the
 // house style will not give it, and it is the one field worth answering rather
@@ -90,7 +100,11 @@ const unknownKeys = (item, field, valid) => Object.keys(item).filter((key) => !v
 export function unknownFields(spec) {
   if (!isObject(spec)) return [];
   const pages = Array.isArray(spec.pages) ? spec.pages.map((page, n) => [page, `pages[${n}]`]) : [[spec, '']];
-  const out = [];
+  const out = Object.keys(spec).filter((key) => !key.startsWith('_') && !SPEC_FIELDS.includes(key))
+    .map((key) => ({
+      field: key, value: spec[key], valid: SPEC_FIELDS,
+      ...(SPEC_HINTS[key] ? { hint: SPEC_HINTS[key] } : {}),
+    }));
   for (const [page, at] of pages) {
     if (!isObject(page)) continue;
     if (at) out.push(...unknownKeys(page, at, PAGE_FIELDS));

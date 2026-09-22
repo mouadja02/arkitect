@@ -3782,6 +3782,35 @@ test('an unknown spec field is named in the build report, and the build still su
   ]), 'the CLI prints them and exits 0');
 });
 
+// One level up from #205: a misspelled `edges` dropped every connector and the
+// report said nothing (#221). A key starting with `_` is a comment.
+test('an unknown top-level spec key is named, and a _comment is not (#221)', () => {
+  const spec = {
+    _meta: 'x', legned: true,
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1 }],
+    edge: [{ from: 'a', to: 'b' }],
+  };
+  const { xml, report } = builder.buildDiagram(spec);
+  eq((xml.match(/edge="1"/g) ?? []).length, 0, 'the misspelled list still draws nothing');
+  eq(JSON.stringify(report.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'edge']),
+    'each unknown top-level key, bare, in spec order; _meta is a comment');
+  assert(/`edges`/.test(report.unknownFields.find((u) => u.field === 'edge').hint), 'edge points at edges');
+
+  // A spec with pages keeps layout and context at the top, and they are known.
+  eq(JSON.stringify(builder.unknownFields({ _comment: 'x', layout: {}, context: { packs: ['aws'] }, pages: [{ name: 'A', nodes: [] }] })),
+    '[]', 'the keys a multi-page spec keeps at the top are known');
+
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const template = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'));
+    eq(JSON.stringify(builder.unknownFields(template)), '[]', `${file} reports nothing unknown`);
+  }
+
+  const specPath = join(TMP, 'unknown-top-level.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-top-level.drawio')], { encoding: 'utf8' }));
+  eq(JSON.stringify(out.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'edge']), 'the CLI prints them');
+});
+
 // Pattern 7 offered a recipe the builder cannot execute: filled blue circles
 // sat on the connectors, drawn from a raw ellipse style. A model following the
 // selector reached an unknown kind and an unfilled rectangle, or hand-written
