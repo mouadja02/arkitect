@@ -24,9 +24,9 @@ Read only what the task needs. Every path is relative to this skill.
 | Hand-written XML, or a deliberate deviation from the house style | `references/style-guide.md` |
 
 If `~/.arkitect/drawio/style-notes.md` or `patterns.md` exist
-(`$ARKITECT_HOME/drawio/` when set), read them too: they are what
-`/learn-drawio-style` found in the user's own diagrams, and they win over the
-shipped guide. Say so in the report.
+(`$ARKITECT_HOME/drawio/` when set), read them too: `/learn-drawio-style` found
+them in the user's own diagrams, and they win over the shipped guide. Say so in
+the report.
 
 ## Workflow
 
@@ -186,5 +186,3 @@ the answers down; they are the report's assumptions and the canvas note.
   where none exists, named in the report.
 - Orthogonal routing, captions under icons, a legend when more than one
   connector kind is used, assumptions on the canvas.
-- Corners, connector meanings, colours and type sizes follow the house style
-  unless this install's applied override (`--print-style`) says otherwise.
