@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-09-22
+
 ### Fixed
 
 - The `.gitignore` advice names Draw.io Desktop's own autosave, `.$*.bkp`, a
