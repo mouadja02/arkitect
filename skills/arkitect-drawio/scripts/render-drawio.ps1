@@ -18,7 +18,7 @@
     -Path       <file>            -PageIndex  --page-index
     -All        --all             -Width      --width
     -OutDir     --out-dir         -Format     --format
-    -DrawioExe  --drawio-exe
+    -DrawioExe  --drawio-exe      -Padding    --padding
 
   -DrawioExe now defaults to empty, which lets the renderer find Draw.io on
   PATH, at DRAWIO_EXE, or in the usual install locations on any platform. Pass
@@ -35,6 +35,7 @@ param(
   [int]$PageIndex = 0,
   [switch]$All,
   [int]$Width = 2200,
+  [int]$Padding = 20,
   [string]$OutDir = '.',
   [string]$Format = 'png',
   [string]$DrawioExe = ''
@@ -45,7 +46,7 @@ $ErrorActionPreference = 'Stop'
 $renderer = Join-Path $PSScriptRoot 'render-drawio.mjs'
 if (-not (Test-Path $renderer)) { throw "Renderer missing: $renderer" }
 
-$argv = @($Path, '--page-index', "$PageIndex", '--width', "$Width", '--out-dir', $OutDir, '--format', $Format)
+$argv = @($Path, '--page-index', "$PageIndex", '--width', "$Width", '--padding', "$Padding", '--out-dir', $OutDir, '--format', $Format)
 if ($All) { $argv += '--all' }
 if ($DrawioExe) { $argv += @('--drawio-exe', $DrawioExe) }
 

@@ -49,7 +49,11 @@ export function render(options, { platform = process.platform, env = process.env
       if (temporary) writeFileSync(input, (mx.opening ?? '<mxfile>') + mx.pages[index].raw + '</mxfile>', { mode: 0o600 });
       const args = ['-x', '-f', options.format,
         ...(options.pageIndexPassthrough ? ['--page-index', options.all ? String(index) : (options.rawPageIndex ?? String(index))] : []),
-        '--width', String(options.width), '-o', output, input];
+        '--width', String(options.width),
+        // Desktop's border defaults to 0, which crops the PNG flush to the
+        // drawing, so the legend and the last caption touch its edge (#249).
+        ...(options.padding ? ['-b', String(options.padding)] : []),
+        '-o', output, input];
       // Linux 24.7.17 misreads --disable-gpu before -x as the input file.
       if (options.disableGpu) args.push('--disable-gpu');
       if (options.noSandbox) args.push('--no-sandbox');
@@ -159,17 +163,18 @@ export function discoverDrawio(override, deps) {
 }
 
 export const USAGE = `usage: render-drawio.mjs <file> [--page-index N] [--all]
-  [--width N] [--out-dir DIR] [--format png|jpg|svg|pdf|vsdx|xml|html]
+  [--width N] [--padding N] [--out-dir DIR] [--format png|jpg|svg|pdf|vsdx|xml|html]
   [--drawio-exe PATH] [--disable-gpu] [--no-sandbox] [--page-index-passthrough]
-Page indexes are zero-based; defaults: page 0, width 2200, directory ., PNG.
+Page indexes are zero-based; defaults: page 0, width 2200, padding 20, directory ., PNG.
+--padding 0 crops flush to the drawing, as Desktop does on its own.
 Default export splits pages without decoding/re-encoding their contents.
 Debug --page-index-passthrough sends the original file and raw index to Desktop.
 Electron flags are opt-in; --no-sandbox disables Chromium sandbox protection.`;
 
 export function parseArgs(args) {
-  const options = { file: undefined, pageIndex: 0, all: false, width: 2200,
+  const options = { file: undefined, pageIndex: 0, all: false, width: 2200, padding: 20,
     outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false };
-  const values = { '--page-index': 'pageIndex', '--width': 'width', '--out-dir': 'outDir', '--format': 'format', '--drawio-exe': 'drawioExe' };
+  const values = { '--page-index': 'pageIndex', '--width': 'width', '--padding': 'padding', '--out-dir': 'outDir', '--format': 'format', '--drawio-exe': 'drawioExe' };
   const switches = { '--all': 'all', '--disable-gpu': 'disableGpu', '--no-sandbox': 'noSandbox', '--page-index-passthrough': 'pageIndexPassthrough' };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -178,7 +183,7 @@ export function parseArgs(args) {
     if (Object.hasOwn(values, arg)) {
       const value = args[++i];
       if (!value || value.startsWith('--')) throw new Error(`Expected value for ${arg}`);
-      if (arg === '--width' || arg === '--page-index') {
+      if (arg === '--width' || arg === '--page-index' || arg === '--padding') {
         const n = Number(value);
         if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < (arg === '--width' ? 1 : 0)) {
           throw new Error(`${arg} must be a ${arg === '--width' ? 'positive' : 'non-negative'} integer`);

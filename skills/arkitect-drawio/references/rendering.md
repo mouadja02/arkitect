@@ -18,6 +18,8 @@ discovery with `--drawio-exe` or `DRAWIO_EXE`. Outputs are
 is a thin adapter over this renderer, so it inherits the backup, the restore and
 the rule that only a fresh non-empty file counts as a render:
 `./scripts/render-drawio.ps1 -Path "path/to/diagram.drawio" -OutDir .analysis/renders`.
+Every export leaves a 20px margin round the drawing; `--padding N` changes it,
+and `0` crops flush, as Desktop does on its own (`-Padding` in the `.ps1`).
 A failed export exits non-zero and never reports a page as rendered, whatever
 was at the output path before (#157). `-DrawioExe` now defaults to empty, so
 discovery works as it does here; pass it to pin a build.

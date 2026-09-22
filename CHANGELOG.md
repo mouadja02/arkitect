@@ -13,6 +13,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Draw.io renders leave a 20px margin round the drawing. Desktop's border
+  defaults to 0, so every PNG was cropped flush and the legend or the last
+  caption touched its edge. `--padding N` changes it and `0` restores the old
+  crop exactly; the PowerShell adapter takes `-Padding`. The three template
+  PNGs are re-rendered; the contact sheets are Chrome screenshots and did not
+  change (#249).
 - A key at the top of a spec that neither builder reads is named under
   `unknownFields`, with a hint for `edge`, `node` and `boundary`, and in
   Excalidraw for `pages` and `context`. A misspelled `edges` used to drop every
