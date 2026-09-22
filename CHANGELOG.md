@@ -13,6 +13,11 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A key at the top of a spec that neither builder reads is named under
+  `unknownFields`, with a hint for `edge`, `node` and `boundary`, and in
+  Excalidraw for `pages` and `context`. A misspelled `edges` used to drop every
+  connector without a word. A key starting with `_` is a comment, as in the
+  committed templates (#221).
 - The Draw.io skill no longer says there is no PDF export: `render --format pdf`
   has written one since the renderer was added, and `references/rendering.md`
   now shows it. A test fails if either skill denies a format its renderer
