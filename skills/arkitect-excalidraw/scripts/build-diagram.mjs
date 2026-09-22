@@ -728,6 +728,14 @@ function assemble(spec, style) {
       grow(4 + m.height);
     }
 
+    // A caption or sublabel is free text under its node, so dragging the icon
+    // left its name behind (#190). One group round the whole node, outermost,
+    // so a library item's own group stays inside it and nothing else joins.
+    if (produced.length > 1 && produced.some((el) => el.type === 'text' && !el.containerId)) {
+      const outer = newId();
+      for (const el of produced) el.groupIds = [...(el.groupIds ?? []), outer];
+    }
+
     for (const el of produced) nodeOf.set(el.id, n.id);
     geom.set(n.id, box);
     footprints.push({
