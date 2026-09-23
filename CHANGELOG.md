@@ -13,6 +13,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- Draw.io `validate` warns when two edges between the same two nodes, in either direction, run along one line, naming both: drawn that way they read as one double-headed line of one kind (#272).
 - Draw.io `validate` places an unconstrained edge end where Draw.io's router does (an L between diagonal boxes), and warns when a route runs through a node, not only a caption, or when two edges share one line into the same port (#242, #246).
 - Draw.io `validate` prints `info` lines for an icon no edge touches and an edge that ends on a container's border, naming its children; the Draw.io build report notes the boundary edge too, and Excalidraw's notes the icon, since a scene cannot tell one. Neither changes PASS or the exit code (#244, #245).
 - Draw.io `validate` warns when a title, legend or edge label lies across a container's border or over its name, and when a page fit to 1920px wide draws its labels under 9px; each page line now counts its icons (#243, #247).

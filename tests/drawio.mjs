@@ -3064,6 +3064,28 @@ test('validate names two edges that share a trunk into one port, and not two int
   eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'different sides share nothing');
 });
 
+// A request and its reply between the same two nodes draw as one line with an
+// arrowhead at each end: they enter opposite ports, so #246 missed them (#272).
+test('validate names two edges between the same nodes on one line, either way, and not on different sides (#272)', () => {
+  const spec = {
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Worker', col: 0, row: 0 },
+      { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 0, row: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'write' }, { from: 'b', to: 'a', kind: 'async', label: 'stream' }],
+  };
+  const both = buildAndValidate('pair-merged', spec);
+  eq(both.warnings.filter((w) => w.includes(' share ')).join('; '),
+    'page 0: edges "e1" and "e2" between "a" and "b" share 78px of line', 'both edges named');
+  eq(both.info.pages[0].sharedTrunks, 1, 'counted');
+
+  // Offset either side of the centre, as #237 will place them: two lines.
+  const ends = { e1: 'exitX=0.25;exitY=1;entryX=0.25;entryY=0;', e2: 'exitX=0.75;exitY=0;entryX=0.75;entryY=1;' };
+  const offset = (xml) => xml.replace(/<mxCell id="(e[12])" style="([^"]*)"/g, (m, id, style) => `<mxCell id="${id}" style="${style}${ends[id]}"`);
+  const apart = buildAndValidate('pair-apart', spec, offset);
+  eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'two lines share nothing');
+});
+
 // Notes are neither warnings nor failures: PASS, the exit code and --strict
 // stay as they were (#244, #245).
 test('validate notes an icon no edge touches, and not a note box, without failing (#244)', () => {
