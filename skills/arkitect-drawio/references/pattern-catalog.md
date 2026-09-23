@@ -66,6 +66,8 @@ On two pages: `../assets/templates/as-is-to-be.spec.json`.
 Top-level bands with bold UPPERCASE 16px headings. Horizontal bands use a normal
 `swimlane`; a vertical band on the left uses `horizontal=0;rotation=90` so the title runs
 up the edge. Inside each band, coloured resource containers group related services.
+A band or container name that collides with a border or a neighbour moves with
+`"labelAlign": "center"` or `"right"` on its boundary, never with markup or padding.
 
 ---
 
