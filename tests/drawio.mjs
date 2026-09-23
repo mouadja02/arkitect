@@ -3179,6 +3179,33 @@ test('the committed Draw.io templates put no text on a container and read at sli
   }
 });
 
+// The #248 eval case is only a test of the report while its spec still gives
+// validate the two warnings its graders look for, and while those graders tell
+// a report that names them from one that does not.
+test('the report-names-every-warning eval case warns as its graders expect, and they catch "a few" (#248)', () => {
+  const dir = join(ROOT, 'evals', 'drawio', 'report-names-every-warning');
+  // A Windows checkout gives both files CRLF.
+  const read = (name) => readFileSync(join(dir, name), 'utf8').replace(/\r\n/g, '\n');
+  const script = read('scaffold.sh');
+  const spec = JSON.parse(script.slice(script.indexOf("<<'EOF'\n") + 8, script.lastIndexOf('\nEOF')));
+  const r = buildAndValidate('report-case', spec);
+  eq(r.warnings.join('; '), 'page 0: edge "write-edge" runs through "queue"; '
+    + 'page 0: "title" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
+  // What the agent reads last before it reports: the count, and the rule (#248).
+  const cli = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), join(TMP, 'report-case.drawio')], { encoding: 'utf8' });
+  const lines = cli.stdout.trim().split('\n');
+  assert(lines[0].startsWith('PASS') && lines[0].endsWith(', 2 warnings'), `counted on the PASS line: ${lines[0]}`);
+  eq(lines.at(-1), validator.WARNINGS_LEFT, 'the rule comes last, after the warnings');
+
+  const yaml = read('case.yaml');
+  const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
+  const graders = ['names-the-edge-warning', 'names-the-title-warning'].map(pattern);
+  const listed = '**Validation**: two warnings left: edge `write-edge` runs through `queue`; the title lies across `acct-boundary`.';
+  const vague = '**Validation**: passed. A few labels sit close to a border.';
+  assert(graders.every((g) => g.test(listed)), 'a report naming both passes');
+  assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
+});
+
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);

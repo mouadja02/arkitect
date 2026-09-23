@@ -499,6 +499,11 @@ export function validateFile(path, { pageIndex = null } = {}) {
   return { path, ok: errors.length === 0, errors, warnings, notes, info };
 }
 
+// Said where the agent reads it, just before it reports: a warning printed
+// here is a defect still in the drawing until it is fixed (#248).
+export const WARNINGS_LEFT = '   each warning is a defect still in the drawing: fix it, or quote it in '
+  + 'your report as printed, every id included, never as "minor" or "expected"';
+
 function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
     { values: { '--page': pageIndexArg }, switches: ['--json', '--strict'] }, USAGE);
@@ -510,7 +515,8 @@ function main(argv) {
     const r = validateFile(f, { pageIndex });
     if (options.json) { console.log(JSON.stringify(r, null, 2)); }
     else {
-      console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${f}`);
+      const warned = r.warnings.length ? `, ${r.warnings.length} warning${r.warnings.length > 1 ? 's' : ''}` : '';
+      console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${f}${warned}`);
       for (const p of r.info.pages ?? []) {
         console.log(`   page ${p.index} "${p.name}": ${p.vertices} vertices, ${p.edges} edges, ` +
           `${p.embeddedImages} embedded images, bounds ${p.bounds ? `${p.bounds.width}x${p.bounds.height}` : 'n/a'}` +
@@ -524,6 +530,7 @@ function main(argv) {
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);
+      if (r.warnings.length) console.log(WARNINGS_LEFT);
       for (const n of r.notes) console.log(`   info   ${n}`);
     }
     if (!r.ok || (options.strict && r.warnings.length)) bad++;

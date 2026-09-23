@@ -103,8 +103,8 @@ Do not undo them by hand.
    ```bash
    node scripts/validate-excalidraw.mjs "path/to/architecture.excalidraw"
    ```
-   Errors block delivery. Overlap, tight-label and crossing warnings are
-   judgement calls: check them against the render.
+   Errors block delivery. Warnings are judgement calls: check each one against
+   the render.
 
 7. **Render and look at it.**
    ```bash
@@ -135,7 +135,10 @@ Do not undo them by hand.
    logo you built; every placeholder. **Render**: you looked at the PNG, or it
    failed and why; never "rendered" for a render that failed, and never a
    picture you did not see. With only an SVG, say so — spacing and crossings are
-   then the validator's findings, quoted as its. **Deviations** from the guide.
+   then the validator's findings, quoted as its. **Validation**: each warning
+   left, with every id it names, as a defect still there, never "minor" or
+   "a few"; each defect seen and left, by page.
+   **Deviations** from the guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first

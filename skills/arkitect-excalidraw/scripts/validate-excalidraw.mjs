@@ -487,6 +487,11 @@ export function validateFile(path) {
 
 const USAGE = 'usage: validate-excalidraw.mjs <file...> [--json] [--strict]';
 
+// Said where the agent reads it, just before it reports: a warning printed
+// here is a defect still in the drawing until it is fixed (#248).
+export const WARNINGS_LEFT = '   each warning is a defect still in the drawing: fix it, or quote it in '
+  + 'your report as printed, every id included, never as "minor" or "expected"';
+
 function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv, { switches: ['--json', '--strict'] }, USAGE);
   const { json, strict } = options;
@@ -497,7 +502,8 @@ function main(argv) {
     const r = validateFile(f);
     if (json) console.log(JSON.stringify(r, null, 2));
     else {
-      console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${f}`);
+      const warned = r.warnings.length ? `, ${r.warnings.length} warning${r.warnings.length > 1 ? 's' : ''}` : '';
+      console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${f}${warned}`);
       const i = r.info;
       if (i.elements !== undefined) {
         console.log(`   ${i.elements} elements ${JSON.stringify(i.byType)}`);
@@ -510,6 +516,7 @@ function main(argv) {
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);
+      if (r.warnings.length) console.log(WARNINGS_LEFT);
     }
     if (!r.ok || (strict && r.warnings.length)) bad++;
   }
