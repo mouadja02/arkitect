@@ -1,6 +1,6 @@
 ---
 name: arkitect-excalidraw
-description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file. A style is learned only when the user runs /learn-excalidraw-style: never promise to remember one.
+description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. No style is stored unless the user runs /learn-excalidraw-style: never promise to remember one. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file.
 ---
 
 # Architecture diagrams in Excalidraw
@@ -28,14 +28,14 @@ If `~/.arkitect/excalidraw/style-notes.md` or `patterns.md` exist
 `/learn-excalidraw-style` found in the user's own scenes, and they win over the
 shipped guide. Say so in the report.
 
-The builder already draws the corpus's habits: elbow arrows at stroke width 4,
-edge captions beside the line, dashed-rectangle regions, captions below shapes.
+The builder already draws the corpus's habits: elbow arrows, edge captions
+beside the line, dashed regions, captions below shapes.
 Do not undo them by hand.
 
 ## Workflow
 
 1. **Decide whether to ask** — see Interview first, below. Most requests are
-   drawn straight away, with the assumptions stated.
+   drawn at once, assumptions stated.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -136,7 +136,8 @@ Do not undo them by hand.
    failed and why; never "rendered" for a render that failed, and never a
    picture you did not see. With only an SVG, say so — spacing and crossings are
    then the validator's findings, quoted as its. **Validation**: each warning
-   left, by its ids; each defect seen and left, by page; never "a few".
+   left, with every id it names, as a defect still there, never "minor" or
+   "a few"; each defect seen and left, by page.
    **Deviations** from the guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 

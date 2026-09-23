@@ -111,8 +111,9 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    icons came from where, anything unresolved, and any deliberate deviation
    from the style guide. When the user named no engine, which one you chose and
    why it over the other — §1 asks for the reason, and the report is where it
-   goes. Each validate warning still printed is named by its ids, and each
-   defect seen in the render and left by page — never "a few".
+   goes. Each validate warning still printed is named with every id it gives,
+   as a defect still there, and each defect seen in the render and left by
+   page — never "minor" or "a few".
 
 ## 3. Commands
 
