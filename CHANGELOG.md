@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- AGENTS.md and the Excalidraw skill no longer say `style` is a field in neither engine: Excalidraw applies a top-level `style`, and only one on a node, edge or boundary is dropped and listed under `unknownFields`. A test holds the contract to the builder (#268).
 - Both drawing skills' report step, and AGENTS.md's, names each validate warning left with every id it gives, as a defect still there, and each defect seen in the render and left by page, never "minor" or "a few"; a new eval case holds the report to it (#248). Both validators say it where the agent reads it: the PASS line counts the warnings, and a last line says each is a defect to fix or quote with its ids.
 - The eval script's syntax test passes `scripts/eval.sh` relative to the repository, so it no longer fails on Windows when the `bash` on PATH is WSL's (#267).
 

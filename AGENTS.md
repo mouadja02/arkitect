@@ -87,7 +87,7 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    A missing `col` or `row` is 0.
    A `kind` the builder does not know still builds, drawn as a default, and is
    listed under `unknownKinds` in the report; a key no part of a spec takes —
-   `style` above all, which is not a field in either engine — builds too and is
+   a `style` on a node, edge or boundary above all — builds too and is
    listed under `unknownFields`; a box faking a boundary is listed under
    `looksLikeBoundary`. Treat any non-empty list like an unresolved icon: fix
    the spec, or report it. A field the builder dropped is
