@@ -1,6 +1,6 @@
 ---
 name: arkitect-excalidraw
-description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file.
+description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file. A style is learned only when the user runs /learn-excalidraw-style: never promise to remember one.
 ---
 
 # Architecture diagrams in Excalidraw
@@ -103,8 +103,8 @@ Do not undo them by hand.
    ```bash
    node scripts/validate-excalidraw.mjs "path/to/architecture.excalidraw"
    ```
-   Errors block delivery. Overlap, tight-label and crossing warnings are
-   judgement calls: check them against the render.
+   Errors block delivery. Warnings are judgement calls: check each one against
+   the render.
 
 7. **Render and look at it.**
    ```bash
@@ -135,7 +135,9 @@ Do not undo them by hand.
    logo you built; every placeholder. **Render**: you looked at the PNG, or it
    failed and why; never "rendered" for a render that failed, and never a
    picture you did not see. With only an SVG, say so — spacing and crossings are
-   then the validator's findings, quoted as its. **Deviations** from the guide.
+   then the validator's findings, quoted as its. **Validation**: each warning
+   left, by its ids; each defect seen and left, by page; never "a few".
+   **Deviations** from the guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 
 ## Interview first

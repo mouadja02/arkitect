@@ -79,8 +79,8 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
-| `arkitect-drawio` | 10,944 | 735 | 11,679 |
-| `arkitect-excalidraw` | 10,924 | 882 | 11,806 |
+| `arkitect-drawio` | 11,140 | 735 | 11,875 |
+| `arkitect-excalidraw` | 11,097 | 882 | 11,979 |
 
 The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
 Excalidraw's starter is 3,472 and the large AWS example 14,080. Before #113 the

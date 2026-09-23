@@ -1,6 +1,6 @@
 ---
 name: arkitect-drawio
-description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. Use whenever the request involves a Draw.io/diagrams.net diagram, a solution architecture for a client or a review board, an AWS or cloud architecture diagram, an as-is/to-be or solution-options comparison, a multi-page diagram, a monitoring, data-pipeline or agentic/LLM architecture wanted formally or with vendor icons, or an edit to an existing .drawio file.
+description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. Use whenever the request involves a Draw.io/diagrams.net diagram, a solution architecture for a client or a review board, an AWS or cloud architecture diagram, an as-is/to-be or solution-options comparison, a multi-page diagram, a monitoring, data-pipeline or agentic/LLM architecture wanted formally or with vendor icons, or an edit to an existing .drawio file. A style is learned only when the user runs /learn-drawio-style: never promise to remember one.
 ---
 
 # Draw.io architecture diagrams
@@ -134,8 +134,9 @@ the report.
    downloaded and from where; lifecycle caveats. **Render**: you looked at the
    PNG, or it failed and why; never "rendered" for a render that failed, and
    never a picture you did not see. With only an SVG, say so — spacing and
-   crossings are then the validator's findings, quoted as its. **Deviations**
-   from the style guide.
+   crossings are then the validator's findings, quoted as its. **Validation**:
+   each warning left, by its ids; each defect seen and left, by page; never "a
+   few". **Deviations** from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint export,
    and no link to the hosted editor. **Draw.io Desktop** and **the VS Code
    extension** are the two things a reply names, as plain text, never a URL.

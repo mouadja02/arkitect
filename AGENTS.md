@@ -111,7 +111,8 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    icons came from where, anything unresolved, and any deliberate deviation
    from the style guide. When the user named no engine, which one you chose and
    why it over the other — §1 asks for the reason, and the report is where it
-   goes.
+   goes. Each validate warning still printed is named by its ids, and each
+   defect seen in the render and left by page — never "a few".
 
 ## 3. Commands
 
@@ -236,7 +237,8 @@ followed the file.
 - The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) and the
   apply skills (`apply-drawio-style`, `apply-excalidraw-style`) are user-invoked
   only. Never learn from a diagram just
-  because you read one, and never apply learned style unasked.
+  because you read one, never apply learned style unasked, and never promise
+  to remember a style: nothing is stored until the user runs one.
 
 ## 7. Non-negotiables
 
