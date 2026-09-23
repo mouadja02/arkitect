@@ -56,6 +56,8 @@ export function validateFile(path, { pageIndex = null } = {}) {
   }
   const errors = [];
   const warnings = [];
+  // Neither a warning nor a failure: what the page claims, for a person to check.
+  const notes = [];
   const info = {};
   const text = readFileSync(path, 'utf8');
 
@@ -70,20 +72,20 @@ export function validateFile(path, { pageIndex = null } = {}) {
   const wrapper = checkXml(text);
   if (!wrapper.ok) {
     errors.push(`not well-formed XML at line ${wrapper.line}, column ${wrapper.column}: ${wrapper.reason}`);
-    return { path, ok: false, errors, warnings, info };
+    return { path, ok: false, errors, warnings, notes, info };
   }
   // The wrapper string checks this replaces could not see a declaration or a
   // comment around the root, both of which XML allows; the parse can.
   if (wrapper.root.name !== 'mxfile') {
     errors.push(`the root element is <${wrapper.root.name}>, not <mxfile>`);
-    return { path, ok: false, errors, warnings, info };
+    return { path, ok: false, errors, warnings, notes, info };
   }
 
   let mx;
   try {
     mx = readMxfile(path);
   } catch (e) {
-    return { path, ok: false, errors: [`unparseable: ${e.message}`], warnings, info };
+    return { path, ok: false, errors: [`unparseable: ${e.message}`], warnings, notes, info };
   }
   if (!mx.pages.length) errors.push('no <diagram> pages found');
   // Selecting a page that is not there must fail, never pass having checked nothing.
@@ -334,6 +336,31 @@ export function validateFile(path, { pageIndex = null } = {}) {
       }
     }
 
+    // An icon no edge touches claims no relation, and a reader supplies one
+    // (#244). A deliberate shared tier is fine; the note only asks.
+    const edges = cells.filter((c) => c.edge);
+    const ended = new Set(edges.flatMap((c) => [c.source, c.target]));
+    const isIcon = (style) => {
+      const s = parseStyle(style);
+      return s.image !== undefined || String(s.shape ?? '').startsWith('mxgraph.');
+    };
+    const alone = leaves.filter((c) => isIcon(c.style) && !ended.has(c.id)).map((c) => c.id);
+    if (alone.length) {
+      notes.push(`${label}: ${alone.length} icon${alone.length > 1 ? 's have' : ' has'} no edge: ${alone.join(', ')}`);
+    }
+
+    // An edge that ends on a container is drawn to its border, where it reads
+    // as the call of whichever child sits nearest (#245). Sometimes meant.
+    const containers = new Set(cells.filter((c) => c.vertex && isContainerish(c.style)).map((c) => c.id));
+    for (const c of edges) {
+      for (const end of [c.source, c.target]) {
+        if (!containers.has(end)) continue;
+        const kids = cells.filter((k) => k.vertex && k.parent === end).map((k) => k.id);
+        notes.push(`${label}: edge "${c.id}" ends on the border of container "${end}"`
+          + `${kids.length ? `; if one child is meant, connect it: ${kids.join(', ')}` : ''}`);
+      }
+    }
+
     const model = graphModelAttrs(xml);
     pages.push({
       index: idx, name: page.name, compressed: page.compressed,
@@ -351,7 +378,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
 
   info.bytes = Buffer.byteLength(text);
   info.pages = pages;
-  return { path, ok: errors.length === 0, errors, warnings, info };
+  return { path, ok: errors.length === 0, errors, warnings, notes, info };
 }
 
 function main(argv) {
@@ -376,6 +403,7 @@ function main(argv) {
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);
+      for (const n of r.notes) console.log(`   info   ${n}`);
     }
     if (!r.ok || (options.strict && r.warnings.length)) bad++;
   }

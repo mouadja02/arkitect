@@ -1557,7 +1557,7 @@ test('a node that names an icon draws it without kind "icon", and a box that nam
   eq(report.icons.map((i) => i.node).join(','), 'p', 'resolved and reported');
   eq(report.missingIcons.join(','), 'nothing-like-this-exists', 'an unresolvable one is a placeholder');
   assert(scene.elements.some((el) => el.type === 'rectangle' && el.strokeStyle === 'dotted'), 'drawn as the dotted slot');
-  eq(report.notes.join('; '), 'nodes[2].icon is not drawn: the node\'s kind is "box"; leave kind out, or set it to "icon"', 'the box says so');
+  eq(report.notes.filter((n) => n.includes('is not drawn')).join('; '), 'nodes[2].icon is not drawn: the node\'s kind is "box"; leave kind out, or set it to "icon"', 'the box says so');
 });
 
 // Excalidraw wants a frame straight after its own children; the builder wrote
@@ -3326,6 +3326,26 @@ test('a connector drawn through a node it does not connect is a warning that nam
   writeFileSync(specPath, JSON.stringify(three));
   const printed = JSON.parse(node('build-diagram.mjs', [specPath, '--out', join(TMP, 'crossing.excalidraw')]));
   eq(JSON.stringify(printed.crossings), JSON.stringify(built.report.crossings), 'build-diagram prints it');
+});
+
+// Draw.io's validate reads this off the file; a scene cannot tell an icon from
+// a drawn glyph, so the Excalidraw build report says it from the spec (#244).
+test('the build report notes an icon no edge touches, and not a box (#244)', () => {
+  const notes = (spec) => builder.buildDiagram(spec).report.notes.filter((n) => n.includes('no edge'));
+  const spec = {
+    nodes: [
+      { id: 'a', label: 'A', col: 0, row: 0 },
+      { id: 'b', kind: 'placeholder', label: 'B', col: 1, row: 0 },
+      { id: 'lonely', kind: 'placeholder', label: 'Never connected', col: 2, row: 0 },
+      { id: 'box', label: 'Plain box', col: 3, row: 0 },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  };
+  eq(notes(spec).join('; '), '1 icon has no edge: lonely', 'the unconnected icon, and only it');
+  eq(notes({ ...spec, edges: [...spec.edges, { from: 'b', to: 'lonely' }] }).join('; '), '', 'connected, nothing');
+  // The committed AWS example's cross-cutting tier is unconnected by design.
+  const aws = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8'));
+  eq(notes(aws).join('; '), '6 icons have no edge: iam, kms, trail, xray, catalog, lakef', 'the intended note, and no other');
 });
 
 test('a seeded build is byte-identical across processes, and unseeded builds stay random (#119)', () => {

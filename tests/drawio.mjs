@@ -3064,6 +3064,50 @@ test('validate names two edges that share a trunk into one port, and not two int
   eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'different sides share nothing');
 });
 
+// Notes are neither warnings nor failures: PASS, the exit code and --strict
+// stay as they were (#244, #245).
+test('validate notes an icon no edge touches, and not a note box, without failing (#244)', () => {
+  const r = buildAndValidate('alone', {
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Producer', col: 0, row: 0 },
+      { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 1, row: 0 },
+      { id: 'lonely', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Never connected', col: 2, row: 0 },
+      { id: 'n', kind: 'note', label: 'Assumption', col: 0, row: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  });
+  eq(r.notes.join('; '), 'page 0: 1 icon has no edge: lonely', 'the unconnected icon, and only it');
+  eq(r.warnings.join('; '), '', 'not a warning');
+  const cli = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), '--strict', join(TMP, 'alone.drawio')], { encoding: 'utf8' });
+  eq(cli.status, 0, `--strict still passes: ${cli.stdout}`);
+  assert(cli.stdout.startsWith('PASS') && cli.stdout.includes('   info   page 0: 1 icon has no edge: lonely'), `printed as info: ${cli.stdout}`);
+});
+
+test('an edge that ends on a boundary is noted in the build report and by validate, naming its children (#245)', () => {
+  const spec = {
+    boundaries: [{ id: 'grp', kind: 'scope', label: 'Pipeline', col: 1, row: 0 }],
+    nodes: [
+      { id: 's1', kind: 'icon', icon: 'aws/aws-lambda', label: 'Source', col: 0, row: 0 },
+      { id: 'mid', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0, parent: 'grp' },
+    ],
+    edges: [{ from: 's1', to: 'grp', kind: 'async', label: 'via group' }],
+  };
+  eq(builder.buildDiagram(spec).report.notes.join('; '),
+    'edges[0].to: "grp" is a boundary, so the edge is drawn to its border; if one component is meant, connect it: mid', 'build report');
+  const r = buildAndValidate('to-boundary', spec);
+  assert(r.ok && !r.warnings.length, 'not a warning');
+  assert(r.notes.includes('page 0: edge "e1" ends on the border of container "grp"; if one child is meant, connect it: mid'), r.notes.join('; '));
+  const leaf = buildAndValidate('to-leaf', { ...spec, edges: [{ from: 's1', to: 'mid' }] });
+  eq(leaf.notes.join('; '), '', 'an edge between two leaves notes nothing');
+  eq(builder.buildDiagram({ ...spec, edges: [{ from: 's1', to: 'mid' }] }).report.notes.join('; '), '', 'nor does the build');
+});
+
+test('the committed Draw.io templates print no note (#244, #245)', () => {
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);
+  }
+});
+
 test('a generated diagram is valid, connected and portable', () => {
   const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
   const { xml, report } = builder.buildDiagram(spec);

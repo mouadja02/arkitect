@@ -1055,6 +1055,13 @@ function assemble(spec, style) {
     if (!edgeOf.has(c.arrow) || !node) continue;
     report.crossings.push(`edge ${edgeOf.get(c.arrow)} crosses node ${node}; move ${node} off the line or give the edge a route`);
   }
+  // An icon no edge touches claims no relation (#244). Draw.io's validate reads
+  // this off the file; a scene cannot tell an icon from a drawn glyph, so here
+  // the spec says it. A deliberate shared tier is fine; the note only asks.
+  const ended = new Set((spec.edges ?? []).flatMap((e) => [e.from, e.to]));
+  const alone = (spec.nodes ?? []).map(iconKind)
+    .filter((n) => ['icon', 'placeholder'].includes(n?.kind) && !ended.has(n.id)).map((n) => n.id);
+  if (alone.length) report.notes.push(`${alone.length} icon${alone.length > 1 ? 's have' : ' has'} no edge: ${alone.join(', ')}`);
   // The last word before anything is written. main() backs up and writes only
   // after buildDiagram returns, so a throw here leaves the target untouched.
   const nonFinite = nonFiniteBoxes(scene.elements.map((el) => ({
