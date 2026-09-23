@@ -16,10 +16,12 @@ const STYLE = /\b(style|styled|look(s|ing)? like|rounded|square|sharp|dashed|dot
 // Running the commands themselves is the user doing exactly what the rule asks.
 const COMMAND = /\/(arkitect:)?(learn|apply)-(drawio|excalidraw)-style\b/i;
 
-export const RULE = 'Arkitect: a diagram style is stored only when the user runs /learn-drawio-style '
-  + 'or /learn-excalidraw-style (and applied with /apply-drawio-style or /apply-excalidraw-style). '
-  + 'Answering a question about a style stores nothing, so do not say you will remember it or use it '
-  + 'for later diagrams; if they want it kept, name the command.';
+// The failing answers all closed with "I'll remember" or "I'll keep that in
+// mind", so the rule names that and says what to answer instead.
+export const RULE = 'Arkitect: nothing about a diagram\'s style is kept between conversations unless the user '
+  + 'runs /learn-drawio-style or /learn-excalidraw-style themselves. If they say they like a style, do not '
+  + 'reply that you will remember it, keep it in mind or use it next time: answer the question, and say '
+  + 'that running that command is how a style is kept.';
 
 export function ruleFor(prompt) {
   const text = String(prompt ?? '');
