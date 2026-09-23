@@ -299,7 +299,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       if (!a || !b) continue;
       const exit = port(a, c.style, 'exit', b); const entry = port(b, c.style, 'entry', a);
       const segments = route(exit, entry);
-      routes.push({ id: c.id, target: c.target, entry, segments });
+      routes.push({ id: c.id, source: c.source, target: c.target, entry, segments });
       const hits = (box) => segments.some((segment) => crosses(segment, box));
       const through = new Set();
       for (const o of leaves) {
@@ -316,7 +316,9 @@ export function validateFile(path, { pageIndex = null } = {}) {
     }
 
     // Shared trunks (#246). Two edges that reach the same port along the same
-    // line draw as one, with one arrowhead. TRUNK_MIN is in maintenance.md.
+    // line draw as one, with one arrowhead; two between the same pair of nodes,
+    // either way, draw as one double-headed line (#272). TRUNK_MIN is in
+    // maintenance.md.
     const shared = (r, s) => {
       let n = 0;
       for (const [p, q] of r.segments) {
@@ -333,11 +335,16 @@ export function validateFile(path, { pageIndex = null } = {}) {
     for (let i = 0; i < routes.length; i++) {
       for (let j = i + 1; j < routes.length; j++) {
         const r = routes[i]; const s = routes[j];
-        if (r.target !== s.target || Math.abs(r.entry.x - s.entry.x) >= 1 || Math.abs(r.entry.y - s.entry.y) >= 1) continue;
+        const port = r.target === s.target && Math.abs(r.entry.x - s.entry.x) < 1 && Math.abs(r.entry.y - s.entry.y) < 1;
+        const pair = (r.source === s.source && r.target === s.target) || (r.source === s.target && r.target === s.source);
+        if (!port && !pair) continue;
         const n = shared(r, s);
         if (n <= TRUNK_MIN) continue;
         sharedTrunks++;
-        if (sharedTrunks <= 10) warnings.push(`${label}: edges "${r.id}" and "${s.id}" share ${Math.round(n)}px of line into the same port of "${r.target}"`);
+        if (sharedTrunks > 10) continue;
+        warnings.push(port
+          ? `${label}: edges "${r.id}" and "${s.id}" share ${Math.round(n)}px of line into the same port of "${r.target}"`
+          : `${label}: edges "${r.id}" and "${s.id}" between "${r.source}" and "${r.target}" share ${Math.round(n)}px of line`);
       }
     }
 
