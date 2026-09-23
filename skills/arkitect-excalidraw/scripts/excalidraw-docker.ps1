@@ -102,7 +102,10 @@ if ($Status) {
 
 if ($Library) {
   Start-Excalidraw
-  $lib = Join-Path $PSScriptRoot '..\assets\icons\house.excalidrawlib'
+  # Made icons live in the store (#257); before that, inside the plugin.
+  $store = if ($env:ARKITECT_HOME) { $env:ARKITECT_HOME } else { Join-Path $HOME '.arkitect' }
+  $lib = Join-Path $store 'excalidraw\icons\house.excalidrawlib'
+  if (-not (Test-Path $lib)) { $lib = Join-Path $PSScriptRoot '..\assets\icons\house.excalidrawlib' }
   if (-not (Test-Path $lib)) {
     Write-Output "no house library yet - build an icon first:"
     Write-Output "  node `"$PSScriptRoot\make-icon.mjs`" --url <logo url> --name <product>"

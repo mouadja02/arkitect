@@ -1,12 +1,15 @@
-# Logo cache
+# Logo cache, before 2.1.0
 
-Third-party product logos land here — Snowflake, Streamlit, Pinecone, Grafana,
-Databricks, and anything else the AWS icon library does not cover.
+Third-party product logos — Snowflake, Streamlit, Pinecone, Grafana, Databricks, and
+anything else the bundled packs do not cover — are cached in `~/.arkitect/drawio/logos/`
+(or `$ARKITECT_HOME/drawio/logos/`), outside the plugin, so a plugin update keeps them.
+They landed here before 2.1.0, and this folder is still read; nothing new is written here.
 
 The contents are **gitignored**. Logos carry their own trademark and licensing terms,
 and generated diagrams embed the image directly, so a diagram stays portable whether or
-not this cache travels with the repo. If you decide a particular logo belongs in the
-repo, force-add it: `git add -f skills/arkitect-drawio/assets/logos/snowflake.png`.
+not the cache travels with the repo. If you decide a particular logo belongs in a clone
+of this repo, copy it and its `index.json` entry here and force-add it:
+`git add -f skills/arkitect-drawio/assets/logos/snowflake.png`.
 
 Managed by `scripts/fetch-logo.mjs`:
 

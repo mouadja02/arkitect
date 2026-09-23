@@ -416,12 +416,16 @@ or URL.
 
 ### The cache
 
-Files live in `skills/arkitect-drawio/assets/logos/`, with an `index.json` recording file
-name, MIME type, dimensions, transparency, SHA-256 and source URL.
+Files live in `~/.arkitect/drawio/logos/` (or `$ARKITECT_HOME/drawio/logos/`), with an
+`index.json` recording file name, MIME type, dimensions, transparency, SHA-256 and
+source URL. That is outside the plugin, so a plugin update keeps them. Logos cached in
+`skills/arkitect-drawio/assets/logos/` before 2.1.0 are still found there; nothing new
+is written there.
 
-The directory is **gitignored**. Logos carry their own trademark and licensing terms,
-and generated diagrams embed the image anyway, so a diagram stays portable whether or
-not the cache travels with it. If a particular logo belongs in the repo, force-add it:
+Logos carry their own trademark and licensing terms, and generated diagrams embed the
+image anyway, so a diagram stays portable whether or not the cache travels with it. If
+a particular logo belongs in a clone of this repository, copy it and its `index.json`
+entry into `skills/arkitect-drawio/assets/logos/`, which is gitignored, and force-add it:
 
 ```bash
 git add -f skills/arkitect-drawio/assets/logos/snowflake.png

@@ -3534,6 +3534,59 @@ test('the docker compose file pins the official image and a port', () => {
 
 // -------------------------------------------------------------
 
+// A plugin update replaces the plugin folder, and made icons and installed
+// libraries lived in it (#257). They go to the store now; the old folders are
+// still read, never written.
+test('a made icon and an installed library live in the store, and ones from the plugin folder are still found (#257)', () => {
+  const home = process.env.ARKITECT_HOME;
+  eq(icons.ICON_DIR, join(home, 'excalidraw', 'icons'), 'icons are in the store ARKITECT_HOME names');
+  eq(browse.LIB_DIR, join(home, 'excalidraw', 'libraries'), 'and so are libraries');
+
+  const key = `${TEST_PREFIX}store-257`;
+  const oldKey = `${TEST_PREFIX}legacy-257`;
+  const slug = 'arkitect-test-legacy-257';
+  const legacyIcons = join(icons.LEGACY_ICON_DIR, 'index.json');
+  const legacyLibs = join(browse.LEGACY_LIB_DIR, 'installed.json');
+  const priorIcons = existsSync(legacyIcons) ? readFileSync(legacyIcons) : null;
+  const priorLibs = existsSync(legacyLibs) ? readFileSync(legacyLibs) : null;
+  const moved = [];
+  try {
+    const { entry } = icons.storeIcon(key, Buffer.from(DONUT_SVG, 'utf8'), { force: true });
+    assert(existsSync(join(icons.ICON_DIR, entry.file)) && !existsSync(join(icons.LEGACY_ICON_DIR, entry.file)), 'written under the store only');
+    assert(finder.resolveIcon(key), 'and found there');
+
+    // Made before #257: its files and index entry only in the plugin folder.
+    const made = icons.storeIcon(oldKey, Buffer.from(DONUT_SVG, 'utf8'), { force: true }).entry;
+    mkdirSync(join(icons.LEGACY_ICON_DIR, 'items'), { recursive: true });
+    for (const rel of [made.file, join('items', `${oldKey}.excalidrawlib`)]) {
+      writeFileSync(join(icons.LEGACY_ICON_DIR, rel), readFileSync(join(icons.ICON_DIR, rel)));
+      rmSync(join(icons.ICON_DIR, rel));
+      moved.push(join(icons.LEGACY_ICON_DIR, rel));
+    }
+    const storeIndex = JSON.parse(readFileSync(join(icons.ICON_DIR, 'index.json'), 'utf8'));
+    delete storeIndex[oldKey];
+    writeFileSync(join(icons.ICON_DIR, 'index.json'), JSON.stringify(storeIndex));
+    writeFileSync(legacyIcons, JSON.stringify({ ...(priorIcons ? JSON.parse(priorIcons) : {}), [oldKey]: made }));
+    eq(icons.getIcon(oldKey)?.sourcePath, join(icons.LEGACY_ICON_DIR, made.file), 'found where it was made');
+    assert(finder.resolveIcon(oldKey), 'and drawn from there');
+
+    // Installed before #257.
+    const libFile = join(browse.LEGACY_LIB_DIR, `${slug}.excalidrawlib`);
+    writeFileSync(libFile, JSON.stringify({ type: 'excalidrawlib', version: 2,
+      libraryItems: [{ id: 'x', name: 'Legacy mark', elements: [core.rectangle({ x: 0, y: 0, width: 10, height: 10 })] }] }));
+    moved.push(libFile);
+    writeFileSync(legacyLibs, JSON.stringify({ ...(priorLibs ? JSON.parse(priorLibs) : {}),
+      [slug]: { slug, file: `${slug}.excalidrawlib`, name: slug, itemNames: [], items: 1 } }));
+    assert(browse.listInstalled().some((m) => m.slug === slug), 'listed');
+    eq(browse.libraryItems(slug)?.[0]?.name, 'Legacy mark', 'and read from the plugin folder');
+  } finally {
+    if (priorIcons) writeFileSync(legacyIcons, priorIcons); else rmSync(legacyIcons, { force: true });
+    if (priorLibs) writeFileSync(legacyLibs, priorLibs); else rmSync(legacyLibs, { force: true });
+    for (const f of moved) rmSync(f, { force: true });
+    try { icons.removeIcon(key); } catch { /* already gone */ }
+  }
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');

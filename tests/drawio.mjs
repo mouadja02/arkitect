@@ -4735,6 +4735,37 @@ test('a boundary takes labelAlign, reports a value it does not know, and builds 
   }
 });
 
+// A plugin update replaces the plugin folder, and fetched logos lived in it
+// (#257). They go to the store now; the old folder is still read, never written.
+test('a fetched logo is cached in the store, and one cached in the plugin folder before is still found (#257)', () => {
+  eq(logos.LOGO_DIR, join(process.env.ARKITECT_HOME, 'drawio', 'logos'), 'the cache is in the store ARKITECT_HOME names');
+  const key = 'arkitect-drawio-test-257';
+  const legacyIndex = join(logos.LEGACY_LOGO_DIR, 'index.json');
+  const prior = existsSync(legacyIndex) ? readFileSync(legacyIndex) : null;
+  const legacyFile = join(logos.LEGACY_LOGO_DIR, `${key}-old.png`);
+  try {
+    const fresh = logos.storeLogo(key, makePng(80, 40, 6), { source: 'test', force: true });
+    assert(existsSync(join(logos.LOGO_DIR, fresh.file)), 'written under the store');
+    assert(!existsSync(join(logos.LEGACY_LOGO_DIR, fresh.file)), 'and not in the plugin folder');
+    const built = builder.buildDiagram({ nodes: [{ id: 'l', kind: 'logo', logo: key, label: 'Logo', col: 0, row: 0 }] });
+    eq(built.report.missingLogos.length, 0, 'the builder finds it there');
+
+    // Cached before #257: only in the plugin folder's own index.
+    mkdirSync(logos.LEGACY_LOGO_DIR, { recursive: true });
+    writeFileSync(legacyFile, makePng(60, 60, 6));
+    const index = prior ? JSON.parse(prior) : {};
+    index[`${key}-old`] = { name: `${key}-old`, file: `${key}-old.png`, mime: 'image/png', width: 60, height: 60, transparent: true };
+    writeFileSync(legacyIndex, JSON.stringify(index));
+    const old = logos.getLogo(`${key}-old`);
+    assert(old && old.path === legacyFile, `found where it was cached: ${old?.path}`);
+    const oldBuilt = builder.buildDiagram({ nodes: [{ id: 'l', kind: 'logo', logo: `${key}-old`, label: 'Old', col: 0, row: 0 }] });
+    eq(oldBuilt.report.missingLogos.length, 0, 'and the builder still embeds it');
+  } finally {
+    if (prior) writeFileSync(legacyIndex, prior); else rmSync(legacyIndex, { force: true });
+    rmSync(legacyFile, { force: true });
+  }
+});
+
 // -------------------------------------------------------------
 
 finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');
