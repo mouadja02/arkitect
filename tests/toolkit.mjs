@@ -1264,8 +1264,10 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
     assert(readme.includes(prereq), `evals/README.md no longer names ${prereq}`);
   }
 
-  // bash -n is a parse, not a run: nothing in the script executes.
-  const bash = spawnSync('bash', ['-n', join(ROOT, 'scripts', 'eval.sh')], { encoding: 'utf8' });
+  // bash -n is a parse, not a run: nothing in the script executes. The path is
+  // relative because the bash found on Windows may be WSL's, which reads
+  // C:\... as one name with its backslashes stripped (#267).
+  const bash = spawnSync('bash', ['-n', 'scripts/eval.sh'], { cwd: ROOT, encoding: 'utf8' });
   if (bash.error) { console.log('      (bash was not found, so the parse check was skipped)'); return 'skip'; }
   eq(bash.status, 0, `bash rejected scripts/eval.sh: ${(bash.stderr || '').trim().slice(0, 200)}`);
 });
