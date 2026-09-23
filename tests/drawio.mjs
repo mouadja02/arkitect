@@ -3184,13 +3184,15 @@ test('the committed Draw.io templates put no text on a container and read at sli
 // a report that names them from one that does not.
 test('the report-names-every-warning eval case warns as its graders expect, and they catch "a few" (#248)', () => {
   const dir = join(ROOT, 'evals', 'drawio', 'report-names-every-warning');
-  const script = readFileSync(join(dir, 'scaffold.sh'), 'utf8');
+  // A Windows checkout gives both files CRLF.
+  const read = (name) => readFileSync(join(dir, name), 'utf8').replace(/\r\n/g, '\n');
+  const script = read('scaffold.sh');
   const spec = JSON.parse(script.slice(script.indexOf("<<'EOF'\n") + 8, script.lastIndexOf('\nEOF')));
   const r = buildAndValidate('report-case', spec);
   eq(r.warnings.join('; '), 'page 0: edge "write-edge" runs through "queue"; '
     + 'page 0: "title" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
 
-  const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8');
+  const yaml = read('case.yaml');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
   const graders = ['names-the-edge-warning', 'names-the-title-warning'].map(pattern);
   const listed = '**Validation**: two warnings left: edge `write-edge` runs through `queue`; the title lies across `acct-boundary`.';
