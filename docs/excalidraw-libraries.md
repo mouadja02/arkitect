@@ -198,7 +198,7 @@ redistributing a diagram that leans heavily on someone's library.
 ## The cache
 
 ```
-skills/arkitect-excalidraw/assets/libraries/
+~/.arkitect/excalidraw/libraries/   (or $ARKITECT_HOME/excalidraw/libraries/)
   index.json          cached copy of the public catalogue
   installed.json      source, author, item count, digest
   <slug>.excalidrawlib

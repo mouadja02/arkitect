@@ -182,7 +182,7 @@ skills/arkitect-drawio/
                         icon-catalog.json, source-analysis.json
   assets/libraries/     the AWS palette, the explicit export, the merge
   assets/templates/     starter spec, the built diagram, its PNG, pattern fragments
-  assets/logos/         product logo cache (gitignored)
+  assets/logos/         logos cached before 2.1.0, still read (new ones: ~/.arkitect/drawio/logos/)
   scripts/              analysis, icon lookup, generation, validation, rendering
   scripts/lib/          the .drawio parsing core, style tokens, and what both engines
                         share: backups, the style store, override layer and findings/apply workflow
@@ -192,7 +192,7 @@ skills/arkitect-excalidraw/
                         style-guide.md, pattern-catalog.md, excalidraw-format.md,
                         source-analysis.json
   assets/libraries/bundled/   36 committed libraries, 1,162 items, contact sheets
-  assets/icons/         icons built from logos (gitignored)
+  assets/icons/         icons made before 2.1.0, still read (new ones: ~/.arkitect/excalidraw/icons/)
   assets/templates/     two worked specs, their scenes, their PNGs
   scripts/              generation, validation, rendering, icons, libraries
   scripts/lib/          scene model, SVG tracer, hand-drawn stroke generator, style tokens

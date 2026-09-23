@@ -85,15 +85,20 @@ time. Treat the warning as a prompt to find a better source. An SVG traced with
 ## Where logos live, and why they are not committed
 
 ```
-skills/arkitect-drawio/assets/logos/        fetched logos + index.json
-skills/arkitect-excalidraw/assets/icons/    built icons + items/ + house.excalidrawlib
-skills/arkitect-excalidraw/assets/libraries/    libraries pulled from the catalogue
+~/.arkitect/drawio/logos/            fetched logos + index.json
+~/.arkitect/excalidraw/icons/        built icons + items/ + house.excalidrawlib
+~/.arkitect/excalidraw/libraries/    libraries pulled from the catalogue
 ```
 
-All three are **gitignored**. Logos carry their own trademark and licensing
+`$ARKITECT_HOME` replaces `~/.arkitect`. All three sit outside the plugin, beside
+your learned style, so a plugin update keeps them. What was cached before 2.1.0
+in `skills/arkitect-drawio/assets/logos/`, `skills/arkitect-excalidraw/assets/icons/`
+or `skills/arkitect-excalidraw/assets/libraries/` is still found there, and
+nothing new is written there. Logos carry their own trademark and licensing
 terms, and a generated diagram embeds or inlines the artwork anyway — so a
-diagram stays portable whether or not the cache travels with it. Force-add one if
-you decide it belongs in your repository:
+diagram stays portable whether or not the cache travels with it. To keep one in
+a clone of this repository, copy it with its `index.json` entry into the old,
+gitignored folder and force-add it:
 
 ```bash
 git add -f skills/arkitect-drawio/assets/logos/snowflake.svg

@@ -16,10 +16,13 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlink
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname } from 'node:path';
 import { sha256, parseDataUri, imageDimensions } from './lib/drawio-core.mjs';
+import { cacheDir, mergedRegistry } from './lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
-export const LOGO_DIR = join(SKILL_ROOT, 'assets', 'logos');
+export const LOGO_DIR = cacheDir('drawio', 'logos');
+// Where logos were cached before #257: still read, never written.
+export const LEGACY_LOGO_DIR = join(SKILL_ROOT, 'assets', 'logos');
 const INDEX_FILE = join(LOGO_DIR, 'index.json');
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -66,13 +69,18 @@ export function transparency(mime, bytes) {
   return { alpha: false, note: `${mime} has no alpha channel` };
 }
 
-function loadIndex() {
-  if (!existsSync(INDEX_FILE)) return {};
+function readIndexAt(dir) {
+  const file = join(dir, 'index.json');
+  if (!existsSync(file)) return {};
   try {
-    return JSON.parse(readFileSync(INDEX_FILE, 'utf8'));
+    return JSON.parse(readFileSync(file, 'utf8'));
   } catch {
     return {};
   }
+}
+
+function loadIndex() {
+  return mergedRegistry(readIndexAt, [LOGO_DIR, LEGACY_LOGO_DIR]);
 }
 
 function saveIndex(index) {
@@ -94,8 +102,8 @@ export function storeLogo(name, bytes, { source = 'local', force = false } = {})
   const mime = sniff(bytes);
   if (!mime) throw new Error('not a recognised image (png, svg, webp or jpeg expected)');
 
-  const index = loadIndex();
-  if (index[key] && !force) throw new Error(`"${key}" is already cached; pass --force to replace it`);
+  if (loadIndex()[key] && !force) throw new Error(`"${key}" is already cached; pass --force to replace it`);
+  const index = readIndexAt(LOGO_DIR);
 
   mkdirSync(LOGO_DIR, { recursive: true });
   for (const old of readdirSync(LOGO_DIR)) {
@@ -132,7 +140,7 @@ export function getLogo(name) {
   const key = normalizeName(name);
   const entry = loadIndex()[key];
   if (!entry) return null;
-  const path = join(LOGO_DIR, entry.file);
+  const path = join(entry.dir, entry.file);
   if (!existsSync(path)) return null;
   return { ...entry, path, bytes: readFileSync(path) };
 }

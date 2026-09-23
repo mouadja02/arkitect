@@ -22,12 +22,15 @@ import {
   cloneElements, scaleElements, translate, bbox, text, measureText, newId,
   FONT, FONT_FAMILY,
 } from './lib/excalidraw-core.mjs';
+import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
-export const LIB_DIR = join(SKILL_ROOT, 'assets', 'libraries');
+export const LIB_DIR = cacheDir('excalidraw', 'libraries');
+// Where libraries were installed before #257: still read, never written. The
+// bundled libraries stay beside it, in bundled/: they ship with the plugin.
+export const LEGACY_LIB_DIR = join(SKILL_ROOT, 'assets', 'libraries');
 const INDEX_FILE = join(LIB_DIR, 'index.json');
-const INSTALLED_FILE = join(LIB_DIR, 'installed.json');
 
 const INDEX_URL = 'https://raw.githubusercontent.com/excalidraw/excalidraw-libraries/main/libraries.json';
 const FILE_BASE = 'https://libraries.excalidraw.com/libraries/';
@@ -47,8 +50,11 @@ export async function updateIndex() {
 }
 
 export function loadIndex() {
-  if (!existsSync(INDEX_FILE)) return null;
-  try { return JSON.parse(readFileSync(INDEX_FILE, 'utf8')); } catch { return null; }
+  for (const file of [INDEX_FILE, join(LEGACY_LIB_DIR, 'index.json')]) {
+    if (!existsSync(file)) continue;
+    try { return JSON.parse(readFileSync(file, 'utf8')); } catch { /* try the next */ }
+  }
+  return null;
 }
 
 export function searchIndex(query, list) {
@@ -77,9 +83,14 @@ export function searchIndex(query, list) {
 
 // ---------------------------------------------------------------- install
 
+function readInstalledAt(dir) {
+  const file = join(dir, 'installed.json');
+  if (!existsSync(file)) return {};
+  try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return {}; }
+}
+
 function loadInstalled() {
-  if (!existsSync(INSTALLED_FILE)) return {};
-  try { return JSON.parse(readFileSync(INSTALLED_FILE, 'utf8')); } catch { return {}; }
+  return mergedRegistry(readInstalledAt, [LIB_DIR, LEGACY_LIB_DIR]);
 }
 
 // Write through a staging file beside the target, so a failure part-way leaves
@@ -97,9 +108,9 @@ function writeStaged(path, bytes, check = null) {
   }
 }
 
-function saveInstalled(map) {
-  mkdirSync(LIB_DIR, { recursive: true });
-  writeStaged(INSTALLED_FILE, `${JSON.stringify(map, null, 2)}\n`);
+function saveInstalled(map, dir = LIB_DIR) {
+  mkdirSync(dir, { recursive: true });
+  writeStaged(join(dir, 'installed.json'), `${JSON.stringify(map, null, 2)}\n`);
 }
 
 export function slugFor(source) {
@@ -126,8 +137,8 @@ export async function installLibrary(sourceOrId, { force = false } = {}) {
 
   const slug = slugFor(source);
   const path = join(LIB_DIR, `${slug}.excalidrawlib`);
-  const installed = loadInstalled();
-  if (installed[slug] && !force) throw new Error(`"${slug}" is already installed; pass --force to replace it`);
+  if (loadInstalled()[slug] && !force) throw new Error(`"${slug}" is already installed; pass --force to replace it`);
+  const installed = readInstalledAt(LIB_DIR);
 
   mkdirSync(LIB_DIR, { recursive: true });
   // The download is parsed in a staging file beside the target, never over it:
@@ -187,7 +198,7 @@ function captionOf(elements) {
 export function libraryItems(slug) {
   const meta = loadInstalled()[slug];
   if (!meta) return null;
-  const path = join(LIB_DIR, meta.file);
+  const path = join(meta.dir, meta.file);
   if (!existsSync(path)) return null;
   const items = readLibrary(path);
   return items.map((it, i) => {
@@ -253,14 +264,15 @@ export function contactSheet(slug, { columns = 6, cell = 180, items: supplied = 
   return { scene, items: items.length };
 }
 
+// Removed from whichever folder holds it, as make-icon does.
 export function removeLibrary(slug) {
-  const installed = loadInstalled();
-  const meta = installed[normalizeName(slug)];
+  const meta = loadInstalled()[normalizeName(slug)];
   if (!meta) throw new Error(`no installed library "${slug}"`);
-  const path = join(LIB_DIR, meta.file);
+  const path = join(meta.dir, meta.file);
   if (existsSync(path)) unlinkSync(path);
+  const installed = readInstalledAt(meta.dir);
   delete installed[meta.slug];
-  saveInstalled(installed);
+  saveInstalled(installed, meta.dir);
   return meta.slug;
 }
 

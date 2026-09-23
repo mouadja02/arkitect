@@ -157,17 +157,20 @@ a search term or URL.
 ## The store
 
 ```
-skills/arkitect-excalidraw/assets/icons/
+~/.arkitect/excalidraw/icons/   (or $ARKITECT_HOME/excalidraw/icons/)
   index.json                    kind, source URL, dimensions, transparency, digest
   <name>.svg | .png             the original bytes, kept so --restyle needs no re-download
   items/<name>.excalidrawlib    one library item per icon
   house.excalidrawlib           every icon, rebuilt on each change
 ```
 
-**Gitignored.** Logos carry their own trademark and licensing terms, and a
-generated scene embeds or inlines the artwork anyway, so a diagram stays portable
-whether or not the store travels with it. Force-add one if you want it in the
-repository:
+It sits outside the plugin, so a plugin update keeps it. Icons made in
+`skills/arkitect-excalidraw/assets/icons/` before 2.1.0 are still found there;
+nothing new is written there. Logos carry their own trademark and licensing
+terms, and a generated scene embeds or inlines the artwork anyway, so a diagram
+stays portable whether or not the store travels with it. To keep one in a clone
+of this repository, copy it, its item and its `index.json` entry into that old
+folder, which is gitignored, and force-add it:
 
 ```bash
 git add -f skills/arkitect-excalidraw/assets/icons/dbt.svg

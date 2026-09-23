@@ -40,6 +40,27 @@ export function storeFile(engine, name, env = process.env) {
   return join(engineStore(engine, env), STORE_FILES[name]);
 }
 
+// What a run fetches or makes - a product logo, an icon built from one, a
+// library from the public catalogue - lives here too. Kept inside the plugin,
+// it went with the folder a plugin update replaces (#257).
+export const CACHES = Object.freeze({ drawio: ['logos'], excalidraw: ['icons', 'libraries'] });
+
+export function cacheDir(engine, name, env = process.env) {
+  if (!CACHES[engine]?.includes(name)) throw new TypeError(`unknown ${engine} cache "${name}"`);
+  return join(engineStore(engine, env), name);
+}
+
+// A cache's registry read from the store and from the folder it used to live
+// in, the store winning. Each entry says which folder holds it, so nothing
+// cached before #257 is lost; only the store is ever written.
+export function mergedRegistry(read, dirs) {
+  const out = {};
+  for (const dir of [...dirs].reverse()) {
+    for (const [key, entry] of Object.entries(read(dir) ?? {})) out[key] = { ...entry, dir };
+  }
+  return out;
+}
+
 export function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);

@@ -140,10 +140,10 @@ claude plugin update arkitect              # route A
 node ~/arkitect/bin/arkitect.mjs install --all --force   # route C, refresh adapters
 ```
 
-Your icon store and your installed libraries live under `skills/*/assets/`,
-gitignored, so a pull never touches them. Your learned style — record,
-findings, notes and override — lives in `~/.arkitect/` (or `$ARKITECT_HOME`),
-outside the plugin, so no route's update can wipe it.
+Your learned style — record, findings, notes and override — your fetched
+logos, made icons and installed libraries all live in `~/.arkitect/` (or
+`$ARKITECT_HOME`), outside the plugin, so no route's update can wipe them.
+Anything cached under `skills/*/assets/` before 2.1.0 is still read from there.
 
 ## Remove
 
@@ -154,9 +154,9 @@ outside the plugin, so no route's update can wipe it.
 | C | delete the adapter files, or just the fenced `arkitect:begin`…`arkitect:end` block |
 | D | delete the clone (`npm unlink` first if you linked it) |
 
-Deleting the directory takes your icon store with it. Copy
-`skills/arkitect-excalidraw/assets/icons/` somewhere first if you built icons
-you want to keep. Your learned style in `~/.arkitect/` is not removed with the
-plugin; delete that folder to forget it.
+Your learned style and your caches in `~/.arkitect/` are not removed with the
+plugin; delete that folder to forget them. Icons made before 2.1.0 sit in
+`skills/arkitect-excalidraw/assets/icons/` and go with the plugin: copy that
+folder first if you want to keep them.
 
 Stop the container with `docker compose -f docker/docker-compose.yml down`.

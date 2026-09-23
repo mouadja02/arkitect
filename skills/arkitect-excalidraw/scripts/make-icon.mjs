@@ -36,11 +36,14 @@ import { parseSvg, simplify, signedArea } from './lib/svg-path.mjs';
 // attributes, viewBox first. Reading a width from anywhere in the document
 // picks up a child's, or `stroke-width`, and sizes the mark wrong (#96).
 import { svgDimensions } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
-export const ICON_DIR = join(SKILL_ROOT, 'assets', 'icons');
+export const ICON_DIR = cacheDir('excalidraw', 'icons');
 export const ITEM_DIR = join(ICON_DIR, 'items');
+// Where icons were made before #257: still read, never written.
+export const LEGACY_ICON_DIR = join(SKILL_ROOT, 'assets', 'icons');
 const INDEX_FILE = join(ICON_DIR, 'index.json');
 export const HOUSE_LIB = join(ICON_DIR, 'house.excalidrawlib');
 
@@ -103,9 +106,14 @@ export function transparency(mime, bytes) {
 
 // ---------------------------------------------------------------- index
 
+function readIndexAt(dir) {
+  const file = join(dir, 'index.json');
+  if (!existsSync(file)) return {};
+  try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return {}; }
+}
+
 export function loadIndex() {
-  if (!existsSync(INDEX_FILE)) return {};
-  try { return JSON.parse(readFileSync(INDEX_FILE, 'utf8')); } catch { return {}; }
+  return mergedRegistry(readIndexAt, [ICON_DIR, LEGACY_ICON_DIR]);
 }
 
 function saveIndex(index) {
@@ -117,8 +125,8 @@ export function getIcon(name) {
   const key = normalizeName(name);
   const entry = loadIndex()[key];
   if (!entry) return null;
-  const sourcePath = join(ICON_DIR, entry.file);
-  const itemPath = join(ITEM_DIR, `${key}.excalidrawlib`);
+  const sourcePath = join(entry.dir, entry.file);
+  const itemPath = join(entry.dir, 'items', `${key}.excalidrawlib`);
   return {
     ...entry,
     sourcePath,
@@ -256,14 +264,14 @@ function rebuildHouseLibrary() {
   const items = [];
   const files = {};
   for (const key of Object.keys(index).sort()) {
-    const itemPath = join(ITEM_DIR, `${key}.excalidrawlib`);
+    const itemPath = join(index[key].dir, 'items', `${key}.excalidrawlib`);
     if (!existsSync(itemPath)) continue;
     const [item] = readLibrary(itemPath);
     if (!item) continue;
     items.push({ id: item.id, name: index[key].label ?? key, created: item.created ?? Date.now(), elements: item.elements });
     const entry = index[key];
     if (entry.kind === 'embedded' && entry.fileId) {
-      const bytes = readFileSync(join(ICON_DIR, entry.file));
+      const bytes = readFileSync(join(entry.dir, entry.file));
       files[entry.fileId] = {
         mimeType: entry.mime, id: entry.fileId,
         dataURL: dataUrl(entry.mime, bytes), created: Date.now(), lastRetrieved: Date.now(),
@@ -289,8 +297,8 @@ export function storeIcon(name, bytes, opts = {}) {
   if (!mime) throw new Error('not a recognised image (png, svg, webp or jpeg expected)');
   if (trace && mime !== 'image/svg+xml') throw new Error('--trace needs an SVG; fetch the vector version or drop --trace');
 
-  const index = loadIndex();
-  if (index[key] && !force) throw new Error(`"${key}" already exists; pass --force to replace it`);
+  if (loadIndex()[key] && !force) throw new Error(`"${key}" already exists; pass --force to replace it`);
+  const index = readIndexAt(ICON_DIR);
 
   mkdirSync(ICON_DIR, { recursive: true });
   mkdirSync(ITEM_DIR, { recursive: true });
@@ -359,17 +367,20 @@ export async function fetchIcon(name, url, opts = {}) {
   return storeIcon(name, bytes, { ...opts, source: url });
 }
 
+// Removed from whichever folder holds it: asked to remove an icon made before
+// #257, the old folder is the one to change.
 export function removeIcon(name) {
   const key = normalizeName(name);
-  const index = loadIndex();
-  if (!index[key]) throw new Error(`no icon "${key}"`);
-  for (const old of readdirSync(ICON_DIR)) {
-    if (old.startsWith(`${key}.`) && old !== 'index.json') unlinkSync(join(ICON_DIR, old));
+  const found = loadIndex()[key];
+  if (!found) throw new Error(`no icon "${key}"`);
+  for (const old of readdirSync(found.dir)) {
+    if (old.startsWith(`${key}.`) && old !== 'index.json') unlinkSync(join(found.dir, old));
   }
-  const itemPath = join(ITEM_DIR, `${key}.excalidrawlib`);
+  const itemPath = join(found.dir, 'items', `${key}.excalidrawlib`);
   if (existsSync(itemPath)) unlinkSync(itemPath);
+  const index = readIndexAt(found.dir);
   delete index[key];
-  saveIndex(index);
+  writeFileSync(join(found.dir, 'index.json'), `${JSON.stringify(index, null, 2)}\n`);
   rebuildHouseLibrary();
   return key;
 }

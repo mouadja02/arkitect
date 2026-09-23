@@ -20,6 +20,10 @@ separate file, no naming scheme, no required format beyond that.
 - Draw.io `validate` warns when a title, legend or edge label lies across a container's border or over its name, and when a page fit to 1920px wide draws its labels under 9px; each page line now counts its icons (#243, #247).
 - Draw.io boundaries take `labelAlign` (`left`, `center`, `right`) to move their name along the top; an unknown value keeps the default and is listed under `unknownKinds`, and a spec without it builds byte-identical (#250).
 
+### Changed
+
+- Fetched logos, made icons and libraries installed from the public catalogue are cached in the store, `~/.arkitect/<engine>/` (or `$ARKITECT_HOME`), beside your learned style, so a plugin update no longer loses them. What was cached inside the plugin before is still read from there; nothing new is written there (#257).
+
 ### Fixed
 
 - AGENTS.md and the Excalidraw skill no longer say `style` is a field in neither engine: Excalidraw applies a top-level `style`, and only one on a node, edge or boundary is dropped and listed under `unknownFields`. A test holds the contract to the builder (#268).
