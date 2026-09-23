@@ -3191,6 +3191,11 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   const r = buildAndValidate('report-case', spec);
   eq(r.warnings.join('; '), 'page 0: edge "write-edge" runs through "queue"; '
     + 'page 0: "title" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
+  // What the agent reads last before it reports: the count, and the rule (#248).
+  const cli = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), join(TMP, 'report-case.drawio')], { encoding: 'utf8' });
+  const lines = cli.stdout.trim().split('\n');
+  assert(lines[0].startsWith('PASS') && lines[0].endsWith(', 2 warnings'), `counted on the PASS line: ${lines[0]}`);
+  eq(lines.at(-1), validator.WARNINGS_LEFT, 'the rule comes last, after the warnings');
 
   const yaml = read('case.yaml');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);

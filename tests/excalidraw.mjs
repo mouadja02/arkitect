@@ -2006,6 +2006,23 @@ test('a malformed file does not cost the batch the files after it (#154)', () =>
   eq(reports[1].ok, true, `the file after it is still checked: ${reports[1].errors.join('; ')}`);
 });
 
+test('validate counts its warnings on the PASS line and says each is a defect to report by id (#248)', () => {
+  const warnPath = join(TMP, 'counted-flawed.excalidraw');
+  const cleanPath = join(TMP, 'counted-clean.excalidraw');
+  const scene = core.emptyScene();
+  scene.elements = [core.rectangle({ x: 0, y: 0, width: 40, height: 20 })];
+  writeFileSync(cleanPath, JSON.stringify(scene));
+  scene.elements[0].width = 0;
+  writeFileSync(warnPath, JSON.stringify(scene));
+
+  const run = (p) => spawnSync(process.execPath, [join(SCRIPTS, 'validate-excalidraw.mjs'), p], { encoding: 'utf8' }).stdout;
+  const warned = run(warnPath).trim().split('\n');
+  assert(warned[0].endsWith(', 1 warning'), `counted on the PASS line: ${warned[0]}`);
+  eq(warned.at(-1), validator.WARNINGS_LEFT, 'the rule comes last, after the warnings');
+  const clean = run(cleanPath);
+  assert(!clean.includes('warning') && !clean.includes(validator.WARNINGS_LEFT.trim()), `a clean file says neither: ${clean}`);
+});
+
 // ------------------------------------------------------------- render
 
 test('the renderer produces an SVG covering every element', () => {
