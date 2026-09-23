@@ -64,7 +64,9 @@ const NODE_KINDS = ['box', 'icon', 'aws4', 'logo', 'note', 'text'];
 // silent: an agent that writes a field and is told nothing believes it took
 // effect, and the diagram it describes is not the diagram it got (#205).
 const BOUNDARY_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'cols', 'rows',
-  'color', 'dashed', 'grIcon', 'padLeft', 'padRight', 'padTop', 'padBottom'];
+  'color', 'dashed', 'grIcon', 'padLeft', 'padRight', 'padTop', 'padBottom', 'labelAlign'];
+// Where a boundary's name sits along its top. The default is the kind's own (#250).
+const LABEL_ALIGNS = ['left', 'center', 'right'];
 const NODE_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'width', 'height',
   'icon', 'pack', 'logo', 'size', 'resIcon', 'color', 'fontSize', 'bold', 'align'];
 const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'labelPos'];
@@ -483,7 +485,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       return b ? boxOf(b) : { x: 0, y: 0 };
     };
 
-    for (const b of boundaries) {
+    for (const [i, b] of boundaries.entries()) {
       const abs = boxOf(b);
       const origin = originOf(b.parent);
       let style;
@@ -491,6 +493,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       else if (b.kind === 'aws-group') style = STYLE.awsGroup(b.grIcon, b.color ?? T.text);
       else if (b.kind === 'lane') style = STYLE.lane;
       else style = STYLE.scope(b.color ?? T.neutralStroke, b.dashed !== false);
+      if (b.labelAlign !== undefined) {
+        if (LABEL_ALIGNS.includes(b.labelAlign)) style = `${style.replace(/(^|;)align=\w+;/, '$1')}align=${b.labelAlign};${b.labelAlign === 'right' ? 'spacingRight=8;' : ''}`;
+        else report.unknownKinds.push({ field: `${at}boundaries[${i}].labelAlign`, value: b.labelAlign, drawnAs: 'the default', valid: LABEL_ALIGNS });
+      }
       push(`<mxCell id="${esc(b.id)}" value="${esc(b.label ?? '')}" style="${style}" vertex="1" parent="${esc(b.parent ?? '1')}">`
         + `<mxGeometry x="${Math.round(abs.x - origin.x)}" y="${Math.round(abs.y - origin.y)}" `
         + `width="${Math.round(abs.width)}" height="${Math.round(abs.height)}" as="geometry" /></mxCell>`);

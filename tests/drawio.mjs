@@ -4704,6 +4704,37 @@ test('scripts avoid hard-coded absolute paths', () => {
   }
 });
 
+// A boundary's name could only be moved by markup inside the label or a padding
+// trick (#250).
+test('a boundary takes labelAlign, reports a value it does not know, and builds as before without it (#250)', () => {
+  const spec = {
+    boundaries: [
+      { id: 'cloud', kind: 'aws-cloud', label: 'Account', col: 0, row: 0, cols: 2, labelAlign: 'center' },
+      { id: 'vpc', kind: 'scope', label: 'VPC', col: 0, row: 2, labelAlign: 'right' },
+      { id: 'lane', kind: 'lane', label: 'Storage', col: 0, row: 4, labelAlign: 'left' },
+      { id: 'bad', kind: 'scope', label: 'Bad', col: 0, row: 6, labelAlign: 'middle' },
+    ],
+    nodes: [],
+  };
+  const r = builder.buildDiagram(spec);
+  const styleOf = (id) => r.xml.match(new RegExp(`<mxCell id="${id}" value="[^"]*" style="([^"]*)"`))[1];
+  const aligns = (id) => styleOf(id).match(/(?:^|;)align=\w+/g) ?? [];
+  eq(JSON.stringify(aligns('cloud')), '[";align=center"]', 'the AWS group is centred, once');
+  eq(JSON.stringify(aligns('vpc')), '[";align=right"]', 'the scope is right-aligned');
+  assert(styleOf('vpc').includes('spacingRight=8;'), 'and kept off its right border');
+  eq(JSON.stringify(aligns('lane')), '[";align=left"]', 'a lane takes it too');
+  eq(JSON.stringify(aligns('bad')), '[";align=left"]', 'an unknown value keeps the default');
+  eq(JSON.stringify(r.report.unknownKinds.map((u) => [u.field, u.value])), '[["boundaries[3].labelAlign","middle"]]', 'and is reported');
+  eq(r.report.unknownFields.length, 0, 'labelAlign is a field');
+
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    const dir = join(SKILL, 'assets', 'templates');
+    const out = join(TMP, `label-align-${name}.drawio`);
+    execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), join(dir, `${name}.spec.json`), '--out', out], { encoding: 'utf8' });
+    assert(readFileSync(out).equals(readFileSync(join(dir, `${name}.drawio`))), `${name} still builds byte-identical`);
+  }
+});
+
 // -------------------------------------------------------------
 
 finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');
