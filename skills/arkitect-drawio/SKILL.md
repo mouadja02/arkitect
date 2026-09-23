@@ -134,9 +134,9 @@ the report.
    downloaded and from where; lifecycle caveats. **Render**: you looked at the
    PNG, or it failed and why; never "rendered" for a render that failed, and
    never a picture you did not see. With only an SVG, say so — spacing and
-   crossings are then the validator's findings, quoted as its. **Validation**:
-   each warning left, by its ids; each defect seen and left, by page; never "a
-   few". **Deviations** from the style guide.
+   crossings are then the validator's findings, quoted as its.
+   **Validation**: each warning left, by its ids; each defect seen and left, by
+   page; never "a few". **Deviations** from the style guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint export,
    and no link to the hosted editor. **Draw.io Desktop** and **the VS Code
    extension** are the two things a reply names, as plain text, never a URL.
