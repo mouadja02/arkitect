@@ -43,6 +43,13 @@ Expect `Skills (6)` — `arkitect-drawio`, `arkitect-excalidraw`,
 `learn-drawio-style`, `learn-excalidraw-style`, `apply-drawio-style`,
 `apply-excalidraw-style`.
 
+The plugin also carries one hook, `hooks/style-question.mjs`. It stays silent
+unless a prompt asks about a diagram's style. Then it adds one sentence: a
+style reaches later diagrams only through `/learn-drawio-style` or
+`/learn-excalidraw-style`. If the final reply still promises to remember the
+style, it sends that reply back once. It reads nothing but the prompt and,
+in that one session, the last reply, and it never blocks a prompt.
+
 ## Route B — Claude Code plugin (clone into the skills directory)
 
 The repository *is* the plugin, so placing it where Claude Code looks for
