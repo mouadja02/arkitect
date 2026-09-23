@@ -3228,29 +3228,32 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
 });
 
-// The #251 case grades the spec the agent saved, so its patterns must pass one
-// numbered path and fail each way of numbering what is not a step.
+// The #251 case grades the drawing the agent built, so its patterns must pass
+// one numbered path and fail each way of numbering what is not a step.
 test('the numbered-flow-one-sequence eval case passes one path and fails a numbered entry point (#251)', () => {
   const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'numbered-flow-one-sequence', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: .*\\n\\s+pattern: '([^']+)'`))[1]);
-  const graders = ['one-sequence-from-one', 'entry-points-not-numbered'].map(pattern);
-  const spec = (edges) => JSON.stringify({ nodes: [], edges }, null, 2);
+  const [ids, sequence, entries] = ['built-with-the-given-ids', 'one-sequence-from-one', 'entry-points-not-numbered'].map(pattern);
+  const nodes = ['web', 'mobile', 'partner', 'gateway', 'handler', 'table', 'topic', 'customer']
+    .map((id, i) => ({ id, kind: 'box', label: id, col: i < 3 ? 0 : i - 2, row: i < 3 ? i : 1 }));
+  const drawn = (edges) => builder.buildDiagram({ nodes, edges }).xml;
   const path = [
     { from: 'gateway', to: 'handler', label: '1. Invoke' },
     { from: 'handler', to: 'table', label: '2. Write order' },
     { from: 'handler', to: 'topic', label: '3. Publish' },
     { from: 'topic', to: 'customer', label: '4. Email' },
   ];
-  const good = spec([{ from: 'web', to: 'gateway', label: 'A. Web order' }, { from: 'mobile', to: 'gateway' },
-    { label: 'Partner order', from: 'partner', to: 'gateway' }, ...path]);
-  assert(graders.every((g) => g.test(good)), 'one path from 1, entry points lettered or unnumbered');
-  const entry = spec([{ from: 'web', to: 'gateway', label: '1. Place order' }, { from: 'mobile', to: 'gateway' },
-    ...path.map((e, i) => ({ ...e, label: `${i + 2}. ${e.label.slice(3)}` }))]);
-  assert(!graders[1].test(entry), 'an entry point numbered 1 fails');
-  const reversed = spec([{ label: '2. Place order', from: 'partner', to: 'gateway' }, ...path]);
-  assert(!graders[1].test(reversed), 'whichever order the keys are in');
-  assert(!graders[0].test(spec([{ from: 'web', to: 'gateway', label: '1. Web' }, ...path])), 'two steps numbered 1 fail');
-  assert(!graders[0].test(spec([{ from: 'a', to: 'b', label: '0. Start' }, ...path])), 'a step 0 fails');
+  const good = drawn([{ from: 'web', to: 'gateway', label: 'A. Web order' }, { from: 'mobile', to: 'gateway' },
+    { from: 'partner', to: 'gateway', label: 'Partner order' }, ...path]);
+  assert([ids, sequence, entries].every((g) => g.test(good)), 'one path from 1, entry points lettered or unnumbered');
+
+  const before = drawn([{ from: 'web', to: 'gateway', label: '1. Web order' }, { from: 'mobile', to: 'gateway', label: '2. Mobile order' },
+    { from: 'partner', to: 'gateway', label: '3. Partner order' }, ...path.map((e, i) => ({ ...e, label: `${i + 4}. ${e.label.slice(3)}` }))]);
+  assert(sequence.test(before) && !entries.test(before), 'what every run did before #251: entry points numbered 1 to 3');
+  const onEdge = good.replace(/(<mxCell id="e2") /, '$1 value="2. Mobile order" ');
+  assert(!entries.test(onEdge), 'a number on the edge cell itself fails too');
+  assert(!sequence.test(drawn([{ from: 'web', to: 'gateway', label: '1. Web' }, ...path])), 'two steps numbered 1 fail');
+  assert(!sequence.test(drawn([{ from: 'web', to: 'gateway', label: '0. Start' }, ...path])), 'a step 0 fails');
 });
 
 test('the committed Draw.io templates print no note (#244, #245)', () => {
@@ -4144,9 +4147,9 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
   eq(report.unknownKinds.length, 0, `the fragment uses supported kinds: ${JSON.stringify(report.unknownKinds)}`);
   eq(report.unknownFields.length, 0, `and supported fields: ${JSON.stringify(report.unknownFields)}`);
 
-  const numbered = [...xml.matchAll(/value="([^"]*)"/g)].map((m) => m[1]).filter((v) => /^\d+\.\s/.test(v));
-  eq(numbered.join(' | '), '1. Submit request | 2. Persist | 3. Confirm',
-    'the numbers reach the generated XML as edge labels, in reading order');
+  const numbered = [...xml.matchAll(/value="([^"]*)"/g)].map((m) => m[1]).filter((v) => /^[\dA-Z]+\.\s/.test(v));
+  eq(numbered.join(' | '), 'A. Submit request | B. Submit request | 1. Persist | 2. Notify',
+    'the numbers reach the generated XML as edge labels, in reading order; the ways in are lettered (#251)');
 
   // The recipe is gone from the default reading path, and the evidence for what
   // the corpus actually did is kept off it, in the style guide.

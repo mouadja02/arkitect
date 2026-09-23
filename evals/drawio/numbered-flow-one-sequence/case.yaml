@@ -29,20 +29,22 @@ graders:
     input_match: arkitect-drawio
     arm: with-only
 
+  # Graded on the drawing, which is what a reader sees: a spec file can say
+  # anything, and one run saved a description as the spec and built another.
   - type: regex
     name: built-with-the-given-ids
-    target: { source: file, path: ./eval-output/orders.spec.json }
-    pattern: '^(?=[\s\S]*"web")(?=[\s\S]*"mobile")(?=[\s\S]*"partner")(?=[\s\S]*"gateway")(?=[\s\S]*"handler")'
+    target: { source: file, path: ./eval-output/orders.drawio }
+    pattern: '^(?=[\s\S]*id="web")(?=[\s\S]*id="mobile")(?=[\s\S]*id="partner")(?=[\s\S]*id="gateway")(?=[\s\S]*id="handler")'
 
-  # The path is numbered: it starts at 1, once.
+  # The path is numbered: it starts at 1, once, and there is no step 0.
   - type: regex
     name: one-sequence-from-one
-    target: { source: file, path: ./eval-output/orders.spec.json }
-    pattern: '^(?=[\s\S]*"label"\s*:\s*"\s*1[.):])(?![\s\S]*"label"\s*:\s*"\s*1[.):][\s\S]*"label"\s*:\s*"\s*1[.):])(?![\s\S]*"label"\s*:\s*"\s*0[.):])'
+    target: { source: file, path: ./eval-output/orders.drawio }
+    pattern: '^(?=[\s\S]*value="\s*1[.):])(?![\s\S]*value="\s*1[.):][\s\S]*value="\s*1[.):])(?![\s\S]*value="\s*0[.):])'
 
-  # No edge leaving an entry point carries a number, whichever order the
-  # agent wrote its keys in.
+  # No edge leaving an entry point carries a number: neither on the edge cell
+  # itself nor on the label cell the builder hangs off it.
   - type: regex
     name: entry-points-not-numbered
-    target: { source: file, path: ./eval-output/orders.spec.json }
-    pattern: '^(?![\s\S]*\{[^{}]*"from"\s*:\s*"(?:web|mobile|partner)"[^{}]*"label"\s*:\s*"\s*\d)(?![\s\S]*\{[^{}]*"label"\s*:\s*"\s*\d[^{}]*"from"\s*:\s*"(?:web|mobile|partner)")'
+    target: { source: file, path: ./eval-output/orders.drawio }
+    pattern: '^(?![\s\S]*<mxCell id="([^"]+)"[^>]*source="(?:web|mobile|partner)"[\s\S]*?value="\s*\d[^"]*"[^>]*parent="\1")(?![\s\S]*<mxCell[^>]*value="\s*\d[^"]*"[^>]*source="(?:web|mobile|partner)")'
