@@ -30,11 +30,12 @@ import {
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
   normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
 } from './lib/excalidraw-core.mjs';
-import { resolveIcon } from './find-icon.mjs';
+import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
+import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
@@ -488,7 +489,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], crossings: [],
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], namesAProduct: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const colX = (c) => L.originX + c * L.colPitch;
@@ -752,6 +753,12 @@ function assemble(spec, style) {
   }
 
   report.looksLikeBoundary = looksLikeBoundary(footprints);
+  // The same verdict an icon node would get, so what is listed would draw (#240).
+  const plainShapes = footprints.filter((f) => f.plain).map((f) => (spec.nodes ?? []).find((n) => n.id === f.id));
+  report.namesAProduct = namedProducts(plainShapes, (text) => {
+    const r = unattended(text);
+    return r.entry ? r.entry.ref : null;
+  });
 
   // ------------------------------------------------------------ boundaries
   //
@@ -1168,6 +1175,9 @@ function main(argv) {
     // A plain shape laid over nodes it does not own, or sized in grid cells.
     // Drawn as asked; fix it or say why it stays (#204).
     looksLikeBoundary: report.looksLikeBoundary,
+    // A plain shape whose label names a product with a bundled mark: drawn as
+    // text. Draw each as an icon node, or say why it stays text (#240).
+    namesAProduct: report.namesAProduct,
     // A connector drawn through a node it does not connect (#125).
     crossings: report.crossings,
     notes: report.notes,

@@ -4209,6 +4209,33 @@ test('a box drawn where a boundary was meant is named in the build report (#204)
   ]), 'the CLI prints them and exits 0');
 });
 
+// A box of product names drew as text while the report said nothing, and the
+// agent reported the products had no icon (#240).
+test('a plain box naming bundled products is listed under namesAProduct; a generic word and a note are not (#240)', () => {
+  const spec = {
+    nodes: [
+      { id: 'src', kind: 'box', label: 'Sources: PostgreSQL, MySQL, Snowflake', col: 0, row: 0, width: 260, height: 60 },
+      { id: 'gen', kind: 'box', label: 'Database', col: 1, row: 0 },
+      { id: 'bus', kind: 'box', label: 'Event bus', col: 2, row: 0 },
+      { id: 'n', kind: 'note', label: 'Assumption: PostgreSQL 15', col: 0, row: 1 },
+    ],
+  };
+  eq(JSON.stringify(builder.buildDiagram(spec).report.namesAProduct), JSON.stringify([
+    { node: 'src', text: 'PostgreSQL', icon: 'databases/postgresql' },
+    { node: 'src', text: 'MySQL', icon: 'databases/mysql' },
+    { node: 'src', text: 'Snowflake', icon: 'data-platforms/snowflake' },
+  ]), 'each product with the id an icon node would draw, and nothing else');
+
+  const templates = join(SKILL, 'assets', 'templates');
+  for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
+    eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.namesAProduct.length, 0, f);
+  }
+  const specPath = join(TMP, 'names-a-product.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'names-a-product.drawio')], { encoding: 'utf8' }));
+  eq(out.namesAProduct.length, 3, 'the CLI prints them');
+});
+
 // The docs offered multiple pages three times - the engine table, the interview
 // ladder, SKILL.md's "two pages or one comparison" - and the builder wrote
 // exactly one <diagram>. An agent that asked and got "yes" had hand-written XML
