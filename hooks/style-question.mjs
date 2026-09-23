@@ -23,25 +23,36 @@ const STYLE = /\b(style|styled|look(s|ing)? like|rounded|square|sharp|dashed|dot
 // Running the commands themselves is the user doing exactly what the rule asks.
 const COMMAND = /\/(arkitect:)?(learn|apply)-(drawio|excalidraw)-style\b/i;
 // What the failing replies said: "I'll remember this style", "I'll keep that in
-// mind for any diagrams", "I'll apply the same when working with your diagrams".
-const PROMISE = /\b(I['’]ll|I will|I['’]m going to|I am going to)\s+(remember|keep\b[^.!?\n]{0,40}\bin mind|note (that|this|those|it)|apply (that|this|those|these|the same|it)|use (that|this|those|these|the same|it) (style|look|for))/i;
+// mind for any diagrams", "I'll apply the same when working with your diagrams
+// going forward", "I can apply that when you create diagrams going forward".
+const PROMISE = new RegExp([
+  /\bI['’]ll remember\b|\bI will remember\b|\bremember (that|this|those|your) (style|preference)/,
+  /\bkeep\b[^.!?\n]{0,40}\bin mind\b/,
+  /\bgoing forward\b|\bnext time\b|\bfrom now on\b/,
+  /\bfor (any |all |your )?(future|later|upcoming|next) (diagrams?|work|drawings?)\b/,
+].map((r) => r.source).join('|'), 'i');
 
-export const RULE = 'Arkitect: nothing about a diagram\'s style is kept between conversations unless the user '
-  + 'runs /learn-drawio-style or /learn-excalidraw-style themselves. If they say they like a style, do not '
-  + 'reply that you will remember it, keep it in mind or use it next time: answer the question, and say '
-  + 'that running that command is how a style is kept.';
+// A harness memory may keep the preference, so the rule does not say nothing
+// is stored; what is true either way is that no Arkitect build reads it.
+export const RULE = 'Arkitect: a diagram style reaches later Arkitect diagrams only if the user runs '
+  + '/learn-drawio-style or /learn-excalidraw-style themselves; no build reads a remembered preference. '
+  + 'If they say they like a style, do not reply that you will remember it, keep it in mind or use it '
+  + 'going forward: answer the question, and say that running that command is how a style is kept.';
 
-export const SEND_BACK = 'Arkitect: your reply promises to remember a diagram style, but nothing is stored: '
-  + 'a style is kept only if the user runs /learn-drawio-style or /learn-excalidraw-style. Write your whole '
-  + 'answer again without that promise, and say that running that command is how a style is kept.';
+export const SEND_BACK = 'Arkitect: your reply says a diagram style will carry over to later diagrams, but '
+  + 'no Arkitect build reads a remembered preference: a style is kept only if the user runs '
+  + '/learn-drawio-style or /learn-excalidraw-style. Write your whole answer again without that promise, '
+  + 'and say that running that command is how a style is kept.';
 
 export function ruleFor(prompt) {
   const text = String(prompt ?? '');
   return DIAGRAM.test(text) && STYLE.test(text) && !COMMAND.test(text) ? RULE : null;
 }
 
+// Sentence by sentence: one that names the command is the right answer, even
+// when it says "for future diagrams".
 export function promisesToRemember(reply) {
-  return PROMISE.test(String(reply ?? ''));
+  return String(reply ?? '').split(/(?<=[.!?])\s+|\n+/).some((s) => PROMISE.test(s) && !COMMAND.test(s));
 }
 
 const markerFor = (session, dir = tmpdir()) => join(dir, `arkitect-style-question-${String(session).replace(/[^\w-]/g, '')}`);

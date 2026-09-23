@@ -1755,11 +1755,13 @@ test('the style-question hook speaks only for a prompt about a diagram\'s style,
   // Every closing line the eval recorded, and two that are fine.
   for (const said of ["Good to know your style preference — I'll apply the same when working with your diagrams going forward.",
     'Got it—I\'ll remember this style for future diagrams you create.', "Got it—I'll keep that style in mind for any diagrams you create.",
-    "Got it — I'll keep those preferences in mind for future diagrams.", "I'll keep that in mind for future diagram work"]) {
+    "Got it — I'll keep those preferences in mind for future diagrams.", "I'll keep that in mind for future diagram work",
+    'So your preferred style is rounded corners. Got it — I can apply that when you create diagrams going forward.']) {
     assert(promisesToRemember(said), `a promise: ${said}`);
   }
   for (const said of ['Nice preferences — rounded + dashed gives it a cleaner, more approachable look!',
-    'To keep that style for later diagrams, run /learn-drawio-style.']) {
+    'To keep that style for later diagrams, run /learn-drawio-style.',
+    'The diagram uses rounded corners and the arrow is dashed — exactly the style you like.']) {
     assert(!promisesToRemember(said), `no promise: ${said}`);
   }
 
