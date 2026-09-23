@@ -1087,7 +1087,7 @@ const SENTINELS = [
 ];
 
 // What the package is for: the CLI, the skills and their bundled assets.
-const PACKAGE_DIRS = ['bin', 'skills', '.claude-plugin', 'docker', 'docs'];
+const PACKAGE_DIRS = ['bin', 'skills', '.claude-plugin', 'hooks', 'docker', 'docs'];
 const PACKAGE_ROOT_FILES = ['package.json', 'AGENTS.md', 'CHANGELOG.md', 'README.md', 'LICENSE', 'NOTICE'];
 // Today's package unpacks to about 47 MB; a stray archive or cache blows past this.
 const PACKAGE_CEILING = 60 * 1024 * 1024;
@@ -1726,6 +1726,37 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
   assert(Array.isArray(full('drawio', 'bedrock').matches[0].variants), 'drawio: the full search is as before');
   const r = spawnSync(process.execPath, [CLI, 'excalidraw', 'icon', '--stats', '--compact'], { encoding: 'utf8' });
   eq(r.status, 2, '--compact applies to a search only');
+});
+
+// Asked about a diagram's style, the agent loaded no skill and promised to
+// remember it (#265). The hook says the rule for that prompt and for no other,
+// so it costs no context on a drawing request.
+const styleHook = await import(pathToFileURL(join(ROOT, 'hooks', 'style-question.mjs')).href);
+test('the style-question hook speaks only for a prompt about a diagram\'s style, and never fails one (#265)', () => {
+  const hooks = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
+  eq(Object.keys(hooks).join(), 'UserPromptSubmit', 'one event');
+  const command = hooks.UserPromptSubmit[0].hooks[0].command;
+  eq(command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs"', 'runs the script from the plugin');
+  const { ruleFor, RULE } = styleHook;
+
+  const promptOf = (engine, name) => readFileSync(join(ROOT, 'evals', engine, name, 'case.yaml'), 'utf8')
+    .replace(/\r\n/g, '\n').match(/prompt: \|\n([\s\S]*?)\n\n/)[1];
+  const speaks = new Set(['drawio/apply-skill-stays-manual', 'excalidraw/apply-skill-stays-manual', 'excalidraw/learning-skill-stays-manual']);
+  for (const engine of ['drawio', 'excalidraw']) {
+    for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+      if (!existsSync(join(ROOT, 'evals', engine, name, 'case.yaml'))) continue;
+      eq(ruleFor(promptOf(engine, name)), speaks.has(`${engine}/${name}`) ? RULE : null, `${engine}/${name}`);
+    }
+  }
+  eq(ruleFor('/learn-drawio-style C:\\diagrams\\a.drawio'), null, 'running the command is the user doing what the rule asks');
+
+  const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'style-question.mjs')], { input, encoding: 'utf8' });
+  const said = run(JSON.stringify({ prompt: 'Does eval-input/a.drawio use rounded corners?' }));
+  eq([said.status, said.stdout.trim()].join('|'), `0|${RULE}`, 'printed for Claude Code to add');
+  for (const input of ['', 'not json', JSON.stringify({ prompt: 'Draw our AWS pipeline' })]) {
+    const quiet = run(input);
+    eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
+  }
 });
 
 // -------------------------------------------------------------
