@@ -3199,19 +3199,6 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
 });
 
-// Asked about a diagram's style, the agent promised to remember it, with no
-// skill loaded (#265). A rule in a description is never read as one, so the
-// description routes the question and the skill carries the rule.
-test('a question about a diagram\'s style loads the skill, which says a style is stored only by its learn command (#265)', () => {
-  for (const engine of ['drawio', 'excalidraw']) {
-    const md = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'SKILL.md'), 'utf8');
-    const description = md.match(/^description: (.*)$/m)[1];
-    assert(description.includes(`a question about, an existing .${engine} file`), `arkitect-${engine}: ${description}`);
-    const body = md.slice(md.indexOf('\n---', 4));
-    assert(new RegExp(`No style is stored unless the user runs \`/learn-${engine}-style\`: never promise to remember one`).test(body), `arkitect-${engine}: the rule is not in the skill`);
-  }
-});
-
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);

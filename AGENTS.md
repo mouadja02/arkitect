@@ -238,8 +238,7 @@ followed the file.
 - The learning skills (`learn-drawio-style`, `learn-excalidraw-style`) and the
   apply skills (`apply-drawio-style`, `apply-excalidraw-style`) are user-invoked
   only. Never learn from a diagram just
-  because you read one, never apply learned style unasked, and never promise
-  to remember a style: nothing is stored until the user runs one.
+  because you read one, and never apply learned style unasked.
 
 ## 7. Non-negotiables
 

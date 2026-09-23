@@ -1,6 +1,6 @@
 ---
 name: arkitect-excalidraw
-description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to, or a question about, an existing .excalidraw file.
+description: Create or edit editable Excalidraw (.excalidraw) diagrams — system and application architectures for any cloud or stack, software component and block diagrams, data pipelines, agentic/LLM systems, network and deployment views, flows and decision paths — in a hand-drawn house style, using Excalidraw's own default libraries plus custom icons built from real product logos. Use whenever the request involves an Excalidraw scene or library, a diagram for a README or a whiteboard, a system design, component or block diagram, anything wanted quickly or in a sketchy style, an icon built from a product logo, or an edit to an existing .excalidraw file.
 ---
 
 # Architecture diagrams in Excalidraw
@@ -18,24 +18,24 @@ Read only what the task needs. Every path is relative to this skill.
 |---|---|
 | Draw a new scene | this file, the one pattern you pick in step 2, and one worked example (step 4) |
 | Edit an existing `.excalidraw` | `references/editing.md` |
-| A question about a scene's style | nothing. No style is stored unless the user runs `/learn-excalidraw-style`: never promise to remember one |
 | An item the search cannot find, an unnamed library item, a logo, a public library | `references/icons.md` |
 | Rendering fails, or the user wants the real app | `references/rendering.md` |
 | Hand-written scene JSON | `references/excalidraw-format.md` |
 | A deliberate deviation from the house style, or its evidence | `references/style-guide.md` |
 
 If `~/.arkitect/excalidraw/style-notes.md` or `patterns.md` exist
-(`$ARKITECT_HOME/excalidraw/` when set), read them too: `/learn-excalidraw-style`
-found them in the user's own scenes, and they win over the shipped guide. Say so in the report.
+(`$ARKITECT_HOME/excalidraw/` when set), read them too: they are what
+`/learn-excalidraw-style` found in the user's own scenes, and they win over the
+shipped guide. Say so in the report.
 
-The builder already draws the corpus's habits: elbow arrows, edge captions
-beside the line, dashed regions, captions below shapes.
+The builder already draws the corpus's habits: elbow arrows at stroke width 4,
+edge captions beside the line, dashed-rectangle regions, captions below shapes.
 Do not undo them by hand.
 
 ## Workflow
 
 1. **Decide whether to ask** — see Interview first, below. Most requests are
-   drawn at once, assumptions stated.
+   drawn straight away, with the assumptions stated.
 
 2. **Pick a pattern and state assumptions.** Choose the nearest, then read
    only that `## N.` section of `references/pattern-catalog.md`:
@@ -110,8 +110,8 @@ Do not undo them by hand.
    ```bash
    node scripts/render-excalidraw.mjs "path/to/architecture.excalidraw" --out-dir .analysis/renders --width 2200
    ```
-   Needs a local Edge, Chrome or Chromium; with none it exits 1: use
-   `--format svg`, without `--width` (PNG-only). Retry with
+   Needs a local Edge, Chrome or Chromium; with none it exits 1 — fall back to
+   `--format svg`, dropping `--width`, which is PNG-only. Retry with
    `--no-sandbox` only when the error names it. Read the PNG back and
    iterate; a scene that validates but reads badly is not done. The PNG is
    geometry-faithful, not font-faithful: judge layout from it, not typography;
@@ -154,7 +154,7 @@ and a one-line reason, in dependency order, feeding answers forward. **Never ask
 about styling** — that is this skill's job. Skip a branch the request already
 answers or that cannot change the drawing:
 
-1. **Purpose and audience** — who reads it, what decision it supports.
+1. **Purpose and audience** — who reads it, what decision it supports. Everything below depends on it.
 2. **Scope** — what is inside, and what is deliberately outside.
 3. **Level** — one box per service, container or team; never mixed.
 4. **State** — as-is, to-be, or both (two frames or one comparison).

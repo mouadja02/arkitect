@@ -19,8 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
-- Both drawing skills' report step names each validate warning left with every id it gives, as a defect still there, and each defect seen in the render and left by page, never "minor" or "a few"; a new eval case holds the report to it (#248).
-- A question about an existing diagram's style loads the drawing skill, which says no style is stored unless the user runs its learn command; the answer used to end in a promise to remember it, with no skill loaded (#265).
+- Both drawing skills' report step, and AGENTS.md's, names each validate warning left with every id it gives, as a defect still there, and each defect seen in the render and left by page, never "minor" or "a few"; a new eval case holds the report to it (#248).
 
 ## [2.0.1] — 2026-09-22
 
