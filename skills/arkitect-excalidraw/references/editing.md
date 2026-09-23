@@ -12,9 +12,13 @@ A scene with embedded images runs to megabytes of base64. Summarize it instead:
 node scripts/analyze-excalidraw.mjs "<file>"            # structure and style tokens
 node scripts/analyze-excalidraw.mjs "<file>" --cells    # geometry table, no text
 node scripts/analyze-excalidraw.mjs "<file>" --images   # embedded image inventory
+node scripts/analyze-excalidraw.mjs "<file>" --find "Checkout API"   # the shape a name belongs to
 ```
 
-Then make a targeted edit and re-validate with `validate-excalidraw.mjs`.
+When the request names a component, `--find` gives the full id of its shape
+(the box a label is bound to, or the mark a caption is grouped with); `--cells`
+ids are shortened. Then make a targeted edit and re-validate with
+`validate-excalidraw.mjs`.
 
 ## Back it up first
 

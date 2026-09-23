@@ -5,6 +5,7 @@
 //   node analyze-drawio.mjs <file...> [--out summary.json]
 //   node analyze-drawio.mjs <file> --page 0 --cells       (per-cell geometry table)
 //   node analyze-drawio.mjs <file> --page 0 --images      (embedded image inventory)
+//   node analyze-drawio.mjs <file> --find "Checkout API"  (the cells a label names)
 
 import { writeFileSync } from 'node:fs';
 import {
@@ -14,7 +15,7 @@ import {
 } from './lib/drawio-core.mjs';
 
 const USAGE = 'usage: analyze-drawio.mjs <file...> [--out out.json]\n'
-  + '       analyze-drawio.mjs <file> [--page N] (--cells | --images)';
+  + '       analyze-drawio.mjs <file> [--page N] (--cells | --images | --find <label>)';
 
 const COLOR_KEYS = ['fillColor', 'strokeColor', 'fontColor', 'gradientColor', 'labelBackgroundColor', 'swimlaneFillColor'];
 
@@ -236,6 +237,35 @@ function analyzePage(page) {
   };
 }
 
+// A label as a reader sees it: markup, line breaks and entities gone.
+export function plainLabel(value) {
+  return String(value ?? '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// The cells whose label contains `query`, case-blind, with the full id an edit
+// needs and enough geometry to tell two apart (#266). Opt-in: only the labels
+// asked for leave the file, never the page XML or an image.
+export function findLabel(pages, query) {
+  const q = plainLabel(query).toLowerCase();
+  const out = [];
+  if (!q) return out;
+  for (const { index, name, xml } of pages) {
+    for (const c of extractCells(xml)) {
+      const label = plainLabel(c.value);
+      if (!label.toLowerCase().includes(q)) continue;
+      out.push({
+        page: index, pageName: name, id: c.id, parent: c.parent, kind: c.edge ? 'edge' : 'vertex',
+        label: label.length > 120 ? `${label.slice(0, 117)}...` : label,
+        x: c.geometry?.x ?? null, y: c.geometry?.y ?? null, w: c.geometry?.width ?? null, h: c.geometry?.height ?? null,
+        ...(c.edge ? { src: c.source, tgt: c.target } : {}),
+      });
+    }
+  }
+  return out;
+}
+
 function analyzeFile(path) {
   const meta = fileMeta(path);
   const mx = readMxfile(path);
@@ -249,8 +279,20 @@ function analyzeFile(path) {
 
 function main(argv) {
   const { options: opts, positionals: files } = parseCliOrExit(argv,
-    { values: { '--out': null, '--page': pageIndexArg }, switches: ['--cells', '--images'] }, USAGE);
+    { values: { '--out': null, '--page': pageIndexArg, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  if (opts.find !== undefined) {
+    if (files.length > 1 || opts.cells || opts.images) exitUsage('--find reads one file, on its own', USAGE);
+    const mx = readMxfile(files[0]);
+    if (opts.page !== undefined && opts.page >= mx.pages.length) {
+      console.error(pageRangeError(files[0], opts.page, mx.pages.length));
+      process.exit(1);
+    }
+    const pages = mx.pages.map((p, index) => ({ index, name: p.name, xml: p.xml }))
+      .filter((p) => opts.page === undefined || p.index === opts.page);
+    console.log(JSON.stringify(findLabel(pages, opts.find), null, 1));
+    return;
+  }
   const perPage = opts.cells || opts.images;
   if (opts.page !== undefined && !perPage) exitUsage('--page selects the page for --cells or --images', USAGE);
   if (perPage && files.length > 1) exitUsage('--cells and --images read one file', USAGE);
@@ -307,4 +349,4 @@ function main(argv) {
   }
 }
 
-main(process.argv.slice(2));
+if (process.argv[1] && process.argv[1].endsWith('analyze-drawio.mjs')) main(process.argv.slice(2));

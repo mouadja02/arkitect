@@ -15,8 +15,11 @@ blows the context.
   ```bash
   node scripts/analyze-drawio.mjs "<file>" --page 0 --cells   # geometry table, no labels
   node scripts/analyze-drawio.mjs "<file>" --page 0 --images  # embedded image inventory
+  node scripts/analyze-drawio.mjs "<file>" --find "Checkout API"  # the cell a name belongs to
   ```
-  then make a targeted edit and re-validate with `validate-drawio.mjs --page N`.
+  When the request names a component, `--find` gives its full id, page and
+  geometry; never guess an id from `--cells`. Then make a targeted edit and
+  re-validate with `validate-drawio.mjs --page N`.
 - Never call `open_drawio_xml`, `open_drawio_csv` or `open_drawio_mermaid` on
   anything derived from the user's diagrams — those open the hosted editor and
   would send private architecture off the machine.

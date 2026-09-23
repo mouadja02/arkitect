@@ -31,6 +31,7 @@ arkitect drawio validate docs/arch.drawio
 arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells
 arkitect drawio analyze docs/arch.drawio --page 0 --images
+arkitect drawio analyze docs/arch.drawio --find "Checkout API"   # full id of the cell a label names
 arkitect drawio backup docs/arch.drawio                # before any edit the builder does not make
 arkitect drawio packs --verify                        # verify committed packs against the manifest
 arkitect drawio packs --all                           # rebuild packs and icon catalog from pinned sources
@@ -102,6 +103,7 @@ arkitect excalidraw make-icon --url https://.../dbt.svg --name dbt --trace
 arkitect excalidraw build spec.json --out docs/arch.excalidraw
 arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw analyze docs/arch.excalidraw --cells
+arkitect excalidraw analyze docs/arch.excalidraw --find "Checkout API"   # full id of the shape a label names
 arkitect excalidraw backup docs/arch.excalidraw        # before any edit the builder does not make
 arkitect excalidraw render docs/arch.excalidraw --out preview.svg
 arkitect excalidraw build spec.json --out docs/arch.excalidraw --defaults   # the house style, ignoring your own

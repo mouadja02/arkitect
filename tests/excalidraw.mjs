@@ -3587,6 +3587,39 @@ test('a made icon and an installed library live in the store, and ones from the 
   }
 });
 
+// --cells prints no text and shortens ids to eight characters, so a named
+// component had no route to the id an edit needs (#266).
+test('analyze --find returns the full id of the shape a label names, and an edit can bind to it (#266)', () => {
+  const { scene } = builder.buildDiagram({
+    nodes: [
+      { id: 'api', kind: 'box', label: 'Checkout API', col: 0, row: 0 },
+      { id: 'db', kind: 'icon', icon: 'postgres', label: 'Orders DB', col: 1, row: 0 },
+    ],
+  });
+  const file = join(TMP, 'find-label.excalidraw');
+  writeFileSync(file, JSON.stringify(scene));
+  const run = (...args) => spawnSync(process.execPath, [join(SCRIPTS, 'analyze-excalidraw.mjs'), file, ...args], { encoding: 'utf8' });
+
+  const api = JSON.parse(run('--find', 'checkout api').stdout);
+  const box = scene.elements.find((el) => el.type === 'rectangle' && el.boundElements?.some((b) => b.type === 'text'));
+  eq(JSON.stringify(api.map((f) => [f.id, f.type, f.label])), JSON.stringify([[box.id, 'rectangle', 'Checkout API']]), 'the box, not its text, by its full id');
+  const db = JSON.parse(run('--find', 'Orders').stdout);
+  eq(db.length, 1, 'one match for the caption');
+  const icon = scene.elements.find((el) => el.id === db[0].id);
+  assert(icon && icon.type !== 'text', `a caption leads to the mark grouped with it: ${db[0].type}`);
+  const out = run('--find', 'orders').stdout;
+  assert(!/dataURL|data:image/.test(out), 'no image data');
+  const cells = run('--cells').stdout;
+  assert(!cells.includes('Checkout') && !cells.includes(box.id), '--cells stays label-free, with short ids');
+
+  // The edit the lookup is for: an arrow bound to both shapes it named.
+  const arrow = core.arrow({ x: 0, y: 0, points: [[0, 0], [10, 0]] });
+  core.bindArrow(arrow, box, icon);
+  scene.elements.push(arrow);
+  const v = validator.validateScene(scene);
+  assert(v.ok && !v.warnings.some((w) => w.includes(arrow.id)), `bound at both ends: ${[...v.errors, ...v.warnings].join('; ')}`);
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');
