@@ -89,7 +89,8 @@ the report.
    less). Fix the spec; never drop the edge. A missing `col` or `row` is 0. An
    unknown node or edge `kind` still builds and is listed under `unknownKinds`,
    a key no part of a spec takes — `style` above all — under `unknownFields`,
-   a box faking a boundary under `looksLikeBoundary`: fix each or report it,
+   a box faking a boundary under `looksLikeBoundary`, a box naming a bundled
+   product under `namesAProduct`: fix each or report it,
    and never treat a field the builder dropped as applied. Hand-written XML is only for what the spec cannot
    express — see `references/editing.md`.
 

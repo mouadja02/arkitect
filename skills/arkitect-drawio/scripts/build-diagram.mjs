@@ -36,6 +36,7 @@ import {
 } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
+import { namedProducts } from './lib/named-products.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
 import { GENERIC_VENDOR } from './lib/generic-words.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
@@ -426,7 +427,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const STYLE = stylesFor(T, EDGE_KINDS);
   const catalog = loadCatalog();
   const report = {
-    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], notes: [],
+    used: [], missing: [], ambiguous: [], needsFetch: [], sameArtwork: [], lifecycle: [], logos: [], missingLogos: [], opaqueLogos: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], namesAProduct: [], notes: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const drawnIcons = [];
@@ -565,6 +566,12 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     }
 
     report.looksLikeBoundary.push(...looksLikeBoundary(footprints));
+    // The same verdict an icon node would get, so what is listed would draw (#240).
+    const plainBoxes = footprints.filter((f) => f.plain).map((f) => (spec.nodes ?? []).find((n) => n.id === f.id));
+    report.namesAProduct.push(...namedProducts(plainBoxes, (text) => {
+      const r = resolve(text, { catalog, limit: 3, packs: contextPacks });
+      return r.confident ? r.icon.id : null;
+    }));
 
     // An unknown kind draws as a plain flow. It used to crash on the edge label.
     const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');
@@ -750,6 +757,9 @@ function main(argv) {
     // A plain box laid over nodes it does not own, or sized in grid cells.
     // Drawn as asked; fix it or say why it stays (#204).
     looksLikeBoundary: report.looksLikeBoundary,
+    // A plain box whose label names a product with a bundled mark: drawn as
+    // text. Draw each as an icon node, or say why it stays text (#240).
+    namesAProduct: report.namesAProduct,
     notes: report.notes,
     // Which style drew this: the house style, or this install's override (#89).
     style: styleSummary(style),

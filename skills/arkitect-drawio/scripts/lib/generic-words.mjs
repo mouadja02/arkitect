@@ -19,7 +19,7 @@ export const GENERIC_WORDS = new Set([
   'cdn', 'vpn', 'load', 'balancer', 'internet', 'data', 'warehouse', 'lake', 'email',
   'mail', 'message', 'messages', 'messaging', 'broker', 'endpoint', 'endpoints',
   'integration', 'portal', 'dashboard', 'admin', 'internal', 'external', 'private',
-  'public',
+  'public', 'bus', 'schema',
 ]);
 
 // The packs whose marks are a cloud vendor's own.

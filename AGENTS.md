@@ -89,7 +89,8 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    listed under `unknownKinds` in the report; a key no part of a spec takes —
    a `style` on a node, edge or boundary above all — builds too and is
    listed under `unknownFields`; a box faking a boundary is listed under
-   `looksLikeBoundary`. Treat any non-empty list like an unresolved icon: fix
+   `looksLikeBoundary`, and a box naming a bundled product under
+   `namesAProduct`. Treat any non-empty list like an unresolved icon: fix
    the spec, or report it. A field the builder dropped is
    not a field that applied, whatever the diagram happens to look like. Run `drawio build --print-style`
    or `excalidraw build --print-style` before writing the spec: an install can

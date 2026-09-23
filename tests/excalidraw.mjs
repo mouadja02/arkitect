@@ -948,6 +948,31 @@ test('a shape drawn where a boundary was meant is named in the report (#204)', (
   ]), 'the CLI prints them and exits 0');
 });
 
+// A box of product names drew as text while the report said nothing, and the
+// agent reported the products had no icon (#240).
+test('a plain shape naming bundled products is listed under namesAProduct; a generic word and a note are not (#240)', () => {
+  const spec = {
+    nodes: [
+      { id: 'src', kind: 'box', label: 'Sources: PostgreSQL, MySQL, Snowflake', col: 0, row: 0, width: 260, height: 60 },
+      { id: 'gen', kind: 'box', label: 'Database', col: 1, row: 0 },
+      { id: 'bus', kind: 'box', label: 'Event bus', col: 2, row: 0 },
+      { id: 'n', kind: 'note', label: 'Assumption: PostgreSQL 15', col: 0, row: 1 },
+    ],
+  };
+  const listed = builder.buildDiagram(spec).report.namesAProduct;
+  eq(JSON.stringify(listed.map((x) => [x.node, x.text])), JSON.stringify([['src', 'PostgreSQL'], ['src', 'MySQL'], ['src', 'Snowflake']]),
+    'each product, and nothing else');
+  for (const x of listed) {
+    const drawn = builder.buildDiagram({ nodes: [{ id: 'i', kind: 'icon', label: x.text, col: 0, row: 0 }] }).report.icons[0];
+    assert(drawn && JSON.stringify(drawn).includes(x.icon), `${x.icon} is what an icon node labelled ${x.text} draws: ${JSON.stringify(drawn)}`);
+  }
+
+  const templates = join(SKILL, 'assets', 'templates');
+  for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
+    eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.namesAProduct.length, 0, f);
+  }
+});
+
 // ------------------------------------------------------------- bundled libraries
 
 test('the bundled index matches the libraries on disk', () => {
