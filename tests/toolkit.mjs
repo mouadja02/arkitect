@@ -1729,15 +1729,17 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
 });
 
 // Asked about a diagram's style, the agent loaded no skill and promised to
-// remember it (#265). The hook says the rule for that prompt and for no other,
-// so it costs no context on a drawing request.
+// remember it (#265). The hook speaks only in a session whose prompt asked
+// about a diagram's style, so it costs nothing on a drawing request; there it
+// adds the rule, and sends back once a reply that still makes the promise.
 const styleHook = await import(pathToFileURL(join(ROOT, 'hooks', 'style-question.mjs')).href);
 test('the style-question hook speaks only for a prompt about a diagram\'s style, and never fails one (#265)', () => {
   const hooks = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
-  eq(Object.keys(hooks).join(), 'UserPromptSubmit', 'one event');
-  const command = hooks.UserPromptSubmit[0].hooks[0].command;
-  eq(command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs"', 'runs the script from the plugin');
-  const { ruleFor, RULE } = styleHook;
+  eq(Object.keys(hooks).join(), 'UserPromptSubmit,Stop', 'two events');
+  for (const event of Object.values(hooks)) {
+    eq(event[0].hooks[0].command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs"', 'runs the script from the plugin');
+  }
+  const { ruleFor, RULE, SEND_BACK, promisesToRemember, respond, lastReply } = styleHook;
 
   const promptOf = (engine, name) => readFileSync(join(ROOT, 'evals', engine, name, 'case.yaml'), 'utf8')
     .replace(/\r\n/g, '\n').match(/prompt: \|\n([\s\S]*?)\n\n/)[1];
@@ -1750,10 +1752,48 @@ test('the style-question hook speaks only for a prompt about a diagram\'s style,
   }
   eq(ruleFor('/learn-drawio-style C:\\diagrams\\a.drawio'), null, 'running the command is the user doing what the rule asks');
 
+  // Every closing line the eval recorded, and two that are fine.
+  for (const said of ["Good to know your style preference — I'll apply the same when working with your diagrams going forward.",
+    'Got it—I\'ll remember this style for future diagrams you create.', "Got it—I'll keep that style in mind for any diagrams you create.",
+    "Got it — I'll keep those preferences in mind for future diagrams.", "I'll keep that in mind for future diagram work"]) {
+    assert(promisesToRemember(said), `a promise: ${said}`);
+  }
+  for (const said of ['Nice preferences — rounded + dashed gives it a cleaner, more approachable look!',
+    'To keep that style for later diagrams, run /learn-drawio-style.']) {
+    assert(!promisesToRemember(said), `no promise: ${said}`);
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-hook-'));
+  try {
+    const ask = (session, prompt) => respond({ hook_event_name: 'UserPromptSubmit', session_id: session, prompt }, dir);
+    const stop = (session, reply, active = false) => respond({ hook_event_name: 'Stop', session_id: session, last_assistant_message: reply, stop_hook_active: active }, dir);
+    const promise = "Rounded, and dashed. I'll keep that in mind for future diagrams.";
+    eq(ask('s1', 'Does a.drawio use rounded corners? I like my diagrams that way.'), RULE, 'the rule, for a style question');
+    eq(JSON.parse(stop('s1', promise)).reason, SEND_BACK, 'the promise is sent back');
+    eq(stop('s1', promise, true), null, 'once: the second stop is final');
+    eq(stop('s1', promise), null, 'and the session is released');
+    eq(ask('s2', 'Draw our AWS pipeline in Draw.io'), null, 'nothing for a drawing request');
+    eq(stop('s2', promise), null, 'and its replies are never read');
+    ask('s3', 'Is the arrow in a.drawio dashed?');
+    eq(stop('s3', 'Yes, it is dashed.'), null, 'a clean answer stops');
+
+    // A Claude Code that passes no last message: read it from the transcript.
+    const transcript = join(dir, 't.jsonl');
+    writeFileSync(transcript, [JSON.stringify({ type: 'user', message: { role: 'user', content: 'q' } }),
+      JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: promise }] } })].join('\n'));
+    eq(lastReply(transcript), promise, 'the last assistant text');
+    ask('s4', 'Are the corners in a.drawio rounded?');
+    assert(respond({ hook_event_name: 'Stop', session_id: 's4', transcript_path: transcript }, dir), 'sent back from the transcript');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+
   const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'style-question.mjs')], { input, encoding: 'utf8' });
-  const said = run(JSON.stringify({ prompt: 'Does eval-input/a.drawio use rounded corners?' }));
+  const said = run(JSON.stringify({ hook_event_name: 'UserPromptSubmit', session_id: 'test-265-cli', prompt: 'Does eval-input/a.drawio use rounded corners?' }));
   eq([said.status, said.stdout.trim()].join('|'), `0|${RULE}`, 'printed for Claude Code to add');
-  for (const input of ['', 'not json', JSON.stringify({ prompt: 'Draw our AWS pipeline' })]) {
+  run(JSON.stringify({ hook_event_name: 'Stop', session_id: 'test-265-cli', stop_hook_active: true }));
+  for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'Draw our AWS pipeline' }),
+    JSON.stringify({ hook_event_name: 'Stop', session_id: 'never-asked', transcript_path: '/nowhere' })]) {
     const quiet = run(input);
     eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
   }
