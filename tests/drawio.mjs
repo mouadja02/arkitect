@@ -4154,7 +4154,11 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
   const section = catalog.slice(catalog.indexOf('## 7. Numbered flow'), catalog.indexOf('## 8. Legend'));
   assert(!/ellipse;fillColor/.test(section), 'the raw badge style is back on the default reading path');
   assert(section.includes('numbered-flow'), 'section 7 does not point at the fragment that draws it');
-  assert(Buffer.byteLength(section) < 369, `section 7 is ${Buffer.byteLength(section)} bytes; it was 369`);
+  // It carries what to number (#251), and stays under the largest section, so
+  // it never sets the SKILL.md reading budget.
+  const others = catalog.split(/\n(?=## \d)/).filter((s) => !s.startsWith('## 7.')).map((s) => Buffer.byteLength(s));
+  assert(Buffer.byteLength(section) < Math.max(...others), `section 7 is ${Buffer.byteLength(section)} bytes, the largest`);
+  assert(/one sequence per page/.test(section.replace(/\s+/g, ' ')), 'section 7 no longer says what to number');
   assert(/ellipse;fillColor/.test(readFileSync(join(SKILL, 'references', 'style-guide.md'), 'utf8')),
     'the badge evidence was dropped rather than moved to the style guide');
 });
