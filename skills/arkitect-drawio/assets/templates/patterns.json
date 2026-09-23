@@ -51,15 +51,19 @@
 
   "numbered-flow": {
     "pattern": 7,
+    "_rule": "One sequence per page, from 1, on edges only. Entry points and parallel paths are not steps: leave them unnumbered, or letter them (A, B) as here.",
     "nodes": [
       { "id": "client", "kind": "box", "label": "Client", "col": 0, "row": 0 },
-      { "id": "api", "kind": "box", "label": "API", "col": 1, "row": 0 },
-      { "id": "store", "kind": "box", "label": "Store", "col": 2, "row": 0 }
+      { "id": "partner", "kind": "box", "label": "Partner", "col": 0, "row": 1 },
+      { "id": "api", "kind": "box", "label": "API", "col": 1, "row": 0.5 },
+      { "id": "store", "kind": "box", "label": "Store", "col": 2, "row": 0.5 },
+      { "id": "notify", "kind": "box", "label": "Notifier", "col": 3, "row": 0.5 }
     ],
     "edges": [
-      { "from": "client", "to": "api", "kind": "flow", "label": "1. Submit request" },
-      { "from": "api", "to": "store", "kind": "flow", "label": "2. Persist" },
-      { "from": "store", "to": "client", "kind": "async", "label": "3. Confirm" }
+      { "from": "client", "to": "api", "kind": "flow", "label": "A. Submit request" },
+      { "from": "partner", "to": "api", "kind": "flow", "label": "B. Submit request" },
+      { "from": "api", "to": "store", "kind": "flow", "label": "1. Persist" },
+      { "from": "store", "to": "notify", "kind": "async", "label": "2. Notify" }
     ]
   },
 

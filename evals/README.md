@@ -1,6 +1,6 @@
 # Eval cases
 
-Fifteen cases, eight for Draw.io and seven for Excalidraw, covering what
+Sixteen cases, nine for Draw.io and seven for Excalidraw, covering what
 matters most: that a plain request fires the right skill and produces valid,
 styled, native output; that a missing product icon is reported or built honestly rather
 than substituted; that an edit follows the file in front of it; and that the
@@ -15,6 +15,7 @@ evals/
     engine-choice-is-explained/     no engine named: pick one and say why
     as-is-to-be-two-pages/          two pages come from one spec with `pages`
     report-names-every-warning/     a warning it may not fix is named in the report
+    numbered-flow-one-sequence/     one path numbered from 1; entry points are not steps
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
   excalidraw/

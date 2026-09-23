@@ -3228,6 +3228,34 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
 });
 
+// The #251 case grades the drawing the agent built, so its patterns must pass
+// one numbered path and fail each way of numbering what is not a step.
+test('the numbered-flow-one-sequence eval case passes one path and fails a numbered entry point (#251)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'numbered-flow-one-sequence', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: .*\\n\\s+pattern: '([^']+)'`))[1]);
+  const [ids, sequence, entries] = ['built-with-the-given-ids', 'one-sequence-from-one', 'entry-points-not-numbered'].map(pattern);
+  const nodes = ['web', 'mobile', 'partner', 'gateway', 'handler', 'table', 'topic', 'customer']
+    .map((id, i) => ({ id, kind: 'box', label: id, col: i < 3 ? 0 : i - 2, row: i < 3 ? i : 1 }));
+  const drawn = (edges) => builder.buildDiagram({ nodes, edges }).xml;
+  const path = [
+    { from: 'gateway', to: 'handler', label: '1. Invoke' },
+    { from: 'handler', to: 'table', label: '2. Write order' },
+    { from: 'handler', to: 'topic', label: '3. Publish' },
+    { from: 'topic', to: 'customer', label: '4. Email' },
+  ];
+  const good = drawn([{ from: 'web', to: 'gateway', label: 'A. Web order' }, { from: 'mobile', to: 'gateway' },
+    { from: 'partner', to: 'gateway', label: 'Partner order' }, ...path]);
+  assert([ids, sequence, entries].every((g) => g.test(good)), 'one path from 1, entry points lettered or unnumbered');
+
+  const before = drawn([{ from: 'web', to: 'gateway', label: '1. Web order' }, { from: 'mobile', to: 'gateway', label: '2. Mobile order' },
+    { from: 'partner', to: 'gateway', label: '3. Partner order' }, ...path.map((e, i) => ({ ...e, label: `${i + 4}. ${e.label.slice(3)}` }))]);
+  assert(sequence.test(before) && !entries.test(before), 'what every run did before #251: entry points numbered 1 to 3');
+  const onEdge = good.replace(/(<mxCell id="e2") /, '$1 value="2. Mobile order" ');
+  assert(!entries.test(onEdge), 'a number on the edge cell itself fails too');
+  assert(!sequence.test(drawn([{ from: 'web', to: 'gateway', label: '1. Web' }, ...path])), 'two steps numbered 1 fail');
+  assert(!sequence.test(drawn([{ from: 'web', to: 'gateway', label: '0. Start' }, ...path])), 'a step 0 fails');
+});
+
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);
@@ -4119,9 +4147,9 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
   eq(report.unknownKinds.length, 0, `the fragment uses supported kinds: ${JSON.stringify(report.unknownKinds)}`);
   eq(report.unknownFields.length, 0, `and supported fields: ${JSON.stringify(report.unknownFields)}`);
 
-  const numbered = [...xml.matchAll(/value="([^"]*)"/g)].map((m) => m[1]).filter((v) => /^\d+\.\s/.test(v));
-  eq(numbered.join(' | '), '1. Submit request | 2. Persist | 3. Confirm',
-    'the numbers reach the generated XML as edge labels, in reading order');
+  const numbered = [...xml.matchAll(/value="([^"]*)"/g)].map((m) => m[1]).filter((v) => /^[\dA-Z]+\.\s/.test(v));
+  eq(numbered.join(' | '), 'A. Submit request | B. Submit request | 1. Persist | 2. Notify',
+    'the numbers reach the generated XML as edge labels, in reading order; the ways in are lettered (#251)');
 
   // The recipe is gone from the default reading path, and the evidence for what
   // the corpus actually did is kept off it, in the style guide.
@@ -4129,7 +4157,11 @@ test('the numbered-flow pattern builds numbered edge labels, with no unknown kin
   const section = catalog.slice(catalog.indexOf('## 7. Numbered flow'), catalog.indexOf('## 8. Legend'));
   assert(!/ellipse;fillColor/.test(section), 'the raw badge style is back on the default reading path');
   assert(section.includes('numbered-flow'), 'section 7 does not point at the fragment that draws it');
-  assert(Buffer.byteLength(section) < 369, `section 7 is ${Buffer.byteLength(section)} bytes; it was 369`);
+  // It carries what to number (#251), and stays under the largest section, so
+  // it never sets the SKILL.md reading budget.
+  const others = catalog.split(/\n(?=## \d)/).filter((s) => !s.startsWith('## 7.')).map((s) => Buffer.byteLength(s));
+  assert(Buffer.byteLength(section) < Math.max(...others), `section 7 is ${Buffer.byteLength(section)} bytes, the largest`);
+  assert(/one sequence per page/.test(section.replace(/\s+/g, ' ')), 'section 7 no longer says what to number');
   assert(/ellipse;fillColor/.test(readFileSync(join(SKILL, 'references', 'style-guide.md'), 'utf8')),
     'the badge evidence was dropped rather than moved to the style guide');
 });

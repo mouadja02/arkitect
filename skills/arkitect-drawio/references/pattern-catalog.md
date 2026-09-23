@@ -102,6 +102,10 @@ rather than one arrow per logo.
 Number the edge labels in reading order — `"label": "1. Submit request"`. The
 fragment is `numbered-flow` in `assets/templates/patterns.json`.
 
+A number claims an order, so number one sequence per page, from 1, on edges only.
+Entry points and parallel paths are not steps: three ways in stay unnumbered, or
+take letters (A, B, C) if they need naming, and the sequence starts where they meet.
+
 ---
 
 ## 8. Legend
