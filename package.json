@@ -61,6 +61,7 @@
     "!**/Thumbs.db",
     "!**/desktop.ini",
     ".claude-plugin",
+    "hooks",
     "docker",
     "docs",
     "AGENTS.md",
