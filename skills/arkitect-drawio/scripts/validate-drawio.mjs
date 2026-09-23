@@ -17,6 +17,7 @@ const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--stric
 
 const MAX_COORD = 20000;      // draw.io stays usable well below this
 const MIN_GAP = 8;            // px of clear space expected between siblings
+const TRUNK_MIN = 10;         // px two edges may share into one port (#246)
 
 function absoluteGeometry(cells) {
   const byId = new Map(cells.map((c) => [c.id, c]));
@@ -226,12 +227,11 @@ export function validateFile(path, { pageIndex = null } = {}) {
       }
     }
 
-    // Caption crossings (#45). A caption hangs below its icon, where an
-    // orthogonal edge attached to the icon's bottom runs straight through it.
-    // Routes are estimated from each end's port - an explicit exit/entry
-    // constraint, else the side facing the other end - as a straight line or a
-    // Z, so this is a warning to check in the render. Edges with waypoints are
-    // skipped rather than guessed.
+    // Crossings (#45, #242). Each edge's route is estimated from its two ports
+    // and tested against every other node's box and every caption, its own
+    // ends' captions included: a caption hangs below its icon, where an edge
+    // attached to the icon's bottom runs straight through it. Edges with
+    // waypoints are skipped rather than guessed.
     const captions = [];
     for (const c of cells) {
       if (!c.vertex || !c.value) continue;
@@ -244,6 +244,11 @@ export function validateFile(path, { pageIndex = null } = {}) {
       const width = Math.max(...lines.map((l) => l.trim().length)) * size * 0.55;
       captions.push({ id: c.id, x: g.x + g.width / 2 - width / 2, y: g.y + g.height + 2, width, height: lines.length * size * 1.25 });
     }
+    // An unconstrained end goes where Draw.io's orthogonal router puts it
+    // (mxEdgeStyle.OrthConnector): boxes apart on both axes get an L that
+    // leaves the source sideways and enters the target from above or below;
+    // apart on one axis, both ends face each other across it; otherwise both
+    // are vertical. The port is the middle of that side.
     const port = (box, style, end, other) => {
       const s = parseStyle(style);
       if (s[`${end}X`] !== undefined && s[`${end}Y`] !== undefined) {
@@ -254,14 +259,20 @@ export function validateFile(path, { pageIndex = null } = {}) {
           vertical: ry === 0 || ry === 1,
         };
       }
-      const cx = box.x + box.width / 2; const cy = box.y + box.height / 2;
-      const ox = other.x + other.width / 2; const oy = other.y + other.height / 2;
-      return Math.abs(oy - cy) > Math.abs(ox - cx)
-        ? { x: cx, y: oy > cy ? box.y + box.height : box.y, vertical: true }
-        : { x: ox > cx ? box.x + box.width : box.x, y: cy, vertical: false };
+      const left = box.x - (other.x + other.width); const right = other.x - (box.x + box.width);
+      const up = box.y - (other.y + other.height); const down = other.y - (box.y + box.height);
+      const h = Math.max(left, right) > 0; const v = Math.max(up, down) > 0;
+      if (h && (!v || end === 'exit')) {
+        return { x: left >= right ? box.x : box.x + box.width, y: box.y + box.height / 2, vertical: false };
+      }
+      return { x: box.x + box.width / 2, y: up >= down ? box.y : box.y + box.height, vertical: true };
     };
     const route = (p, q) => {
       if (Math.abs(p.x - q.x) < 1 || Math.abs(p.y - q.y) < 1) return [[p, q]];
+      if (p.vertical !== q.vertical) {
+        const corner = p.vertical ? { x: p.x, y: q.y } : { x: q.x, y: p.y };
+        return [[p, corner], [corner, q]];
+      }
       if (p.vertical) {
         const my = (p.y + q.y) / 2;
         return [[p, { x: p.x, y: my }], [{ x: p.x, y: my }, { x: q.x, y: my }], [{ x: q.x, y: my }, q]];
@@ -271,16 +282,56 @@ export function validateFile(path, { pageIndex = null } = {}) {
     };
     const crosses = ([p, q], r) => Math.max(p.x, q.x) > r.x + 1 && Math.min(p.x, q.x) < r.x + r.width - 1
       && Math.max(p.y, q.y) > r.y + 1 && Math.min(p.y, q.y) < r.y + r.height - 1;
-    let captionCrossings = 0;
+    // Only leaves are in the way. An edge between zones crosses container
+    // borders by design, and text cells over containers are #243's.
+    let nodeCrossings = 0; let captionCrossings = 0;
+    const routes = [];
     for (const c of cells) {
       if (!c.edge || c.waypoints) continue;
       const a = abs.get(c.source); const b = abs.get(c.target);
       if (!a || !b) continue;
-      const segments = route(port(a, c.style, 'exit', b), port(b, c.style, 'entry', a));
-      const hit = captions.find((cap) => segments.some((segment) => crosses(segment, cap)));
-      if (!hit) continue;
-      captionCrossings++;
-      if (captionCrossings <= 10) warnings.push(`${label}: edge "${c.id}" runs through the caption of "${hit.id}"`);
+      const exit = port(a, c.style, 'exit', b); const entry = port(b, c.style, 'entry', a);
+      const segments = route(exit, entry);
+      routes.push({ id: c.id, target: c.target, entry, segments });
+      const hits = (box) => segments.some((segment) => crosses(segment, box));
+      const through = new Set();
+      for (const o of leaves) {
+        if (o.id === c.source || o.id === c.target || !hits(abs.get(o.id))) continue;
+        through.add(o.id);
+        nodeCrossings++;
+        if (nodeCrossings <= 10) warnings.push(`${label}: edge "${c.id}" runs through "${o.id}"`);
+      }
+      for (const cap of captions) {
+        if (through.has(cap.id) || !hits(cap)) continue;
+        captionCrossings++;
+        if (captionCrossings <= 10) warnings.push(`${label}: edge "${c.id}" runs through the caption of "${cap.id}"`);
+      }
+    }
+
+    // Shared trunks (#246). Two edges that reach the same port along the same
+    // line draw as one, with one arrowhead. TRUNK_MIN is in maintenance.md.
+    const shared = (r, s) => {
+      let n = 0;
+      for (const [p, q] of r.segments) {
+        for (const [u, w] of s.segments) {
+          const flat = Math.abs(p.y - q.y) < 1 && Math.abs(u.y - w.y) < 1 && Math.abs(p.y - u.y) < 1;
+          const upright = Math.abs(p.x - q.x) < 1 && Math.abs(u.x - w.x) < 1 && Math.abs(p.x - u.x) < 1;
+          const k = flat ? 'x' : upright ? 'y' : null;
+          if (k) n += Math.max(0, Math.min(Math.max(p[k], q[k]), Math.max(u[k], w[k])) - Math.max(Math.min(p[k], q[k]), Math.min(u[k], w[k])));
+        }
+      }
+      return n;
+    };
+    let sharedTrunks = 0;
+    for (let i = 0; i < routes.length; i++) {
+      for (let j = i + 1; j < routes.length; j++) {
+        const r = routes[i]; const s = routes[j];
+        if (r.target !== s.target || Math.abs(r.entry.x - s.entry.x) >= 1 || Math.abs(r.entry.y - s.entry.y) >= 1) continue;
+        const n = shared(r, s);
+        if (n <= TRUNK_MIN) continue;
+        sharedTrunks++;
+        if (sharedTrunks <= 10) warnings.push(`${label}: edges "${r.id}" and "${s.id}" share ${Math.round(n)}px of line into the same port of "${r.target}"`);
+      }
     }
 
     const model = graphModelAttrs(xml);
@@ -290,7 +341,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, captionCrossings,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
@@ -319,7 +370,9 @@ function main(argv) {
         console.log(`   page ${p.index} "${p.name}": ${p.vertices} vertices, ${p.edges} edges, ` +
           `${p.embeddedImages} embedded images, bounds ${p.bounds ? `${p.bounds.width}x${p.bounds.height}` : 'n/a'}` +
           `${p.overlaps ? `, ${p.overlaps} overlaps` : ''}${p.clippedLabels ? `, ${p.clippedLabels} tight labels` : ''}`
-          + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`);
+          + `${p.nodeCrossings ? `, ${p.nodeCrossings} node crossings` : ''}`
+          + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`
+          + `${p.sharedTrunks ? `, ${p.sharedTrunks} shared trunks` : ''}`);
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);

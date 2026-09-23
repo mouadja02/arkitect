@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- Draw.io `validate` places an unconstrained edge end where Draw.io's router does (an L between diagonal boxes), and warns when a route runs through a node, not only a caption, or when two edges share one line into the same port (#242, #246).
+
 ## [2.0.1] — 2026-09-22
 
 ### Fixed

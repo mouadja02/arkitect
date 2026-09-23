@@ -2975,30 +2975,93 @@ test('vertical edges attach below icon captions, and the validator names a cross
   for (const id of ['across', 'diagonal', 'boxes']) {
     assert(style(id).exitY === undefined && style(id).entryY === undefined, `${id} is left to the router`);
   }
+  // "diagonal" is left to the router, which draws an L up into the bottom of
+  // "side", through its caption (#242). That route is #237's to fix.
   const r = validator.validateFile(out);
   assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
-  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'no route crosses a caption');
-  eq(r.info.pages[0].captionCrossings, 0, 'no crossing counted');
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), 'page 0: edge "diagonal" runs through the caption of "side"',
+    'no attached edge crosses a caption');
+  eq(r.info.pages[0].captionCrossings, 1, 'one crossing counted');
 
-  // The same diagram attached the old way: exactly the two vertical edges cross.
+  // The same diagram attached the old way: the two vertical edges cross too.
   const old = join(TMP, 'captions-old.drawio');
   writeFileSync(old, xml.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;"]*;/g, ''));
   const before = validator.validateFile(old);
   eq(JSON.stringify(before.warnings.filter((w) => w.includes('caption')).sort()), JSON.stringify([
+    'page 0: edge "diagonal" runs through the caption of "side"',
     'page 0: edge "down" runs through the caption of "top"',
     'page 0: edge "up" runs through the caption of "upper"',
   ]), 'the validator names each crossing edge and the icon whose caption it crosses');
-  eq(before.info.pages[0].captionCrossings, 2, 'and counts them');
+  eq(before.info.pages[0].captionCrossings, 3, 'and counts them');
 
   // A caption on three lines gets room for three lines.
   const tall = builder.buildDiagram({ ...spec, nodes: spec.nodes.map((n) => (n.id === 'top' ? { ...n, label: 'Top\nfunction\nwith notes' } : n)) }).xml;
   assert(/id="down" style="[^"]*exitDy=49;/.test(tall), 'a three-line caption pushes the attachment to 49px');
 });
 
-test('the committed Draw.io starter has no edge through a caption (#45)', () => {
-  const r = validator.validateFile(join(SKILL, 'assets', 'templates', 'starter-architecture.drawio'));
+test('the committed Draw.io templates have no edge through a node or caption, and no shared trunk (#45, #242, #246)', () => {
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    const r = validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`));
+    assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
+    eq(r.warnings.filter((w) => / runs through | share /.test(w)).join('; '), '', `crossings in ${name}`);
+  }
+});
+
+const buildAndValidate = (name, spec, edit = (xml) => xml) => {
+  const out = join(TMP, `${name}.drawio`);
+  writeFileSync(out, edit(builder.buildDiagram(spec).xml));
+  const r = validator.validateFile(out);
   assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
-  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'caption crossings in the worked example');
+  return r;
+};
+
+// Draw.io routes an unconstrained edge between boxes apart on both axes as an
+// L: out of the source sideways, into the target from above or below. The old
+// estimate drew a Z through the empty gap, and tested only captions (#242).
+test('validate names the node an L-routed edge runs through (#242)', () => {
+  const r = buildAndValidate('through-node', {
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Producer', col: 0, row: 0 },
+      { id: 'c', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0 },
+      { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 1, row: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'write' }],
+  });
+  eq(r.warnings.join('; '), 'page 0: edge "e1" runs through "c"', 'one warning, naming the edge and the node, not also its caption');
+  eq(r.info.pages[0].nodeCrossings, 1, 'counted');
+});
+
+test('an edge crossing only its own ends and the containers round them warns nothing (#242)', () => {
+  const r = buildAndValidate('through-own', {
+    boundaries: [{ id: 'grp', kind: 'scope', label: 'Pipeline', col: 1, row: 1 }],
+    nodes: [
+      { id: 's', kind: 'icon', icon: 'aws/aws-lambda', label: 'Source', col: 0, row: 0 },
+      { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 1, parent: 'grp' },
+      { id: 'side', kind: 'box', label: 'Off the line', col: 0, row: 2 },
+    ],
+    edges: [{ from: 's', to: 'q' }],
+  });
+  eq(r.warnings.join('; '), '', 'nothing in the way');
+});
+
+// Two edges into one port draw as one line with one arrowhead (#246).
+test('validate names two edges that share a trunk into one port, and not two into different sides (#246)', () => {
+  const spec = {
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Source one', col: 0, row: 0 },
+      { id: 'b', kind: 'icon', icon: 'aws/aws-lambda', label: 'Source two', col: 0, row: 1.5 },
+      { id: 'c', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 1, row: 0.75 },
+    ],
+    edges: [{ from: 'a', to: 'c', label: 'read' }, { from: 'b', to: 'c', label: 'write' }],
+  };
+  const sides = (xml) => xml.replace(/edgeStyle=orthogonalEdgeStyle;/g, 'edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;');
+  const merged = buildAndValidate('trunk-merged', spec, sides);
+  eq(merged.warnings.filter((w) => w.includes(' share ')).join('; '),
+    'page 0: edges "e1" and "e2" share 121px of line into the same port of "c"', 'both edges named');
+  eq(merged.info.pages[0].sharedTrunks, 1, 'counted');
+  // Left to the router, one enters from above and one from below.
+  const apart = buildAndValidate('trunk-apart', spec);
+  eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'different sides share nothing');
 });
 
 test('a generated diagram is valid, connected and portable', () => {

@@ -104,8 +104,8 @@ the report.
    ```bash
    node scripts/validate-drawio.mjs "path/to/diagram.drawio"   # --page N for one page
    ```
-   Errors must be fixed. Overlap, tight-label and caption-crossing warnings are
-   judgement calls: check them against the render.
+   Errors must be fixed. Warnings are judgement calls: check each one against
+   the render.
 
 7. **Render and look at it.**
    ```bash
