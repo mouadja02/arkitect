@@ -600,6 +600,13 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         const next = `e${++edgeSeq}`;
         if (!taken.has(next)) id = next;
       }
+      // Drawn to the border, where it reads as the nearest child's (#245).
+      for (const end of ['from', 'to']) {
+        if (!byBoundaryId.has(e[end])) continue;
+        const kids = [...(spec.nodes ?? []), ...boundaries].filter((x) => x.parent === e[end]).map((x) => x.id);
+        report.notes.push(`${at}edges[${i}].${end}: "${e[end]}" is a boundary, so the edge is drawn to its border`
+          + `${kids.length ? `; if one component is meant, connect it: ${kids.join(', ')}` : ''}`);
+      }
       const kind = kindOf(e);
       push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}${attachment(e.from, e.to)}" edge="1" parent="1" `
         + `source="${esc(e.from)}" target="${esc(e.to)}"><mxGeometry relative="1" as="geometry" /></mxCell>`);

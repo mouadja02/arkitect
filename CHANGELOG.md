@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Added
 
 - Draw.io `validate` places an unconstrained edge end where Draw.io's router does (an L between diagonal boxes), and warns when a route runs through a node, not only a caption, or when two edges share one line into the same port (#242, #246).
+- Draw.io `validate` prints `info` lines for an icon no edge touches and an edge that ends on a container's border, naming its children; the Draw.io build report notes the boundary edge too, and Excalidraw's notes the icon, since a scene cannot tell one. Neither changes PASS or the exit code (#244, #245).
 
 ## [2.0.1] — 2026-09-22
 

@@ -62,6 +62,11 @@ or unclosed tag, a repeated attribute, an unquoted value or a raw `&` is a
 failure that names the line and column, never a PASS recovered from. A
 declaration, comments around the root and CDATA are XML, and pass.
 
+Below the warnings, `validate` prints `info` lines: an icon no edge touches,
+and an edge that ends on a container's border, with the children it may have
+meant. They are for a person to check, and change neither PASS, the exit code
+nor `--strict` (#244, #245).
+
 `build` merges this install's style override, `~/.arkitect/drawio/style-overrides.json`
 (`$ARKITECT_HOME/drawio/`), into every build and says so under `style` in its
 report. `--defaults` draws the shipped house style regardless — use it for
