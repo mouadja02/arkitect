@@ -285,6 +285,7 @@ export function extractCells(pageXml) {
     const points = geomEl
       ? findAll(geomEl, 'mxPoint').filter((p) => !p.attrs.as).length
       : 0;
+    const offset = geomEl ? findAll(geomEl, 'mxPoint').find((p) => p.attrs.as === 'offset') : null;
     cells.push({
       id: w ? (w.attrs.id ?? a.id) : a.id,
       value: w ? (w.attrs.label ?? '') : (a.value ?? ''),
@@ -301,6 +302,7 @@ export function extractCells(pageXml) {
             width: g.width !== undefined ? Number(g.width) : null,
             height: g.height !== undefined ? Number(g.height) : null,
             relative: g.relative === '1',
+            offset: { x: Number(offset?.attrs.x ?? 0), y: Number(offset?.attrs.y ?? 0) },
           }
         : null,
       waypoints: points,

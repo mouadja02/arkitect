@@ -3102,6 +3102,83 @@ test('an edge that ends on a boundary is noted in the build report and by valida
   eq(builder.buildDiagram({ ...spec, edges: [{ from: 's1', to: 'mid' }] }).report.notes.join('; '), '', 'nor does the build');
 });
 
+// Text over a container was skipped by the overlap check, container and text
+// alike (#243).
+test('validate names text that lies across a container border or covers its label (#243)', () => {
+  const texts = (r) => r.warnings.filter((w) => / lies across | covers the label /.test(w)).join('; ');
+  eq(texts(buildAndValidate('title-on-cloud', {
+    title: 'Repro title',
+    boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 1 }],
+    nodes: [{ id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0, row: 0, parent: 'cloud' }],
+  })), 'page 0: "title" lies across the border of container "cloud"', 'the #239 title');
+
+  const pair = {
+    boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 2 }],
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0, row: 0, parent: 'cloud' },
+      { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'B', col: 0, row: 1, parent: 'cloud' },
+    ],
+    edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'a', kind: 'async' }],
+  };
+  eq(texts(buildAndValidate('legend-on-cloud', { ...pair, legendX: 500 })),
+    'page 0: "legend" lies across the border of container "cloud"', 'a legend placed on the cloud by legendX');
+  eq(texts(buildAndValidate('legend-beside-cloud', pair)), '', 'the default legend sits clear of it');
+
+  const tier = {
+    boundaries: [{ id: 'g', kind: 'scope', label: 'Tier', col: 0, row: 0, cols: 1, rows: 1, padRight: 109 }],
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Producer', col: 0, row: 0, parent: 'g' },
+      { id: 'b', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0 },
+    ],
+  };
+  eq(texts(buildAndValidate('chip-on-border', { ...tier, edges: [{ from: 'a', to: 'b', label: 'enqueue' }] })),
+    'page 0: "e1-lbl" lies across the border of container "g"', 'the #241 chip on the scope border');
+  eq(texts(buildAndValidate('value-on-border', { ...tier, edges: [{ from: 'a', to: 'b' }] },
+    (xml) => xml.replace('id="e1" style', 'id="e1" value="enqueue" style'))),
+    'page 0: the label of edge "e1" lies across the border of container "g"', 'an edge\'s own label, at its midpoint');
+
+  // A text inside its container is fine, until it sits on the strip the
+  // container's own name is drawn in.
+  const note = { ...tier, nodes: [...tier.nodes, { id: 't', kind: 'text', label: 'Aside', col: 0, row: 0.6, parent: 'g' }] };
+  eq(texts(buildAndValidate('text-inside', note)), '', 'inside, clear of the name');
+  eq(texts(buildAndValidate('text-on-name', note, (xml) => xml.replace(/(id="t" [^>]*>\s*<mxGeometry )x="[^"]*" y="[^"]*" width="[^"]*"/, '$1x="0" y="-18" width="60"'))),
+    'page 0: "t" covers the label of container "g"', 'on the name');
+
+  // A Draw.io group draws no border, and a container turned a quarter turn is
+  // measured as drawn.
+  eq(texts(buildAndValidate('title-on-group', {
+    title: 'Repro title',
+    boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 1 }],
+    nodes: [{ id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0, row: 0, parent: 'cloud' }],
+  }, (xml) => xml.replace(/(id="cloud" [^>]*style=")[^"]*"/, '$1group;"'))), '', 'no border on a group');
+});
+
+// A page wider than a slide is shrunk to it, its labels with it (#247).
+test('validate warns when a page fit to a slide draws its labels under the floor, and says to split it (#247)', () => {
+  const grid = (cols, rows) => ({
+    nodes: Array.from({ length: cols * rows }, (_, i) => ({
+      id: `n${i}`, kind: 'icon', icon: 'aws/aws-lambda', label: `Step ${i}`, col: i % cols, row: Math.floor(i / cols),
+    })),
+  });
+  // Nine columns is about the 2967px page the field test drew.
+  const wide = buildAndValidate('dense', grid(9, 6));
+  const page = wide.info.pages[0];
+  eq(page.density.textPx, 12, 'the size most labels use');
+  eq(page.density.fittedPx, Math.round(12 * 1920 / page.bounds.width * 10) / 10, 'fit to 1920px wide');
+  eq(wide.warnings.filter((w) => w.includes('split')).join('; '), `page 0: at 1920px wide its 12px labels draw at ${page.density.fittedPx}px, `
+    + 'under 9px; split it into pages, one tier or flow each', 'names the page and says to split it');
+  const narrow = buildAndValidate('narrow', grid(5, 6));
+  eq(narrow.warnings.filter((w) => w.includes('split')).join('; '), '', 'five columns fit');
+});
+
+test('the committed Draw.io templates put no text on a container and read at slide width (#243, #247)', () => {
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    const r = validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`));
+    eq(r.warnings.join('; '), '', name);
+    for (const p of r.info.pages) assert(p.density.fittedPx === null || p.density.fittedPx >= 9, `${name} page ${p.index}: ${p.density.fittedPx}px`);
+  }
+});
+
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);
