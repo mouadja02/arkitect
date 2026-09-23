@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 - Draw.io `validate` prints `info` lines for an icon no edge touches and an edge that ends on a container's border, naming its children; the Draw.io build report notes the boundary edge too, and Excalidraw's notes the icon, since a scene cannot tell one. Neither changes PASS or the exit code (#244, #245).
 - Draw.io `validate` warns when a title, legend or edge label lies across a container's border or over its name, and when a page fit to 1920px wide draws its labels under 9px; each page line now counts its icons (#243, #247).
 - Draw.io boundaries take `labelAlign` (`left`, `center`, `right`) to move their name along the top; an unknown value keeps the default and is listed under `unknownKinds`, and a spec without it builds byte-identical (#250).
+- `analyze --find "<label>"`, in both engines, returns the full id of the cell or shape a label names, with its page and geometry, even in a compressed Draw.io page; it prints no page XML or image data, and `--cells` stays label-free. The editing references send a named component there (#266).
 
 ### Changed
 

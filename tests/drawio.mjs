@@ -4766,6 +4766,43 @@ test('a fetched logo is cached in the store, and one cached in the plugin folder
   }
 });
 
+// --cells never prints a label, so a named component in a compressed page had
+// no route to its id short of a one-off parser (#266).
+test('analyze --find names the cell a label belongs to in a compressed page, and an edit can use it (#266)', () => {
+  const spec = {
+    nodes: [
+      { id: 'web', kind: 'icon', icon: 'aws/amazon-cloudfront', label: 'Web app', col: 0, row: 0 },
+      { id: 'n7f3a', kind: 'box', label: 'Checkout API', col: 1, row: 0 },
+      { id: 'db', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Orders DB', col: 2, row: 0 },
+    ],
+    edges: [{ from: 'web', to: 'n7f3a', label: 'order' }],
+  };
+  const { xml } = builder.buildDiagram(spec);
+  const packed = xml.replace(/(<diagram[^>]*>)([\s\S]*?)(<\/diagram>)/, (m, open, inner, close) =>
+    open + deflateRawSync(Buffer.from(encodeURIComponent(inner), 'binary')).toString('base64') + close);
+  assert(!packed.includes('<mxGraphModel'), 'the page is compressed');
+  const file = join(TMP, 'find-label.drawio');
+  writeFileSync(file, packed);
+
+  const cli = spawnSync(process.execPath, [join(SCRIPTS, 'analyze-drawio.mjs'), file, '--find', 'checkout api'], { encoding: 'utf8' });
+  eq(cli.status, 0, cli.stderr);
+  const found = JSON.parse(cli.stdout);
+  eq(JSON.stringify(found.map((f) => [f.page, f.id, f.kind, f.label])), JSON.stringify([[0, 'n7f3a', 'vertex', 'Checkout API']]), 'one cell, by its full id');
+  assert(!/data:image|mxGraphModel|base64/.test(cli.stdout), 'no page XML and no image data');
+  const cells = spawnSync(process.execPath, [join(SCRIPTS, 'analyze-drawio.mjs'), file, '--cells'], { encoding: 'utf8' }).stdout;
+  assert(!cells.includes('Checkout'), '--cells stays label-free');
+
+  // The edit the lookup is for: connect the cache to the component it named.
+  const edited = xml.replace('</root>', '<mxCell id="cache" value="Redis cache" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">'
+    + '<mxGeometry x="400" y="400" width="190" height="60" as="geometry" /></mxCell>'
+    + `<mxCell id="reads" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="${found[0].id}" target="cache">`
+    + '<mxGeometry relative="1" as="geometry" /></mxCell></root>');
+  writeFileSync(join(TMP, 'find-label-edited.drawio'), edited);
+  const v = validator.validateFile(join(TMP, 'find-label-edited.drawio'));
+  assert(v.ok, v.errors.join('; '));
+  eq(v.info.pages[0].edges, validator.validateFile(file).info.pages[0].edges + 1, 'one edge more, connected at both ends');
+});
+
 // -------------------------------------------------------------
 
 finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');

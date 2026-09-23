@@ -5,6 +5,7 @@
 //   node analyze-excalidraw.mjs a.excalidraw b.excalidraw --out summary.json
 //   node analyze-excalidraw.mjs scene.excalidraw --cells     geometry table
 //   node analyze-excalidraw.mjs scene.excalidraw --images    embedded image inventory
+//   node analyze-excalidraw.mjs scene.excalidraw --find "Checkout API"   what a label names
 //
 // A scene with embedded images runs to megabytes of base64; reading one whole
 // is never the right move. This emits structure, style tokens and geometry.
@@ -201,7 +202,37 @@ export function analyzeScene(scene, { name = '<scene>' } = {}) {
   };
 }
 
-const USAGE = 'usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells] [--images]';
+const USAGE = 'usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells] [--images] [--find <label>]';
+
+// The text and frames whose words contain `query`, case-blind, each with the
+// full id of the shape an edit acts on (#266): the container a label is bound
+// to, else the shape grouped with a caption, else the text itself. Opt-in: only
+// the labels asked for leave the file, never a dataURL.
+export function findLabel(scene, query) {
+  const q = String(query ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!q) return [];
+  const live = scene.elements.filter((el) => !el.isDeleted);
+  const byId = new Map(live.map((el) => [el.id, el]));
+  const out = [];
+  for (const el of live) {
+    const words = el.type === 'text' ? el.text : el.type === 'frame' || el.type === 'magicframe' ? el.name : null;
+    const label = String(words ?? '').replace(/\s+/g, ' ').trim();
+    if (!label || !label.toLowerCase().includes(q)) continue;
+    const group = (el.groupIds ?? [])[0];
+    const shape = el.containerId ? byId.get(el.containerId)
+      : el.type === 'text' && group ? live.find((o) => o !== el && o.type !== 'text' && o.type !== 'arrow' && (o.groupIds ?? []).includes(group))
+        : null;
+    const target = shape ?? el;
+    const b = elementBox(target);
+    out.push({
+      id: target.id, type: target.type, label: label.length > 120 ? `${label.slice(0, 117)}...` : label,
+      text: el.id === target.id ? null : el.id,
+      x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height),
+      frame: target.frameId ?? null,
+    });
+  }
+  return out;
+}
 
 // An unreadable file is one line and exit 2, like a usage error (#116).
 function load(path) {
@@ -214,8 +245,13 @@ function load(path) {
 
 function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
-    { values: { '--out': null }, switches: ['--cells', '--images'] }, USAGE);
+    { values: { '--out': null, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .excalidraw file', USAGE);
+  if (options.find !== undefined) {
+    if (files.length > 1 || options.cells || options.images) exitUsage('--find reads one file, on its own', USAGE);
+    console.log(JSON.stringify(findLabel(load(files[0]), options.find), null, 2));
+    return;
+  }
   if ((options.cells || options.images) && files.length > 1) exitUsage('--cells and --images read one file', USAGE);
 
   if (options.cells) {
