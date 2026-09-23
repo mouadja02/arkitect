@@ -806,6 +806,21 @@ test('an unknown spec field is named in the report, and the build still succeeds
   ]), 'the CLI prints them and exits 0');
 });
 
+// Excalidraw takes a top-level `style` and applies it; on a node, edge or
+// boundary it is dropped. The contract once denied the top-level one (#268).
+test('a top-level style applies and is not reported; the contract names only the element-level one (#268)', () => {
+  const r = builder.buildDiagram({ style: { roughness: 0 }, nodes: [{ id: 'a', kind: 'box', label: 'A', style: {} }] });
+  eq(JSON.stringify(r.report.unknownFields.map((u) => u.field)), JSON.stringify(['nodes[0].style']), "only the node's style");
+  assert(r.scene.elements.filter((e) => e.type === 'rectangle').every((e) => e.roughness === 0), 'the top-level style drew');
+
+  const agents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8').replace(/\s+/g, ' ');
+  const skill = readFileSync(join(SKILL, 'SKILL.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const [name, text] of [['AGENTS.md', agents], ['SKILL.md', skill]]) {
+    assert(!/`style`[^.]{0,40}not a field in either/.test(text), `${name} denies the top-level style again`);
+    assert(/a node's `style`|`style` on a node/.test(text), `${name} no longer says which style is dropped`);
+  }
+});
+
 // One level up from #205: a misspelled `edges` dropped every arrow and the
 // report said nothing (#221). A key starting with `_` is a comment.
 test('an unknown top-level spec key is named, and a _comment is not (#221)', () => {
