@@ -1,0 +1,48 @@
+schema_version: "1.1"
+name: drawio-numbered-flow-one-sequence
+description: >
+  Three entry points feed one request path. A numbered flow numbers that one
+  path from 1; the entry points are not steps, so they stay unnumbered or take
+  letters. Numbering one of them "1." claims an order the system does not have
+  (#251).
+tags: [generation, patterns]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    For a design review, draw our order intake in Draw.io as a numbered flow a
+    reviewer can walk through. Orders arrive three ways: the web shop, the
+    mobile app and a partner API, all through Amazon API Gateway. A Lambda
+    order handler validates each order, writes it to a DynamoDB table and
+    publishes an event to an SNS topic, which emails the customer. Use these
+    node ids: web, mobile, partner, gateway, handler, table, topic, customer.
+    Save it to ./eval-output/orders.drawio, with the spec you build it from
+    beside it as ./eval-output/orders.spec.json.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: regex
+    name: built-with-the-given-ids
+    target: { source: file, path: ./eval-output/orders.spec.json }
+    pattern: '^(?=[\s\S]*"web")(?=[\s\S]*"mobile")(?=[\s\S]*"partner")(?=[\s\S]*"gateway")(?=[\s\S]*"handler")'
+
+  # The path is numbered: it starts at 1, once.
+  - type: regex
+    name: one-sequence-from-one
+    target: { source: file, path: ./eval-output/orders.spec.json }
+    pattern: '^(?=[\s\S]*"label"\s*:\s*"\s*1[.):])(?![\s\S]*"label"\s*:\s*"\s*1[.):][\s\S]*"label"\s*:\s*"\s*1[.):])(?![\s\S]*"label"\s*:\s*"\s*0[.):])'
+
+  # No edge leaving an entry point carries a number, whichever order the
+  # agent wrote its keys in.
+  - type: regex
+    name: entry-points-not-numbered
+    target: { source: file, path: ./eval-output/orders.spec.json }
+    pattern: '^(?![\s\S]*\{[^{}]*"from"\s*:\s*"(?:web|mobile|partner)"[^{}]*"label"\s*:\s*"\s*\d)(?![\s\S]*\{[^{}]*"label"\s*:\s*"\s*\d[^{}]*"from"\s*:\s*"(?:web|mobile|partner)")'

@@ -3228,6 +3228,31 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
 });
 
+// The #251 case grades the spec the agent saved, so its patterns must pass one
+// numbered path and fail each way of numbering what is not a step.
+test('the numbered-flow-one-sequence eval case passes one path and fails a numbered entry point (#251)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'numbered-flow-one-sequence', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: .*\\n\\s+pattern: '([^']+)'`))[1]);
+  const graders = ['one-sequence-from-one', 'entry-points-not-numbered'].map(pattern);
+  const spec = (edges) => JSON.stringify({ nodes: [], edges }, null, 2);
+  const path = [
+    { from: 'gateway', to: 'handler', label: '1. Invoke' },
+    { from: 'handler', to: 'table', label: '2. Write order' },
+    { from: 'handler', to: 'topic', label: '3. Publish' },
+    { from: 'topic', to: 'customer', label: '4. Email' },
+  ];
+  const good = spec([{ from: 'web', to: 'gateway', label: 'A. Web order' }, { from: 'mobile', to: 'gateway' },
+    { label: 'Partner order', from: 'partner', to: 'gateway' }, ...path]);
+  assert(graders.every((g) => g.test(good)), 'one path from 1, entry points lettered or unnumbered');
+  const entry = spec([{ from: 'web', to: 'gateway', label: '1. Place order' }, { from: 'mobile', to: 'gateway' },
+    ...path.map((e, i) => ({ ...e, label: `${i + 2}. ${e.label.slice(3)}` }))]);
+  assert(!graders[1].test(entry), 'an entry point numbered 1 fails');
+  const reversed = spec([{ label: '2. Place order', from: 'partner', to: 'gateway' }, ...path]);
+  assert(!graders[1].test(reversed), 'whichever order the keys are in');
+  assert(!graders[0].test(spec([{ from: 'web', to: 'gateway', label: '1. Web' }, ...path])), 'two steps numbered 1 fail');
+  assert(!graders[0].test(spec([{ from: 'a', to: 'b', label: '0. Start' }, ...path])), 'a step 0 fails');
+});
+
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);
