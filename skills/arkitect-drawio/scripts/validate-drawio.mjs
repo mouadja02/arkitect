@@ -18,6 +18,8 @@ const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--stric
 const MAX_COORD = 20000;      // draw.io stays usable well below this
 const MIN_GAP = 8;            // px of clear space expected between siblings
 const TRUNK_MIN = 10;         // px two edges may share into one port (#246)
+const SLIDE_WIDTH = 1920;     // px a page is fit to when it is shown (#247)
+const TEXT_FLOOR = 9;         // px a label may shrink to at that width (#247)
 
 function absoluteGeometry(cells) {
   const byId = new Map(cells.map((c) => [c.id, c]));
@@ -41,6 +43,10 @@ function absoluteGeometry(cells) {
   for (const c of cells) if (c.vertex) resolve(c);
   return abs;
 }
+
+// A label's visible lines, with Draw.io's HTML taken out.
+const textLines = (value) => value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
+  .split('\n').map((l) => l.trim());
 
 const isContainerish = (style) => {
   const s = parseStyle(style);
@@ -218,8 +224,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       if (isContainerish(c.style)) continue;
       const g = abs.get(c.id);
       if (!g || !g.width) continue;
-      const plain = c.value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
-      const longest = Math.max(...plain.split('\n').map((l) => l.trim().length), 0);
+      const longest = Math.max(...textLines(c.value).map((l) => l.length), 0);
       const size = Number(s.fontSize ?? 12);
       const wrap = s.whiteSpace === 'wrap';
       const estimated = longest * size * 0.55;
@@ -241,9 +246,9 @@ export function validateFile(path, { pageIndex = null } = {}) {
       if (s.verticalLabelPosition !== 'bottom') continue;
       const g = abs.get(c.id);
       if (!g) continue;
-      const lines = c.value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').split('\n');
+      const lines = textLines(c.value);
       const size = Number(s.fontSize ?? 12);
-      const width = Math.max(...lines.map((l) => l.trim().length)) * size * 0.55;
+      const width = Math.max(...lines.map((l) => l.length)) * size * 0.55;
       captions.push({ id: c.id, x: g.x + g.width / 2 - width / 2, y: g.y + g.height + 2, width, height: lines.length * size * 1.25 });
     }
     // An unconstrained end goes where Draw.io's orthogonal router puts it
@@ -361,6 +366,119 @@ export function validateFile(path, { pageIndex = null } = {}) {
       }
     }
 
+    // Text on a container (#243): a title, legend or edge label that lies
+    // across a container's border, or over the strip its own label is drawn
+    // in. The overlap check above skips both text and containers. Each text is
+    // measured by its lines, not its cell, which may be far wider.
+    const extent = (lines, s) => {
+      const size = Number(s.fontSize ?? 12);
+      return { width: Math.max(...lines.map((l) => l.length), 0) * size * (s.fontStyle & 1 ? 0.6 : 0.55), height: lines.length * size * 1.25 };
+    };
+    const texts = [];
+    for (const c of cells) {
+      if (!c.vertex || !c.value || !isTransparentLabel(c.style) || !abs.has(c.id)) continue;
+      const lines = textLines(c.value).filter(Boolean);
+      if (!lines.length) continue;
+      const s = parseStyle(c.style); const g = abs.get(c.id);
+      const t = extent(lines, s);
+      const width = Math.min(t.width, g.width);
+      const height = Math.min(t.height * Math.ceil(t.width / (g.width || 1)), g.height);
+      const x = s.align === 'left' ? g.x : s.align === 'right' ? g.x + g.width - width : g.x + (g.width - width) / 2;
+      const y = s.verticalAlign === 'top' ? g.y : s.verticalAlign === 'bottom' ? g.y + g.height - height : g.y + (g.height - height) / 2;
+      texts.push({ id: `"${c.id}"`, box: { x, y, width, height } });
+    }
+    // An edge's label sits along its route: geometry x runs from -1 at the
+    // source to 1 at the target, over the whole length.
+    const along = (segments, x) => {
+      const total = segments.reduce((n, [p, q]) => n + Math.abs(q.x - p.x) + Math.abs(q.y - p.y), 0);
+      let left = ((x ?? 0) + 1) / 2 * total;
+      for (const [p, q] of segments) {
+        const len = Math.abs(q.x - p.x) + Math.abs(q.y - p.y);
+        if (left <= len) return { x: p.x + Math.sign(q.x - p.x) * left, y: p.y + Math.sign(q.y - p.y) * left };
+        left -= len;
+      }
+      return segments.at(-1)[1];
+    };
+    const routeOf = new Map(routes.map((r) => [r.id, r.segments]));
+    for (const c of cells) {
+      const segments = routeOf.get(c.edge ? c.id : c.parent);
+      if (!segments || !c.value || (!c.edge && !c.geometry?.relative)) continue;
+      const lines = textLines(c.value).filter(Boolean);
+      if (!lines.length) continue;
+      const t = extent(lines, parseStyle(c.style));
+      const at = along(segments, c.geometry?.x);
+      const o = c.geometry?.offset ?? { x: 0, y: 0 };
+      texts.push({
+        id: c.edge ? `the label of edge "${c.id}"` : `"${c.id}"`,
+        box: { x: at.x + o.x - t.width / 2 - 2, y: at.y + o.y - t.height / 2 - 1, width: t.width + 4, height: t.height + 2 },
+      });
+    }
+    // A Draw.io group, or a container with no stroke, draws no border to sit on.
+    const bordered = (s) => s.group === undefined && s.strokeColor !== 'none';
+    const strip = (c, g) => {
+      const s = parseStyle(c.style);
+      const lines = textLines(c.value).filter(Boolean);
+      if (!lines.length) return null;
+      const t = extent(lines, s);
+      if (s.swimlane !== undefined) {
+        return { x: g.x + (g.width - t.width) / 2 - 4, y: g.y, width: t.width + 8, height: Number(s.startSize ?? 23) };
+      }
+      if ((s.verticalAlign ?? 'middle') !== 'top') return null;
+      const lead = Number(s.spacingLeft ?? 0) + 2;
+      const x = s.align === 'left' ? g.x : s.align === 'right' ? g.x + g.width - t.width - lead : g.x + (g.width - t.width) / 2 - lead;
+      // An AWS group draws its 25px icon in that corner, beside the name.
+      return { x, y: g.y, width: t.width + lead + 4, height: Math.max(25, t.height + Number(s.spacingTop ?? 0) + 4) };
+    };
+    const overlap = (a, b) => Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 1
+      && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 1;
+    const within = (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.x + a.width <= b.x + b.width + 1 && a.y + a.height <= b.y + b.height + 1;
+    // A container turned a quarter turn is drawn with its sides swapped about
+    // its centre, and its header is no longer on top; any other angle is skipped.
+    const turned = (s, g) => {
+      const q = (((Number(s.rotation ?? 0) % 360) + 360) % 360) / 90;
+      if (q === 0 || q === 2) return g;
+      if (q !== 1 && q !== 3) return null;
+      return { x: g.x + (g.width - g.height) / 2, y: g.y + (g.height - g.width) / 2, width: g.height, height: g.width };
+    };
+    let textOnContainers = 0;
+    for (const c of cells) {
+      const s = parseStyle(c.style);
+      if (!containers.has(c.id) || !abs.has(c.id) || !bordered(s)) continue;
+      const g = turned(s, abs.get(c.id));
+      if (!g) continue;
+      const head = Number(s.rotation ?? 0) || s.horizontal === '0' ? null : strip(c, g);
+      for (const t of texts) {
+        if (!overlap(t.box, g)) continue;
+        const what = !within(t.box, g) ? 'lies across the border of' : head && overlap(t.box, head) ? 'covers the label of' : null;
+        if (!what) continue;
+        textOnContainers++;
+        if (textOnContainers <= 10) warnings.push(`${label}: ${t.id} ${what} container "${c.id}"`);
+      }
+    }
+
+    // Density (#247). A page wider than a slide is shrunk to fit it, and its
+    // text with it. The size most labels use stands for the page, so one small
+    // footnote does not. SLIDE_WIDTH and TEXT_FLOOR are in maintenance.md.
+    const sizes = new Map();
+    for (const c of cells) {
+      if (!c.vertex || !abs.has(c.id) || isContainerish(c.style) || !textLines(c.value).some(Boolean)) continue;
+      const px = Number(parseStyle(c.style).fontSize ?? 12);
+      sizes.set(px, (sizes.get(px) ?? 0) + 1);
+    }
+    const width = Number.isFinite(minX) ? maxX - minX : 0;
+    const density = {
+      icons: leaves.filter((c) => isIcon(c.style)).length,
+      textPx: [...sizes].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? null,
+      fittedPx: null,
+    };
+    if (density.textPx && width > SLIDE_WIDTH) {
+      density.fittedPx = Math.round(density.textPx * SLIDE_WIDTH / width * 10) / 10;
+      if (density.fittedPx < TEXT_FLOOR) {
+        warnings.push(`${label}: at ${SLIDE_WIDTH}px wide its ${density.textPx}px labels draw at ${density.fittedPx}px, `
+          + `under ${TEXT_FLOOR}px; split it into pages, one tier or flow each`);
+      }
+    }
+
     const model = graphModelAttrs(xml);
     pages.push({
       index: idx, name: page.name, compressed: page.compressed,
@@ -368,7 +486,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, density,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
@@ -399,7 +517,10 @@ function main(argv) {
           `${p.overlaps ? `, ${p.overlaps} overlaps` : ''}${p.clippedLabels ? `, ${p.clippedLabels} tight labels` : ''}`
           + `${p.nodeCrossings ? `, ${p.nodeCrossings} node crossings` : ''}`
           + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`
-          + `${p.sharedTrunks ? `, ${p.sharedTrunks} shared trunks` : ''}`);
+          + `${p.sharedTrunks ? `, ${p.sharedTrunks} shared trunks` : ''}`
+          + `${p.textOnContainers ? `, ${p.textOnContainers} texts on containers` : ''}`
+          + `, ${p.density.icons} icons`
+          + `${p.density.fittedPx ? `, ${p.density.textPx}px labels at ${p.density.fittedPx}px on a ${SLIDE_WIDTH}px slide` : ''}`);
       }
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);

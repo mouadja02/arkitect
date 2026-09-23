@@ -155,6 +155,8 @@ A number a check compares against says here how it was chosen.
 | constant | value | chosen because |
 |---|---|---|
 | `TRUNK_MIN`, `validate-drawio.mjs` | 10px | Draw.io runs the last stretch into every port straight: with the builder's `jettySize=auto` that stub is at least 20px (`2 × orthBuffer`, read from `mxEdgeStyle.getJettySize`). Two edges that enter one port from the same side therefore share 20px or more, and 10px catches every one. It sits well above the pixel of slack in the route estimate, so two ends that only touch are not reported (#246). |
+| `SLIDE_WIDTH`, `validate-drawio.mjs` | 1920px | A 1080p slide, and the width a page is fit to wherever it is read: a wiki or README page scrolls down, not across. Only the width is fit, so a tall page is not blamed for a portrait layout (#247). |
+| `TEXT_FLOOR`, `validate-drawio.mjs` | 9px | Measured 2026-09-23 on the committed templates and seven local reference pages (numbers only; the pages stay local), taking the size most of a page's labels use (12px on all of them) and fitting the page to 1920px. The templates draw at 12.0, 12.0 and 10.4px. The reference pages draw at 12.0 and 12.0 (under 1920px wide), 9.8px (69 cells), then 7.9, 7.3, 6.9 and 4.9px (90 to 175 cells); the 2.0.0 field page, the one meant for a review board, drew at 7.8px. 9px passes every template and the 69-cell page, and fails every page of 90 cells or more. An icon-count ceiling was measured too and dropped: each page with 26 or more icons was already under the floor (#247). |
 
 ## What a good change looks like
 

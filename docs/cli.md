@@ -67,6 +67,12 @@ and an edge that ends on a container's border, with the children it may have
 meant. They are for a person to check, and change neither PASS, the exit code
 nor `--strict` (#244, #245).
 
+Each page line counts its icons and, for a page wider than 1920px, gives the
+size its labels draw at once fit to that width; under 9px is a warning to split
+the page (#247). Text that lies across a container's border, or over the strip
+its name is drawn in, is a warning naming both; a Draw.io `group` draws no
+border and is skipped (#243).
+
 `build` merges this install's style override, `~/.arkitect/drawio/style-overrides.json`
 (`$ARKITECT_HOME/drawio/`), into every build and says so under `style` in its
 report. `--defaults` draws the shipped house style regardless — use it for
