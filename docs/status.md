@@ -1,6 +1,6 @@
 # Project status
 
-Status reviewed on 2026-09-23, at the 2.0.1 release.
+Status reviewed on 2026-09-24, at the 2.1.0 release.
 This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
 and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
 
@@ -41,6 +41,7 @@ and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) 
 | Icon nodes | A node with an `icon` and no `kind` draws its icon in both builders, where it drew a plain box and nobody was told; found by the 2.0.0 eval batch, where an agent reported three icons over a file with none | [#228](https://github.com/mouadja02/arkitect/issues/228), [PR #229](https://github.com/mouadja02/arkitect/pull/229) |
 | Generic words | A component named only in generic words (`service`, `storage`, `function`) no longer draws an AWS, Azure or GCP mark in either search; it comes back flagged, and the builder draws a placeholder. Found by the same batch: an internal service drawn with AWS's Service glyph, twice | [#231](https://github.com/mouadja02/arkitect/issues/231), [PR #232](https://github.com/mouadja02/arkitect/pull/232) |
 | Patch round, 2.0.1 | A misspelled top-level spec key is named under `unknownFields` in both builders; an Excalidraw node's caption and sublabel are grouped with it, checked by dragging in the app; Draw.io renders leave a 20px margin (`--padding`); the Draw.io skill no longer denies the PDF export it has; its reading budget has room again, and the ignore advice covers Draw.io Desktop's own `.bkp` | [#221](https://github.com/mouadja02/arkitect/issues/221), [#190](https://github.com/mouadja02/arkitect/issues/190), [#249](https://github.com/mouadja02/arkitect/issues/249), [#256](https://github.com/mouadja02/arkitect/issues/256), [#253](https://github.com/mouadja02/arkitect/issues/253), [#252](https://github.com/mouadja02/arkitect/issues/252), PRs [#258](https://github.com/mouadja02/arkitect/pull/258)-[#263](https://github.com/mouadja02/arkitect/pull/263) |
+| Validate round, 2.1.0 | Draw.io `validate` sees what a render shows: an edge through an icon, text over a container, two edges on one line into one port or between one pair of nodes, a page too dense for a slide, and notes an icon with no edge or an edge ending on a container. The PASS line counts warnings, and the last line says each is a defect to fix or report by id; the report step says so too. Both builders list a plain box naming a bundled product (`namesAProduct`); boundaries take `labelAlign`; `analyze --find` gives the full id a label names; fetched logos, made icons and installed libraries are cached in `~/.arkitect/`; numbered flows number one sequence; a Claude Code hook keeps a style question from promising to remember the style. Wording fixes measured by eval before merge: #248 0/3 → 3/3, #251 0/3 → 3/3, #265 1/3 → 3/3 | [#242](https://github.com/mouadja02/arkitect/issues/242), [#243](https://github.com/mouadja02/arkitect/issues/243), [#244](https://github.com/mouadja02/arkitect/issues/244), [#245](https://github.com/mouadja02/arkitect/issues/245), [#246](https://github.com/mouadja02/arkitect/issues/246), [#247](https://github.com/mouadja02/arkitect/issues/247), [#248](https://github.com/mouadja02/arkitect/issues/248), [#240](https://github.com/mouadja02/arkitect/issues/240), [#250](https://github.com/mouadja02/arkitect/issues/250), [#251](https://github.com/mouadja02/arkitect/issues/251), [#257](https://github.com/mouadja02/arkitect/issues/257), [#265](https://github.com/mouadja02/arkitect/issues/265), [#266](https://github.com/mouadja02/arkitect/issues/266), [#267](https://github.com/mouadja02/arkitect/issues/267), [#268](https://github.com/mouadja02/arkitect/issues/268), [#272](https://github.com/mouadja02/arkitect/issues/272), PRs [#269](https://github.com/mouadja02/arkitect/pull/269)-[#282](https://github.com/mouadja02/arkitect/pull/282) |
 | Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
 
 PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
@@ -50,26 +51,19 @@ the work listed below.
 
 ## In progress
 
-No implementation PR is open at this snapshot. Next is 2.1.0, where `validate`
-learns to see what a render shows: an edge through an icon, text over a
-container, an icon with no edge, an edge ending on a container, two edges on
-one trunk, a page too dense for a slide
-([#242](https://github.com/mouadja02/arkitect/issues/242)-[#247](https://github.com/mouadja02/arkitect/issues/247)).
-It also reports a plain box that names a bundled product
-([#240](https://github.com/mouadja02/arkitect/issues/240)) and moves run-time caches
-out of the plugin folder ([#257](https://github.com/mouadja02/arkitect/issues/257)).
-3.0.0 then changes Draw.io layout: newlines, the title, wordmark size and
-centring, edge sides and label placement
-([#238](https://github.com/mouadja02/arkitect/issues/238), [#239](https://github.com/mouadja02/arkitect/issues/239),
-[#254](https://github.com/mouadja02/arkitect/issues/254), [#255](https://github.com/mouadja02/arkitect/issues/255),
-[#237](https://github.com/mouadja02/arkitect/issues/237), [#241](https://github.com/mouadja02/arkitect/issues/241)),
-and an Excalidraw frame name ([#236](https://github.com/mouadja02/arkitect/issues/236)).
-Opt-in obstacle routing for Excalidraw
-([#124](https://github.com/mouadja02/arkitect/issues/124)) still waits on an app experiment.
+No implementation PR is open at this snapshot. Next is 3.0.0, which changes
+Draw.io layout: newlines, the title, wordmark size and centring, which mark an
+unattended "Redis cache" draws, edge sides with staggered entries, and label
+placement ([#238](https://github.com/mouadja02/arkitect/issues/238), [#239](https://github.com/mouadja02/arkitect/issues/239), [#254](https://github.com/mouadja02/arkitect/issues/254), [#255](https://github.com/mouadja02/arkitect/issues/255), [#283](https://github.com/mouadja02/arkitect/issues/283), [#237](https://github.com/mouadja02/arkitect/issues/237), [#241](https://github.com/mouadja02/arkitect/issues/241)),
+and an Excalidraw frame name ([#236](https://github.com/mouadja02/arkitect/issues/236)). 2.1.0's new `validate` warnings are
+red on the specs in [#246](https://github.com/mouadja02/arkitect/issues/246) and [#272](https://github.com/mouadja02/arkitect/issues/272) until [#237](https://github.com/mouadja02/arkitect/issues/237) lands, which gives
+that release something to prove itself against. Opt-in obstacle routing for
+Excalidraw ([#124](https://github.com/mouadja02/arkitect/issues/124)) still waits on an app experiment, and now needs a cut:
+the Excalidraw `SKILL.md` reads 11,984 of its 12,000 bytes.
 
-2.0.1 moves no coordinate. Generated Excalidraw scenes gain groups, Draw.io
-renders gain a margin, and a spec with an unknown top-level key gets a report
-entry; saved files are untouched.
+2.1.0 moves no coordinate. It adds warnings, notes and report keys, one
+optional spec field, one CLI option, a cache location (the old one is still
+read) and one plugin hook; saved files are untouched.
 
 The eval suite is the other open thread. Its blind spot is closed: an eval run
 now reads a render. No PNG can be made inside `claude plugin eval`'s sandbox —

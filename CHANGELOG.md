@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-09-23
+
 ### Added
 
 - Draw.io `validate` warns when two edges between the same two nodes, in either direction, run along one line, naming both: drawn that way they read as one double-headed line of one kind (#272).
