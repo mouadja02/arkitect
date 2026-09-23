@@ -19,8 +19,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
-- Both drawing skills' report step names each validate warning left by its ids, and each defect seen in the render and left by page, never "a few"; a new eval case holds the report to it (#248).
-- Both drawing skill descriptions say a style is learned only when the user runs its learn command, so a question about a diagram's style no longer ends in a promise to remember it (#265).
+- Both drawing skills' report step names each validate warning left with every id it gives, as a defect still there, and each defect seen in the render and left by page, never "minor" or "a few"; a new eval case holds the report to it (#248).
+- A question about an existing diagram's style loads the drawing skill, which says no style is stored unless the user runs its learn command; the answer used to end in a promise to remember it, with no skill loaded (#265).
 
 ## [2.0.1] — 2026-09-22
 

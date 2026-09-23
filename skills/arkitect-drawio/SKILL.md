@@ -1,6 +1,6 @@
 ---
 name: arkitect-drawio
-description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. No style is stored unless the user runs /learn-drawio-style: never promise to remember one. Use whenever the request involves a Draw.io/diagrams.net diagram, a solution architecture for a client or a review board, an AWS or cloud architecture diagram, an as-is/to-be or solution-options comparison, a multi-page diagram, a monitoring, data-pipeline or agentic/LLM architecture wanted formally or with vendor icons, or an edit to an existing .drawio file.
+description: Create or edit editable Draw.io (.drawio) solution-architecture diagrams in the Arkitect house style, using the bundled icon packs for AWS, Azure, Google Cloud, data platforms, AI frameworks, DevOps, GitHub, file types and agent concepts. Use whenever the request involves a Draw.io/diagrams.net diagram, a solution architecture for a client or a review board, an AWS or cloud architecture diagram, an as-is/to-be or solution-options comparison, a multi-page diagram, a monitoring, data-pipeline or agentic/LLM architecture wanted formally or with vendor icons, or an edit to, or a question about, an existing .drawio file.
 ---
 
 # Draw.io architecture diagrams
@@ -19,6 +19,7 @@ Read only what the task needs. Every path is relative to this skill.
 | Draw a new diagram | this file, the one pattern you pick in step 2, and `assets/templates/starter-architecture.spec.json` with its PNG |
 | Two pages, e.g. as-is and to-be | add `assets/templates/as-is-to-be.spec.json` and its PNGs |
 | Edit an existing `.drawio` | `references/editing.md` |
+| A question about a diagram's style | nothing. No style is stored unless the user runs `/learn-drawio-style`: never promise to remember one |
 | An icon the search cannot settle, a product logo, the pack list | `references/icons.md` |
 | Rendering fails, or you must explain how pages export | `references/rendering.md` |
 | Hand-written XML, or a deliberate deviation from the house style | `references/style-guide.md` |
