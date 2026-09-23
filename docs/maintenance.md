@@ -79,7 +79,7 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
-| `arkitect-drawio` | 10,982 | 735 | 11,717 |
+| `arkitect-drawio` | 10,944 | 735 | 11,679 |
 | `arkitect-excalidraw` | 10,924 | 882 | 11,806 |
 
 The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
@@ -147,6 +147,14 @@ store outside the plugin and is never committed — see
 `.excalidrawlib`, `.xml`, `.svg`, `.png` and `.json` are marked binary or
 `-text` in `.gitattributes` because the suite compares them by digest. Never
 reformat, re-indent or "clean up" those files.
+
+## Validator thresholds
+
+A number a check compares against says here how it was chosen.
+
+| constant | value | chosen because |
+|---|---|---|
+| `TRUNK_MIN`, `validate-drawio.mjs` | 10px | Draw.io runs the last stretch into every port straight: with the builder's `jettySize=auto` that stub is at least 20px (`2 × orthBuffer`, read from `mxEdgeStyle.getJettySize`). Two edges that enter one port from the same side therefore share 20px or more, and 10px catches every one. It sits well above the pixel of slack in the route estimate, so two ends that only touch are not reported (#246). |
 
 ## What a good change looks like
 
