@@ -3649,6 +3649,43 @@ test('analyze --find returns the full id of the shape a label names, and an edit
   assert(v.ok && !v.warnings.some((w) => w.includes(arrow.id)), `bound at both ends: ${[...v.errors, ...v.warnings].join('; ')}`);
 });
 
+// A shared wordmark was fitted on its long side alone, 100x17 (#254), and
+// placed at the top of its cell, so arrows to it stepped 42px (#255).
+test('a shared wordmark gets Draw.io\'s floor and sits on its row\'s centre line (#254, #255)', () => {
+  const drawn = (icon) => builder.buildDiagram({ nodes: [{ id: 'i', kind: 'icon', icon, label: 'x' }] }, { seed: 1 })
+    .scene.elements.find((el) => el.type === 'image');
+  for (const [id, size] of [['ml-training/metaflow', '200x33'], ['ai-frameworks/pydanticai', '200x32'], ['data-platforms/apacheiceberg', '122x33']]) {
+    const img = drawn(`drawio:${id}`);
+    eq(`${img.width}x${img.height}`, size, `${id} at fitCell's size for a 100px footprint`);
+  }
+  const square = drawn('drawio:aws/aws-lambda');
+  eq(`${square.x},${square.y},${square.width}x${square.height}`, '0,0,100x100', 'a square mark builds as before');
+
+  const { scene } = builder.buildDiagram({ nodes: [
+    { id: 'l', kind: 'icon', icon: 'drawio:aws/aws-lambda', label: 'Lambda', col: 0 },
+    { id: 'w', kind: 'icon', icon: 'drawio:ai-frameworks/pydanticai', label: 'PydanticAI', col: 1 },
+    { id: 'q', kind: 'icon', icon: 'drawio:aws/amazon-simple-queue-service', label: 'Queue', col: 2 },
+  ], edges: [{ from: 'l', to: 'w' }, { from: 'w', to: 'q' }] }, { seed: 1 });
+  const centres = scene.elements.filter((el) => el.type === 'image').map((el) => el.y + el.height / 2);
+  eq(centres.join(','), '50,50,50', 'one centre line');
+  for (const a of scene.elements.filter((el) => el.type === 'arrow')) eq(a.points.length, 2, 'a straight arrow');
+});
+
+// The app draws a frame's name above the frame, where the scope's own label
+// was: the two names overlapped (#236).
+test('a frame inside a scope leaves the scope\'s label clear of the frame\'s name (#236)', () => {
+  const spec = { boundaries: [{ id: 'acct', label: 'Account' }, { id: 'f', kind: 'frame', label: 'One', parent: 'acct' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'f' }] };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const label = scene.elements.find((el) => el.type === 'text' && el.text === 'Account');
+  const fr = scene.elements.find((el) => el.type === 'frame');
+  // The app's name strip: 14px text a few pixels above the frame.
+  assert(label.y + label.height <= fr.y - 20, `the label ends at ${label.y + label.height}, the frame's name starts near ${fr.y - 20}`);
+  const alone = builder.buildDiagram({ boundaries: [{ id: 'f', kind: 'frame', label: 'One' }], nodes: [{ id: 'a', label: 'A', parent: 'f' }] }, { seed: 1 });
+  const before = alone.scene.elements.find((el) => el.type === 'frame');
+  eq(`${before.x},${before.y},${before.width}x${before.height}`, `${fr.x},${fr.y},${fr.width}x${fr.height}`, 'a frame on its own builds as before');
+});
+
 // A spelling grader is only fair if it passes the spelling the style guide
 // asks for: "PostgreSQL" is Postgre + SQL (#208, #286).
 test('the unknown-product eval case accepts "PostgreSQL" and "Postgres", and fails a reply naming neither (#286)', () => {

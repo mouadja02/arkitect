@@ -37,6 +37,7 @@ import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
+import { fitCell } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -584,11 +585,13 @@ function assemble(spec, style) {
       } else if (resolved.kind === 'embedded') {
         const e = resolved.entry;
         const fileId = addFile(scene, e.mime, e.bytes);
-        const longest = n.size ?? S.iconSize;
-        const scaleF = longest / Math.max(e.width || longest, e.height || longest);
-        const iw = Math.round((e.width || longest) * scaleF);
-        const ih = Math.round((e.height || longest) * scaleF);
-        const img = imageEl({ fileId, x: Math.round(colX(n.col ?? 0) + (L.cell - iw) / 2), y, width: iw, height: ih });
+        // Draw.io's rule for the same artwork (#76): a wordmark's short side
+        // stays at least a third of the footprint, where fitting the long side
+        // alone drew `ml-training/metaflow` 100x17 (#254). Centred on the cell in
+        // both axes, so it shares its row's centre line with square marks (#255).
+        const footprint = n.size ?? S.iconSize;
+        const { width: iw, height: ih } = fitCell(e.width || footprint, e.height || footprint, footprint);
+        const img = imageEl({ fileId, x: Math.round(colX(n.col ?? 0) + (L.cell - iw) / 2), y: Math.round(y + (footprint - ih) / 2), width: iw, height: ih });
         produced.push(img);
         anchor = img;
         box = elementBox(img);
@@ -766,6 +769,7 @@ function assemble(spec, style) {
   // wide box or a long caption cannot poke out of its own scope.
 
   const INSET = 14;                // an inside label's distance from the left edge
+  const FRAME_NAME = 24;           // the strip the app draws a frame's name in, above it
   const boundaryBox = new Map();
   const resolveBoundary = (b, seen = new Set()) => {
     if (boundaryBox.has(b.id)) return boundaryBox.get(b.id);
@@ -773,7 +777,11 @@ function assemble(spec, style) {
     seen.add(b.id);
     const kids = [...(childrenOf.get(b.id) ?? [])];
     for (const other of boundaries) {
-      if (other.parent === b.id) kids.push(resolveBoundary(other, seen));
+      if (other.parent !== b.id) continue;
+      const kid = resolveBoundary(other, seen);
+      // The app draws a frame's name in a strip above its top edge, which is
+      // where this scope's own label went: the two names overlapped (#236).
+      kids.push(other.kind === 'frame' && other.label ? { ...kid, y: kid.y - FRAME_NAME, height: kid.height + FRAME_NAME } : kid);
     }
     const pad = {
       left: b.padLeft ?? 34, right: b.padRight ?? 34,

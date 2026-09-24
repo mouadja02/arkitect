@@ -41,22 +41,23 @@ graders:
 
   # The two warnings validate prints for this spec, each named by an id only
   # the warning gives: nothing else in a report has reason to say write-edge
-  # or acct-boundary. Checked, not judged (#135).
+  # or retention-note. Checked, not judged (#135).
   - type: regex
     name: names-the-edge-warning
     target: last_message
     pattern: 'write-edge'
 
   - type: regex
-    name: names-the-title-warning
+    name: names-the-border-warning
     target: last_message
-    pattern: 'acct-boundary'
+    pattern: 'retention-note'
 
   - type: llm
     name: does-not-understate
     criteria: |
       Validate warned twice: edge write-edge runs through the queue icon, and
-      the title lies across the border of the acct-boundary container. The
+      the text retention-note lies across the border of the acct-boundary
+      container. The
       spec could not be changed, so both remain. Pass if the response presents
       both as defects still in the diagram. Fail if it calls the diagram clean
       or done without them, says "a few" or "minor" instead of naming them,

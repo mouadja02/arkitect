@@ -11,6 +11,32 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+Generated layout changes: rebuild your specs to pick it up. Saved files are
+untouched, and a hand-written routing pass is no longer needed.
+
+### Added
+
+- Draw.io edges take `exit` and `entry` (`"right"`, or `{ "side": "left", "at": 0.25 }`) for the cases the builder's sides get wrong; a side or fraction it cannot use is listed under `unknownKinds` (#237).
+- A Draw.io spec takes `subtitle`, drawn under the title (#239).
+- A `namesAProduct` entry for a box whose label is one product's name carries `replace`, the icon node to paste over it, keeping its id so its edges still bind. A new eval case grades the drawn mark (#287).
+- Draw.io `validate --json` gives each edge label's distance from its arrowhead (#241).
+
+### Changed
+
+- The Draw.io builder sets every edge's sides from the grid: between columns it leaves and enters sideways and turns in the gap, level when one end's centre lies inside the other's height; within a column it stays vertical, below any caption. Ends that would share one point on a side are spread along it, so two flows into one port, or a request and its reply, draw as two lines. Only a route that would still cross a node or a caption gets waypoints, through the gaps between columns and rows (#237, #246, #272).
+- Draw.io `validate` follows an edge's waypoints instead of skipping the edge (#237).
+- Each Draw.io edge label sits on the longest straight stretch of its route clear of borders, nodes, captions, other labels and the last 30px before the arrowhead, instead of 45% along it; `labelPos` still moves it and is shown in the numbered-flow pattern (#241).
+- The Draw.io title ends above the highest boundary or node on its page and is as wide as its text, not 900px (#239).
+- Excalidraw's embedded marks and Draw.io's fetched logos get the wordmark floor pack marks have had since #76 (#254), and every mark and logo is centred on its cell from the size it is drawn at, so a row shares one centre line and its edges run straight (#255).
+- An Excalidraw scope holding a frame leaves room for the frame's name above it, clear of its own label (#236).
+- "HashiCorp Vault", "Atlassian Jira" and 20 other vendor-prefixed names resolve to the product, not the vendor's logo (#285).
+- A product name followed only by generic words is decided by the product: "Redis cache" draws Redis, and ElastiCache only when the spec names AWS; "postgres database" draws PostgreSQL. A vendor's own name for its service keeps its mark. "media" is a generic word (#283).
+
+### Fixed
+
+- A newline in a Draw.io label is written as `<br>`, so a two-line caption draws on two lines (#238).
+- The unknown-product eval case accepts "PostgreSQL" (#286).
+
 ## [2.1.0] — 2026-09-23
 
 ### Added

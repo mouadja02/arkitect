@@ -40,6 +40,8 @@ import { namedProducts } from './lib/named-products.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
 import { GENERIC_VENDOR } from './lib/generic-words.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
+import { planEdges, readEnd, SIDES } from './lib/edge-plan.mjs';
+import { captionBox } from './lib/routes.mjs';
 
 // ---------------------------------------------------------------- tokens
 
@@ -53,6 +55,8 @@ const CAPTION_ROOM = 34;
 // Height of one caption line at the body font size, for captions that wrap onto
 // several lines (#45).
 const CAPTION_LINE = 15;
+// Clear space between the title block and the highest thing on the page (#239).
+const TITLE_GAP = 12;
 
 // Node kinds the builder draws. Any other kind still draws, as a box, and is
 // named in the build report so a typo cannot silently change the diagram (#48).
@@ -69,13 +73,13 @@ const BOUNDARY_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'cols', 
 const LABEL_ALIGNS = ['left', 'center', 'right'];
 const NODE_FIELDS = ['id', 'label', 'kind', 'parent', 'col', 'row', 'width', 'height',
   'icon', 'pack', 'logo', 'size', 'resIcon', 'color', 'fontSize', 'bold', 'align'];
-const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'labelPos'];
+const EDGE_FIELDS = ['id', 'kind', 'from', 'to', 'label', 'labelPos', 'exit', 'entry'];
 // What a page of a multi-page spec may carry (#184).
-const PAGE_FIELDS = ['name', 'id', 'title', 'titleColor', 'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
+const PAGE_FIELDS = ['name', 'id', 'title', 'subtitle', 'titleColor', 'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
 // What the spec itself may carry. A misspelled `edges` dropped every connector
 // in silence (#221). A key starting with `_` is a comment: the committed
 // templates use `_comment`, and agents copy them.
-const SPEC_FIELDS = ['pages', 'layout', 'context', 'page', 'pageId', 'title', 'titleColor',
+const SPEC_FIELDS = ['pages', 'layout', 'context', 'page', 'pageId', 'title', 'subtitle', 'titleColor',
   'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
 const SPEC_HINTS = {
   edge: 'not a field: connectors go in `edges`',
@@ -124,6 +128,16 @@ export function unknownFields(spec) {
 export const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// Every label is html=1, where a newline is whitespace, and XML turns one in an
+// attribute into a space anyway: a two-line caption drew on one line (#238).
+// `<br>` is what Draw.io itself stores; one already written stays as it is.
+const BREAK = /\r?\n|<br\s*\/?>/gi;
+export const labelValue = (s) => esc(String(s ?? '').replace(/\r?\n/g, '<br>'));
+const linesOf = (s) => String(s ?? '').split(BREAK);
+
+// Room a heading needs on one line, generous enough that Draw.io never wraps it.
+const textWidth = (s, size, bold) => Math.ceil(Math.max(...linesOf(s).map((l) => l.length)) * size * (bold ? 0.62 : 0.56)) + 16;
 
 // Every style string the builder writes, from one resolved set of tokens and
 // kinds. Literals that used to be baked in here - corner rounding, the note
@@ -259,7 +273,7 @@ export class SpecError extends Error {
 
 // Ids the builder writes cells under itself. Automatic edge ids (`e1`, `e2`, ...)
 // are not listed: they skip any id the spec already uses instead.
-const RESERVED_IDS = /^(?:0|1|title|legend|legend-[abet]\d+)$|-lbl$/;
+const RESERVED_IDS = /^(?:0|1|title|subtitle|legend|legend-[abet]\d+)$|-lbl$/;
 
 // Coordinates may be fractional or negative; sizes, spans and pitches may not.
 const LAYOUT_NUMBERS = { originX: FINITE, originY: FINITE, colPitch: POSITIVE, rowPitch: POSITIVE };
@@ -284,7 +298,7 @@ function geometryOf(cell) {
 
 // A spec with `pages` keeps these on each page. Left at the top as well they
 // would be drawn on no page, which is the silence #205 was about (#184).
-const PAGE_KEYS = ['boundaries', 'nodes', 'edges', 'title', 'titleColor', 'legend', 'legendX', 'legendY', 'page', 'pageId'];
+const PAGE_KEYS = ['boundaries', 'nodes', 'edges', 'title', 'subtitle', 'titleColor', 'legend', 'legendX', 'legendY', 'page', 'pageId'];
 
 // The name and id each page is written under. Draw.io keys a page by its id
 // and shows its name on the tab.
@@ -457,11 +471,6 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     let pageW = 0; let pageH = 0;
     const track = (x, y, w, h) => { pageW = Math.max(pageW, x + w); pageH = Math.max(pageH, y + h); };
 
-    if (spec.title) {
-      push(`<mxCell id="title" value="${esc(spec.title)}" style="${STYLE.text(T.fontHeading, spec.titleColor ?? T.text, true, 'left')}" vertex="1" parent="1">`
-        + `<mxGeometry x="${L.originX}" y="${L.originY - 70}" width="900" height="30" as="geometry" /></mxCell>`);
-    }
-
     // A boundary spans whole grid cells. Its box runs from the left edge of its
     // first column to the right edge of its last, with room under the bottom row
     // for the icon captions that hang below their cells.
@@ -497,7 +506,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         if (LABEL_ALIGNS.includes(b.labelAlign)) style = `${style.replace(/(^|;)align=\w+;/, '$1')}align=${b.labelAlign};${b.labelAlign === 'right' ? 'spacingRight=8;' : ''}`;
         else report.unknownKinds.push({ field: `${at}boundaries[${i}].labelAlign`, value: b.labelAlign, drawnAs: 'the default', valid: LABEL_ALIGNS });
       }
-      push(`<mxCell id="${esc(b.id)}" value="${esc(b.label ?? '')}" style="${style}" vertex="1" parent="${esc(b.parent ?? '1')}">`
+      push(`<mxCell id="${esc(b.id)}" value="${labelValue(b.label)}" style="${style}" vertex="1" parent="${esc(b.parent ?? '1')}">`
         + `<mxGeometry x="${Math.round(abs.x - origin.x)}" y="${Math.round(abs.y - origin.y)}" `
         + `width="${Math.round(abs.width)}" height="${Math.round(abs.height)}" as="geometry" /></mxCell>`);
       track(abs.x, abs.y, abs.width, abs.height);
@@ -517,12 +526,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       }
       const w = n.width ?? (n.kind === 'icon' ? T.iconSize : 190);
       const h = n.height ?? (n.kind === 'icon' ? T.iconSize : 60);
-      // Shapes bigger than an icon are centred on their grid cell in both axes,
-      // so a box and an icon on the same row share a centre line and connectors
-      // between them run straight instead of stepping.
       const origin = originOf(parent);
-      const x = colX(n.col ?? 0) + (T.iconSize - w) / 2 - origin.x;
-      const y = rowY(n.row ?? 0) + (T.iconSize - h) / 2 - origin.y;
 
       let style;
       if (n.kind === 'note') style = STYLE.note;
@@ -556,19 +560,43 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       } else style = STYLE.box;
 
       const box = nodeBox.get(n.id) ?? { w, h };
+      // Every shape is centred on its grid cell in both axes, from the box it is
+      // drawn at, so a box, a wordmark and an icon on one row share a centre line
+      // and connectors between them run straight. Centring on the asked-for size
+      // hung a wordmark from the top of its cell and put a logo 63px left (#255).
+      const x = colX(n.col ?? 0) + (T.iconSize - box.w) / 2 - origin.x;
+      const y = rowY(n.row ?? 0) + (T.iconSize - box.h) / 2 - origin.y;
       placed.set(n.id, {
         x: x + origin.x, y: y + origin.y, w: box.w, h: box.h,
         caption: Boolean(n.label) && style.includes('verticalLabelPosition=bottom'),
-        lines: String(n.label ?? '').split('\n').length,
+        lines: linesOf(n.label).length,
+        leaf: n.kind !== 'text',
       });
       footprints.push({
         field: `${at}nodes[${i}]`, id: n.id, width: n.width, height: n.height,
         plain: n.kind == null || n.kind === 'box' || !NODE_KINDS.includes(n.kind),
         box: { x: x + origin.x, y: y + origin.y, width: box.w, height: box.h },
       });
-      push(`<mxCell id="${esc(n.id)}" value="${esc(n.label ?? '')}" style="${style}" vertex="1" parent="${esc(parent)}">`
+      push(`<mxCell id="${esc(n.id)}" value="${labelValue(n.label)}" style="${style}" vertex="1" parent="${esc(parent)}">`
         + `<mxGeometry x="${Math.round(x)}" y="${Math.round(y)}" width="${box.w}" height="${box.h}" as="geometry" /></mxCell>`);
       if (parent === '1') track(x, y, box.w, box.h);
+    }
+
+    // The title sat at a fixed 70px above the origin, across the header of any
+    // boundary at row 0, in a 900px box (#239). It now ends above whatever is
+    // highest on the page, and is as wide as its text. A page whose content
+    // starts lower keeps the title where it always was.
+    if (spec.title) {
+      const top = Math.min(...boundaries.map((b) => boxOf(b).y), ...[...placed.values()].map((p) => p.y));
+      const height = 30 + (spec.subtitle ? 22 : 0);
+      const y = Math.min(L.originY - 70, top - height - TITLE_GAP);
+      const titleCells = [`<mxCell id="title" value="${labelValue(spec.title)}" style="${STYLE.text(T.fontHeading, spec.titleColor ?? T.text, true, 'left')}" vertex="1" parent="1">`
+        + `<mxGeometry x="${L.originX}" y="${Math.round(y)}" width="${textWidth(spec.title, T.fontHeading, true)}" height="30" as="geometry" /></mxCell>`];
+      if (spec.subtitle) {
+        titleCells.push(`<mxCell id="subtitle" value="${labelValue(spec.subtitle)}" style="${STYLE.text(T.fontBody, T.text, false, 'left')}" vertex="1" parent="1">`
+          + `<mxGeometry x="${L.originX}" y="${Math.round(y + 30)}" width="${textWidth(spec.subtitle, T.fontBody, false)}" height="20" as="geometry" /></mxCell>`);
+      }
+      cells.unshift(...titleCells);
     }
 
     report.looksLikeBoundary.push(...looksLikeBoundary(footprints));
@@ -582,24 +610,26 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     // An unknown kind draws as a plain flow. It used to crash on the edge label.
     const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');
 
-    // A caption hangs below its icon, so an edge that leaves an icon downward, or
-    // enters one from below, ran straight through it (#45). Such an edge is
-    // attached below the caption instead: still connected, and it still moves
-    // with the icon in the editor. Only nodes sharing a column are affected;
-    // horizontal and diagonal routes stay with Draw.io's router.
-    const attachment = (from, to) => {
-      const a = placed.get(from);
-      const b = placed.get(to);
-      if (!a || !b) return '';
-      const dx = (b.x + b.w / 2) - (a.x + a.w / 2);
-      const dy = (b.y + b.h / 2) - (a.y + a.h / 2);
-      if (Math.abs(dx) > Math.min(a.w, b.w) / 2 || Math.abs(dy) <= Math.abs(dx)) return '';
-      const belowCaption = (end, node) => `${end}X=0.5;${end}Y=1;${end}Dx=0;`
-        + `${end}Dy=${Math.max(CAPTION_ROOM, node.lines * CAPTION_LINE + 4)};${end}Perimeter=0;`;
-      if (dy > 0 && a.caption) return belowCaption('exit', a);
-      if (dy < 0 && b.caption) return belowCaption('entry', b);
-      return '';
-    };
+    // Sides, spread, waypoints and label positions for every edge (#237, #241).
+    const boxes = new Map(placed);
+    for (const b of boundaries) {
+      const g = boxOf(b);
+      boxes.set(b.id, { x: g.x, y: g.y, w: g.width, h: g.height, caption: false, lines: 0 });
+    }
+    const rect = (q) => ({ x: q.x, y: q.y, width: q.w, height: q.h });
+    const plans = planEdges({
+      edges: spec.edges ?? [],
+      boxes,
+      obstacles: [...placed].filter(([, q]) => q.leaf).map(([id, q]) => ({ id, box: rect(q) })),
+      captions: [...placed].filter(([, q]) => q.caption)
+        .map(([id, q]) => ({ id, box: captionBox(rect(q), linesOf((spec.nodes ?? []).find((n) => n.id === id).label), T.fontBody) })),
+      containers: boundaries.map((b) => ({ id: b.id, box: boxOf(b) })),
+      grid: { colX, rowY, colPitch: L.colPitch, rowPitch: L.rowPitch, iconSize: T.iconSize, captionRoom: CAPTION_ROOM, captionLine: CAPTION_LINE },
+      label: (text) => {
+        const lines = linesOf(text);
+        return { width: Math.max(...lines.map((l) => l.length)) * T.fontEdgeLabel * 0.55 + 8, height: lines.length * T.fontEdgeLabel * 1.25 + 4 };
+      },
+    });
     // An automatic edge id skips any id the spec already uses, so a node called
     // `e1` never shares its id with the first unnamed edge (#36).
     const taken = new Set([...boundaries, ...(spec.nodes ?? []), ...(spec.edges ?? [])].map((x) => x.id));
@@ -620,13 +650,20 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         report.notes.push(`${at}edges[${i}].${end}: "${e[end]}" is a boundary, so the edge is drawn to its border`
           + `${kids.length ? `; if one component is meant, connect it: ${kids.join(', ')}` : ''}`);
       }
+      for (const end of ['exit', 'entry']) {
+        if (readEnd(e[end])?.bad) report.unknownKinds.push({ field: `${at}edges[${i}].${end}`, value: e[end], drawnAs: 'the side the grid gives', valid: SIDES });
+      }
       const kind = kindOf(e);
-      push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}${attachment(e.from, e.to)}" edge="1" parent="1" `
-        + `source="${esc(e.from)}" target="${esc(e.to)}"><mxGeometry relative="1" as="geometry" /></mxCell>`);
+      const plan = plans[i];
+      const points = plan?.points.length
+        ? `<Array as="points">${plan.points.map((pt) => `<mxPoint x="${pt.x}" y="${pt.y}" />`).join('')}</Array>` : '';
+      push(`<mxCell id="${esc(id)}" style="${STYLE.edge(kind)}${plan?.style ?? ''}" edge="1" parent="1" `
+        + `source="${esc(e.from)}" target="${esc(e.to)}">`
+        + (points ? `<mxGeometry relative="1" as="geometry">${points}</mxGeometry></mxCell>` : '<mxGeometry relative="1" as="geometry" /></mxCell>'));
       if (e.label) {
         const color = EDGE_KINDS[kind].stroke === T.flow ? T.text : EDGE_KINDS[kind].stroke;
-        push(`<mxCell id="${esc(id)}-lbl" value="${esc(e.label)}" style="${STYLE.edgeLabel(color)}" vertex="1" connectable="0" parent="${esc(id)}">`
-          + `<mxGeometry x="${e.labelPos ?? -0.1}" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry></mxCell>`);
+        push(`<mxCell id="${esc(id)}-lbl" value="${labelValue(e.label)}" style="${STYLE.edgeLabel(color)}" vertex="1" connectable="0" parent="${esc(id)}">`
+          + `<mxGeometry x="${e.labelPos ?? plan?.labelX ?? -0.1}" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry></mxCell>`);
       }
     }
 

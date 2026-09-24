@@ -283,8 +283,8 @@ export function extractCells(pageXml) {
     const geomEl = el.children.find((c) => c.name === 'mxGeometry');
     const g = geomEl ? geomEl.attrs : null;
     const points = geomEl
-      ? findAll(geomEl, 'mxPoint').filter((p) => !p.attrs.as).length
-      : 0;
+      ? findAll(geomEl, 'mxPoint').filter((p) => !p.attrs.as).map((p) => ({ x: Number(p.attrs.x ?? 0), y: Number(p.attrs.y ?? 0) }))
+      : [];
     const offset = geomEl ? findAll(geomEl, 'mxPoint').find((p) => p.attrs.as === 'offset') : null;
     cells.push({
       id: w ? (w.attrs.id ?? a.id) : a.id,
@@ -305,7 +305,8 @@ export function extractCells(pageXml) {
             offset: { x: Number(offset?.attrs.x ?? 0), y: Number(offset?.attrs.y ?? 0) },
           }
         : null,
-      waypoints: points,
+      waypoints: points.length,
+      points,
       wrapped: Boolean(w),
     });
   }
