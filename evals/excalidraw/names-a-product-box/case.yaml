@@ -1,0 +1,40 @@
+schema_version: "1.1"
+name: excalidraw-names-a-product-box
+description: >
+  A spec draws a product with a bundled mark as a plain shape. The build lists
+  it under namesAProduct with the node to paste over it, and the contract says
+  to fix the spec or report the entry. In the 2.1.0 batch the agent did
+  neither; this checks that it now draws the mark (#287).
+tags: [icons, honesty]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    Build eval-input/orders.spec.json into ./eval-output/orders.excalidraw,
+    validate it and tell me how it came out.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: validate-excalidraw
+
+  # The embedded PostgreSQL mark: base64 of `title>PostgreSQL</`, which only the
+  # bundled artwork carries. A cylinder or a text label never matches. Checked,
+  # not judged (#135).
+  - type: regex
+    name: draws-the-postgresql-mark
+    target: { source: file, path: ./eval-output/orders.excalidraw }
+    pattern: '^(?=[\s\S]*"type": "excalidraw")(?=[\s\S]*"type": "image")(?=[\s\S]*UG9zdGdyZVNRTDwv)'

@@ -19,13 +19,21 @@ export function labelParts(label) {
     .filter((p) => !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase()));
 }
 
+// A box that is nothing but the product's name also gets `replace`, the node to
+// paste over it: the report alone was listed and then ignored, and agents take
+// what a tool hands them (#287, #231). The id stays, so its edges still bind.
+const BOX_ONLY = new Set(['kind', 'width', 'height', 'icon']);
+
 // resolveOne(text) returns the ref it would draw unattended, or null.
 export function namedProducts(boxes, resolveOne) {
   const found = [];
-  for (const { id, label } of boxes) {
-    for (const text of labelParts(label)) {
+  for (const box of boxes) {
+    for (const text of labelParts(box.label)) {
       const icon = resolveOne(text);
-      if (icon) found.push({ node: id, text, icon });
+      if (!icon) continue;
+      const whole = String(box.label).trim().toLowerCase() === text.toLowerCase();
+      const kept = Object.fromEntries(Object.entries(box).filter(([k]) => !BOX_ONLY.has(k)));
+      found.push({ node: box.id, text, icon, ...(whole ? { replace: { ...kept, kind: 'icon', icon } } : {}) });
     }
   }
   return found;

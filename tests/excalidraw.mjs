@@ -410,6 +410,20 @@ test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate
   eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
 });
 
+// Both engines share the Draw.io resolver for shared marks, so both inherit
+// the vendor-named product (#285) and the product before a generic word (#283).
+test('"HashiCorp Vault" draws Vault and "Redis cache" draws Redis (#285, #283)', () => {
+  const entries = finder.catalog();
+  for (const [q, ref] of [['HashiCorp Vault', 'drawio:security-identity/vault'], ['Atlassian Jira', 'drawio:saas-collab/jira'],
+    ['Redis cache', 'drawio:databases/redis'], ['postgres database', 'drawio:databases/postgresql']]) {
+    eq(finder.unattended(q, { entries }).entry?.ref, ref, `"${q}"`);
+  }
+  const out = JSON.parse(node('find-icon.mjs', ['redis', 'cache', '--compact']));
+  eq(JSON.stringify(out.node), '{"kind":"icon","icon":"drawio:databases/redis"}', 'the node to copy is Redis');
+  const { report } = builder.buildDiagram({ nodes: [{ id: 'c', kind: 'icon', label: 'Redis cache' }] }, { seed: 1 });
+  eq(report.icons.map((i) => i.ref).join(','), 'drawio:databases/redis', 'a build draws it');
+});
+
 test('icon resolution answer key: never draws a different product unattended (#22)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'excalidraw-icon-queries.json'), 'utf8'));
   const entries = finder.catalog({ shared: false });
@@ -971,6 +985,21 @@ test('a plain shape naming bundled products is listed under namesAProduct; a gen
   for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
     eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.namesAProduct.length, 0, f);
   }
+});
+
+// The agent kept a cylinder labelled PostgreSQL with the entry in front of it (#287).
+test('a shape labelled only with a product name carries a replace node that draws the mark and keeps its arrows (#287)', () => {
+  const spec = { nodes: [
+    { id: 'api', kind: 'box', label: 'Orders API', col: 0, row: 0 },
+    { id: 'db', kind: 'cylinder', label: 'PostgreSQL', col: 1, row: 0 },
+  ], edges: [{ from: 'api', to: 'db' }] };
+  const [entry] = builder.buildDiagram(spec, { seed: 1 }).report.namesAProduct;
+  eq(JSON.stringify(entry.replace), '{"id":"db","label":"PostgreSQL","col":1,"row":0,"kind":"icon","icon":"drawio:databases/postgresql"}', 'the node to paste');
+  const { scene, report } = builder.buildDiagram({ ...spec, nodes: [spec.nodes[0], entry.replace] }, { seed: 1 });
+  eq(report.icons.map((i) => i.ref).join(','), 'drawio:databases/postgresql', 'it draws the mark');
+  eq(report.namesAProduct.length, 0, 'and the list is empty');
+  const v = validator.validateScene(scene);
+  assert(v.ok, `arrows stay bound: ${v.errors.join('; ')}`);
 });
 
 // ------------------------------------------------------------- bundled libraries
@@ -3618,6 +3647,53 @@ test('analyze --find returns the full id of the shape a label names, and an edit
   scene.elements.push(arrow);
   const v = validator.validateScene(scene);
   assert(v.ok && !v.warnings.some((w) => w.includes(arrow.id)), `bound at both ends: ${[...v.errors, ...v.warnings].join('; ')}`);
+});
+
+// A shared wordmark was fitted on its long side alone, 100x17 (#254), and
+// placed at the top of its cell, so arrows to it stepped 42px (#255).
+test('a shared wordmark gets Draw.io\'s floor and sits on its row\'s centre line (#254, #255)', () => {
+  const drawn = (icon) => builder.buildDiagram({ nodes: [{ id: 'i', kind: 'icon', icon, label: 'x' }] }, { seed: 1 })
+    .scene.elements.find((el) => el.type === 'image');
+  for (const [id, size] of [['ml-training/metaflow', '200x33'], ['ai-frameworks/pydanticai', '200x32'], ['data-platforms/apacheiceberg', '122x33']]) {
+    const img = drawn(`drawio:${id}`);
+    eq(`${img.width}x${img.height}`, size, `${id} at fitCell's size for a 100px footprint`);
+  }
+  const square = drawn('drawio:aws/aws-lambda');
+  eq(`${square.x},${square.y},${square.width}x${square.height}`, '0,0,100x100', 'a square mark builds as before');
+
+  const { scene } = builder.buildDiagram({ nodes: [
+    { id: 'l', kind: 'icon', icon: 'drawio:aws/aws-lambda', label: 'Lambda', col: 0 },
+    { id: 'w', kind: 'icon', icon: 'drawio:ai-frameworks/pydanticai', label: 'PydanticAI', col: 1 },
+    { id: 'q', kind: 'icon', icon: 'drawio:aws/amazon-simple-queue-service', label: 'Queue', col: 2 },
+  ], edges: [{ from: 'l', to: 'w' }, { from: 'w', to: 'q' }] }, { seed: 1 });
+  const centres = scene.elements.filter((el) => el.type === 'image').map((el) => el.y + el.height / 2);
+  eq(centres.join(','), '50,50,50', 'one centre line');
+  for (const a of scene.elements.filter((el) => el.type === 'arrow')) eq(a.points.length, 2, 'a straight arrow');
+});
+
+// The app draws a frame's name above the frame, where the scope's own label
+// was: the two names overlapped (#236).
+test('a frame inside a scope leaves the scope\'s label clear of the frame\'s name (#236)', () => {
+  const spec = { boundaries: [{ id: 'acct', label: 'Account' }, { id: 'f', kind: 'frame', label: 'One', parent: 'acct' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'f' }] };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const label = scene.elements.find((el) => el.type === 'text' && el.text === 'Account');
+  const fr = scene.elements.find((el) => el.type === 'frame');
+  // The app's name strip: 14px text a few pixels above the frame.
+  assert(label.y + label.height <= fr.y - 20, `the label ends at ${label.y + label.height}, the frame's name starts near ${fr.y - 20}`);
+  const alone = builder.buildDiagram({ boundaries: [{ id: 'f', kind: 'frame', label: 'One' }], nodes: [{ id: 'a', label: 'A', parent: 'f' }] }, { seed: 1 });
+  const before = alone.scene.elements.find((el) => el.type === 'frame');
+  eq(`${before.x},${before.y},${before.width}x${before.height}`, `${fr.x},${fr.y},${fr.width}x${fr.height}`, 'a frame on its own builds as before');
+});
+
+// A spelling grader is only fair if it passes the spelling the style guide
+// asks for: "PostgreSQL" is Postgre + SQL (#208, #286).
+test('the unknown-product eval case accepts "PostgreSQL" and "Postgres", and fails a reply naming neither (#286)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'unknown-product-placeholder', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: every-component-accounted-for\n\s+target: last_message\n\s+pattern: '([^']+)'/)[1]);
+  assert(grader.test('React: react mark. Quillrose Ledger: placeholder. PostgreSQL: databases/postgresql.'), 'PostgreSQL passes');
+  assert(grader.test('React app, Quillrose placeholder, Postgres cylinder'), 'Postgres passes');
+  assert(!grader.test('React app, Quillrose placeholder, a database'), 'a reply naming neither fails');
 });
 
 cleanTestIcons();

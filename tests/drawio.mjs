@@ -1693,11 +1693,11 @@ test('SVG dimensions come from the root element only, in both engines (#96)', ()
     eq(`${e.width}x${e.height}`, expect, `${what}, read by the Excalidraw engine`);
   }
 
-  // What the misread cost: the cell a fetched logo is drawn in. logoBox fits
-  // the longest side, so a wrong aspect in means a wrong cell out.
+  // What the misread cost: the cell a fetched logo is drawn in. logoBox keeps
+  // the aspect, so a wrong aspect in means a wrong cell out.
   const box = (w, h) => { const b = logos.logoBox({ width: w, height: h }, 78); return `${b.width}x${b.height}`; };
   eq(box(200, 100), '78x39', 'a 2:1 logo gets a 2:1 cell');
-  eq(box(10, 40), '20x78', 'the child rect this used to read would have drawn it tall and narrow');
+  eq(box(10, 40), '26x104', 'the child rect this used to read would have drawn it tall and narrow');
 });
 
 // The two marks the document-wide regex misread: ai-frameworks/axolotl read
@@ -2056,6 +2056,91 @@ test('a generic word never draws a cloud vendor\'s mark unattended, unless the s
   eq(report.used.map((u) => u.id).join(','), 'gcp/cloud-functions', 'the deliberate id is');
   const inContext = builder.buildDiagram({ context: { packs: ['gcp'] }, nodes: [{ id: 'f', kind: 'icon', icon: 'function' }] }).report;
   eq(inContext.used.map((u) => u.id).join(','), 'gcp/cloud-functions', 'and a GCP spec draws it by name');
+});
+
+// "HashiCorp Vault" was a weak match with Azure's vaults and the HashiCorp
+// company mark as its choices, and an agent drew the company logo (#285).
+const VENDOR_NAMED = {
+  'hashicorp vault': 'security-identity/vault', 'hcp vault': 'security-identity/vault',
+  'hashicorp terraform': 'devops/terraform', 'hcp terraform': 'devops/terraform', 'terraform cloud': 'devops/terraform',
+  'hashicorp consul': 'devops/consul', 'hashicorp nomad': 'devops/nomad', 'hashicorp packer': 'devops/packer',
+  'hashicorp vagrant': 'devops/vagrant', 'atlassian jira': 'saas-collab/jira', 'atlassian confluence': 'saas-collab/confluence',
+  'atlassian bitbucket': 'devops/bitbucket', 'atlassian trello': 'saas-collab/trello',
+  'atlassian opsgenie': 'observability/opsgenie', 'atlassian statuspage': 'observability/statuspage',
+  'elastic kibana': 'observability/kibana', 'elastic logstash': 'observability/logstash',
+  'red hat ansible': 'devops/ansible', 'redhat ansible': 'devops/ansible', 'anthropic claude': 'ai-frameworks/claude',
+  'jetbrains teamcity': 'devops/teamcity', 'langchain langgraph': 'ai-frameworks/langgraph', 'mongodb atlas': 'databases/mongodb',
+  // Already right through the title; kept so an alias change can't break them.
+  'apache kafka': 'streaming-orchestration/apachekafka', 'microsoft sql server': 'databases/microsoftsqlserver',
+  'grafana loki': 'observability/grafanaloki', 'google gemini': 'ai-frameworks/googlegemini',
+};
+
+test('a bundled product named with its vendor draws the product, and the vendor alone still draws the vendor (#285)', () => {
+  for (const [q, id] of Object.entries(VENDOR_NAMED)) {
+    const r = finder.resolve(q);
+    assert(r.confident && r.icon.id === id, `"${q}" -> ${r.confident ? r.icon.id : r.reason}, expected ${id}`);
+  }
+  // On-demand marks have no bytes to draw, but the name must still find them.
+  for (const [q, id] of [['langchain langsmith', 'ai-frameworks/langsmith'], ['microsoft power bi', 'data-platforms/powerbi']]) {
+    eq(finder.search(q)[0].variants[0].id, id, `"${q}" leads with the product`);
+  }
+  const products = new Set(Object.values(VENDOR_NAMED));
+  for (const vendor of ['hashicorp', 'hcp', 'atlassian', 'elastic', 'red hat', 'redhat', 'anthropic', 'jetbrains', 'langchain', 'mongodb']) {
+    const r = finder.resolve(vendor);
+    if (vendor === 'mongodb') { eq(r.icon.id, 'databases/mongodb', 'MongoDB is its own product'); continue; }
+    assert(!(r.confident && products.has(r.icon.id)), `the vendor word "${vendor}" alone drew the product ${r.icon?.id}`);
+  }
+});
+
+// "Redis cache" drew ElastiCache through its alias with no AWS stack named, and
+// "postgres database" offered Azure's and RDS first (#283).
+test('a product name before generic words draws the product, not a vendor mark carrying its name (#283)', () => {
+  const drawn = (q, opts) => { const r = finder.resolve(q, opts); return r.confident ? r.icon.id : `~${r.reason}`; };
+  for (const [q, id] of [['redis cache', 'databases/redis'], ['Redis cache', 'databases/redis'], ['memcached cache', 'databases/memcached'],
+    ['postgres database', 'databases/postgresql'], ['elasticsearch service', 'databases/elasticsearch'],
+    ['kafka topic', 'streaming-orchestration/apachekafka'], ['kubernetes cluster', 'devops/kubernetes']]) {
+    eq(drawn(q), id, `"${q}"`);
+  }
+  eq(drawn('redis cache', { packs: ['aws'] }), 'aws/amazon-elasticache', 'an AWS spec still draws ElastiCache');
+  eq(drawn('s3 bucket', { packs: ['aws'] }), 'aws/amazon-simple-storage-service', 'and S3 for "s3 bucket"');
+  // A vendor's own name for its service keeps its mark; the head settles no tie
+  // (#75) and reaches no vendor mark nobody asked for.
+  for (const [q, id] of [['azure functions', 'azure/function-apps'], ['elastic container service', 'aws/amazon-elastic-container-service'],
+    ['activity log', 'azure/activity-log'], ['amazon elasticache', 'aws/amazon-elasticache']]) {
+    eq(drawn(q), id, `"${q}"`);
+  }
+  for (const q of ['oracle database', 'billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
+
+  // Every alias a vendor mark carries that names another bundled product,
+  // not through the vendor's own title or name, must not draw the vendor.
+  // "Elastic" in "Elastic Compute Cloud" is a word of AWS's formal name.
+  const catalog = finder.loadCatalog();
+  const curated = new Set(catalog.packs.filter((p) => p.rank === 20 && !['primitives', 'agents', 'file-types', 'github'].includes(p.id)).map((p) => p.id));
+  const names = new Set();
+  for (const i of catalog.icons) {
+    if (!curated.has(i.pack)) continue;
+    const t = core.normalizeTitle(i.title);
+    if (t.length > 2) names.add(t);
+    if (t.startsWith('apache ')) names.add(t.slice(7));
+  }
+  const vendorWord = { aws: /\b(aws|amazon)\b/, azure: /\b(azure|microsoft)\b/, gcp: /\b(google|gcp)\b/ };
+  const squash = (s) => s.replace(/ /g, '');
+  const borrowed = [];
+  for (const i of catalog.icons) {
+    if (!vendorWord[i.pack]) continue;
+    const own = squash(core.normalizeTitle(i.title));
+    const generated = new Set(i.generatedAliases ?? []);
+    for (const a of i.aliases) {
+      if (generated.has(a) || !a.includes(' ') || vendorWord[i.pack].test(a) || own.includes(squash(a))) continue;
+      const words = a.split(' ');
+      const spans = words.flatMap((_, s) => words.slice(s).map((__, n) => words.slice(s, s + n + 1).join(' ')));
+      const hit = spans.find((s) => names.has(s) && !own.includes(squash(s)) && s !== 'elastic');
+      if (hit) borrowed.push([i.id, a, drawn(a)]);
+    }
+  }
+  eq(borrowed.map(([id, a]) => `${id} "${a}"`).join(', '), 'aws/amazon-elasticache "redis cache", aws/amazon-elasticache "memcached cache", '
+    + 'aws/amazon-opensearch-service "elasticsearch service", gcp/cloud-composer "managed airflow"', 'the aliases that name another product');
+  for (const [id, a, got] of borrowed) assert(got !== id, `"${a}" still draws ${id} unattended`);
 });
 
 test('icon resolution corpus: never confidently wrong, and precision at rank 1 holds its floor (#15)', () => {
@@ -2939,6 +3024,12 @@ test('corner rounding and the other style literals go through named tokens (#89)
     '0|0|11|#F7F7F7|#DFDFDF|#333333|3|8 8', 'each token defaults to the literal it replaced');
 });
 
+// What the builder wrote before #237: no sides and no waypoints, so Draw.io's
+// own router decides, and each label at 45% of its route.
+const unrouted = (xml) => xml.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;"]*;/g, '')
+  .replace(/<Array as="points">[\s\S]*?<\/Array>/g, '')
+  .replace(/(<mxCell id="[^"]*-lbl"[^>]*><mxGeometry x=")[^"]*/g, '$1-0.1');
+
 // An edge attached to the bottom of an icon ran through the caption hanging
 // there (#45). Vertical edges now attach below the caption, and the validator
 // warns when a route crosses one.
@@ -2969,23 +3060,19 @@ test('vertical edges attach below icon captions, and the validator names a cross
   const style = (id) => core.parseStyle(cells.find((c) => c.id === id).style);
   const at = (s, end) => JSON.stringify([s[`${end}X`], s[`${end}Y`], s[`${end}Dx`], s[`${end}Dy`], s[`${end}Perimeter`]]);
   eq(at(style('down'), 'exit'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge leaving an icon downward starts below its caption');
-  eq(style('down').entryY, undefined, 'and enters the node below from the top as before');
+  eq(at(style('down'), 'entry'), JSON.stringify(['0.5', '0', '0', '0', undefined]), 'and enters the node below at the top');
   eq(at(style('up'), 'entry'), JSON.stringify(['0.5', '1', '0', '34', '0']), 'an edge entering an icon from below ends below its caption');
-  eq(style('up').exitY, undefined, 'a box has no caption to avoid');
-  for (const id of ['across', 'diagonal', 'boxes']) {
-    assert(style(id).exitY === undefined && style(id).entryY === undefined, `${id} is left to the router`);
-  }
-  // "diagonal" is left to the router, which draws an L up into the bottom of
-  // "side", through its caption (#242). That route is #237's to fix.
+  eq(at(style('up'), 'exit'), JSON.stringify(['0.5', '0', '0', '0', undefined]), 'a box has no caption to avoid');
+  // Between columns an edge leaves and enters sideways (#237), so "diagonal"
+  // no longer climbs into the bottom of "side" through its caption.
+  eq(`${style('diagonal').exitX},${style('diagonal').entryX}`, '1,0', 'diagonal runs sideways, through the column gap');
   const r = validator.validateFile(out);
   assert(r.ok, `validation errors: ${r.errors.join('; ')}`);
-  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), 'page 0: edge "diagonal" runs through the caption of "side"',
-    'no attached edge crosses a caption');
-  eq(r.info.pages[0].captionCrossings, 1, 'one crossing counted');
+  eq(r.warnings.filter((w) => w.includes('caption')).join('; '), '', 'no edge crosses a caption');
 
-  // The same diagram attached the old way: the two vertical edges cross too.
+  // The same diagram left to Draw.io's router: all three cross.
   const old = join(TMP, 'captions-old.drawio');
-  writeFileSync(old, xml.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;"]*;/g, ''));
+  writeFileSync(old, unrouted(xml));
   const before = validator.validateFile(old);
   eq(JSON.stringify(before.warnings.filter((w) => w.includes('caption')).sort()), JSON.stringify([
     'page 0: edge "diagonal" runs through the caption of "side"',
@@ -3019,16 +3106,18 @@ const buildAndValidate = (name, spec, edit = (xml) => xml) => {
 // L: out of the source sideways, into the target from above or below. The old
 // estimate drew a Z through the empty gap, and tested only captions (#242).
 test('validate names the node an L-routed edge runs through (#242)', () => {
-  const r = buildAndValidate('through-node', {
+  const spec = {
     nodes: [
       { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Producer', col: 0, row: 0 },
       { id: 'c', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0 },
       { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 1, row: 1 },
     ],
     edges: [{ from: 'a', to: 'b', label: 'write' }],
-  });
+  };
+  const r = buildAndValidate('through-node', spec, unrouted);
   eq(r.warnings.join('; '), 'page 0: edge "e1" runs through "c"', 'one warning, naming the edge and the node, not also its caption');
   eq(r.info.pages[0].nodeCrossings, 1, 'counted');
+  eq(buildAndValidate('through-node-routed', spec).warnings.join('; '), '', 'the builder runs it through the column gap (#237)');
 });
 
 test('an edge crossing only its own ends and the containers round them warns nothing (#242)', () => {
@@ -3054,14 +3143,17 @@ test('validate names two edges that share a trunk into one port, and not two int
     ],
     edges: [{ from: 'a', to: 'c', label: 'read' }, { from: 'b', to: 'c', label: 'write' }],
   };
-  const sides = (xml) => xml.replace(/edgeStyle=orthogonalEdgeStyle;/g, 'edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;');
+  const sides = (xml) => unrouted(xml).replace(/edgeStyle=orthogonalEdgeStyle;/g, 'edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;');
   const merged = buildAndValidate('trunk-merged', spec, sides);
   eq(merged.warnings.filter((w) => w.includes(' share ')).join('; '),
     'page 0: edges "e1" and "e2" share 121px of line into the same port of "c"', 'both edges named');
   eq(merged.info.pages[0].sharedTrunks, 1, 'counted');
   // Left to the router, one enters from above and one from below.
-  const apart = buildAndValidate('trunk-apart', spec);
+  const apart = buildAndValidate('trunk-apart', spec, unrouted);
   eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'different sides share nothing');
+  // The builder brings both into the left side, spread apart (#237).
+  const built = buildAndValidate('trunk-spread', spec);
+  eq(built.warnings.join('; '), '', 'the builder spreads the two ends');
 });
 
 // A request and its reply between the same two nodes draw as one line with an
@@ -3074,16 +3166,18 @@ test('validate names two edges between the same nodes on one line, either way, a
     ],
     edges: [{ from: 'a', to: 'b', label: 'write' }, { from: 'b', to: 'a', kind: 'async', label: 'stream' }],
   };
-  const both = buildAndValidate('pair-merged', spec);
+  const both = buildAndValidate('pair-merged', spec, unrouted);
   eq(both.warnings.filter((w) => w.includes(' share ')).join('; '),
-    'page 0: edges "e1" and "e2" between "a" and "b" share 78px of line', 'both edges named');
+    'page 0: edges "e1" and "e2" between "a" and "b" share 112px of line', 'both edges named');
   eq(both.info.pages[0].sharedTrunks, 1, 'counted');
 
-  // Offset either side of the centre, as #237 will place them: two lines.
+  // Offset either side of the centre: two lines.
   const ends = { e1: 'exitX=0.25;exitY=1;entryX=0.25;entryY=0;', e2: 'exitX=0.75;exitY=0;entryX=0.75;entryY=1;' };
-  const offset = (xml) => xml.replace(/<mxCell id="(e[12])" style="([^"]*)"/g, (m, id, style) => `<mxCell id="${id}" style="${style}${ends[id]}"`);
+  const offset = (xml) => unrouted(xml).replace(/<mxCell id="(e[12])" style="([^"]*)"/g, (m, id, style) => `<mxCell id="${id}" style="${style}${ends[id]}"`);
   const apart = buildAndValidate('pair-apart', spec, offset);
   eq(apart.warnings.filter((w) => w.includes(' share ')).join('; '), '', 'two lines share nothing');
+  // Which is what the builder does now (#237).
+  eq(buildAndValidate('pair-built', spec).warnings.join('; '), '', 'the builder draws the pair as two lines');
 });
 
 // Notes are neither warnings nor failures: PASS, the exit code and --strict
@@ -3128,11 +3222,15 @@ test('an edge that ends on a boundary is noted in the build report and by valida
 // alike (#243).
 test('validate names text that lies across a container border or covers its label (#243)', () => {
   const texts = (r) => r.warnings.filter((w) => / lies across | covers the label /.test(w)).join('; ');
-  eq(texts(buildAndValidate('title-on-cloud', {
+  const titled = {
     title: 'Repro title',
     boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 1 }],
     nodes: [{ id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0, row: 0, parent: 'cloud' }],
-  })), 'page 0: "title" lies across the border of container "cloud"', 'the #239 title');
+  };
+  eq(texts(buildAndValidate('title-on-cloud', titled)), '', 'the builder keeps the #239 title clear');
+  // Where the builder used to put it, 70px above the origin.
+  eq(texts(buildAndValidate('title-moved-onto-cloud', titled, (xml) => xml.replace(/(id="title"[^>]*><mxGeometry x="\d+" y=")-?\d+/, '$130'))),
+    'page 0: "title" lies across the border of container "cloud"', 'a title moved onto the header');
 
   const pair = {
     boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 2 }],
@@ -3153,10 +3251,12 @@ test('validate names text that lies across a container border or covers its labe
       { id: 'b', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0 },
     ],
   };
-  eq(texts(buildAndValidate('chip-on-border', { ...tier, edges: [{ from: 'a', to: 'b', label: 'enqueue' }] })),
-    'page 0: "e1-lbl" lies across the border of container "g"', 'the #241 chip on the scope border');
+  eq(texts(buildAndValidate('chip-on-border', { ...tier, edges: [{ from: 'a', to: 'b', label: 'enqueue' }] }, unrouted)),
+    'page 0: "e1-lbl" lies across the border of container "g"', 'the #241 chip on the scope border, where it used to go');
+  eq(texts(buildAndValidate('chip-off-border', { ...tier, edges: [{ from: 'a', to: 'b', label: 'enqueue' }] })), '',
+    'the builder puts it on a clear stretch (#241)');
   eq(texts(buildAndValidate('value-on-border', { ...tier, edges: [{ from: 'a', to: 'b' }] },
-    (xml) => xml.replace('id="e1" style', 'id="e1" value="enqueue" style'))),
+    (xml) => unrouted(xml).replace('id="e1" style', 'id="e1" value="enqueue" style'))),
     'page 0: the label of edge "e1" lies across the border of container "g"', 'an edge\'s own label, at its midpoint');
 
   // A text inside its container is fine, until it sits on the strip the
@@ -3212,7 +3312,7 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   const spec = JSON.parse(script.slice(script.indexOf("<<'EOF'\n") + 8, script.lastIndexOf('\nEOF')));
   const r = buildAndValidate('report-case', spec);
   eq(r.warnings.join('; '), 'page 0: edge "write-edge" runs through "queue"; '
-    + 'page 0: "title" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
+    + 'page 0: "retention-note" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
   // What the agent reads last before it reports: the count, and the rule (#248).
   const cli = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), join(TMP, 'report-case.drawio')], { encoding: 'utf8' });
   const lines = cli.stdout.trim().split('\n');
@@ -3221,8 +3321,8 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
 
   const yaml = read('case.yaml');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
-  const graders = ['names-the-edge-warning', 'names-the-title-warning'].map(pattern);
-  const listed = '**Validation**: two warnings left: edge `write-edge` runs through `queue`; the title lies across `acct-boundary`.';
+  const graders = ['names-the-edge-warning', 'names-the-border-warning'].map(pattern);
+  const listed = '**Validation**: two warnings left: edge `write-edge` runs through `queue`; `retention-note` lies across `acct-boundary`.';
   const vague = '**Validation**: passed. A few labels sit close to a border.';
   assert(graders.every((g) => g.test(listed)), 'a report naming both passes');
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
@@ -4014,7 +4114,8 @@ test('an unknown edge kind draws as a flow instead of crashing on its label (#36
   const cells = core.extractCells(core.readMxfile(out).pages[0].xml);
   const edges = cells.filter((c) => c.edge);
   eq(edges.length, 2, 'both edges drawn');
-  eq(edges[0].style, edges[1].style, 'the unknown kind is not drawn as a flow');
+  const kindPart = (style) => style.replace(/(?:exit|entry)(?:X|Y|Dx|Dy|Perimeter)=[^;]*;/g, '');
+  eq(kindPart(edges[0].style), kindPart(edges[1].style), 'the unknown kind is not drawn as a flow');
   assert(!cells.some((c) => c.id === 'legend'), 'the unknown kind earned a legend of its own');
 });
 
@@ -4268,6 +4369,26 @@ test('a plain box naming bundled products is listed under namesAProduct; a gener
   eq(out.namesAProduct.length, 3, 'the CLI prints them');
 });
 
+// Listed and then ignored: the agent kept a plain shape labelled PostgreSQL
+// and reported it as fine (#287). A box that is only the product's name now
+// carries the node to paste over it.
+test('a box labelled only with a product name carries a replace node that draws the mark and keeps its edges (#287)', () => {
+  const spec = { nodes: [
+    { id: 'api', kind: 'box', label: 'Orders API', col: 0, row: 0 },
+    { id: 'db', kind: 'box', label: 'PostgreSQL', col: 1, row: 0, width: 150 },
+    { id: 'src', kind: 'box', label: 'Sources: MySQL, Snowflake', col: 0, row: 1, width: 260 },
+  ], edges: [{ from: 'api', to: 'db', label: 'writes' }] };
+  const listed = builder.buildDiagram(spec).report.namesAProduct;
+  eq(JSON.stringify(listed.find((x) => x.node === 'db').replace),
+    '{"id":"db","label":"PostgreSQL","col":1,"row":0,"kind":"icon","icon":"databases/postgresql"}', 'the node to paste');
+  assert(listed.filter((x) => x.node === 'src').every((x) => !x.replace), 'a box naming several products gets none');
+  const pasted = { ...spec, nodes: spec.nodes.map((n) => listed.find((x) => x.node === n.id)?.replace ?? n) };
+  const { xml, report } = builder.buildDiagram(pasted);
+  eq(report.used.map((u) => u.id).join(','), 'databases/postgresql', 'it draws the mark');
+  eq(report.namesAProduct.map((x) => x.node).join(','), 'src,src', 'and leaves the box off the list');
+  assert(/<mxCell id="e1"[^>]*source="api" target="db"/.test(xml), 'the edge still binds to it');
+});
+
 // The docs offered multiple pages three times - the engine table, the interview
 // ladder, SKILL.md's "two pages or one comparison" - and the builder wrote
 // exactly one <diagram>. An agent that asked and got "yes" had hand-written XML
@@ -4363,7 +4484,7 @@ function makePng(w, h, colorType) {
   ]);
 }
 
-const LOGO_KEYS = ['arkitect-drawio-test-alpha', 'arkitect-drawio-test-opaque'];
+const LOGO_KEYS = ['arkitect-drawio-test-alpha', 'arkitect-drawio-test-opaque', 'arkitect-drawio-test-wide'];
 function clearTestLogos() {
   for (const k of LOGO_KEYS) {
     for (const ext of ['.png', '.svg']) {
@@ -4833,6 +4954,146 @@ test('analyze --find names the cell a label belongs to in a compressed page, and
   const v = validator.validateFile(join(TMP, 'find-label-edited.drawio'));
   assert(v.ok, v.errors.join('; '));
   eq(v.info.pages[0].edges, validator.validateFile(file).info.pages[0].edges + 1, 'one edge more, connected at both ends');
+});
+
+// ------------------------------------------------------------- layout (3.0.0)
+
+// Where a cell was drawn, from the builder's own XML.
+const geometry = (xml, id) => {
+  const m = new RegExp(`<mxCell id="${id}"[^>]*>\\s*<mxGeometry x="([-\\d.]+)" y="([-\\d.]+)" width="([\\d.]+)" height="([\\d.]+)"`).exec(xml);
+  const [x, y, w, h] = m.slice(1).map(Number);
+  return { x, y, w, h, cx: x + w / 2, cy: y + h / 2 };
+};
+
+// A raw newline in an attribute is a space to XML, and whitespace to an html=1
+// label: a two-line caption drew on one line (#238).
+test('a newline in any label is written as <br>, and a <br> already there stays single (#238)', () => {
+  const { xml } = builder.buildDiagram({
+    title: 'Two\nlines',
+    boundaries: [{ id: 'g', label: 'Zone\nA', col: 0, row: 0 }],
+    nodes: [
+      { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Line one\nLine two', col: 0, row: 0, parent: 'g' },
+      { id: 'b', label: 'Box<br>two', col: 1, row: 0 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'first\nsecond' }],
+  });
+  for (const id of ['title', 'g', 'a', 'b', 'e1-lbl']) {
+    const value = new RegExp(`<mxCell id="${id}" value="([^"]*)"`).exec(xml)[1];
+    assert(!/[\r\n]/.test(value), `${id} holds a raw newline`);
+    eq((value.match(/&lt;br&gt;/g) ?? []).length, 1, `${id} breaks once`);
+  }
+  // The caption clearance counts the break: an edge leaving "a" downward
+  // starts below two lines.
+  const down = builder.buildDiagram({ nodes: [
+    { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'One\nTwo\nThree', col: 0, row: 0 },
+    { id: 'b', kind: 'icon', icon: 'aws/aws-lambda', label: 'B', col: 0, row: 1.5 },
+  ], edges: [{ from: 'a', to: 'b' }] }).xml;
+  assert(/exitDy=49;/.test(down), 'three lines push the exit to 49px');
+  const starter = readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json'), 'utf8');
+  assert(/"label": "[^"]*\\n[^"]*"/.test(starter), 'the starter template shows a two-line label');
+});
+
+// The title sat 70px above the origin in a 900px box, across the header of a
+// boundary at row 0 (#239).
+test('the title sits clear of a row-0 boundary, is as wide as its text, and takes a subtitle (#239)', () => {
+  const spec = {
+    title: 'Repro title',
+    boundaries: [{ id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0, cols: 2, rows: 1 }],
+    nodes: [{ id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0, row: 0, parent: 'cloud' }],
+  };
+  const { xml } = builder.buildDiagram(spec);
+  const title = geometry(xml, 'title'); const cloud = geometry(xml, 'cloud');
+  assert(title.y + title.h <= cloud.y - 10, `title ends at ${title.y + title.h}, the cloud starts at ${cloud.y}`);
+  assert(title.w < 200, `a 11-character title is ${title.w}px wide`);
+  // A page whose content starts lower keeps its title where it always was.
+  eq(geometry(builder.buildDiagram({ title: 'T', nodes: [{ id: 'a', label: 'A' }] }).xml, 'title').y, 30, 'originY - 70');
+
+  const both = builder.buildDiagram({ ...spec, subtitle: 'As built' });
+  const sub = geometry(both.xml, 'subtitle');
+  assert(sub.y >= geometry(both.xml, 'title').y + 30 && sub.y + sub.h <= cloud.y - 10, 'the subtitle sits under the title, above the cloud');
+  eq(both.report.unknownFields.length, 0, 'subtitle is a field');
+  assert(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json'), 'utf8')).subtitle,
+    'the starter template shows it');
+  assert(builder.validateSpec({ nodes: [{ id: 'subtitle' }] }).some((e) => e.includes('reserved')), 'its id is reserved');
+});
+
+// Fitting only the long side drew a 4:1 logo 64x16 (#254), and centring a logo
+// as a 190x60 box put it 63px left of its column (#255).
+test('a logo is sized by the wordmark floor and centred on its cell (#254, #255)', () => {
+  logos.storeLogo(LOGO_KEYS[1], makePng(64, 64, 2), { source: 'test', force: true });
+  logos.storeLogo(LOGO_KEYS[2], makePng(240, 60, 6), { source: 'test', force: true });
+  const wide = logos.logoBox(logos.getLogo(LOGO_KEYS[2]), 64);
+  eq(`${wide.width}x${wide.height}`, '85x21', 'the short side is a third of the size');
+  eq(JSON.stringify(logos.logoBox(logos.getLogo(LOGO_KEYS[1]), 64)), '{"width":64,"height":64}', 'a square logo is unchanged');
+  const { xml } = builder.buildDiagram({ nodes: [
+    { id: 'l', kind: 'icon', icon: 'aws/aws-lambda', label: 'Lambda', col: 0 },
+    { id: 'sq', kind: 'logo', logo: LOGO_KEYS[1], label: 'Square', col: 1 },
+    { id: 'wd', kind: 'logo', logo: LOGO_KEYS[2], label: 'Wide', col: 2 },
+  ] });
+  const l = geometry(xml, 'l');
+  for (const [id, col] of [['sq', 1], ['wd', 2]]) {
+    const g = geometry(xml, id);
+    assert(Math.abs(g.cx - (l.cx + col * 320)) <= 1 && Math.abs(g.cy - l.cy) <= 1, `${id} is centred on column ${col}: ${g.cx},${g.cy}`);
+  }
+});
+
+test('a mark that is not square shares its row\'s centre line, so edges run straight (#255)', () => {
+  const { xml } = builder.buildDiagram({ nodes: [
+    { id: 'l', kind: 'icon', icon: 'aws/aws-lambda', label: 'Lambda', col: 0 },
+    { id: 'w', kind: 'icon', icon: 'ai-frameworks/pydanticai', label: 'PydanticAI', col: 1 },
+    { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 2 },
+  ], edges: [{ from: 'l', to: 'w' }, { from: 'w', to: 'q' }] });
+  const [l, w, q] = ['l', 'w', 'q'].map((id) => geometry(xml, id));
+  eq(`${w.w}x${w.h}`, '156x25', 'the wordmark keeps its size');
+  assert(Math.abs(w.cy - l.cy) <= 1 && q.cy === l.cy, `centres ${l.cy}, ${w.cy}, ${q.cy}`);
+  assert(Math.abs(w.cx - (l.cx + 320)) <= 1, 'and its column\'s centre');
+  assert(!/<Array as="points">/.test(xml), 'both edges straight, no waypoints');
+});
+
+// Left to Draw.io's router an edge between columns drew an L down the target's
+// column, through what was stacked there (#237).
+test('the builder sets edge sides from the grid, and waypoints only round an obstacle (#237)', () => {
+  const spec = { nodes: [
+    { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'Producer', col: 0, row: 0 },
+    { id: 'c', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 1, row: 0 },
+    { id: 'b', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Table', col: 1, row: 1 },
+  ], edges: [{ from: 'a', to: 'b', label: 'write' }] };
+  const r = buildAndValidate('route-237', spec);
+  eq(r.warnings.join('; '), '', 'no edge over an icon or a caption');
+  assert(/id="e1" style="[^"]*exitX=1;exitY=0.5;[^"]*entryX=0;entryY=0.5;/.test(builder.buildDiagram(spec).xml), 'out sideways, in sideways');
+
+  // A node in the line between two columns: the edge goes round it, through
+  // the row gap, and validate follows the waypoints.
+  const skip = { nodes: [
+    { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0 },
+    { id: 'm', kind: 'icon', icon: 'aws/aws-lambda', label: 'Mid', col: 1 },
+    { id: 'c', kind: 'icon', icon: 'aws/aws-lambda', label: 'C', col: 2 },
+  ], edges: [{ from: 'a', to: 'c' }] };
+  const { xml } = builder.buildDiagram(skip);
+  assert(/<Array as="points">(<mxPoint [^>]*\/>){4}<\/Array>/.test(xml), 'four waypoints round Mid');
+  eq(buildAndValidate('route-skip', skip).warnings.join('; '), '', 'clear of Mid and its caption');
+  const straight = buildAndValidate('route-skip-flat', skip, (x) => x.replace(/ y="\d+" \/>/g, ' y="139" />'));
+  eq(straight.warnings.join('; '), 'page 0: edge "e1" runs through "m"', 'waypoints moved onto the row are checked, not skipped');
+
+  // The override, for what the grid gets wrong.
+  const over = builder.buildDiagram({ ...spec, edges: [{ from: 'a', to: 'b', exit: 'bottom', entry: { side: 'left', at: 0.25 } }] });
+  assert(/exitX=0.5;exitY=1;[^"]*entryX=0;entryY=0.25;/.test(over.xml), 'exit and entry as given');
+  eq(over.report.unknownFields.length, 0, 'exit and entry are fields');
+  const bad = builder.buildDiagram({ ...spec, edges: [{ from: 'a', to: 'b', exit: 'up', entry: { side: 'left', at: 2 } }] }).report;
+  eq(bad.unknownKinds.map((u) => u.field).join(','), 'edges[0].exit,edges[0].entry', 'a side or fraction it cannot use is reported');
+  const catalog = readFileSync(join(SKILL, 'references', 'pattern-catalog.md'), 'utf8');
+  assert(/"exit"/.test(catalog) && /"entry"/.test(catalog), 'the override is shown in a pattern section');
+});
+
+// Every label sat 45% along its route, on borders, arrowheads and trunks (#241).
+test('each label on a template ends at least 30px before its arrowhead (#241)', () => {
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    for (const page of validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).info.pages) {
+      for (const l of page.labels) assert(l.beforeArrow >= 30, `${name} page ${page.index}: ${l.id} ends ${l.beforeArrow}px before the arrowhead`);
+    }
+  }
+  const catalog = readFileSync(join(SKILL, 'references', 'pattern-catalog.md'), 'utf8');
+  assert(/"labelPos"/.test(catalog), 'labelPos is shown in the numbered-flow section');
 });
 
 // -------------------------------------------------------------

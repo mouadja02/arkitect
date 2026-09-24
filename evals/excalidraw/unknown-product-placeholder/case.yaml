@@ -53,10 +53,12 @@ graders:
     tool: Bash
     input_match: validate-excalidraw
 
+  # "PostgreSQL" is Postgre + SQL, so `[Pp]ostgres` failed a report that used
+  # the product's real name, the one the style guide asks for (#208, #286).
   - type: regex
     name: every-component-accounted-for
     target: last_message
-    pattern: '^(?=[\s\S]*[Rr]eact)(?=[\s\S]*Quillrose)(?=[\s\S]*[Pp]ostgres)'
+    pattern: '^(?=[\s\S]*[Rr]eact)(?=[\s\S]*Quillrose)(?=[\s\S]*[Pp]ostgre(?:s|SQL))'
 
   # An internal name has no mark anywhere, so an AWS, Azure or GCP glyph
   # against it is a substitution however it is captioned - a generic cloud

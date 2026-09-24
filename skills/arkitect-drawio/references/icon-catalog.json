@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-16T14:13:45.855Z",
+  "generated": "2026-09-24T08:12:45.672Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "c8808f99ccb99a2e255306c83d25c55f147d0c12a9fa7b96b3e225c13fc48a2e"
+    "sha256": "7f7dbeec429bddc1d26ff57dddf9d93aee2d0c01a16307c2b1adaf4f951968af"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -34254,7 +34254,9 @@
       "title": "Power BI",
       "aliases": [
         "power bi",
-        "powerbi"
+        "powerbi",
+        "microsoft power bi",
+        "microsoftpowerbi"
       ],
       "source": "vendor",
       "upstreamId": "powerbi",
@@ -34794,7 +34796,9 @@
       "pack": "databases",
       "title": "MongoDB",
       "aliases": [
-        "mongodb"
+        "mongodb",
+        "mongodb atlas",
+        "mongodbatlas"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "mongodb",
@@ -35598,7 +35602,9 @@
       "pack": "ai-frameworks",
       "title": "LangGraph",
       "aliases": [
-        "langgraph"
+        "langgraph",
+        "langchain langgraph",
+        "langchainlanggraph"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "langgraph",
@@ -36003,7 +36009,9 @@
       "pack": "ai-frameworks",
       "title": "Claude",
       "aliases": [
-        "claude"
+        "claude",
+        "anthropic claude",
+        "anthropicclaude"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "claude",
@@ -36424,7 +36432,9 @@
       "pack": "ai-frameworks",
       "title": "LangSmith",
       "aliases": [
-        "langsmith"
+        "langsmith",
+        "langchain langsmith",
+        "langchainlangsmith"
       ],
       "source": "vendor",
       "upstreamId": "langsmith",
@@ -38730,7 +38740,9 @@
       "pack": "observability",
       "title": "Kibana",
       "aliases": [
-        "kibana"
+        "kibana",
+        "elastic kibana",
+        "elastickibana"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "kibana",
@@ -38749,7 +38761,9 @@
       "pack": "observability",
       "title": "Logstash",
       "aliases": [
-        "logstash"
+        "logstash",
+        "elastic logstash",
+        "elasticlogstash"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "logstash",
@@ -38883,7 +38897,9 @@
       "pack": "observability",
       "title": "Opsgenie",
       "aliases": [
-        "opsgenie"
+        "opsgenie",
+        "atlassian opsgenie",
+        "atlassianopsgenie"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "opsgenie",
@@ -39020,7 +39036,9 @@
       "pack": "observability",
       "title": "Statuspage",
       "aliases": [
-        "statuspage"
+        "statuspage",
+        "atlassian statuspage",
+        "atlassianstatuspage"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "statuspage",
@@ -39319,7 +39337,13 @@
       "pack": "devops",
       "title": "Terraform",
       "aliases": [
-        "terraform"
+        "terraform",
+        "hashicorp terraform",
+        "hashicorpterraform",
+        "hcp terraform",
+        "hcpterraform",
+        "terraform cloud",
+        "terraformcloud"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "terraform",
@@ -39338,7 +39362,10 @@
       "pack": "devops",
       "title": "Ansible",
       "aliases": [
-        "ansible"
+        "ansible",
+        "red hat ansible",
+        "redhatansible",
+        "redhat ansible"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "ansible",
@@ -39491,7 +39518,9 @@
       "pack": "devops",
       "title": "TeamCity",
       "aliases": [
-        "teamcity"
+        "teamcity",
+        "jetbrains teamcity",
+        "jetbrainsteamcity"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "teamcity",
@@ -39548,7 +39577,9 @@
       "pack": "devops",
       "title": "Vagrant",
       "aliases": [
-        "vagrant"
+        "vagrant",
+        "hashicorp vagrant",
+        "hashicorpvagrant"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "vagrant",
@@ -39567,7 +39598,11 @@
       "pack": "devops",
       "title": "Packer",
       "aliases": [
-        "packer"
+        "packer",
+        "hashicorp packer",
+        "hashicorppacker",
+        "hcp packer",
+        "hcppacker"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "packer",
@@ -39586,7 +39621,11 @@
       "pack": "devops",
       "title": "Consul",
       "aliases": [
-        "consul"
+        "consul",
+        "hashicorp consul",
+        "hashicorpconsul",
+        "hcp consul",
+        "hcpconsul"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "consul",
@@ -39605,7 +39644,9 @@
       "pack": "devops",
       "title": "Nomad",
       "aliases": [
-        "nomad"
+        "nomad",
+        "hashicorp nomad",
+        "hashicorpnomad"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "nomad",
@@ -40009,7 +40050,9 @@
       "pack": "devops",
       "title": "Bitbucket",
       "aliases": [
-        "bitbucket"
+        "bitbucket",
+        "atlassian bitbucket",
+        "atlassianbitbucket"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "bitbucket",
@@ -40743,7 +40786,11 @@
       "pack": "security-identity",
       "title": "Vault",
       "aliases": [
-        "vault"
+        "vault",
+        "hashicorp vault",
+        "hashicorpvault",
+        "hcp vault",
+        "hcpvault"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "vault",
@@ -42364,7 +42411,9 @@
       "pack": "saas-collab",
       "title": "Jira",
       "aliases": [
-        "jira"
+        "jira",
+        "atlassian jira",
+        "atlassianjira"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "jira",
@@ -42402,7 +42451,9 @@
       "pack": "saas-collab",
       "title": "Confluence",
       "aliases": [
-        "confluence"
+        "confluence",
+        "atlassian confluence",
+        "atlassianconfluence"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "confluence",
@@ -42478,7 +42529,9 @@
       "pack": "saas-collab",
       "title": "Trello",
       "aliases": [
-        "trello"
+        "trello",
+        "atlassian trello",
+        "atlassiantrello"
       ],
       "source": "simple-icons@16.30.0",
       "upstreamId": "trello",

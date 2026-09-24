@@ -12,6 +12,7 @@ import {
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { checkXml } from './lib/xml-check.mjs';
+import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/routes.mjs';
 
 const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
 
@@ -235,10 +236,9 @@ export function validateFile(path, { pageIndex = null } = {}) {
     }
 
     // Crossings (#45, #242). Each edge's route is estimated from its two ports
-    // and tested against every other node's box and every caption, its own
-    // ends' captions included: a caption hangs below its icon, where an edge
-    // attached to the icon's bottom runs straight through it. Edges with
-    // waypoints are skipped rather than guessed.
+    // and its waypoints, and tested against every other node's box and every
+    // caption, its own ends' captions included: a caption hangs below its icon,
+    // where an edge attached to the icon's bottom runs straight through it.
     const captions = [];
     for (const c of cells) {
       if (!c.vertex || !c.value) continue;
@@ -246,10 +246,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       if (s.verticalLabelPosition !== 'bottom') continue;
       const g = abs.get(c.id);
       if (!g) continue;
-      const lines = textLines(c.value);
-      const size = Number(s.fontSize ?? 12);
-      const width = Math.max(...lines.map((l) => l.length)) * size * 0.55;
-      captions.push({ id: c.id, x: g.x + g.width / 2 - width / 2, y: g.y + g.height + 2, width, height: lines.length * size * 1.25 });
+      captions.push({ id: c.id, ...captionBox(g, textLines(c.value), Number(s.fontSize ?? 12)) });
     }
     // An unconstrained end goes where Draw.io's orthogonal router puts it
     // (mxEdgeStyle.OrthConnector): boxes apart on both axes get an L that
@@ -274,31 +271,21 @@ export function validateFile(path, { pageIndex = null } = {}) {
       }
       return { x: box.x + box.width / 2, y: up >= down ? box.y : box.y + box.height, vertical: true };
     };
-    const route = (p, q) => {
-      if (Math.abs(p.x - q.x) < 1 || Math.abs(p.y - q.y) < 1) return [[p, q]];
-      if (p.vertical !== q.vertical) {
-        const corner = p.vertical ? { x: p.x, y: q.y } : { x: q.x, y: p.y };
-        return [[p, corner], [corner, q]];
-      }
-      if (p.vertical) {
-        const my = (p.y + q.y) / 2;
-        return [[p, { x: p.x, y: my }], [{ x: p.x, y: my }, { x: q.x, y: my }], [{ x: q.x, y: my }, q]];
-      }
-      const mx = (p.x + q.x) / 2;
-      return [[p, { x: mx, y: p.y }], [{ x: mx, y: p.y }, { x: mx, y: q.y }], [{ x: mx, y: q.y }, q]];
-    };
-    const crosses = ([p, q], r) => Math.max(p.x, q.x) > r.x + 1 && Math.min(p.x, q.x) < r.x + r.width - 1
-      && Math.max(p.y, q.y) > r.y + 1 && Math.min(p.y, q.y) < r.y + r.height - 1;
     // Only leaves are in the way. An edge between zones crosses container
     // borders by design, and text cells over containers are #243's.
     let nodeCrossings = 0; let captionCrossings = 0;
     const routes = [];
     for (const c of cells) {
-      if (!c.edge || c.waypoints) continue;
+      if (!c.edge) continue;
       const a = abs.get(c.source); const b = abs.get(c.target);
       if (!a || !b) continue;
-      const exit = port(a, c.style, 'exit', b); const entry = port(b, c.style, 'entry', a);
-      const segments = route(exit, entry);
+      // Waypoints are in the coordinates of the edge's parent.
+      const o = abs.get(c.parent) ?? { x: 0, y: 0 };
+      const points = c.points.map((pt) => ({ x: pt.x + o.x, y: pt.y + o.y }));
+      const dot = (pt) => pt && { ...pt, width: 0, height: 0 };
+      const exit = port(a, c.style, 'exit', dot(points[0]) ?? b);
+      const entry = port(b, c.style, 'entry', dot(points.at(-1)) ?? a);
+      const segments = routeThrough(exit, points, entry);
       routes.push({ id: c.id, source: c.source, target: c.target, entry, segments });
       const hits = (box) => segments.some((segment) => crosses(segment, box));
       const through = new Set();
@@ -396,17 +383,10 @@ export function validateFile(path, { pageIndex = null } = {}) {
     }
     // An edge's label sits along its route: geometry x runs from -1 at the
     // source to 1 at the target, over the whole length.
-    const along = (segments, x) => {
-      const total = segments.reduce((n, [p, q]) => n + Math.abs(q.x - p.x) + Math.abs(q.y - p.y), 0);
-      let left = ((x ?? 0) + 1) / 2 * total;
-      for (const [p, q] of segments) {
-        const len = Math.abs(q.x - p.x) + Math.abs(q.y - p.y);
-        if (left <= len) return { x: p.x + Math.sign(q.x - p.x) * left, y: p.y + Math.sign(q.y - p.y) * left };
-        left -= len;
-      }
-      return segments.at(-1)[1];
-    };
+    const along = (segments, x) => pointAt(segments, ((x ?? 0) + 1) / 2 * lengthOf(segments));
     const routeOf = new Map(routes.map((r) => [r.id, r.segments]));
+    // How far each label's chip ends before its arrowhead, along the route (#241).
+    const labels = [];
     for (const c of cells) {
       const segments = routeOf.get(c.edge ? c.id : c.parent);
       if (!segments || !c.value || (!c.edge && !c.geometry?.relative)) continue;
@@ -415,6 +395,9 @@ export function validateFile(path, { pageIndex = null } = {}) {
       const t = extent(lines, parseStyle(c.style));
       const at = along(segments, c.geometry?.x);
       const o = c.geometry?.offset ?? { x: 0, y: 0 };
+      const [p, q] = segments.at(-1);
+      const half = Math.abs(p.y - q.y) < 1 ? t.width / 2 + 2 : t.height / 2 + 1;
+      labels.push({ id: c.id, beforeArrow: Math.round(lengthOf(segments) * (1 - ((c.geometry?.x ?? 0) + 1) / 2) - half) });
       texts.push({
         id: c.edge ? `the label of edge "${c.id}"` : `"${c.id}"`,
         box: { x: at.x + o.x - t.width / 2 - 2, y: at.y + o.y - t.height / 2 - 1, width: t.width + 4, height: t.height + 2 },
@@ -493,7 +476,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, density,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, density, labels,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,

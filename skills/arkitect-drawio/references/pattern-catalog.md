@@ -92,6 +92,10 @@ the cloud boundary. Bold heading at the top ("Logs producers", "External tools")
 logos stacked vertically below at ~60px. One arrow leaves or enters the column as a whole
 rather than one arrow per logo.
 
+The builder picks each edge's sides from the grid. Where it picks wrong, set them on
+the edge: `"exit": "bottom"`, `"entry": { "side": "left", "at": 0.25 }` (`at` runs 0
+to 1 along the side).
+
 ---
 
 ## 7. Numbered flow
@@ -105,6 +109,9 @@ fragment is `numbered-flow` in `assets/templates/patterns.json`.
 A number claims an order, so number one sequence per page, from 1, on edges only.
 Entry points and parallel paths are not steps: three ways in stay unnumbered, or
 take letters (A, B, C) if they need naming, and the sequence starts where they meet.
+
+A label sits on the longest clear stretch of its edge. To move one, set `"labelPos"`,
+from -1 at the source to 1 at the target.
 
 ---
 

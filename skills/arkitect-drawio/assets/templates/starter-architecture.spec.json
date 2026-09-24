@@ -3,6 +3,7 @@
   "page": "Architecture",
   "pageId": "starter-architecture",
   "title": "Reference architecture",
+  "subtitle": "Hourly ingest, index and alert, single region",
   "layout": { "originX": 200, "originY": 180, "colPitch": 320, "rowPitch": 190 },
 
   "_context_comment": "Naming the packs this diagram draws from biases icon resolution toward them, so `opensearch` lands on Amazon OpenSearch Service rather than the OpenSearch project. A single node can override it with its own \"pack\".",
@@ -20,7 +21,7 @@
     { "id": "ingest", "kind": "icon", "icon": "lambda", "label": "Ingestion function", "parent": "pipeline", "col": 1, "row": 0 },
     { "id": "raw", "kind": "icon", "icon": "simple storage service", "label": "Raw zone", "parent": "pipeline", "col": 2, "row": 0 },
 
-    { "id": "index", "kind": "icon", "icon": "opensearch", "label": "Search index", "parent": "cloud", "col": 3, "row": 0 },
+    { "id": "index", "kind": "icon", "icon": "opensearch", "label": "Search index\nOpenSearch", "parent": "cloud", "col": 3, "row": 0 },
     { "id": "agent", "kind": "icon", "icon": "bedrock", "label": "Analysis model", "parent": "cloud", "col": 4, "row": 0 },
 
     { "id": "schedule", "kind": "icon", "icon": "eventbridge", "label": "Schedule", "parent": "cloud", "col": 1, "row": 1 },

@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname } from 'node:path';
-import { sha256, parseDataUri, imageDimensions } from './lib/drawio-core.mjs';
+import { sha256, parseDataUri, imageDimensions, fitCell } from './lib/drawio-core.mjs';
 import { cacheDir, mergedRegistry } from './lib/store.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -151,13 +151,11 @@ export function logoDataUri(entry) {
   return `data:${entry.mime},${entry.bytes.toString('base64')}`;
 }
 
-// Fit the longest side to `size`, preserving aspect. Wordmarks end up wide and
-// short, which is what they should be.
+// The same rule a pack mark gets (#76): a wordmark keeps its aspect, but its
+// short side never drops below a third of `size`. Fitting only the longest
+// side drew a 4:1 logo 64x16 (#254).
 export function logoBox(entry, size = DEFAULT_LOGO_SIZE) {
-  const w = entry.width; const h = entry.height;
-  if (!w || !h) return { width: size, height: size };
-  const scale = size / Math.max(w, h);
-  return { width: Math.max(1, Math.round(w * scale)), height: Math.max(1, Math.round(h * scale)) };
+  return fitCell(entry.width, entry.height, size);
 }
 
 export const LOGO_STYLE = 'shape=image;html=1;verticalLabelPosition=bottom;verticalAlign=top;'

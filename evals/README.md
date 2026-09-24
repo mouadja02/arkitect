@@ -1,6 +1,6 @@
 # Eval cases
 
-Sixteen cases, nine for Draw.io and seven for Excalidraw, covering what
+Seventeen cases, nine for Draw.io and eight for Excalidraw, covering what
 matters most: that a plain request fires the right skill and produces valid,
 styled, native output; that a missing product icon is reported or built honestly rather
 than substituted; that an edit follows the file in front of it; and that the
@@ -22,6 +22,7 @@ evals/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
     unknown-product-placeholder/    a name with no mark gets a placeholder, not a lie
+    names-a-product-box/            a plain shape named for a bundled product gets its mark
     native-not-mermaid/             "for the README" still hands over a real scene
     engine-choice-is-explained/     the same request, with no engine named at all
     learning-skill-stays-manual/    same rule, other engine
