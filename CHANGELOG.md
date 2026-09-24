@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-09-24
+
 Generated layout changes: rebuild your specs to pick it up. Saved files are
 untouched, and a hand-written routing pass is no longer needed.
 
