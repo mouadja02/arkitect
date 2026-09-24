@@ -1656,7 +1656,10 @@ test('the release workflows are started by a person, gated by a merged pull requ
   assert(/npm publish --provenance --access public/.test(publish) && /id-token: write/.test(publish), 'with provenance');
   assert(/if \[ -z "\$NODE_AUTH_TOKEN" \]; then\s+echo "::warning::/.test(publish), 'no secret: a warning, not a failure');
   assert(/npm view "arkitect@\$VERSION" version/.test(publish), 'already published: skipped');
-  assert(/npm publish --dry-run/.test(readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8')), 'CI dry-runs it');
+  const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert(/npm publish --dry-run/.test(ci), 'CI dry-runs it');
+  // npm 12 refuses a dry run over a published version: main went red at 2.2.0.
+  assert(/npm pkg set version=.*-ci\./.test(ci) && /--dry-run[^\n]*--tag ci/.test(ci), 'on a version nothing has used');
 });
 
 // ------------------------------------------------------------- the harness
