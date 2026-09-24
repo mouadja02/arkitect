@@ -1,120 +1,48 @@
 # Project status
 
-Status reviewed on 2026-09-24, at the 2.2.0 release.
-This is a dated snapshot. [Open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen)
-and [open PRs](https://github.com/mouadja02/arkitect/pulls?q=is%3Apr+is%3Aopen) show live status.
+Snapshot of 2026-09-24, at 2.2.0. The live record is the
+[issue tracker](https://github.com/mouadja02/arkitect/issues) and the
+[releases](https://github.com/mouadja02/arkitect/releases); what each release
+changed is in [CHANGELOG.md](../CHANGELOG.md).
 
-## Completed on main
+## Where it stands
 
-| Area | Delivered | Evidence |
-|---|---|---|
-| CLI reliability | Validate installer requests before writes, safe help, useful command errors, strict test selection | [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
-| Backups | Collision-safe naming and retention, now shared by both engines | [#35](https://github.com/mouadja02/arkitect/issues/35), [#49](https://github.com/mouadja02/arkitect/issues/49), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
-| Personal style | Persistent per-user storage, findings/apply workflows, overrides, defaults and style inspection for both engines | [#89](https://github.com/mouadja02/arkitect/issues/89), [#90](https://github.com/mouadja02/arkitect/issues/90) |
-| Packaging and previews | Package-content checks, portable Excalidraw PNG output, Draw.io Desktop export checks | [#38](https://github.com/mouadja02/arkitect/issues/38), [#39](https://github.com/mouadja02/arkitect/issues/39), [#33](https://github.com/mouadja02/arkitect/issues/33) |
-| Diagram checks | Invalid-reference rejection, unknown-kind reports, caption routing and example freshness | [#36](https://github.com/mouadja02/arkitect/issues/36), [#48](https://github.com/mouadja02/arkitect/issues/48), [#45](https://github.com/mouadja02/arkitect/issues/45), [#50](https://github.com/mouadja02/arkitect/issues/50) |
-| Icon maintenance | Shared packs in Excalidraw, source pins, scheduled upstream checks, Azure review records | [#17](https://github.com/mouadja02/arkitect/issues/17), [#9](https://github.com/mouadja02/arkitect/issues/9), [#10](https://github.com/mouadja02/arkitect/issues/10), [#18](https://github.com/mouadja02/arkitect/issues/18) |
-| Icon correctness | An exact catalog id selects its own artwork; a fetched SVG is sized from its root element, identically in both engines | [#95](https://github.com/mouadja02/arkitect/issues/95), [#96](https://github.com/mouadja02/arkitect/issues/96), [PR #98](https://github.com/mouadja02/arkitect/pull/98) |
-| Icon validation | A mark that paints only in white is refused when a pack is built and reported by `--verify` | [#85](https://github.com/mouadja02/arkitect/issues/85), [PR #99](https://github.com/mouadja02/arkitect/pull/99) |
-| On-demand artwork | An on-demand entry says whether a pinned artwork file exists; only those carry a fetch command, the rest draw as a named placeholder | [#84](https://github.com/mouadja02/arkitect/issues/84), [PR #100](https://github.com/mouadja02/arkitect/pull/100) |
-| Identical artwork | Ids that draw the same picture name each other in the catalog and search, and a build reports two such ids used together | [#77](https://github.com/mouadja02/arkitect/issues/77) |
-| Documentation counts | Every exact icon count a doc quotes is checked against the catalog, the Excalidraw library index and the two answer keys, and the failure names the value to write | [#78](https://github.com/mouadja02/arkitect/issues/78), [PR #102](https://github.com/mouadja02/arkitect/pull/102) |
-| Wordmark legibility | A wide lockup's short side is floored at a third of the icon footprint and its long side held to twice it, so a 6:1 wordmark is drawn 156x26 rather than 78x13, with no artwork byte changed | [#76](https://github.com/mouadja02/arkitect/issues/76), [PR #103](https://github.com/mouadja02/arkitect/pull/103) |
-| Title ties | Every set of packs sharing one exact icon title carries a judgement row, a stack named in the spec settles the tie, and a test fails when a new tie appears that no row covers | [#75](https://github.com/mouadja02/arkitect/issues/75), [PR #104](https://github.com/mouadja02/arkitect/pull/104) |
-| Logo upstream watch | The quarterly drift check compares every committed project logo's artwork, licence file and repository state with its pin, and each GitHub-backed source records the repository state it was reviewed at | [#74](https://github.com/mouadja02/arkitect/issues/74), [#82](https://github.com/mouadja02/arkitect/issues/82), [PR #105](https://github.com/mouadja02/arkitect/pull/105) |
-| Vendor reviews | Every AWS and Google Cloud mark is reviewed on record at the payload that ships, the review test covers every pack with a record, and twenty-two captions whose file names dropped punctuation are corrected | [#73](https://github.com/mouadja02/arkitect/issues/73), [PR #106](https://github.com/mouadja02/arkitect/pull/106) |
-| Curated reviews | Every mark in the 14 curated packs is reviewed on record, every pack but `brands` must carry a record, and the two marks promoted by slug that drew the wrong product (Vespa, Nebula) are on-demand entries for Vespa.ai and NebulaGraph | [#81](https://github.com/mouadja02/arkitect/issues/81), [PR #107](https://github.com/mouadja02/arkitect/pull/107) |
-| Product lifecycle | Twelve discontinued, renamed, absorbed, acquired or archived products carry a verified `status` that search and build reports surface as a caveat with a successor, and the drift check lists statuses due for a re-check | [#83](https://github.com/mouadja02/arkitect/issues/83), [PR #108](https://github.com/mouadja02/arkitect/pull/108) |
-| Brands review | All 3,092 catch-all marks are reviewed on record against their captions and Simple Icons source domains, and every pack now requires a review record | [#72](https://github.com/mouadja02/arkitect/issues/72), [PR #109](https://github.com/mouadja02/arkitect/pull/109) |
-| Release tooling | `release prepare` bumps both manifests and dates the changelog on a reviewed `release/vX.Y.Z` pull request, drafting an empty section with a model only as a flagged draft; merging it tags and publishes a GitHub Release, then the same version to npm with provenance when `NPM_TOKEN` is set ([#126](https://github.com/mouadja02/arkitect/issues/126), from 2.2.0). Used for v1.2.0, v1.2.1 and v1.3.0 | [#88](https://github.com/mouadja02/arkitect/issues/88), [PR #110](https://github.com/mouadja02/arkitect/pull/110), [v1.3.0](https://github.com/mouadja02/arkitect/releases/tag/v1.3.0) |
-| Agent behaviour, from evals | The one editing route with no backup got a command (`arkitect <engine> backup`); a reply no longer points at the hosted draw.io editor; an assumption no longer covers for changing a count the user stated | [#179](https://github.com/mouadja02/arkitect/issues/179), [#186](https://github.com/mouadja02/arkitect/issues/186), [#183](https://github.com/mouadja02/arkitect/issues/183), [PR #194](https://github.com/mouadja02/arkitect/pull/194), [PR #195](https://github.com/mouadja02/arkitect/pull/195), [PR #196](https://github.com/mouadja02/arkitect/pull/196), [PR #197](https://github.com/mouadja02/arkitect/pull/197) |
-| Engine choice, from evals | A report with no slot for the engine choice never carried one, four runs out of four; the report shape now has one and says what counts as a reason. A README request drew Draw.io twice out of two, because a skill is selected on its description before the routing rule is read; each description now carries its own signals, parsed out of `AGENTS.md` §1 by a test | [#180](https://github.com/mouadja02/arkitect/issues/180), [#201](https://github.com/mouadja02/arkitect/issues/201), [PR #199](https://github.com/mouadja02/arkitect/pull/199), [PR #200](https://github.com/mouadja02/arkitect/pull/200), [PR #202](https://github.com/mouadja02/arkitect/pull/202) |
-| Renders, from evals | No render survives the eval sandbox — Chrome is refused a socket whatever the flags, and Draw.io's `xvfb-run` exits 1 — but `--format svg` needs no browser, so the Excalidraw generation case now grades the SVG it asked for, and the wording that let a report describe a picture nobody saw is gone from the renderer and both skills | [#136](https://github.com/mouadja02/arkitect/issues/136), [PR #207](https://github.com/mouadja02/arkitect/pull/207), [#208](https://github.com/mouadja02/arkitect/issues/208) |
-| CI images | Every action declares Node 24, and no job rides `ubuntu-latest`: the matrix names Ubuntu 24.04 and 26.04, so the October image switch is a decision rather than a date | [#122](https://github.com/mouadja02/arkitect/issues/122), [PR #210](https://github.com/mouadja02/arkitect/pull/210) |
-| Builder reports | A spec field neither builder knows is named under `unknownFields`, and `style` is answered rather than dropped; the numbered-flow pattern builds from edge labels instead of needing hand-written XML | [#205](https://github.com/mouadja02/arkitect/issues/205), [#193](https://github.com/mouadja02/arkitect/issues/193), [PR #211](https://github.com/mouadja02/arkitect/pull/211), [PR #212](https://github.com/mouadja02/arkitect/pull/212) |
-| Release resume | Either release workflow can be re-run after a partial failure, and resumes only a remote state that matches; 1.6.3 is the first release cut with it | [#120](https://github.com/mouadja02/arkitect/issues/120), [PR #213](https://github.com/mouadja02/arkitect/pull/213) |
-| Report graders | Two render graders that failed correct runs are fixed: a `file_exists` that could not see a file that was there, and a pattern that never matched "PostgreSQL". The report step writes its headings out first | [#208](https://github.com/mouadja02/arkitect/issues/208), [PR #214](https://github.com/mouadja02/arkitect/pull/214) |
-| Fake boundaries | A plain box laid over nodes it does not own, or a node sized in grid cells rather than pixels, is named under `looksLikeBoundary` in both builders' reports, with a hint pointing at `boundaries` | [#204](https://github.com/mouadja02/arkitect/issues/204), [PR #217](https://github.com/mouadja02/arkitect/pull/217) |
-| Draw.io pages | A spec builds several pages with `pages`, ids per page, an edge across pages refused; an as-is/to-be template with a PNG per page. Proved by an eval case whose control on main showed agents stitching single-page builds with their own scripts | [#184](https://github.com/mouadja02/arkitect/issues/184), [PR #218](https://github.com/mouadja02/arkitect/pull/218) |
-| Codex | `install codex` also writes a Codex skill with absolute paths that works from any project; the deprecated custom prompt is gone | [#127](https://github.com/mouadja02/arkitect/issues/127), [PR #219](https://github.com/mouadja02/arkitect/pull/219) |
-| Excalidraw geometry | Boundaries are sized from everything their nodes draw, captions and sublabels in both axes; text is measured as wide as the app draws it, from the app's own fonts, where it ran 18% narrow and the app clipped it; an edge from a node to itself is a loop over a corner, not a bare arrowhead; each frame comes after its own members. Found and checked in the local Excalidraw app | [#191](https://github.com/mouadja02/arkitect/issues/191), [#222](https://github.com/mouadja02/arkitect/issues/222), [#159](https://github.com/mouadja02/arkitect/issues/159), [#192](https://github.com/mouadja02/arkitect/issues/192), [PR #223](https://github.com/mouadja02/arkitect/pull/223), [PR #224](https://github.com/mouadja02/arkitect/pull/224), [PR #225](https://github.com/mouadja02/arkitect/pull/225), [PR #226](https://github.com/mouadja02/arkitect/pull/226) |
-| Icon nodes | A node with an `icon` and no `kind` draws its icon in both builders, where it drew a plain box and nobody was told; found by the 2.0.0 eval batch, where an agent reported three icons over a file with none | [#228](https://github.com/mouadja02/arkitect/issues/228), [PR #229](https://github.com/mouadja02/arkitect/pull/229) |
-| Generic words | A component named only in generic words (`service`, `storage`, `function`) no longer draws an AWS, Azure or GCP mark in either search; it comes back flagged, and the builder draws a placeholder. Found by the same batch: an internal service drawn with AWS's Service glyph, twice | [#231](https://github.com/mouadja02/arkitect/issues/231), [PR #232](https://github.com/mouadja02/arkitect/pull/232) |
-| Patch round, 2.0.1 | A misspelled top-level spec key is named under `unknownFields` in both builders; an Excalidraw node's caption and sublabel are grouped with it, checked by dragging in the app; Draw.io renders leave a 20px margin (`--padding`); the Draw.io skill no longer denies the PDF export it has; its reading budget has room again, and the ignore advice covers Draw.io Desktop's own `.bkp` | [#221](https://github.com/mouadja02/arkitect/issues/221), [#190](https://github.com/mouadja02/arkitect/issues/190), [#249](https://github.com/mouadja02/arkitect/issues/249), [#256](https://github.com/mouadja02/arkitect/issues/256), [#253](https://github.com/mouadja02/arkitect/issues/253), [#252](https://github.com/mouadja02/arkitect/issues/252), PRs [#258](https://github.com/mouadja02/arkitect/pull/258)-[#263](https://github.com/mouadja02/arkitect/pull/263) |
-| Validate round, 2.1.0 | Draw.io `validate` sees what a render shows: an edge through an icon, text over a container, two edges on one line into one port or between one pair of nodes, a page too dense for a slide, and notes an icon with no edge or an edge ending on a container. The PASS line counts warnings, and the last line says each is a defect to fix or report by id; the report step says so too. Both builders list a plain box naming a bundled product (`namesAProduct`); boundaries take `labelAlign`; `analyze --find` gives the full id a label names; fetched logos, made icons and installed libraries are cached in `~/.arkitect/`; numbered flows number one sequence; a Claude Code hook keeps a style question from promising to remember the style. Wording fixes measured by eval before merge: #248 0/3 → 3/3, #251 0/3 → 3/3, #265 1/3 → 3/3 | [#242](https://github.com/mouadja02/arkitect/issues/242), [#243](https://github.com/mouadja02/arkitect/issues/243), [#244](https://github.com/mouadja02/arkitect/issues/244), [#245](https://github.com/mouadja02/arkitect/issues/245), [#246](https://github.com/mouadja02/arkitect/issues/246), [#247](https://github.com/mouadja02/arkitect/issues/247), [#248](https://github.com/mouadja02/arkitect/issues/248), [#240](https://github.com/mouadja02/arkitect/issues/240), [#250](https://github.com/mouadja02/arkitect/issues/250), [#251](https://github.com/mouadja02/arkitect/issues/251), [#257](https://github.com/mouadja02/arkitect/issues/257), [#265](https://github.com/mouadja02/arkitect/issues/265), [#266](https://github.com/mouadja02/arkitect/issues/266), [#267](https://github.com/mouadja02/arkitect/issues/267), [#268](https://github.com/mouadja02/arkitect/issues/268), [#272](https://github.com/mouadja02/arkitect/issues/272), PRs [#269](https://github.com/mouadja02/arkitect/pull/269)-[#282](https://github.com/mouadja02/arkitect/pull/282) |
-| Layout round, 2.2.0 | Draw.io edges take their sides from the grid, spread ends that would share a point, and get waypoints only round a node or caption, through grid gaps, the space round a node off the grid, or over the top; Desktop 29.0.3 keeps a waypoint through a drag. Labels sit on the longest clear stretch of their route, the title above the diagram with a `subtitle`, a newline draws as one, and wordmarks keep a minimum height and a shared centre line in both engines. Excalidraw takes `"route": "avoid"`, written as fixed segments the app keeps through a drag. Icon search draws the product, not the vendor, for "HashiCorp Vault" and 22 like it, and `namesAProduct` and `looksLikeBoundary` hand over the node or boundary to paste. A second plugin hook sends back a report missing a heading or describing a render nobody opened. Evals: 15/17 at 1.00 at 2ab2b1d; #215's case and the landing zone 3/3 | [#237](https://github.com/mouadja02/arkitect/issues/237), [#246](https://github.com/mouadja02/arkitect/issues/246), [#272](https://github.com/mouadja02/arkitect/issues/272), [#241](https://github.com/mouadja02/arkitect/issues/241), [#238](https://github.com/mouadja02/arkitect/issues/238), [#239](https://github.com/mouadja02/arkitect/issues/239), [#254](https://github.com/mouadja02/arkitect/issues/254), [#255](https://github.com/mouadja02/arkitect/issues/255), [#236](https://github.com/mouadja02/arkitect/issues/236), [#124](https://github.com/mouadja02/arkitect/issues/124), [#283](https://github.com/mouadja02/arkitect/issues/283), [#285](https://github.com/mouadja02/arkitect/issues/285), [#286](https://github.com/mouadja02/arkitect/issues/286), [#287](https://github.com/mouadja02/arkitect/issues/287), [#215](https://github.com/mouadja02/arkitect/issues/215), [#203](https://github.com/mouadja02/arkitect/issues/203), [#126](https://github.com/mouadja02/arkitect/issues/126), [PR #288](https://github.com/mouadja02/arkitect/pull/288), [PR #289](https://github.com/mouadja02/arkitect/pull/289), [PR #290](https://github.com/mouadja02/arkitect/pull/290) |
-| Recent corrections | Library-cell sizing, broken documentation links, accurate preview prerequisites | [#80](https://github.com/mouadja02/arkitect/issues/80), [#87](https://github.com/mouadja02/arkitect/issues/87), [PR #97](https://github.com/mouadja02/arkitect/pull/97) |
+- **2.2.0** is on GitHub and, for the first time, on npm with provenance
+  (`npm install -g arkitect`).
+- **No issue is open.**
+- The suite passes on Ubuntu 24.04 and 26.04, Windows and macOS, Node 20 to
+  24. The last full eval batch (17 cases, Haiku under test) scored 1.00 on 15;
+  the two misses were judge calls on correct replies, since fixed in the cases.
 
-PR #97 and PR #98 passed the full cross-platform CI matrix and the Draw.io
-Desktop export check. See [testing.md](testing.md) for the maintained test
-baseline and local verification commands. Passing those checks does not close
-the work listed below.
+## What 2.2.0 added
 
-## In progress
+- **Layout.** Draw.io edges take their sides from the grid and get waypoints
+  only round what is in the way; labels, titles and wordmarks are placed from
+  measurements. Excalidraw takes `"route": "avoid"`. Desktop 29.0.3 and the
+  local Excalidraw app both keep the builder's routes through a drag.
+- **Icons.** A vendor's name no longer draws the vendor's logo in place of its
+  product, and a box named for a product, or like an account, is handed the
+  node or boundary to paste.
+- **Reports.** A Claude Code hook sends back a report missing its headings, or
+  one describing a render nobody opened.
+- **Release.** Publishing to npm.
 
-No implementation PR is open, and no issue is open but #126, which closes when
-2.2.0's npm publish is confirmed. 2.2.0 changes generated Draw.io and Excalidraw
-layout: rebuild specs to pick it up; saved files are untouched.
+## How work gets done here
 
-What the evals showed this round, and where it went:
+Changes are measured before they're trusted. A skill wording change gets an
+eval run on its branch before merge; where wording didn't move an agent, the
+check moved into code ([maintenance.md](maintenance.md), invariant 2b). Eval
+spend is batched: one PR for a round of fixes, then one batch after merge.
 
-- A report that dropped its headings, or described a render nobody opened,
-  did not move for wording (#215). A Stop hook now checks both after a build
-  and sends the report back once; it fired 5 times in 20 runs, and each
-  rewrite passed.
-- The landing-zone case failed three ways (#203). One was the prompt: the skill
-  asks questions only of someone who can answer, and the case never said
-  nobody could. Another was accounts drawn as boxes beside their services,
-  which covered nothing; `looksLikeBoundary` now lists a box named like an
-  account or a VPC with the boundary to paste.
-- Two judge criteria failed correct replies because the judge could not see
-  what they asked it to check. One is now given the facts, and one is three
-  regex graders.
+## Decisions that can look unfinished
 
-## Remaining work
-
-Every issue this page listed is closed on main: the upstream checks (#74, #82, #83),
-the visual reviews of every pack (#72, #73, #81) and the release workflows (#88).
-New work starts from the [open issues](https://github.com/mouadja02/arkitect/issues?q=is%3Aissue+is%3Aopen).
-
-The two issues that made a diagram draw the wrong thing are fixed: an exact
-Draw.io catalog ID is now looked up as an ID rather than passed through text
-search ([#95](https://github.com/mouadja02/arkitect/issues/95)), and an SVG's size is read from its root element in both
-engines ([#96](https://github.com/mouadja02/arkitect/issues/96)). Diagrams built before PR #98 may still carry a wrong mark
-or a stretched logo; rebuild them rather than trusting the old output. What
-remains is legibility rather than identity. A mark invisible on a light canvas is now
-refused at build time ([#85](https://github.com/mouadja02/arkitect/issues/85)), and a wordmark once drawn too
-short to read ([#76](https://github.com/mouadja02/arkitect/issues/76)) is now grown until its text carries.
-
-The visual-review issues cover different packs; they are not duplicates. The
-upstream drift pass from #74 and #82 is the one monitor, and #83's lifecycle re-check runs in it. Large test files and the Excalidraw builder
-remain refactoring candidates, with no implementation scheduled in this snapshot.
-
-## Decisions that can look like unfinished work
-
-- **Changelog fragments:** [#32](https://github.com/mouadja02/arkitect/issues/32) originally landed as [PR #55](https://github.com/mouadja02/arkitect/pull/55). Commit
-  [5ad8eb0](https://github.com/mouadja02/arkitect/commit/5ad8eb0) deliberately removed the fragment system.
-  Current policy is one-line edits to CHANGELOG.md under Unreleased, with a
-  conflict-marker guard. The release workflow dates that section; it does not
-  collect fragments.
-- **Catalog performance:** [#16](https://github.com/mouadja02/arkitect/issues/16) was closed after measurements supported
-  keeping the existing in-process cache. A new index or per-pack split was not built.
-- **Visual reviews:** [#18](https://github.com/mouadja02/arkitect/issues/18) completed Azure. Brands, AWS/GCP and curated-pack
-  review records remain [#72](https://github.com/mouadja02/arkitect/issues/72), [#73](https://github.com/mouadja02/arkitect/issues/73) and [#81](https://github.com/mouadja02/arkitect/issues/81) respectively.
-- **Product coverage:** [#11](https://github.com/mouadja02/arkitect/issues/11) and [#20](https://github.com/mouadja02/arkitect/issues/20) resolved source/licensing
-  decisions. Some products remain on-demand; closed coverage issues do not mean
-  every requested logo is bundled or directly fetchable.
-- **Style storage:** the implemented location is ~/.arkitect/<engine>/, or
-  ARKITECT_HOME, using sources.json and style-overrides.json. Earlier proposed
-  locations in [#89](https://github.com/mouadja02/arkitect/issues/89) are historical.
-- **Releases:** merged work is available on main, but is not automatically a tagged
-  release. A person starts the release workflow; v1.2.0 (2026-09-18) was the
-  first tagged GitHub Release and v2.2.0 the latest at this snapshot. From
-  2.2.0 a release is also published to npm (#126).
-
-## Keeping this accurate
-
-After merging work, link its PR from the issue, check only verified acceptance
-criteria, and name any remaining scope in a follow-up issue. Retain the original
-report as history and put current status above it. Update this snapshot when the
-work order changes; use issue and PR state for day-to-day tracking.
+- **Changelog fragments** were tried (#32) and removed; entries go straight
+  under `[Unreleased]`.
+- **Catalog performance** (#16) was measured and the in-process cache kept.
+- **On-demand marks** stay without bytes until a licence or trademark policy
+  allows them; a closed coverage issue doesn't mean every logo is bundled
+  (#11, #20).
+- **Excalidraw routing** stays opt-in (`avoid`): the default route is the one
+  the app re-routes itself when a node moves.
+- **The package size** (about 18 MB packed) is bundled artwork, and stays: no
+  mark moves from bundled to fetched to save space (#126).

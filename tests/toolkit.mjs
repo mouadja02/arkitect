@@ -310,9 +310,9 @@ test('install codex writes a Codex skill whose every path resolves from another 
   assert(/update\s+AGENTS\.md/.test(again) && /skip\s+\.agents/.test(again), again);
 
   // The docs name the current route and the legacy one's real spelling.
-  const agents = readFileSync(join(ROOT, 'docs', 'agents.md'), 'utf8');
+  const agents = readFileSync(join(ROOT, 'docs', 'install.md'), 'utf8');
   const codex = agents.slice(agents.indexOf('## Codex'), agents.indexOf('\n## ', agents.indexOf('## Codex') + 1));
-  assert(codex.includes('$arkitect') && codex.includes('/prompts:diagram'), 'docs/agents.md: Codex invocation');
+  assert(codex.includes('$arkitect') && codex.includes('/prompts:diagram'), 'docs/install.md: Codex invocation');
   assert(!/cp .*\.codex\/prompts/.test(agents) && !existsSync(join(ROOT, '.codex')), 'the deprecated prompt is still shipped');
 });
 
@@ -444,11 +444,11 @@ test('the count guard catches a drifted number and a dropped sentence (#78)', ()
   // Rewording past the pattern hides the number instead of correcting it.
   const dropped = checkDocCounts({
     live,
-    read: (rel) => (rel === 'docs/drawio-icons.md'
+    read: (rel) => (rel === 'docs/icons.md'
       ? docText(rel).replace('an answer key of', 'an answer key of about')
       : docText(rel)),
   });
-  assert(dropped.some((p) => p.startsWith('docs/drawio-icons.md: no longer says answer-key queries with an expected answer')),
+  assert(dropped.some((p) => p.startsWith('docs/icons.md: no longer says answer-key queries with an expected answer')),
     `a dropped sentence went unreported: ${dropped.join(' | ')}`);
 });
 

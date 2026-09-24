@@ -200,7 +200,7 @@ carry no name; find those by reading the numbered contact sheets in
 select an exact mark with `drawio:<pack>/<slug>`. Existing successful native
 choices keep their precedence. The image, caption and connections stay editable,
 but the logo's paths are not native strokes. No tracing or download is involved;
-on-demand marks remain unavailable. See `docs/shared-icons.md` for terms.
+on-demand marks remain unavailable. See `docs/icons.md`, and `NOTICE` for terms.
 If nothing matches, use an honest **placeholder** — a dotted slot
 with a `?`, named in the build report — and say so. Only build an icon from a
 logo (`excalidraw make-icon --url … --trace`) when asked.
@@ -263,7 +263,7 @@ followed the file.
 | `skills/*/references/pattern-catalog.md` | the reusable layouts |
 | `skills/arkitect-excalidraw/references/excalidraw-format.md` | the scene format, for hand-editing |
 | `skills/*/assets/templates/*.spec.json` | worked spec examples, with the PNG beside them |
-| `docs/` | install, agent setup, MCP, Docker, CLI, icons, testing |
+| `docs/` | install and agent setup, the local apps and MCP, CLI and spec format, icons, testing |
 
 **Look at the example PNGs before writing your first spec.** It is faster than
 reasoning about the rules, and it is what the output is supposed to look like.

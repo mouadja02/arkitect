@@ -2,7 +2,7 @@
 //
 // The numbers were typed by hand in more than a dozen files and nothing compared
 // them with their source. The Draw.io pack table went two releases stale before
-// anyone noticed, and the answer-key sentence in docs/drawio-icons.md claimed
+// anyone noticed, and the answer-key sentence in the icon docs claimed
 // 375 queries and 28 flagged when the file held 471 and 21.
 //
 // Each claim names the files it applies to and carries enough of the sentence
@@ -69,39 +69,26 @@ const CLAIMS = [
     re: /\| coverage \| AWS \(([\d,]+)\), Azure \(([\d,]+)\), Google Cloud \(([\d,]+)\)/ },
   { files: ['docs/icons.md'], facts: ['pack:brands'],
     re: /([\d,]+) more brands as a catch-all/ },
+  { files: ['docs/icons.md'], facts: ['onDemand'],
+    re: /The ([\d,]+) on-demand entries/ },
+  { files: ['docs/icons.md'], facts: ['answered'],
+    re: /an answer key of ([\d,]+)\s+queries/ },
+  { files: ['docs/icons.md'], facts: ['flagged'],
+    re: /plus ([\d,]+) that must\s+come back flagged/ },
+  { files: ['docs/icons.md'], facts: ['committed'],
+    re: /the ([\d,]+) Draw\.io marks fill the gap/ },
 
   { files: ['docs/getting-started.md'], facts: ['excalidrawLibraries'],
-    re: /and ([\d,]+) icon libraries are all committed/ },
+    re: /and ([\d,]+) icon\s+libraries are all committed/ },
   { files: ['docs/getting-started.md'], facts: ['bundled', 'committed', 'packs'],
     re: /([\d,]+) marks ship with Arkitect: ([\d,]+) across ([\d,]+) Draw\.io packs/ },
   { files: ['docs/getting-started.md'], facts: ['excalidrawItems', 'excalidrawLibraries'],
     re: /and ([\d,]+) items across ([\d,]+) Excalidraw libraries/ },
-  { files: ['docs/getting-started.md'], facts: ['packs'],
-    re: /([\d,]+) packs cover far more/ },
-
-  { files: ['docs/shared-icons.md'], facts: ['committed', 'packs', 'excalidrawItems'],
-    re: /all ([\d,]+) committed marks in the ([\d,]+) Draw\.io packs, alongside\s+its ([\d,]+) native library items/ },
-  { files: ['docs/shared-icons.md'], facts: ['onDemand'],
-    re: /The ([\d,]+) on-demand entries/ },
-
-  { files: ['docs/drawio-icons.md'], facts: ['onDemand'],
-    re: /([\d,]+) products \(`node scripts\/find-icon\.mjs --stats`/ },
-  { files: ['docs/drawio-icons.md'], facts: ['answered'],
-    re: /an answer key of ([\d,]+)\s+queries/ },
-  { files: ['docs/drawio-icons.md'], facts: ['flagged'],
-    re: /plus ([\d,]+) that must\s+come back flagged/ },
 
   { files: ['docs/testing.md'], facts: ['excalidrawQueries'],
     re: /the ([\d,]+)-query answer key in `tests\/excalidraw-icon-queries\.json`/ },
 
-  { files: ['docs/excalidraw-icons.md'], facts: ['excalidrawItems'],
-    re: /— ([\d,]+) marks covering most of what a cloud/ },
-  { files: ['docs/excalidraw-icons.md'], facts: ['committed'],
-    re: /fill gaps with ([\d,]+) embedded original marks/ },
-
-  { files: ['docs/excalidraw-libraries.md'], facts: ['committed'],
-    re: /also provide ([\d,]+) original\s+SVG\/PNG marks/ },
-  { files: ['docs/excalidraw-libraries.md', EXCALIDRAW_ICONS, 'skills/arkitect-excalidraw/assets/libraries/README.md'],
+  { files: ['docs/icons.md', EXCALIDRAW_ICONS, 'skills/arkitect-excalidraw/assets/libraries/README.md'],
     facts: ['excalidrawLibraries', 'excalidrawItems'],
     re: /([\d,]+) libraries, ([\d,]+) items/ },
   { files: [EXCALIDRAW_ICONS], facts: ['committed'],
