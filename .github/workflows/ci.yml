@@ -72,9 +72,14 @@ jobs:
           ARKITECT_BROWSER: /usr/bin/google-chrome
         run: node tests/run-tests.mjs
 
-      # What release publish would send to npm, and its size (#126).
+      # What release publish would send to npm, and its size (#126). Current
+      # npm refuses even a dry run over a published version, which turned main
+      # red the moment 2.2.0 shipped, so the runner's copy takes a prerelease
+      # version nothing has used.
       - name: npm publish, dry run
-        run: npm publish --dry-run --access public
+        run: |
+          npm pkg set version="$(node -p "require('./package.json').version")-ci.0"
+          npm publish --dry-run --access public --tag ci
 
   plugin:
     name: plugin manifest

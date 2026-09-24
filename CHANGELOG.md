@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- CI's npm dry run takes a prerelease version: npm 12 refuses even a dry run over a published one, which turned main red once 2.2.0 shipped (#126).
+
 ## [2.2.0] — 2026-09-24
 
 Generated layout changes: rebuild your specs to pick it up. Saved files are
