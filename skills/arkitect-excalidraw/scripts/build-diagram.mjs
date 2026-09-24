@@ -1176,7 +1176,8 @@ function main(argv) {
     // Drawn as asked; fix it or say why it stays (#204).
     looksLikeBoundary: report.looksLikeBoundary,
     // A plain shape whose label names a product with a bundled mark: drawn as
-    // text. Draw each as an icon node, or say why it stays text (#240).
+    // text. Paste an entry's `replace` over its node, or say why it stays text
+    // (#240, #287).
     namesAProduct: report.namesAProduct,
     // A connector drawn through a node it does not connect (#125).
     crossings: report.crossings,

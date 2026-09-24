@@ -129,10 +129,47 @@ export function search(query, { limit = 8, catalog = loadCatalog(), packs = null
   return [...seen.values()].sort((a, b) => b.best - a.best).slice(0, limit);
 }
 
+// "Redis cache" names Redis. ElastiCache carries it as an alias, so the whole
+// query drew AWS's mark with no AWS stack named (#283), and "postgres database"
+// offered Azure's and RDS first. When everything after a product's name is a
+// generic word, the product's name decides, unless the spec names the stack
+// whose mark the whole query found. A vendor's own name for its service keeps
+// its mark: "azure functions", "elastic container service", "activity log".
+// The head never settles a tie the whole query found (#75), and never reaches
+// a vendor's mark the spec did not ask for: "billing service" is not GCP's.
+export function resolve(query, opts = {}) {
+  const whole = resolveWhole(query, opts);
+  const head = productHead(query);
+  const open = whole.confident ? borrowsAName(whole.icon, head, query, opts)
+    : whole.reason === 'weak match' || whole.reason === 'no match';
+  if (!head || !open) return whole;
+  const named = resolveWhole(head, opts);
+  if (!named.confident || (VENDOR_PACKS.has(named.icon.pack) && !opts.packs?.includes(named.icon.pack))) return whole;
+  return { ...named, query, head };
+}
+
+const VENDOR_NAMES = { aws: /\b(aws|amazon)\b/i, azure: /\b(azure|microsoft)\b/i, gcp: /\b(google|gcp)\b/i };
+const squash = (s) => normalizeTitle(s).replace(/ /g, '');
+
+// Did a vendor mark answer to another product's name? Not when the spec names
+// the stack, the query names the vendor, or the head is part of the mark's title.
+function borrowsAName(icon, head, query, opts) {
+  return VENDOR_PACKS.has(icon.pack) && !opts.packs?.includes(icon.pack)
+    && !VENDOR_NAMES[icon.pack].test(query) && !squash(icon.title).includes(squash(head));
+}
+
+// "Redis cache" -> "redis"; null when nothing generic trails, or nothing else is left.
+export function productHead(query) {
+  const words = String(query ?? '').trim().split(/\s+/);
+  let n = words.length;
+  while (n > 0 && onlyGenericWords(words[n - 1])) n -= 1;
+  return n > 0 && n < words.length ? words.slice(0, n).join(' ') : null;
+}
+
 // A resolution is only safe to use unattended when the leader is strong, clearly
 // ahead, and matched by its name rather than by a fragment or a common noun.
 // Anything else comes back flagged, with the alternatives.
-export function resolve(query, opts = {}) {
+function resolveWhole(query, opts = {}) {
   const groups = search(query, opts);
   if (!groups.length) return { query, confident: false, reason: 'no match', groups: [] };
   const [top, next] = groups;

@@ -2058,6 +2058,91 @@ test('a generic word never draws a cloud vendor\'s mark unattended, unless the s
   eq(inContext.used.map((u) => u.id).join(','), 'gcp/cloud-functions', 'and a GCP spec draws it by name');
 });
 
+// "HashiCorp Vault" was a weak match with Azure's vaults and the HashiCorp
+// company mark as its choices, and an agent drew the company logo (#285).
+const VENDOR_NAMED = {
+  'hashicorp vault': 'security-identity/vault', 'hcp vault': 'security-identity/vault',
+  'hashicorp terraform': 'devops/terraform', 'hcp terraform': 'devops/terraform', 'terraform cloud': 'devops/terraform',
+  'hashicorp consul': 'devops/consul', 'hashicorp nomad': 'devops/nomad', 'hashicorp packer': 'devops/packer',
+  'hashicorp vagrant': 'devops/vagrant', 'atlassian jira': 'saas-collab/jira', 'atlassian confluence': 'saas-collab/confluence',
+  'atlassian bitbucket': 'devops/bitbucket', 'atlassian trello': 'saas-collab/trello',
+  'atlassian opsgenie': 'observability/opsgenie', 'atlassian statuspage': 'observability/statuspage',
+  'elastic kibana': 'observability/kibana', 'elastic logstash': 'observability/logstash',
+  'red hat ansible': 'devops/ansible', 'redhat ansible': 'devops/ansible', 'anthropic claude': 'ai-frameworks/claude',
+  'jetbrains teamcity': 'devops/teamcity', 'langchain langgraph': 'ai-frameworks/langgraph', 'mongodb atlas': 'databases/mongodb',
+  // Already right through the title; kept so an alias change can't break them.
+  'apache kafka': 'streaming-orchestration/apachekafka', 'microsoft sql server': 'databases/microsoftsqlserver',
+  'grafana loki': 'observability/grafanaloki', 'google gemini': 'ai-frameworks/googlegemini',
+};
+
+test('a bundled product named with its vendor draws the product, and the vendor alone still draws the vendor (#285)', () => {
+  for (const [q, id] of Object.entries(VENDOR_NAMED)) {
+    const r = finder.resolve(q);
+    assert(r.confident && r.icon.id === id, `"${q}" -> ${r.confident ? r.icon.id : r.reason}, expected ${id}`);
+  }
+  // On-demand marks have no bytes to draw, but the name must still find them.
+  for (const [q, id] of [['langchain langsmith', 'ai-frameworks/langsmith'], ['microsoft power bi', 'data-platforms/powerbi']]) {
+    eq(finder.search(q)[0].variants[0].id, id, `"${q}" leads with the product`);
+  }
+  const products = new Set(Object.values(VENDOR_NAMED));
+  for (const vendor of ['hashicorp', 'hcp', 'atlassian', 'elastic', 'red hat', 'redhat', 'anthropic', 'jetbrains', 'langchain', 'mongodb']) {
+    const r = finder.resolve(vendor);
+    if (vendor === 'mongodb') { eq(r.icon.id, 'databases/mongodb', 'MongoDB is its own product'); continue; }
+    assert(!(r.confident && products.has(r.icon.id)), `the vendor word "${vendor}" alone drew the product ${r.icon?.id}`);
+  }
+});
+
+// "Redis cache" drew ElastiCache through its alias with no AWS stack named, and
+// "postgres database" offered Azure's and RDS first (#283).
+test('a product name before generic words draws the product, not a vendor mark carrying its name (#283)', () => {
+  const drawn = (q, opts) => { const r = finder.resolve(q, opts); return r.confident ? r.icon.id : `~${r.reason}`; };
+  for (const [q, id] of [['redis cache', 'databases/redis'], ['Redis cache', 'databases/redis'], ['memcached cache', 'databases/memcached'],
+    ['postgres database', 'databases/postgresql'], ['elasticsearch service', 'databases/elasticsearch'],
+    ['kafka topic', 'streaming-orchestration/apachekafka'], ['kubernetes cluster', 'devops/kubernetes']]) {
+    eq(drawn(q), id, `"${q}"`);
+  }
+  eq(drawn('redis cache', { packs: ['aws'] }), 'aws/amazon-elasticache', 'an AWS spec still draws ElastiCache');
+  eq(drawn('s3 bucket', { packs: ['aws'] }), 'aws/amazon-simple-storage-service', 'and S3 for "s3 bucket"');
+  // A vendor's own name for its service keeps its mark; the head settles no tie
+  // (#75) and reaches no vendor mark nobody asked for.
+  for (const [q, id] of [['azure functions', 'azure/function-apps'], ['elastic container service', 'aws/amazon-elastic-container-service'],
+    ['activity log', 'azure/activity-log'], ['amazon elasticache', 'aws/amazon-elasticache']]) {
+    eq(drawn(q), id, `"${q}"`);
+  }
+  for (const q of ['oracle database', 'billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
+
+  // Every alias a vendor mark carries that names another bundled product,
+  // not through the vendor's own title or name, must not draw the vendor.
+  // "Elastic" in "Elastic Compute Cloud" is a word of AWS's formal name.
+  const catalog = finder.loadCatalog();
+  const curated = new Set(catalog.packs.filter((p) => p.rank === 20 && !['primitives', 'agents', 'file-types', 'github'].includes(p.id)).map((p) => p.id));
+  const names = new Set();
+  for (const i of catalog.icons) {
+    if (!curated.has(i.pack)) continue;
+    const t = core.normalizeTitle(i.title);
+    if (t.length > 2) names.add(t);
+    if (t.startsWith('apache ')) names.add(t.slice(7));
+  }
+  const vendorWord = { aws: /\b(aws|amazon)\b/, azure: /\b(azure|microsoft)\b/, gcp: /\b(google|gcp)\b/ };
+  const squash = (s) => s.replace(/ /g, '');
+  const borrowed = [];
+  for (const i of catalog.icons) {
+    if (!vendorWord[i.pack]) continue;
+    const own = squash(core.normalizeTitle(i.title));
+    const generated = new Set(i.generatedAliases ?? []);
+    for (const a of i.aliases) {
+      if (generated.has(a) || !a.includes(' ') || vendorWord[i.pack].test(a) || own.includes(squash(a))) continue;
+      const words = a.split(' ');
+      const spans = words.flatMap((_, s) => words.slice(s).map((__, n) => words.slice(s, s + n + 1).join(' ')));
+      const hit = spans.find((s) => names.has(s) && !own.includes(squash(s)) && s !== 'elastic');
+      if (hit) borrowed.push([i.id, a, drawn(a)]);
+    }
+  }
+  eq(borrowed.map(([id, a]) => `${id} "${a}"`).join(', '), 'aws/amazon-elasticache "redis cache", aws/amazon-elasticache "memcached cache", '
+    + 'aws/amazon-opensearch-service "elasticsearch service", gcp/cloud-composer "managed airflow"', 'the aliases that name another product');
+  for (const [id, a, got] of borrowed) assert(got !== id, `"${a}" still draws ${id} unattended`);
+});
+
 test('icon resolution corpus: never confidently wrong, and precision at rank 1 holds its floor (#15)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'icon-queries.json'), 'utf8'));
   const m = { answerable: 0, top1: 0, gated: 0, refusals: 0, held: 0 };
@@ -4266,6 +4351,26 @@ test('a plain box naming bundled products is listed under namesAProduct; a gener
   writeFileSync(specPath, JSON.stringify(spec));
   const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'names-a-product.drawio')], { encoding: 'utf8' }));
   eq(out.namesAProduct.length, 3, 'the CLI prints them');
+});
+
+// Listed and then ignored: the agent kept a plain shape labelled PostgreSQL
+// and reported it as fine (#287). A box that is only the product's name now
+// carries the node to paste over it.
+test('a box labelled only with a product name carries a replace node that draws the mark and keeps its edges (#287)', () => {
+  const spec = { nodes: [
+    { id: 'api', kind: 'box', label: 'Orders API', col: 0, row: 0 },
+    { id: 'db', kind: 'box', label: 'PostgreSQL', col: 1, row: 0, width: 150 },
+    { id: 'src', kind: 'box', label: 'Sources: MySQL, Snowflake', col: 0, row: 1, width: 260 },
+  ], edges: [{ from: 'api', to: 'db', label: 'writes' }] };
+  const listed = builder.buildDiagram(spec).report.namesAProduct;
+  eq(JSON.stringify(listed.find((x) => x.node === 'db').replace),
+    '{"id":"db","label":"PostgreSQL","col":1,"row":0,"kind":"icon","icon":"databases/postgresql"}', 'the node to paste');
+  assert(listed.filter((x) => x.node === 'src').every((x) => !x.replace), 'a box naming several products gets none');
+  const pasted = { ...spec, nodes: spec.nodes.map((n) => listed.find((x) => x.node === n.id)?.replace ?? n) };
+  const { xml, report } = builder.buildDiagram(pasted);
+  eq(report.used.map((u) => u.id).join(','), 'databases/postgresql', 'it draws the mark');
+  eq(report.namesAProduct.map((x) => x.node).join(','), 'src,src', 'and leaves the box off the list');
+  assert(/<mxCell id="e1"[^>]*source="api" target="db"/.test(xml), 'the edge still binds to it');
 });
 
 // The docs offered multiple pages three times - the engine table, the interview

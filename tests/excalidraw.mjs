@@ -410,6 +410,20 @@ test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate
   eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
 });
 
+// Both engines share the Draw.io resolver for shared marks, so both inherit
+// the vendor-named product (#285) and the product before a generic word (#283).
+test('"HashiCorp Vault" draws Vault and "Redis cache" draws Redis (#285, #283)', () => {
+  const entries = finder.catalog();
+  for (const [q, ref] of [['HashiCorp Vault', 'drawio:security-identity/vault'], ['Atlassian Jira', 'drawio:saas-collab/jira'],
+    ['Redis cache', 'drawio:databases/redis'], ['postgres database', 'drawio:databases/postgresql']]) {
+    eq(finder.unattended(q, { entries }).entry?.ref, ref, `"${q}"`);
+  }
+  const out = JSON.parse(node('find-icon.mjs', ['redis', 'cache', '--compact']));
+  eq(JSON.stringify(out.node), '{"kind":"icon","icon":"drawio:databases/redis"}', 'the node to copy is Redis');
+  const { report } = builder.buildDiagram({ nodes: [{ id: 'c', kind: 'icon', label: 'Redis cache' }] }, { seed: 1 });
+  eq(report.icons.map((i) => i.ref).join(','), 'drawio:databases/redis', 'a build draws it');
+});
+
 test('icon resolution answer key: never draws a different product unattended (#22)', () => {
   const key = JSON.parse(readFileSync(join(HERE, 'excalidraw-icon-queries.json'), 'utf8'));
   const entries = finder.catalog({ shared: false });
@@ -971,6 +985,21 @@ test('a plain shape naming bundled products is listed under namesAProduct; a gen
   for (const f of readdirSync(templates).filter((f) => f.endsWith('.spec.json'))) {
     eq(builder.buildDiagram(JSON.parse(readFileSync(join(templates, f), 'utf8'))).report.namesAProduct.length, 0, f);
   }
+});
+
+// The agent kept a cylinder labelled PostgreSQL with the entry in front of it (#287).
+test('a shape labelled only with a product name carries a replace node that draws the mark and keeps its arrows (#287)', () => {
+  const spec = { nodes: [
+    { id: 'api', kind: 'box', label: 'Orders API', col: 0, row: 0 },
+    { id: 'db', kind: 'cylinder', label: 'PostgreSQL', col: 1, row: 0 },
+  ], edges: [{ from: 'api', to: 'db' }] };
+  const [entry] = builder.buildDiagram(spec, { seed: 1 }).report.namesAProduct;
+  eq(JSON.stringify(entry.replace), '{"id":"db","label":"PostgreSQL","col":1,"row":0,"kind":"icon","icon":"drawio:databases/postgresql"}', 'the node to paste');
+  const { scene, report } = builder.buildDiagram({ ...spec, nodes: [spec.nodes[0], entry.replace] }, { seed: 1 });
+  eq(report.icons.map((i) => i.ref).join(','), 'drawio:databases/postgresql', 'it draws the mark');
+  eq(report.namesAProduct.length, 0, 'and the list is empty');
+  const v = validator.validateScene(scene);
+  assert(v.ok, `arrows stay bound: ${v.errors.join('; ')}`);
 });
 
 // ------------------------------------------------------------- bundled libraries
@@ -3618,6 +3647,16 @@ test('analyze --find returns the full id of the shape a label names, and an edit
   scene.elements.push(arrow);
   const v = validator.validateScene(scene);
   assert(v.ok && !v.warnings.some((w) => w.includes(arrow.id)), `bound at both ends: ${[...v.errors, ...v.warnings].join('; ')}`);
+});
+
+// A spelling grader is only fair if it passes the spelling the style guide
+// asks for: "PostgreSQL" is Postgre + SQL (#208, #286).
+test('the unknown-product eval case accepts "PostgreSQL" and "Postgres", and fails a reply naming neither (#286)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'unknown-product-placeholder', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: every-component-accounted-for\n\s+target: last_message\n\s+pattern: '([^']+)'/)[1]);
+  assert(grader.test('React: react mark. Quillrose Ledger: placeholder. PostgreSQL: databases/postgresql.'), 'PostgreSQL passes');
+  assert(grader.test('React app, Quillrose placeholder, Postgres cylinder'), 'Postgres passes');
+  assert(!grader.test('React app, Quillrose placeholder, a database'), 'a reply naming neither fails');
 });
 
 cleanTestIcons();
