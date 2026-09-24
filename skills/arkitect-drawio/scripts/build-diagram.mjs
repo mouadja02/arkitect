@@ -573,7 +573,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         leaf: n.kind !== 'text',
       });
       footprints.push({
-        field: `${at}nodes[${i}]`, id: n.id, width: n.width, height: n.height,
+        field: `${at}nodes[${i}]`, id: n.id, width: n.width, height: n.height, label: n.label, col: n.col, row: n.row,
         plain: n.kind == null || n.kind === 'box' || !NODE_KINDS.includes(n.kind),
         box: { x: x + origin.x, y: y + origin.y, width: box.w, height: box.h },
       });

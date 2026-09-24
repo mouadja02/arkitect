@@ -32,6 +32,7 @@ untouched, and a hand-written routing pass is no longer needed.
 - The Draw.io title ends above the highest boundary or node on its page and is as wide as its text, not 900px (#239).
 - Excalidraw's embedded marks and Draw.io's fetched logos get the wordmark floor pack marks have had since #76 (#254), and every mark and logo is centred on its cell from the size it is drawn at, so a row shares one centre line and its edges run straight (#255).
 - An Excalidraw scope holding a frame leaves room for the frame's name above it, clear of its own label (#236).
+- `looksLikeBoundary` also lists a plain box named like a boundary ("Management Account", "Prod VPC"; account, VPC, VNet, subnet, region, availability zone, resource group, tenant) with `boundary`, the entry to paste into `boundaries` (#203).
 - `namesAProduct` also carries `replace` when the product is a whole line of the label, as in "Orders DB" over "(Postgres)", and the label names no other product (#287).
 - "HashiCorp Vault", "Atlassian Jira" and 20 other vendor-prefixed names resolve to the product, not the vendor's logo (#285).
 - A product name followed only by generic words is decided by the product: "Redis cache" draws Redis, and ElastiCache only when the spec names AWS; "postgres database" draws PostgreSQL. A vendor's own name for its service keeps its mark. "media" is a generic word (#283).

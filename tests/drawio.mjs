@@ -4357,6 +4357,28 @@ test('a box drawn where a boundary was meant is named in the build report (#204)
   ]), 'the CLI prints them and exits 0');
 });
 
+// A landing-zone run drew each account as a box beside its services, which
+// covers nothing, so nothing was reported and the file had no container (#203).
+test('a box named like an account or a VPC is listed with the boundary to paste in its place (#203)', () => {
+  const nodes = [
+    { id: 'mgmt', kind: 'box', label: 'Management Account', col: 1, row: 0 },
+    { id: 'org', kind: 'icon', icon: 'aws/aws-organizations', label: 'AWS Organizations', col: 2, row: 0 },
+    { id: 'w2', kind: 'box', label: 'Workload Account 2', col: 0, row: 2 },
+    { id: 'vpc', label: 'Prod VPC', col: 1, row: 2 },
+    { id: 'svc', kind: 'box', label: 'Account service', col: 2, row: 2 },
+  ];
+  const found = builder.buildDiagram({ nodes, edges: [{ from: 'mgmt', to: 'org' }] }).report.looksLikeBoundary;
+  eq(found.map((f) => `${f.node}:${f.named}`).join(), 'mgmt:account,w2:account,vpc:vpc', 'a service named after accounts is not one');
+  eq(JSON.stringify(found[0].boundary), '{"id":"mgmt","label":"Management Account","col":1,"row":0,"cols":1,"rows":1}', 'the entry to paste');
+  // Pasted, spanned and parented, it draws a container and the list empties.
+  const fixed = builder.buildDiagram({
+    boundaries: [{ ...found[0].boundary, cols: 2 }],
+    nodes: [{ ...nodes[1], parent: 'mgmt' }],
+  });
+  eq(fixed.report.looksLikeBoundary.length, 0, 'nothing left to report');
+  assert(/id="mgmt"[^>]*container=1/.test(fixed.xml), 'a container');
+});
+
 // A box of product names drew as text while the report said nothing, and the
 // agent reported the products had no icon (#240).
 test('a plain box naming bundled products is listed under namesAProduct; a generic word and a note are not (#240)', () => {

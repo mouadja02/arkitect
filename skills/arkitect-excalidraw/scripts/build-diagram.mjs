@@ -808,7 +808,7 @@ function assemble(spec, style) {
     for (const el of produced) nodeOf.set(el.id, n.id);
     geom.set(n.id, box);
     footprints.push({
-      field: `nodes[${i}]`, id: n.id, width: n.width, height: n.height, box,
+      field: `nodes[${i}]`, id: n.id, width: n.width, height: n.height, box, label: n.label, col: n.col, row: n.row,
       plain: !['text', 'note', 'icon', 'placeholder', 'actor'].includes(n.kind),
     });
     if (anchor) anchorFor.set(n.id, anchor);
