@@ -20,15 +20,19 @@ untouched, and a hand-written routing pass is no longer needed.
 - A Draw.io spec takes `subtitle`, drawn under the title (#239).
 - A `namesAProduct` entry for a box whose label is one product's name carries `replace`, the icon node to paste over it, keeping its id so its edges still bind. A new eval case grades the drawn mark (#287).
 - Draw.io `validate --json` gives each edge label's distance from its arrowhead (#241).
+- Excalidraw edges take `"route": "avoid"`, and `layout.route` sets it for all: an edge whose route crosses another node, its caption, a scope's name or a boundary holding neither end goes round it, off the lanes other edges run. The detour is written as the elbow arrow's fixed segments, which the app keeps when a node is dragged. Edges without it draw as before, and the crossing warning names the option (#124).
+- A second plugin hook, `hooks/report-check.mjs`: after a build, a report missing one of its six headings, or whose Render section describes a picture when no PNG was opened, is sent back once (#215).
+- Release publish puts each tagged version on npm with provenance when an `NPM_TOKEN` secret is set, after the tag and the GitHub Release, and skips a version already there; CI dry-runs it (#126).
 
 ### Changed
 
-- The Draw.io builder sets every edge's sides from the grid: between columns it leaves and enters sideways and turns in the gap, level when one end's centre lies inside the other's height; within a column it stays vertical, below any caption. Ends that would share one point on a side are spread along it, so two flows into one port, or a request and its reply, draw as two lines. Only a route that would still cross a node or a caption gets waypoints, through the gaps between columns and rows (#237, #246, #272).
+- The Draw.io builder sets every edge's sides from the grid: between columns it leaves and enters sideways and turns in the gap, level when one end's centre lies inside the other's height; within a column it stays vertical, below any caption. Ends that would share one point on a side are spread along it, so two flows into one port, or a request and its reply, draw as two lines. Only a route that would still cross a node or a caption gets waypoints, through the gaps between columns and rows, or between what is drawn when a node sits off the grid; it goes over the top or under the bottom when that takes fewer turns than the gaps (#237, #246, #272).
 - Draw.io `validate` follows an edge's waypoints instead of skipping the edge (#237).
-- Each Draw.io edge label sits on the longest straight stretch of its route clear of borders, nodes, captions, other labels and the last 30px before the arrowhead, instead of 45% along it; `labelPos` still moves it and is shown in the numbered-flow pattern (#241).
+- Each Draw.io edge label sits on the longest straight stretch of its route clear of borders, nodes, captions, other labels, other edges' lines and the last 30px before the arrowhead, instead of 45% along it; `labelPos` still moves it and is shown in the numbered-flow pattern (#241).
 - The Draw.io title ends above the highest boundary or node on its page and is as wide as its text, not 900px (#239).
 - Excalidraw's embedded marks and Draw.io's fetched logos get the wordmark floor pack marks have had since #76 (#254), and every mark and logo is centred on its cell from the size it is drawn at, so a row shares one centre line and its edges run straight (#255).
 - An Excalidraw scope holding a frame leaves room for the frame's name above it, clear of its own label (#236).
+- `namesAProduct` also carries `replace` when the product is a whole line of the label, as in "Orders DB" over "(Postgres)", and the label names no other product (#287).
 - "HashiCorp Vault", "Atlassian Jira" and 20 other vendor-prefixed names resolve to the product, not the vendor's logo (#285).
 - A product name followed only by generic words is decided by the product: "Redis cache" draws Redis, and ElastiCache only when the spec names AWS; "postgres database" draws PostgreSQL. A vendor's own name for its service keeps its mark. "media" is a generic word (#283).
 
@@ -36,6 +40,7 @@ untouched, and a hand-written routing pass is no longer needed.
 
 - A newline in a Draw.io label is written as `<br>`, so a two-line caption draws on two lines (#238).
 - The unknown-product eval case accepts "PostgreSQL" (#286).
+- `report-names-every-warning` is built on an overlap and a border crossing, which no router clears; the better detours had emptied it. The learning-skill judge is told the fixture's style, and the icon-from-logo judge that "data warehouse" is not a product: each failed a correct reply.
 
 ## [2.1.0] — 2026-09-23
 

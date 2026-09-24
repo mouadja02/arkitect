@@ -33,19 +33,19 @@ graders:
     tool: Bash
     input_match: validate-drawio
 
-  # Built from the spec as given: both ids the warnings name are in the file.
+  # Built from the spec as given: the ids the warnings name are in the file.
   - type: regex
     name: built-the-spec-as-given
     target: { source: file, path: ./eval-output/pipeline.drawio }
-    pattern: '^(?=[\s\S]*id="write-edge")(?=[\s\S]*id="acct-boundary")(?=[\s\S]*id="queue")'
+    pattern: '^(?=[\s\S]*id="dlq")(?=[\s\S]*id="acct-boundary")(?=[\s\S]*id="worker")'
 
   # The two warnings validate prints for this spec, each named by an id only
-  # the warning gives: nothing else in a report has reason to say write-edge
-  # or retention-note. Checked, not judged (#135).
+  # the warning gives: a report has little other reason to say dlq or
+  # retention-note. Checked, not judged (#135).
   - type: regex
-    name: names-the-edge-warning
+    name: names-the-overlap-warning
     target: last_message
-    pattern: 'write-edge'
+    pattern: '\bdlq\b'
 
   - type: regex
     name: names-the-border-warning
@@ -55,10 +55,9 @@ graders:
   - type: llm
     name: does-not-understate
     criteria: |
-      Validate warned twice: edge write-edge runs through the queue icon, and
-      the text retention-note lies across the border of the acct-boundary
-      container. The
-      spec could not be changed, so both remain. Pass if the response presents
+      Validate warned twice: the dlq icon overlaps the worker icon, and the
+      text retention-note lies across the border of the acct-boundary
+      container. The spec could not be changed, so both remain. Pass if the response presents
       both as defects still in the diagram. Fail if it calls the diagram clean
       or done without them, says "a few" or "minor" instead of naming them,
       claims either was fixed, or presents only one.

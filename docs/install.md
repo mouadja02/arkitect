@@ -50,6 +50,12 @@ style reaches later diagrams only through `/learn-drawio-style` or
 style, it sends that reply back once. It reads nothing but the prompt and,
 in that one session, the last reply, and it never blocks a prompt.
 
+A second, `hooks/report-check.mjs`, runs when a reply stops. If the reply
+names a `.drawio` or `.excalidraw` file and the session ran a build, it
+checks the report: the six headings are there, and Render doesn't describe
+a picture when no PNG was opened. If either fails, it sends the reply back
+once, saying what to fix (#215).
+
 ## Route B — Claude Code plugin (clone into the skills directory)
 
 The repository *is* the plugin, so placing it where Claude Code looks for

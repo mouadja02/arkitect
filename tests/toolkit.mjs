@@ -1631,7 +1631,7 @@ test('a rerun resumes a half-finished release, and refuses to force one (#120)',
     'a resumed pull request skips the human-review gate');
 });
 
-test('the release workflows are started by a person, gated by a merged pull request, and never publish to npm (#88)', () => {
+test('the release workflows are started by a person, gated by a merged pull request, and publish to npm only after the Release (#88, #126)', () => {
   const read = (f) => readFileSync(join(ROOT, '.github', 'workflows', f), 'utf8');
   const prepare = read('release-prepare.yml');
   const publish = read('release-publish.yml');
@@ -1646,10 +1646,17 @@ test('the release workflows are started by a person, gated by a merged pull requ
   assert(publish.includes("github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/v')"), 'only a merged release branch publishes');
   assert(publish.includes('release.mjs check') && publish.indexOf('release.mjs check') < publish.indexOf('git tag'), 'the version is checked before tagging');
   assert(publish.includes('--notes-file notes.md') && !/generate-notes/.test(publish), 'release notes are the changelog section, not generated');
-  for (const [name, yml] of [['prepare', prepare], ['publish', publish]]) {
-    const steps = yml.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n');
-    assert(!/npm publish|npm_token|NODE_AUTH_TOKEN|registry-url/i.test(steps), `${name} must not publish to npm`);
-  }
+  const steps = (yml) => yml.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n');
+  assert(!/npm publish|npm_token|NODE_AUTH_TOKEN|registry-url/i.test(steps(prepare)), 'prepare must not publish to npm');
+  // Publish may, once the tag and the Release exist, with provenance; a
+  // missing secret warns rather than fails, and a version already there is
+  // left alone so a rerun passes (#126).
+  const npm = steps(publish).indexOf('npm publish');
+  assert(npm > steps(publish).indexOf('gh release create'), 'npm after the Release');
+  assert(/npm publish --provenance --access public/.test(publish) && /id-token: write/.test(publish), 'with provenance');
+  assert(/if \[ -z "\$NODE_AUTH_TOKEN" \]; then\s+echo "::warning::/.test(publish), 'no secret: a warning, not a failure');
+  assert(/npm view "arkitect@\$VERSION" version/.test(publish), 'already published: skipped');
+  assert(/npm publish --dry-run/.test(readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8')), 'CI dry-runs it');
 });
 
 // ------------------------------------------------------------- the harness
@@ -1796,6 +1803,57 @@ test('the style-question hook speaks only for a prompt about a diagram\'s style,
   run(JSON.stringify({ hook_event_name: 'Stop', session_id: 'test-265-cli', stop_hook_active: true }));
   for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'Draw our AWS pipeline' }),
     JSON.stringify({ hook_event_name: 'Stop', session_id: 'never-asked', transcript_path: '/nowhere' })]) {
+    const quiet = run(input);
+    eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
+  }
+});
+
+// Reports after a build dropped headings (#215) and described renders nobody
+// saw; the replies below are the 3.0.0 batch's, cut to the sentence that
+// counts. The hook reads a transcript only when a reply names a diagram.
+const reportHook = await import(pathToFileURL(join(ROOT, 'hooks', 'report-check.mjs')).href);
+test('the report check sends back a report missing headings, or one describing a render nobody saw, once (#215)', () => {
+  const stop = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.Stop[0].hooks;
+  eq(stop.map((h) => h.command).join(' | '), 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs" | node "${CLAUDE_PLUGIN_ROOT}/hooks/report-check.mjs"', 'a second Stop hook');
+  const { problems, describesThePicture, respond } = reportHook;
+  const report = (render) => ['**File** `./eval-output/orders.excalidraw`', '**Assumptions** none', '**Icons** none',
+    '**Validation** PASS, no warnings', `**Render** ${render}`, '**Deviations** none'].join('\n');
+
+  for (const said of ['SVG rendered. Layout is clean with the pipeline on the main flow.',
+    'PNG rendering unavailable in sandbox. SVG confirms structure and spacing.',
+    'SVG rendered successfully. Layout shows clean vertical flow: frontend → API → worker.',
+    'Both will render the two-page comparison with all icons embedded and spacing correct.']) {
+    assert(describesThePicture(said), `a claim: ${said}`);
+  }
+  for (const said of ['Render to PNG failed due to headless environment. Validation confirms structural correctness; visual inspection not possible in this session.',
+    '🔴 Render failed: Draw.io Desktop unavailable in this environment. Diagram validates structurally.',
+    "SVG written; I haven't seen it, so the spacing is only validate's finding: no crossings."]) {
+    eq(describesThePicture(said), null, `honest: ${said}`);
+  }
+  eq(problems(report('failed, not seen.'), { viewed: false }).length, 0, 'a whole, honest report');
+  eq(problems(report('Layout is clean.'), { viewed: true }).length, 0, 'a PNG was opened');
+  assert(/no Validation, Render, Deviations headings/.test(problems('Done! Saved `x.drawio`.\n**File** x\n**Assumptions** y\n**Icons** z', { viewed: true })[0]),
+    'names what is missing');
+
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    const use = (name, input) => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', name, input }] } });
+    const bad = report('Layout is clean.');
+    writeFileSync(transcript, [use('Bash', { command: 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs s.json --out o.excalidraw' }),
+      use('Read', { file_path: 'o.svg' })].join('\n'));
+    const sent = JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }));
+    eq(sent.decision, 'block', 'sent back');
+    assert(/Render says "clean"/.test(sent.reason), sent.reason);
+    eq(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad, stop_hook_active: true }), null, 'once');
+    writeFileSync(transcript, use('Read', { file_path: 'o.drawio' }));
+    eq(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }), null, 'no build, no check');
+    eq(respond({ hook_event_name: 'Stop', transcript_path: '/nowhere', last_assistant_message: 'Hello.' }), null, 'a reply naming no diagram is not read further');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'report-check.mjs')], { input, encoding: 'utf8' });
+  for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'Stop', transcript_path: '/nowhere' })]) {
     const quiet = run(input);
     eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
   }

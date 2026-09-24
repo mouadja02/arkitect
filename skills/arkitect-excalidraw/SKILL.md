@@ -118,7 +118,7 @@ Do not undo them by hand.
    an SVG is markup you read, not a picture you see, and settles neither. First
    renders nearly always need, in the spec:
    - a long region label overrunning: one or two words, detail in sublabels;
-   - an elbow through a third icon, or two stacked into one line: `"route": "straight"`.
+   - a line through a third icon: `"route": "avoid"`; two on one line: `"straight"`.
 
 8. **Open it in the real app** when the user wants to, and before claiming it
    looks right in Excalidraw itself: `references/rendering.md`.

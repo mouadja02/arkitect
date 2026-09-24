@@ -3,7 +3,8 @@ name: release prepare
 # Started by hand, never on a schedule (#88). Turns [Unreleased] into a dated
 # release section, bumps both manifests together, and opens a release/vX.Y.Z
 # pull request. That pull request is the approval gate: merging it is what tags
-# and publishes the release, in release-publish.yml. Nothing is published to npm.
+# and publishes the release, in release-publish.yml, npm included. Nothing here
+# publishes.
 #
 # Needs a RELEASE_TOKEN secret: a fine-grained token with contents and pull
 # requests write on this repository. A pull request opened with the default

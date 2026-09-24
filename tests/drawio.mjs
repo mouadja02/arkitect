@@ -3311,7 +3311,7 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   const script = read('scaffold.sh');
   const spec = JSON.parse(script.slice(script.indexOf("<<'EOF'\n") + 8, script.lastIndexOf('\nEOF')));
   const r = buildAndValidate('report-case', spec);
-  eq(r.warnings.join('; '), 'page 0: edge "write-edge" runs through "queue"; '
+  eq(r.warnings.join('; '), 'page 0: cells "worker" and "dlq" overlap by 30x59px; '
     + 'page 0: "retention-note" lies across the border of container "acct-boundary"', 'the two warnings the case is built on');
   // What the agent reads last before it reports: the count, and the rule (#248).
   const cli = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), join(TMP, 'report-case.drawio')], { encoding: 'utf8' });
@@ -3321,8 +3321,8 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
 
   const yaml = read('case.yaml');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
-  const graders = ['names-the-edge-warning', 'names-the-border-warning'].map(pattern);
-  const listed = '**Validation**: two warnings left: edge `write-edge` runs through `queue`; `retention-note` lies across `acct-boundary`.';
+  const graders = ['names-the-overlap-warning', 'names-the-border-warning'].map(pattern);
+  const listed = '**Validation**: two warnings left: `worker` and `dlq` overlap; `retention-note` lies across `acct-boundary`.';
   const vague = '**Validation**: passed. A few labels sit close to a border.';
   assert(graders.every((g) => g.test(listed)), 'a report naming both passes');
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
@@ -5062,15 +5062,17 @@ test('the builder sets edge sides from the grid, and waypoints only round an obs
   eq(r.warnings.join('; '), '', 'no edge over an icon or a caption');
   assert(/id="e1" style="[^"]*exitX=1;exitY=0.5;[^"]*entryX=0;entryY=0.5;/.test(builder.buildDiagram(spec).xml), 'out sideways, in sideways');
 
-  // A node in the line between two columns: the edge goes round it, through
-  // the row gap, and validate follows the waypoints.
+  // A node in the line between two columns: the edge goes over it, out of the
+  // top of one end and into the top of the other, and validate follows the
+  // waypoints. Round through the column gaps it ran through a label beside it.
   const skip = { nodes: [
     { id: 'a', kind: 'icon', icon: 'aws/aws-lambda', label: 'A', col: 0 },
     { id: 'm', kind: 'icon', icon: 'aws/aws-lambda', label: 'Mid', col: 1 },
     { id: 'c', kind: 'icon', icon: 'aws/aws-lambda', label: 'C', col: 2 },
   ], edges: [{ from: 'a', to: 'c' }] };
   const { xml } = builder.buildDiagram(skip);
-  assert(/<Array as="points">(<mxPoint [^>]*\/>){4}<\/Array>/.test(xml), 'four waypoints round Mid');
+  assert(/<Array as="points">(<mxPoint [^>]*\/>){2}<\/Array>/.test(xml), 'two waypoints over Mid');
+  assert(/exitX=0.5;exitY=0;[^"]*entryX=0.5;entryY=0;/.test(xml), 'out of the top, into the top');
   eq(buildAndValidate('route-skip', skip).warnings.join('; '), '', 'clear of Mid and its caption');
   const straight = buildAndValidate('route-skip-flat', skip, (x) => x.replace(/ y="\d+" \/>/g, ' y="139" />'));
   eq(straight.warnings.join('; '), 'page 0: edge "e1" runs through "m"', 'waypoints moved onto the row are checked, not skipped');
@@ -5083,6 +5085,24 @@ test('the builder sets edge sides from the grid, and waypoints only round an obs
   eq(bad.unknownKinds.map((u) => u.field).join(','), 'edges[0].exit,edges[0].entry', 'a side or fraction it cannot use is reported');
   const catalog = readFileSync(join(SKILL, 'references', 'pattern-catalog.md'), 'utf8');
   assert(/"exit"/.test(catalog) && /"entry"/.test(catalog), 'the override is shown in a pattern section');
+});
+
+// Detours used only the gaps between grid columns and rows, so a node at a
+// fractional column left no way round and the edge ran through it. The
+// report-names-every-warning case was built on exactly that.
+test('an edge goes round a node set between grid columns', () => {
+  const spec = { nodes: [
+    { id: 'producer', kind: 'icon', icon: 'aws/aws-lambda', label: 'Order handler', col: 0, row: 0 },
+    { id: 'queue', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Order queue', col: 0.5, row: 0 },
+    { id: 'table', kind: 'icon', icon: 'aws/amazon-dynamodb', label: 'Orders table', col: 1, row: 0 },
+    { id: 'worker', kind: 'icon', icon: 'aws/aws-lambda', label: 'Order worker', col: 0.5, row: 1 },
+  ], edges: [
+    { from: 'producer', to: 'queue' },
+    { id: 'write-edge', from: 'producer', to: 'table' },
+    { from: 'queue', to: 'worker' },
+  ] };
+  eq(buildAndValidate('route-off-grid', spec).warnings.join('; '), '', 'write-edge clear of queue and its caption');
+  assert(/id="write-edge"[^>]*>\s*<mxGeometry[^>]*>\s*<Array as="points">/.test(builder.buildDiagram(spec).xml), 'by waypoints');
 });
 
 // Every label sat 45% along its route, on borders, arrowheads and trunks (#241).
