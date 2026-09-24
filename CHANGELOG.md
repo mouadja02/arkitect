@@ -41,6 +41,7 @@ untouched, and a hand-written routing pass is no longer needed.
 - A newline in a Draw.io label is written as `<br>`, so a two-line caption draws on two lines (#238).
 - The unknown-product eval case accepts "PostgreSQL" (#286).
 - `report-names-every-warning` is built on an overlap and a border crossing, which no router clears; the better detours had emptied it. The learning-skill judge is told the fixture's style, and the icon-from-logo judge that "data warehouse" is not a product: each failed a correct reply.
+- The landing-zone eval case says nobody can answer questions, which is the condition the skill's interview rule turns on; one run in about fifteen asked and wrote nothing (#203). The edit case checks by pattern that its report names Redis, the file's style and the validation result, where a judge failed accurate reports.
 
 ## [2.1.0] — 2026-09-23
 

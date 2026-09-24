@@ -11,13 +11,18 @@ execution:
   max_turns: 30
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  # A run can't answer questions. Without saying so, a review board reads as
+  # "needs the ladder" (SKILL.md) and one run in about fifteen asked its first
+  # question and stopped, writing nothing (#203). The skill's rule is to ask
+  # only someone who can answer; the prompt now says nobody can.
   prompt: |
     We are presenting our AWS landing zone to the client's architecture review
     board next week: an Organizations management account, a shared-services
     account with Transit Gateway and Route 53 resolver endpoints, a security
     account collecting CloudTrail into S3 and GuardDuty findings, and two
-    workload accounts. Draw it and save it as ./eval-output/landing-zone with
-    whichever file extension is right for what you draw.
+    workload accounts. I'm away until then, so nobody can answer questions.
+    Draw it and save it as ./eval-output/landing-zone with whichever file
+    extension is right for what you draw.
 
 graders:
   # "Solution architecture", "for the client", "AWS" all point at Draw.io.

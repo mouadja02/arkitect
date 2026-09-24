@@ -3328,6 +3328,21 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
   assert(graders.every((g) => !g.test(vague)), 'a report saying "a few" fails both');
 });
 
+// The edit case's report is checked by pattern since a judge failed accurate
+// reports; the three below are the replies of the bc69020 and 2ab2b1d runs.
+test('the edit-existing eval case passes the recorded reports and fails one that took the house style', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
+  const graders = ['reports-the-cache', 'says-it-matched-the-file', 'reports-the-validation'].map(pattern);
+  for (const reply of [
+    '**Validation** · ✓ PASS — 4 vertices, 3 edges. **Deviations** · None; followed existing file style (rounded boxes). Checkout API → Redis Cache',
+    '**Validation** · ✓ PASS — 4 vertices, 3 edges, 0 crossings. **Deviations** · None; followed the existing diagram\'s styling exactly. Redis Cache',
+    '## Validation\n✓ PASS — 4 vertices, 3 edges\n## Deviations\nNone — edited file maintains exact match with original styling. The Redis Cache is now wired in.',
+  ]) assert(graders.every((g) => g.test(reply)), `passes: ${reply.slice(0, 60)}`);
+  const wrong = 'Added a Redis node in the house style (square corners). Validation: 2 warnings.';
+  eq(graders.map((g) => g.test(wrong)).join(), 'true,false,false', 'took the house style, gave no result');
+});
+
 // The #251 case grades the drawing the agent built, so its patterns must pass
 // one numbered path and fail each way of numbering what is not a step.
 test('the numbered-flow-one-sequence eval case passes one path and fails a numbered entry point (#251)', () => {
