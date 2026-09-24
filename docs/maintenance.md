@@ -82,24 +82,16 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 | `arkitect-drawio` | 11,153 | 735 | 11,888 |
 | `arkitect-excalidraw` | 11,098 | 882 | 11,980 |
 
-The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
-Excalidraw's starter is 3,472 and the large AWS example 14,080. Before #113 the
-mandatory reading was 34,621 bytes for Draw.io and 46,646 for Excalidraw. A
-rule that has to hold on every drawing stays in `SKILL.md`; a rule that holds
-for one situation moves beside that situation.
+The worked example an agent copies comes on top. A rule that holds on every
+drawing stays in `SKILL.md`; a rule for one situation moves beside it.
 
-**2b. A rule lands in the step that performs it.** A rule about what the agent
-*does* does not govern what the agent *writes*, and both have cost a release to
-learn. #186 forbade the hosted editor in step 8, which is about opening a file;
-the failing replies opened nothing — they closed with a link, and the rule only
-bound once it was also in the report step. #180 is the same shape from the other
-side: the reason for an engine choice had nowhere to go in a report shaped
-**File · Assumptions · Icons · Validation · Render · Deviations**, so it was
-never written, four runs out of four, while the choice itself was right every
-time. A rule about the reply belongs in the report step, and where it can, in
-the report's own shape — a missing heading is visible, a forgotten sentence is
-not. Wording that only restates the rule somewhere else is not a fix, and an
-eval run is what tells the two apart.
+**2b. A rule lands in the step that performs it, or in code.** A rule about
+what the agent does doesn't govern what it writes: #186's hosted-editor rule
+bound only once it was also in the report step, and #180's engine reason was
+never written until the report had a heading for it. Where wording can't move
+an agent, the check moves into code: `validate` printing its own rule (#248), a
+hook sending a report back (#215, #265), a tool handing over the node to paste
+(#231, #287). An eval run is what tells a fix from a restatement.
 
 **3. Output stays native and editable.** `.drawio` XML and `.excalidraw` JSON,
 with icons and images **embedded**, never linked. No change may make the
@@ -156,7 +148,7 @@ A number a check compares against says here how it was chosen.
 |---|---|---|
 | `TRUNK_MIN`, `validate-drawio.mjs` | 10px | Draw.io runs the last stretch into every port straight: with the builder's `jettySize=auto` that stub is at least 20px (`2 × orthBuffer`, read from `mxEdgeStyle.getJettySize`). Two edges that enter one port from the same side therefore share 20px or more, and 10px catches every one. It sits well above the pixel of slack in the route estimate, so two ends that only touch are not reported (#246). The same floor applies to two edges between one pair of nodes, either way (#272): they share the whole line between the two ports, far past 10px. |
 | `SLIDE_WIDTH`, `validate-drawio.mjs` | 1920px | A 1080p slide, and the width a page is fit to wherever it is read: a wiki or README page scrolls down, not across. Only the width is fit, so a tall page is not blamed for a portrait layout (#247). |
-| `TEXT_FLOOR`, `validate-drawio.mjs` | 9px | Measured 2026-09-23 on the committed templates and seven local reference pages (numbers only; the pages stay local), taking the size most of a page's labels use (12px on all of them) and fitting the page to 1920px. The templates draw at 12.0, 12.0 and 10.4px. The reference pages draw at 12.0 and 12.0 (under 1920px wide), 9.8px (69 cells), then 7.9, 7.3, 6.9 and 4.9px (90 to 175 cells); the 2.0.0 field page, the one meant for a review board, drew at 7.8px. 9px passes every template and the 69-cell page, and fails every page of 90 cells or more. An icon-count ceiling was measured too and dropped: each page with 26 or more icons was already under the floor (#247). |
+| `TEXT_FLOOR`, `validate-drawio.mjs` | 9px | Measured on the templates and seven local reference pages fit to 1920px: it passes every template and a 69-cell page, and fails every page of 90 cells or more, including the 2.0.0 field page at 7.8px (#247). |
 
 ## What a good change looks like
 
@@ -230,18 +222,59 @@ What one install learns is kept apart from what the repository ships (#89, #90):
 
 ### Draw.io packs
 
-1. Confirm the licence or permission covers redistribution, and pin the source
-   in `skills/arkitect-drawio/assets/libraries/sources.json`.
-2. `node skills/arkitect-drawio/scripts/build-packs.mjs --all` — rebuilds every
-   pack and `references/icon-catalog.json` from the pins.
-3. `node skills/arkitect-drawio/scripts/write-pack-docs.mjs` — regenerates
-   `references/pack-index.md` and `assets/libraries/ATTRIBUTION.md` from the
-   catalog. **Always rerun this after `build-packs.mjs`** — both files say "do
-   not edit by hand" for a reason, and a catalog change that skips this step is
-   exactly how the pack counts and the "no bytes" figure quoted throughout the
-   docs drifted (75, then 66, then 69 — the real, current number stayed 158 the
-   whole time).
-4. Search for a product in the new pack to prove it resolves.
+`skills/arkitect-drawio/assets/libraries/sources.json` pins every upstream to an
+exact version or sha256. A source whose bytes no longer match its pin fails the
+build; re-pin deliberately, after looking at what changed. Archives cache in a
+gitignored `.cache/`, so a rebuild is offline after the first fetch.
+
+```bash
+S=skills/arkitect-drawio/scripts
+node $S/build-packs.mjs --all               # every pack and references/icon-catalog.json
+node $S/build-packs.mjs --pack azure        # one pack
+node $S/build-packs.mjs --refresh azure-v24 # re-download, report hash drift
+node $S/build-packs.mjs --verify            # the committed packs against their pins
+node $S/write-pack-docs.mjs                 # pack-index.md and ATTRIBUTION.md
+node $S/contact-sheet.mjs --all --png       # the review sheets
+```
+
+1. Confirm the licence covers redistribution, and pin the source. A mark ships
+   when a licence covers the artwork or a trademark policy allows identifying
+   use; a repository holding the file is not enough, and a published logo
+   policy overrides the repository's licence (#11, #20). Anything else becomes
+   an on-demand entry with the finding recorded.
+2. `build-packs.mjs --all`, then **always** `write-pack-docs.mjs`: both
+   generated files say "do not edit by hand", and skipping the second step is
+   how the quoted counts drifted before.
+3. Search for a product in the new pack to prove it resolves.
+
+`build-packs` refuses to write a malformed SVG payload, or a mark whose every
+fill and stroke is white (the dark-background half of a light/dark pair, which
+draws an empty tile) (#33, #85). `--verify` checks every committed library's
+sha256, entry counts, every payload's XML, unique ids, and that nothing
+on-demand carries bytes. Vendor artwork ships byte for byte, never optimised:
+Microsoft and Google forbid altering it, and the recorded hashes depend on it.
+`.gitattributes` marks `.drawio` and `.xml` binary so a Windows checkout can't
+rewrite them.
+
+**Reviews.** Every pack is rendered as a labelled contact sheet in
+`assets/libraries/contact-sheets/`, and has a review record in
+`assets/libraries/reviews/<pack>.json`: one row per shipped id with the sha256
+it was looked at, a verdict, the reviewer and the date. A row counts only while
+the artwork keeps that hash, so a rebuild reopens exactly what changed. The
+suite fails on any shipped mark unchecked, stale or recorded as a mismatch
+(#18, #72, #73, #81).
+
+```bash
+node $S/contact-sheet.mjs --pack azure --review --page 3
+```
+
+Before promoting a Simple Icons slug, check its `source` in
+`data/simple-icons.json`: `vespa` is Piaggio's scooter and `nebula` a streaming
+service, which is how two databases once shipped the wrong marks (#81).
+Captions a vendor's file names misspell or strip of punctuation are corrected
+in the pack's `titles` map; ids stay, and the upstream spelling stays a search
+alias (#18, #73). A product that was discontinued or renamed gets a `status`
+in `sources.json`; `build-packs` refuses a malformed one (#83).
 
 ### Excalidraw libraries
 
@@ -256,10 +289,9 @@ What one install learns is kept apart from what the repository ships (#89, #90):
 
 ### Either engine
 
-Never edit a bundled library's or a generated doc's bytes by hand — rerun the
-generator instead. After either engine's icon count moves, check whether it is
-quoted in `README.md`, `docs/icons.md`, `docs/drawio-icons.md` and each
-engine's `references/icons.md`, and update it there. The exact-total figures in
+Never edit a bundled library's or a generated doc's bytes by hand; rerun the
+generator. When an icon count moves, the suite names every doc that quotes it
+and the number to write (#78). The exact-total figures in
 `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
 `package.json`'s description and `bin/lib/install-agent.mjs`'s adapter body
 are deliberately a rounded `6,000+` instead — `tests/toolkit.mjs` checks that
@@ -277,23 +309,13 @@ A pin stays honest only while someone checks it, so
 | `build-packs.mjs --check-upstream` | weekly | `A mark we ship has been removed from Simple Icons` (`licensing`) | Simple Icons removes a brand when its owner asks; shipping it anyway redistributes a mark we were asked not to |
 | `build-packs.mjs --check-drift` | quarterly | `Pinned icon sources have moved on upstream` (`upstream`) | vendors rev their sets without notice, and the packs fall behind; a project logo committed as a local file can be redrawn, relicensed or left in an archived repository; a product `status` confirmed a year ago may have moved again |
 
-For a `local-files` source, the drift check looks at three things, each
-against the pin. The **artwork**: the file at the pinned path on the default
-branch, compared with the pinned commit (a URL that pins no commit, like the ASF
-originals, is compared with the committed bytes). The **licence**: the licence
-file on the default branch, compared with the one linked at the pinned commit;
-a policy page that is not a file is only checked for still existing. The
-**repository**: archived, dormant (no push in 365 days) or answering under
-another name. It needs `GITHUB_TOKEN` set locally to stay inside the API's rate
-limit.
-
-A repository finding is a prompt to look, not proof of a wrong mark. Record what
-you found in the source's `upstreamRepo` - `archived`, `dormant`, the
-`checked` date, and a `note` saying why the mark still ships if it is either -
-and the next run stays quiet until the state changes again. A new
-`local-files` source records `upstreamRepo` when it is pinned; a test fails
-without it. Prefer pinning into the repository the product is named after over
-a website or UI subtree: both wrong-product marks #79 caught came from one.
+For a `local-files` source (a project logo committed from its own
+repository), the drift check compares the artwork and the licence file on the
+default branch with the pinned commit, and flags a repository that is
+archived, dormant for a year or renamed. It needs `GITHUB_TOKEN` locally for
+the rate limit. A finding is a prompt to look: record it in the source's
+`upstreamRepo` (`archived`, `dormant`, `checked`, a `note`) and the next run
+stays quiet until the state changes.
 
 A rename upstream is reported but opens nothing. A slug that moved is not a
 licensing problem. If an issue is already open, the workflow comments on it
@@ -316,24 +338,18 @@ requests a person reviews.
 1. Confirm which file that tool actually reads — do not guess a path.
 2. Add an entry to `ADAPTERS` in `bin/lib/install-agent.mjs`, reusing the shared
    `body` renderer unless the host needs its own frontmatter.
-3. Add the tool to the table in `docs/agents.md` and the one in `README.md`,
+3. Add the tool to the table in `docs/install.md` and the one in `README.md`,
    with its MCP configuration if it supports MCP.
 4. `node tests/run-tests.mjs toolkit` covers rendering, aliases, idempotency and
    the refusal to clobber.
 
 ## Changelog entries
 
-A change records its release note in the same pull request: one bullet added
-directly to `[Unreleased]` in `CHANGELOG.md`, under `### Added`, `### Changed`,
-`### Removed` or `### Fixed`, as a single line naming what changed and, where
-one exists, the issue or PR it came from. No separate file, no naming scheme,
-no CI gate enforcing it — this used to be a `changelog.d/` fragment per
-change, assembled by a script, specifically to stop parallel pull requests
-conflicting on the same lines (#32); that problem was real, but the apparatus
-it took to solve it (a folder, a naming convention, an issue-linking regex, an
-assembly tool, a CI gate and a label) was more than this project's size
-warrants. If parallel `[Unreleased]` edits start conflicting often enough to
-matter again, revisit this — but as its own deliberate change, not a default.
+A change records its release note in the same pull request: one bullet under
+`[Unreleased]` in `CHANGELOG.md`, in `### Added`, `### Changed`, `### Removed`
+or `### Fixed`, naming what changed and the issue it came from. There are no
+fragment files; #32 tried them and the machinery cost more than the conflicts
+it saved.
 
 The suite still fails on a conflict marker left in any tracked text file
 (`tests/toolkit.mjs`).
@@ -395,8 +411,9 @@ bullets or it is refused. The pull request then opens as a **draft**, flagged as
 model-written: correct `CHANGELOG.md` on the branch, then mark it ready. A missing
 key or a failed call fails the run; nothing ships with an invented or empty section.
 
-CI's `npm-latest` job runs `npm publish --dry-run` on every pull request, which
-lists what would ship and its size. Setup, once, in the repository settings:
+CI's `npm-latest` job dry-runs `npm publish` on every pull request, as a
+`-ci.0` prerelease of the current version: npm 12 refuses even a dry run over
+a version already published. Setup, once, in the repository settings:
 
 | name | kind | what |
 |---|---|---|
@@ -404,7 +421,7 @@ lists what would ship and its size. Setup, once, in the repository settings:
 | `RELEASE_LLM_BASE_URL` | variable | e.g. `https://api.deepseek.com/v1` or `https://openrouter.ai/api/v1` |
 | `RELEASE_LLM_MODEL` | variable | the model name that endpoint expects |
 | `RELEASE_LLM_API_KEY` | secret | only needed when `[Unreleased]` can be empty |
-| `NPM_TOKEN` | secret | granular npm token with publish rights on `arkitect` only; without it releases skip npm |
+| `NPM_TOKEN` | secret | npm token with publish rights on `arkitect`, able to publish without a 2FA prompt; without it a release skips npm |
 
 The same steps run locally: `node scripts/release.mjs empty | draft | next <bump> | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`, and `resume-prepare` / `resume-publish` answer what a rerun would do from state you pass on the command line.
 

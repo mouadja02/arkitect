@@ -42,7 +42,7 @@ platform or version: Linux arm64 24.7.17 is 0-based, Windows x64 29.0.3 is
 1-based. The Windows-original `.ps1` remains unchanged. The opt-in
 `--page-index-passthrough` flag is only for debugging Desktop; it passes N
 directly on the original file without translating and can select a different
-page on a build with different indexing. See `docs/drawio-mcp.md` in the
+page on a build with different indexing. See `docs/cli.md` (Rendering) in the
 repository.
 
 ## When the export fails

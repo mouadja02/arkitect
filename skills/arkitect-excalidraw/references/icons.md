@@ -30,7 +30,7 @@ and build reports identify these as **embedded**, with source and licence
 metadata. They keep captions and arrow bindings editable, but the logo paths are
 not Excalidraw strokes. No tracing, recolouring or download occurs. On-demand
 entries stay placeholders; integrity failures stop the build. See
-`docs/shared-icons.md` in the repository for source terms and examples.
+`docs/icons.md` in the repository, and the pack `ATTRIBUTION.md` for source terms.
 
 ## The bundled libraries
 

@@ -1,139 +1,82 @@
 # Getting started
 
-A fresh clone draws immediately. The style guides, pattern catalogs, icon
-catalog and 36 icon libraries are all committed, so there is nothing to build
-and nothing to download.
-
-1. [ask for a diagram](#1-ask-for-a-diagram)
-2. [look at it in the real app](#2-look-at-it-in-the-real-app)
-3. [give it the icons you need](#3-give-it-the-icons-you-need)
-4. [make the style yours](#4-make-the-style-yours)
-
-Install first if you have not: [install.md](install.md) · [agents.md](agents.md).
+Install first ([install.md](install.md)). Nothing needs building or
+downloading: the style guides, pattern catalogs, icon packs and 36 icon
+libraries are all committed.
 
 ## 1. Ask for a diagram
 
-There is no command. Describe the system and say where to put the file:
+There's no command. Describe the system and say where the file goes:
 
 > Draw an architecture for an event-driven order system: a web app posts to an
 > API gateway, orders land on a queue, a worker validates them and writes to
 > Postgres, failures go to a dead-letter queue, and a nightly job reconciles
 > against the warehouse. Save it to `docs/orders.excalidraw`.
 
-The extension decides the engine — `.excalidraw` or `.drawio`. If you do not
-name one, say which you want:
+The extension picks the engine. Name none and the agent picks, and says why:
 
 - **Draw.io** when a client, a review board or an RFC will see it, when the
-  design is AWS-heavy, or when you need multiple pages.
+  design is AWS-heavy, or when it needs several pages.
 - **Excalidraw** for system design, block diagrams, flows, and anything going
   into a README.
 
-What happens next: the agent picks a layout from the pattern catalog, resolves
-an icon for every named product, writes a spec, builds the file, validates it,
-renders a PNG and *looks at it*, then reports the path, the assumptions it made,
-and anything it could not resolve.
+The agent asks what it needs to (purpose, scope, the real product names, the
+flows) unless the request already says, then picks a layout, resolves an icon
+for every product, writes a spec, builds, validates, renders and looks at the
+PNG. The report names the file, the engine, its assumptions, where each icon
+came from, the validation result, what the render showed, and any deviation
+from the style guide.
 
-Driving it yourself instead:
+By hand:
 
 ```bash
-node bin/arkitect.mjs excalidraw build my-spec.json --out docs/orders.excalidraw
-node bin/arkitect.mjs excalidraw validate docs/orders.excalidraw
-node bin/arkitect.mjs excalidraw render docs/orders.excalidraw --out preview.svg
+arkitect excalidraw build my-spec.json --out docs/orders.excalidraw
+arkitect excalidraw validate docs/orders.excalidraw
+arkitect excalidraw render docs/orders.excalidraw --out-dir .analysis/renders
 ```
 
-Start from a worked spec rather than a blank file:
+Start from a worked spec, and look at its PNG first:
 
 | | |
 |---|---|
-| `skills/arkitect-excalidraw/assets/templates/starter-architecture.spec.json` | the vocabulary: every node kind, every connector kind, the generated legend |
-| `skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json` | the shape of a real answer: 48 nodes, phase regions, an error lane, a cross-cutting band |
-| `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json` | the same tour, in Draw.io |
-| `skills/arkitect-drawio/assets/templates/as-is-to-be.spec.json` | two pages in one Draw.io file: the as-is, then the to-be |
+| `skills/arkitect-excalidraw/assets/templates/starter-architecture.spec.json` | every node kind, every connector kind, a generated legend |
+| `skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json` | a real-sized answer: 48 nodes, phase regions, an error lane |
+| `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json` | the same tour in Draw.io |
+| `skills/arkitect-drawio/assets/templates/as-is-to-be.spec.json` | two pages in one file |
 
-Each has a PNG beside it. **Look at the PNG first** — it is faster than reasoning
-about the rules, and it is what the output is supposed to look like.
+The spec format is in [cli.md](cli.md#drawio-spec).
 
-## 2. Look at it in the real app
+## 2. Open it
 
-**Excalidraw:**
+Excalidraw: start the local app and drag the file onto the canvas.
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d      # http://localhost:3000
 ```
 
-```powershell
-./skills/arkitect-excalidraw/scripts/excalidraw-docker.ps1 -Open -Path docs/orders.excalidraw
-```
+Draw.io: open the file in Draw.io Desktop or the VS Code extension, never the
+hosted editor. [apps.md](apps.md) covers both, and the MCP server for editing
+existing Draw.io files.
 
-The app has no backend and cannot read your disk, so `-Open` starts the
-container, opens the browser, copies the path and reveals the file in your file
-manager — drag it onto the canvas. Nothing you draw is uploaded; the file on
-disk is the source of truth. → [excalidraw-docker.md](excalidraw-docker.md)
+## 3. Get the icons right
 
-**Draw.io:**
-
-```powershell
-& 'C:\Program Files\draw.io\draw.io.exe' "docs/orders.drawio"
-```
-
-To let an agent *edit* an existing Draw.io file, connect the MCP server —
-generation does not need it. → [drawio-mcp.md](drawio-mcp.md)
-
-## 3. Give it the icons you need
-
-An architecture full of grey boxes is not worth drawing, so check what is
-already covered before you go looking:
+6,005 marks ship with Arkitect: 4,843 across 18 Draw.io packs, AWS, Azure and
+Google Cloud among them, and 1,162 items across 36 Excalidraw libraries.
+Search before reaching for anything else:
 
 ```bash
-node bin/arkitect.mjs excalidraw icon "postgres"
-node bin/arkitect.mjs drawio icon "bedrock"
+arkitect drawio icon "snowflake"
+arkitect excalidraw icon "postgres"
 ```
 
-6,005 marks ship with Arkitect: 4,843 across 18 Draw.io packs — AWS, Azure,
-Google Cloud, data platforms, databases, AI frameworks, ML, streaming,
-observability, DevOps, security, GitHub, SaaS, languages, file types and agent
-concepts — and 1,162 items across 36 Excalidraw libraries.
-
-```bash
-node bin/arkitect.mjs drawio icon --list-packs
-```
-
-When something is missing, there are three honest answers and one dishonest one.
-
-```bash
-# 1. a placeholder - the default, and the right answer most of the time
-#    (a dotted slot with a "?", named in the build report)
-
-# 2. build the icon from the real logo, traced into native geometry
-node bin/arkitect.mjs excalidraw make-icon \
-  --url https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/postgresql.svg \
-  --name postgres --trace --label "PostgreSQL"
-
-# 3. install a whole public library for the domain
-node bin/arkitect.mjs excalidraw browse --search "kubernetes"
-node bin/arkitect.mjs excalidraw browse --install <source>
-```
-
-The dishonest one is using a different product's mark. Arkitect will not do it,
-and neither should you. → [icons.md](icons.md)
-
-For Draw.io, search the bundled packs first — 18 packs cover far more than AWS,
-so most named products (Snowflake, Grafana, Databricks, Postgres included) are
-already there. Only the minority the search reports as on-demand or unmatched
-need a fetched logo:
-
-```bash
-node bin/arkitect.mjs drawio logo --url https://.../snowflake.svg --name snowflake
-```
+When nothing matches, there are three honest answers: a placeholder (the
+default), a fetched logo, or an icon built from one. Another product's mark is
+never one of them. [icons.md](icons.md).
 
 ## 4. Make the style yours
 
-**This is the step that turns the output from good into yours.** What ships is a
-house style with its evidence attached — every rule carries the count behind it,
-and the rules that are just sensible defaults say so.
-
-Point the learning skill at diagrams you have already drawn and it builds your
-own record from them, outside the plugin:
+What ships is a house style with the evidence for each rule. Teach Arkitect
+yours from diagrams you've already drawn:
 
 ```
 /learn-excalidraw-style
@@ -143,63 +86,21 @@ Learn the style from these:
   C:\path\to\second.excalidraw
 ```
 
-```
-/learn-drawio-style
-
-Learn the style from these:
-  C:\path\to\first.drawio
-```
-
-Learning records evidence; it does not change a diagram by itself. Choose what
-to draw differently with `/apply-drawio-style` or `/apply-excalidraw-style` —
-each offers only the findings that contradict the house style, one at a time,
-and every later build picks up what you accept. Your record, findings, notes and choices live in
-`~/.arkitect/`, so a plugin update never wipes them.
-
-If your host namespaces plugin skills it is `/arkitect:learn-excalidraw-style` —
-type `/` to see which form is listed. All four carry
-`disable-model-invocation: true`, so they only ever run when you ask; reading or
-discussing a diagram never triggers one.
-
-Your files are read-only throughout: hashes are checked before and after. The
-record holds **structural statistics and digests only** — no labels, no page
-names, no paths, no image payloads.
-
-To do the rebuild by hand:
-
-```bash
-node bin/arkitect.mjs excalidraw learn --sources "C:\path\to\first.excalidraw" --merge
-node bin/arkitect.mjs drawio learn --sources "C:\path\to\first.drawio" --merge
-```
-
-`--merge` preserves prior knowledge and version history. Omit it and you replace
-the record. → [style.md](style.md)
+Learning records evidence and changes nothing. `/apply-excalidraw-style` (or
+the Draw.io one) then offers each place your diagrams disagree with the house
+style, one at a time, and later builds draw with what you accept. Your record
+and choices live in `~/.arkitect/`, so an update keeps them. The four style
+commands only run when you type them. [style.md](style.md).
 
 ### The local source list
 
-`.analysis/sources.local.json` is gitignored — the paths themselves can be
-identifying. It is what the test suite reads in a checkout, and the corpus a
-maintainer rebuilds the shipped house style from; your own learning keeps its
-list in `~/.arkitect/<engine>/sources.json` instead. By hand:
+`.analysis/sources.local.json` (gitignored) lists reference diagrams for a
+clone's own tests and for rebuilding the shipped house style. With it present,
+the tests that read a corpus run instead of skipping:
 
-```bash
-mkdir -p .analysis
-cat > .analysis/sources.local.json <<'JSON'
+```json
 {
   "drawio":     ["/absolute/path/to/first.drawio"],
   "excalidraw": ["/absolute/path/to/first.excalidraw"]
 }
-JSON
 ```
-
-With it present, the tests that check your corpus run instead of skipping.
-
-## Where to go next
-
-| | |
-|---|---|
-| [cli.md](cli.md) | every command, the repository layout, both spec formats |
-| [icons.md](icons.md) | the icon systems, placeholders, logos, tracing |
-| [style.md](style.md) | what the style record holds and how learning works |
-| [privacy.md](privacy.md) | exactly what touches the network |
-| [testing.md](testing.md) | the offline suite and the redaction check |

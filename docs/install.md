@@ -1,175 +1,187 @@
 # Install
 
-Arkitect is one repository that works three ways: a **Claude Code plugin**, a
-**toolkit any agent can drive**, and a **CLI you can run yourself**. All three
-are the same files — you are only choosing how your tool finds them.
+Arkitect is one set of files that works three ways: a Claude Code plugin, a
+toolkit any other agent drives, and a CLI. Pick the route your tool needs.
+
+| route | for | command |
+|---|---|---|
+| [Plugin](#claude-code) | Claude Code | `claude plugin install arkitect@arkitect` |
+| [npm](#npm) | the CLI, and adapters for other agents | `npm install -g arkitect` |
+| [npx](#npm) | one command, nothing installed | `npx arkitect <engine> <command>` |
+| [Clone](#clone) | contributing, running the tests | `git clone https://github.com/mouadja02/arkitect.git` |
 
 ## Requirements
 
-| | needed for | notes |
-|---|---|---|
-| **Node.js 20+** | everything | the only hard requirement. No npm install: there are no dependencies |
-| Claude Code | the plugin route | not needed for any other agent |
-| Docker | the local Excalidraw app | optional. Generation, validation and preview all work without it |
-| [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases) | rendering `.drawio` to PNG | optional, local only. `arkitect drawio render` discovers Linux/macOS/Windows installs; override with `--drawio-exe` or `DRAWIO_EXE` |
-| Xvfb | headless Linux Draw.io rendering | `sudo apt install -y xvfb` when `xvfb-run` is missing; automatically used without a usable `DISPLAY` |
-| PowerShell | legacy `.ps1` helpers | optional; Draw.io rendering also has a cross-platform Node helper |
-| Edge or Chrome | rasterising the Excalidraw SVG preview to PNG | already present on Windows and macOS |
+Node.js 20 or newer. There are no npm dependencies to install. Everything else
+is optional and only widens what the agent can see:
 
-Check what you have:
+| | needed for |
+|---|---|
+| [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases) | rendering `.drawio` to PNG or PDF; `--drawio-exe` or `DRAWIO_EXE` pins a build |
+| Xvfb | Draw.io rendering on headless Linux (`sudo apt install -y xvfb`) |
+| Edge, Chrome or Chromium | rendering `.excalidraw` to PNG; SVG needs nothing |
+| Docker | the local Excalidraw app ([apps.md](apps.md)) |
 
-```bash
-node bin/arkitect.mjs doctor
-```
+`arkitect doctor` says which of these it found.
 
-Nothing in that list except Node is required. The rest only widens what the
-agent can *see* — and seeing the render is what stops it shipping a diagram
-that validates but reads badly.
-
-## Route A — Claude Code plugin (marketplace)
+## Claude Code
 
 ```bash
 claude plugin marketplace add mouadja02/arkitect
 claude plugin install arkitect@arkitect
+claude plugin details arkitect          # expect: Skills (6)
 ```
 
-Verify:
-
-```bash
-claude plugin details arkitect
-```
-
-Expect `Skills (6)` — `arkitect-drawio`, `arkitect-excalidraw`,
-`learn-drawio-style`, `learn-excalidraw-style`, `apply-drawio-style`,
-`apply-excalidraw-style`.
-
-The plugin also carries one hook, `hooks/style-question.mjs`. It stays silent
-unless a prompt asks about a diagram's style. Then it adds one sentence: a
-style reaches later diagrams only through `/learn-drawio-style` or
-`/learn-excalidraw-style`. If the final reply still promises to remember the
-style, it sends that reply back once. It reads nothing but the prompt and,
-in that one session, the last reply, and it never blocks a prompt.
-
-A second, `hooks/report-check.mjs`, runs when a reply stops. If the reply
-names a `.drawio` or `.excalidraw` file and the session ran a build, it
-checks the report: the six headings are there, and Render doesn't describe
-a picture when no PNG was opened. If either fails, it sends the reply back
-once, saying what to fix (#215).
-
-## Route B — Claude Code plugin (clone into the skills directory)
-
-The repository *is* the plugin, so placing it where Claude Code looks for
-skills installs it.
+Or clone into the skills directory, which is the same plugin without the
+marketplace. Keep the folder name `arkitect`: it becomes the plugin id. Don't
+do both.
 
 ```bash
 git clone https://github.com/mouadja02/arkitect.git ~/.claude/skills/arkitect
 ```
 
-```powershell
-git clone https://github.com/mouadja02/arkitect.git "$env:USERPROFILE\.claude\skills\arkitect"
-```
+It loads next session as `arkitect@skills-dir`; `/reload-plugins` picks it up
+now.
 
-The directory name becomes the plugin id, so keep it as `arkitect`. It loads
-next session as `arkitect@skills-dir`; run `/reload-plugins` to pick it up now.
+| skill | runs |
+|---|---|
+| `arkitect-drawio`, `arkitect-excalidraw` | on their own, when a diagram is asked for |
+| `learn-drawio-style`, `learn-excalidraw-style` | only when you type the command |
+| `apply-drawio-style`, `apply-excalidraw-style` | only when you type the command |
 
-Do **not** do both routes — that installs it twice.
+The plugin also carries two hooks:
 
-## Route C — any other agent
+- `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
+  adds one sentence saying a style carries over only through
+  `/learn-*-style`, and sends a reply that promises to remember it back once
+  (#265).
+- `hooks/report-check.mjs`: after a build, it sends a report back once when it
+  is missing one of its headings, or when its Render section describes a
+  picture and no PNG was opened (#215).
 
-Clone it anywhere, then write the adapter your agent reads into the project you
-want to draw diagrams in:
+Neither reads anything but the prompt, the last reply and, after a build, the
+session's tool calls. Neither blocks a prompt.
+
+## npm
+
+Each release is published to npm with provenance, from 2.2.0 on.
 
 ```bash
-git clone https://github.com/mouadja02/arkitect.git ~/arkitect
-
-cd ~/my-project
-node ~/arkitect/bin/arkitect.mjs install --all
+npm install -g arkitect
+arkitect doctor
+arkitect excalidraw icon "postgres"
+arkitect drawio build spec.json --out docs/arch.drawio
 ```
 
-`install` writes short pointer files — `AGENTS.md`, `.cursor/rules/`,
-`.github/copilot-instructions.md`, `.opencode/command/` — each carrying the
-absolute path of your Arkitect checkout. Re-running after an update refreshes
-them in place; existing files are merged, not clobbered.
+Or without installing anything:
 
-Per-tool detail, including Codex prompts and what to do when a tool reads none
-of these files: **[agents.md](agents.md)**.
+```bash
+npx arkitect drawio icon "snowflake"
+npx arkitect excalidraw build spec.json --out docs/arch.excalidraw
+```
 
-## Route D — no agent, just the CLI
+The package carries the CLI, the six skills, every bundled icon pack and
+library, the plugin manifest, the hooks and these docs (about 18 MB packed). It
+does not carry the test suite, so `arkitect test` says to clone the repository.
+It is a CLI and toolkit distribution: Claude Code installs the plugin through
+the marketplace, not through npm.
+
+Use a global install, not `npx`, for the agent adapters below: `install`
+writes the absolute path of the package into each adapter, and `npx` runs from
+a cache that can be cleared.
+
+## Other agents
+
+From the project you want diagrams in:
+
+```bash
+cd ~/my-project
+arkitect install --all                 # every adapter
+arkitect install cursor                # just one
+arkitect install agents --print        # print the block, write nothing
+```
+
+Without npm, `node ~/arkitect/bin/arkitect.mjs install --all` does the same
+from a clone.
+
+| agent | writes | command |
+|---|---|---|
+| Codex | `AGENTS.md`, `.agents/skills/arkitect/SKILL.md` | `arkitect install codex` |
+| Cursor | `.cursor/rules/arkitect.mdc`, `.cursor/commands/diagram.md` | `arkitect install cursor cursor-command` |
+| OpenCode | `AGENTS.md`, `.opencode/command/diagram.md` | `arkitect install opencode agents` |
+| GitHub Copilot | `.github/copilot-instructions.md` | `arkitect install copilot` |
+| Antigravity | `AGENTS.md` | `arkitect install antigravity` |
+| Pi | `AGENTS.md` | `arkitect install pi` |
+| anything else | `AGENTS.md` | `arkitect install agents` |
+
+Each adapter is a short block pointing at [`AGENTS.md`](../AGENTS.md), the full
+contract, with the absolute path of your install. A rerun replaces the fenced
+`arkitect:begin … arkitect:end` block in place and leaves the rest of the file
+alone. An unknown adapter or option exits 2 before anything is written;
+`arkitect install --help` lists them.
+
+### Codex
+
+`install codex` also writes a skill. Codex picks it when a request matches, or
+run it yourself: `$arkitect draw the ingestion pipeline as excalidraw`, or pick
+it from `/skills`. Its paths are absolute, so it works from any folder. For
+every project on the machine, install it in your user scope:
+
+```bash
+arkitect install codex-skill --dir ~
+```
+
+A rerun leaves an existing skill alone; `--force` replaces it after an
+update. Arkitect no longer ships a custom prompt; one copied into
+`~/.codex/prompts` by an older version still runs as `/prompts:diagram`.
+
+### Cursor, Copilot
+
+Cursor's rule has `alwaysApply: false`, so it loads only when the conversation
+is about diagrams. Recent Cursor and VS Code builds also read `AGENTS.md`, so
+adding `agents` to either command is harmless.
+
+### Checking it took
+
+Ask for something small:
+
+> Draw a three-box flow (API gateway, worker, Postgres) as Excalidraw and save
+> it to `docs/smoke.excalidraw`.
+
+A working setup builds, validates and renders the file and lists its
+assumptions. Mermaid, or an apology, means the adapter is missing or points at
+the wrong path.
+
+## Clone
 
 ```bash
 git clone https://github.com/mouadja02/arkitect.git
 cd arkitect
-node bin/arkitect.mjs
+node bin/arkitect.mjs doctor
+node tests/run-tests.mjs               # offline; expected counts in testing.md
 ```
 
-Optionally put it on your `PATH`:
+`npm link` from the clone puts `arkitect` on your `PATH`. A fresh clone skips a
+few tests that need reference diagrams of your own; [testing.md](testing.md)
+has the numbers to expect.
 
-```bash
-npm link          # from the repository root; no dependencies are installed
-arkitect doctor
-```
+## MCP
 
-Everything the agent does, you can do by hand: write a spec, build, validate,
-render. See **[cli.md](cli.md)**.
+The Draw.io MCP server is for editing existing files over pages; generation
+does not need it. [apps.md](apps.md#drawio-mcp) has the per-host config and
+the tools Arkitect allows.
 
-### The npm package
+## Update and remove
 
-`package.json` is kept publishable, and its `files` list is the whole content
-policy: the CLI, the six skills, their bundled icon packs, libraries and
-attribution, the plugin manifest and the docs. It never carries the upstream
-archive cache, cached logos, built icons, downloaded libraries, contact-sheet
-HTML or browser profiles, or backups; a test packs the real tarball to prove it.
-The test suite is not in the package, so `arkitect test` needs a clone. It is a
-CLI distribution only: install the plugin through route A or B.
+| route | update | remove |
+|---|---|---|
+| plugin | `claude plugin update arkitect` | `claude plugin uninstall arkitect` |
+| skills folder | `git -C ~/.claude/skills/arkitect pull` | delete the folder |
+| npm | `npm install -g arkitect@latest` | `npm uninstall -g arkitect` |
+| adapters | `arkitect install --all --force` | delete the `arkitect:begin`…`arkitect:end` block |
 
-## Verify the install
-
-```bash
-node tests/run-tests.mjs
-```
-
-Offline, deterministic, about 20 seconds. A fresh clone reports some skipped
-tests: they need reference diagrams of your own, which a clone does not have.
-That is the correct result, not a problem. The exact numbers to expect are in
-[testing.md](testing.md).
-
-## The optional pieces
-
-```bash
-# Excalidraw, running locally, no backend, nothing uploaded
-docker compose -f docker/docker-compose.yml up -d        # http://localhost:3000
-
-# Draw.io editing over MCP (Claude Code shown; see agents.md for other hosts)
-claude mcp add --scope user drawio -- npx --yes --ignore-scripts @drawio/mcp
-```
-
-→ [excalidraw-docker.md](excalidraw-docker.md) · [drawio-mcp.md](drawio-mcp.md)
-
-## Update
-
-```bash
-git -C ~/.claude/skills/arkitect pull      # route B
-claude plugin update arkitect              # route A
-node ~/arkitect/bin/arkitect.mjs install --all --force   # route C, refresh adapters
-```
-
-Your learned style — record, findings, notes and override — your fetched
-logos, made icons and installed libraries all live in `~/.arkitect/` (or
-`$ARKITECT_HOME`), outside the plugin, so no route's update can wipe them.
-Anything cached under `skills/*/assets/` before 2.1.0 is still read from there.
-
-## Remove
-
-| route | how |
-|---|---|
-| A | `claude plugin uninstall arkitect` |
-| B | delete `~/.claude/skills/arkitect` |
-| C | delete the adapter files, or just the fenced `arkitect:begin`…`arkitect:end` block |
-| D | delete the clone (`npm unlink` first if you linked it) |
-
-Your learned style and your caches in `~/.arkitect/` are not removed with the
-plugin; delete that folder to forget them. Icons made before 2.1.0 sit in
-`skills/arkitect-excalidraw/assets/icons/` and go with the plugin: copy that
-folder first if you want to keep them.
-
-Stop the container with `docker compose -f docker/docker-compose.yml down`.
+Your learned style, fetched logos, built icons and installed libraries live in
+`~/.arkitect/` (or `$ARKITECT_HOME`), outside every route, so no update or
+removal touches them. Delete that folder to forget them. Anything cached under
+`skills/*/assets/` before 2.1.0 is still read from there, and goes with the
+plugin.
