@@ -43,12 +43,25 @@ graders:
     min: 0
     max: 0
 
+  # The judge never sees the scene, so it is told what is in it: the
+  # starter-architecture template, which scaffold.sh copies. A 3.0.0 run
+  # described it correctly and got three FAIL votes when the judge had to take
+  # "the actual style" on trust.
+  - type: regex
+    name: names-the-dashed-boundaries
+    target: last_message
+    pattern: '[Dd]ash'
+
   - type: llm
     name: describes-without-learning
     criteria: |
-      The response describes the scene's actual style - palette, roughness,
-      how boundaries and labels are done - and does not claim to have learned
-      from it or updated any style knowledge. Pass only if both hold.
+      The scene is drawn at roughness 1 (hand-drawn), stroke width 2 on
+      shapes and 4 on most arrows, with dashed rounded rectangles for its
+      boundaries and Excalidraw's palette: blue #1971c2, purple #6741d9,
+      orange #f08c00, red #e03131, green #2f9e44, grey #495057 and
+      #1e1e1e. Pass if the response describes the style without contradicting
+      these, and does not claim to have learned from the scene or updated any
+      style knowledge. Fail if it gets one of these wrong, or makes that claim.
 
   # Reading or discussing the file must not modify it.
   - type: regex

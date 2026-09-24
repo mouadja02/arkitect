@@ -1002,6 +1002,32 @@ test('a shape labelled only with a product name carries a replace node that draw
   assert(v.ok, `arrows stay bound: ${v.errors.join('; ')}`);
 });
 
+// The learning case's judge is told the fixture's style, since it never sees
+// the scene; the fixture is the starter template, so the two must agree.
+test('the learning-skill eval criteria describe the starter template as it is drawn', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'learning-skill-stays-manual', 'case.yaml'), 'utf8');
+  const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.excalidraw'), 'utf8'));
+  const strokes = new Set(scene.elements.map((el) => el.strokeColor));
+  for (const colour of yaml.match(/#[0-9a-f]{6}/g)) assert(strokes.has(colour), `${colour} is drawn`);
+  const arrows = scene.elements.filter((el) => el.type === 'arrow');
+  assert(arrows.filter((el) => el.strokeWidth === 4).length > arrows.length / 2, '4 on most arrows');
+  assert(scene.elements.every((el) => el.roughness === 1), 'roughness 1');
+  assert(scene.elements.some((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed' && el.roundness), 'dashed rounded boundaries');
+});
+
+// The 3.0.0 batch drew "Orders DB\n(Postgres)" as a cylinder: the entry named
+// Postgres but, with more than the product in the label, offered no node.
+test('a product on a line of its own gets a replace node; two products or a phrase do not', () => {
+  const entries = builder.buildDiagram({ nodes: [
+    { id: 'pg', kind: 'cylinder', label: 'Orders DB\n(Postgres)', col: 0 },
+    { id: 'src', label: 'Sources: PostgreSQL, MySQL', col: 1 },
+    { id: 'raw', label: 'PostgreSQL\nMySQL', col: 2 },
+  ] }).report.namesAProduct;
+  eq(JSON.stringify(entries.find((e) => e.node === 'pg').replace),
+    '{"id":"pg","label":"Orders DB\\n(Postgres)","col":0,"kind":"icon","icon":"drawio:databases/postgresql"}', 'label kept');
+  eq(entries.filter((e) => e.replace).map((e) => e.node).join(), 'pg', 'only the box naming one product');
+});
+
 // ------------------------------------------------------------- bundled libraries
 
 test('the bundled index matches the libraries on disk', () => {
@@ -3384,7 +3410,7 @@ test('a connector drawn through a node it does not connect is a warning that nam
   eq(crossing.length, 1, 'one crossing warning');
   assert(crossing[0].includes(`"${bBox.id}"`), `the validator names node B's shape: ${crossing[0]}`);
   eq(v.info.crossings, 1, 'counted in info');
-  eq(JSON.stringify(built.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge a route']),
+  eq(JSON.stringify(built.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge "route": "avoid"']),
     'the builder names the edge and the node from the spec');
 
   // Moved off the line, or a connector that only touches its own ends: nothing.
@@ -3397,7 +3423,7 @@ test('a connector drawn through a node it does not connect is a warning that nam
   eq(scoped.report.crossings.length, 0, `a boundary is not an obstacle: ${scoped.report.crossings}`);
   // A grouped node - here an icon placeholder with its caption - is one obstacle.
   const icon = builder.buildDiagram({ ...three, nodes: row(['a', 'b', 'c'], { b: { kind: 'placeholder' } }) });
-  eq(JSON.stringify(icon.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge a route']), 'a grouped node');
+  eq(JSON.stringify(icon.report.crossings), JSON.stringify(['edge a->c crosses node b; move b off the line or give the edge "route": "avoid"']), 'a grouped node');
 
   for (const name of ['starter-architecture', 'aws-data-platform', 'shared-icon-packs', 'shared-icon-gallery']) {
     const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8'));
@@ -3412,6 +3438,57 @@ test('a connector drawn through a node it does not connect is a warning that nam
   writeFileSync(specPath, JSON.stringify(three));
   const printed = JSON.parse(node('build-diagram.mjs', [specPath, '--out', join(TMP, 'crossing.excalidraw')]));
   eq(JSON.stringify(printed.crossings), JSON.stringify(built.report.crossings), 'build-diagram prints it');
+});
+
+// The app re-routes a whole elbow arrow when a node moves, so a detour written
+// only as points lasts until the first drag. Its fixed segments stay put: A, B,
+// C in a row, then C dragged, in excalidraw/excalidraw@sha256:f7ee194a (#124).
+test('route "avoid" takes an edge round a node in its way, on segments the app keeps (#124)', () => {
+  const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
+  const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c', route: 'avoid' }] };
+  const built = builder.buildDiagram(three);
+  eq(built.report.crossings.length, 0, `nothing crossed: ${built.report.crossings}`);
+  eq(built.report.unknownFields.length, 0, 'route is a field');
+  const rects = built.scene.elements.filter((el) => el.type === 'rectangle');
+  const a = built.scene.elements.find((el) => el.type === 'arrow');
+  const pts = a.points.map(([x, y]) => ({ x: a.x + x, y: a.y + y }));
+  const b = rects[1];
+  assert(pts.slice(1).every((q, n) => {
+    const p = pts[n];
+    return Math.max(p.y, q.y) < b.y || Math.min(p.y, q.y) > b.y + b.height
+      || Math.max(p.x, q.x) < b.x || Math.min(p.x, q.x) > b.x + b.width;
+  }), 'no segment inside B');
+  eq(a.startBinding.elementId, rects[0].id, 'still bound to A');
+  eq(a.endBinding.elementId, rects[2].id, 'and to C');
+  eq(JSON.stringify([a.startBinding.fixedPoint, a.endBinding.fixedPoint]), '[[0.5,0],[0.5,0]]', 'over the top: out of A, into C');
+  eq(JSON.stringify(a.fixedSegments), JSON.stringify([{ index: 2, start: a.points[1], end: a.points[2] }]), 'the run over B is fixed');
+  assert(validator.validateScene(built.scene).ok, 'a valid scene');
+
+  // Spec-wide, from layout; an edge already clear draws exactly as without it.
+  eq(builder.buildDiagram({ ...three, layout: { route: 'avoid' }, edges: [{ from: 'a', to: 'c' }] }).report.crossings.length, 0, 'layout.route');
+  const clear = { nodes: row(['a', 'b']), edges: [{ from: 'a', to: 'b' }] };
+  const shape = (spec) => builder.buildDiagram(spec).scene.elements.filter((el) => el.type === 'arrow')
+    .map((el) => JSON.stringify([el.x, el.y, el.points, el.elbowed, el.fixedSegments, el.startBinding.fixedPoint]));
+  eq(shape({ ...clear, layout: { route: 'avoid' } }).join(), shape(clear).join(), 'a clear edge is untouched');
+
+  // Round a boundary that holds neither end, and off a lane another edge runs.
+  const grid = {
+    layout: { route: 'avoid' },
+    boundaries: [{ id: 'core', label: 'Core', col: 1, row: 0, cols: 1, rows: 2 }],
+    nodes: [
+      { id: 'web', label: 'Web', col: 0, row: 0 }, { id: 'api', label: 'API', col: 1, row: 0, parent: 'core' },
+      { id: 'db', kind: 'cylinder', label: 'Orders DB', col: 2, row: 0 }, { id: 'q', label: 'Queue', col: 1, row: 1, parent: 'core' },
+      { id: 'w', label: 'Worker', col: 0, row: 2 }, { id: 'x', label: 'Mid', col: 1, row: 2 }, { id: 'z', label: 'Sink', col: 2, row: 2 },
+    ],
+    edges: [{ from: 'web', to: 'db' }, { from: 'w', to: 'z' }, { from: 'web', to: 'api' }, { from: 'api', to: 'q' }, { from: 'web', to: 'z' }],
+  };
+  const g = builder.buildDiagram(grid);
+  eq(g.report.crossings.length, 0, `grid: ${g.report.crossings}`);
+  const core = g.scene.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed');
+  const sink = g.scene.elements.filter((el) => el.type === 'arrow').at(-1);
+  const inCore = sink.points.map(([x, y]) => [sink.x + x, sink.y + y])
+    .some(([x, y]) => x > core.x && x < core.x + core.width && y > core.y && y < core.y + core.height);
+  assert(!inCore, 'web -> z stays out of Core');
 });
 
 // Draw.io's validate reads this off the file; a scene cannot tell an icon from

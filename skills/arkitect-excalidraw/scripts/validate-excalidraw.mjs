@@ -331,7 +331,7 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
 
   const crossings = connectorCrossings(live);
   for (const c of crossings.slice(0, 10)) {
-    warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge a route`);
+    warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
   }
 
   // ------------------------------------------------------------ house style

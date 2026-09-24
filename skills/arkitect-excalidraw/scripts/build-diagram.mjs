@@ -38,6 +38,7 @@ import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-bounda
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
 import { fitCell } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { routeThrough, crosses, lengthOf, detour, lanes, near } from '../../arkitect-drawio/scripts/lib/routes.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
@@ -243,6 +244,68 @@ function loopPoints(box, corner, gap) {
   const cx = side + out * LOOP_CLEARANCE;
   const cy = edge + down * LOOP_CLEARANCE;
   return [s, { x: cx, y: s.y }, { x: cx, y: cy }, { x: e.x, y: cy }, e];
+}
+
+// route: "avoid" (#124): a detour round every other node, its caption and
+// sublabel, each scope's name and any boundary holding neither end, for an
+// edge whose own route crosses one.
+// Tried from the sides the edge would use, then over the top and under the
+// bottom (or round either side); the fewest turns win, then the shortest.
+// Null when nothing gets through, and the crossing is reported as before.
+const AVOID_MARGIN = LOOP_CLEARANCE;   // the app's own clearance, so a drag keeps the lane
+
+function sidesBetween(a, b) {
+  const [s, e] = edgePointsBetween(a, b);
+  const name = (pt) => Object.keys(EDGE_POINT).find((k) => EDGE_POINT[k] === pt);
+  return [name(s), name(e)];
+}
+
+// Two runs on one line read as one edge; two that meet at a point share a
+// port, as edges out of one side always have.
+const RUN_CLEAR = 8;
+const meets = (m, n) => m.some((a) => n.some((b) => Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1));
+function alongside([p, q], [r, t]) {
+  const flat = (m, n) => Math.abs(m.y - n.y) < 1;
+  const upright = (m, n) => Math.abs(m.x - n.x) < 1;
+  const shared = (lo1, hi1, lo2, hi2) => Math.min(hi1, hi2) - Math.max(lo1, lo2) > RUN_CLEAR;
+  if (flat(p, q) && flat(r, t)) return Math.abs(p.y - r.y) < RUN_CLEAR
+    && shared(Math.min(p.x, q.x), Math.max(p.x, q.x), Math.min(r.x, t.x), Math.max(r.x, t.x));
+  if (upright(p, q) && upright(r, t)) return Math.abs(p.x - r.x) < RUN_CLEAR
+    && shared(Math.min(p.y, q.y), Math.max(p.y, q.y), Math.min(r.y, t.y), Math.max(r.y, t.y));
+  return false;
+}
+
+function avoidRoute(a, b, gap, blocks, lanesFrom, captioned, runs) {
+  const port = (box, side) => ({
+    left: { x: box.x - gap, y: box.y + box.height / 2, vertical: false },
+    right: { x: box.x + box.width + gap, y: box.y + box.height / 2, vertical: false },
+    top: { x: box.x + box.width / 2, y: box.y - gap, vertical: true },
+    bottom: { x: box.x + box.width / 2, y: box.y + box.height + gap, vertical: true },
+  })[side];
+  const clear = (segs) => !blocks.some((r) => segs.some((sg) => crosses(sg, r)))
+    && !runs.some((u) => segs.some((sg) => alongside(sg, u) && !meets(sg, u)));
+  const [s0, s1] = sidesBetween(a, b);
+  const pairs = s0 === 'left' || s0 === 'right'
+    ? [[s0, s1], ['top', 'top'], ['bottom', 'bottom']]
+    : [[s0, s1], ['left', 'left'], ['right', 'right']];
+  const xs = lanes(lanesFrom, 'x', AVOID_MARGIN);
+  const ys = lanes(lanesFrom, 'y', AVOID_MARGIN);
+  let best = null;
+  for (const [es, ns] of pairs) {
+    // Out of a bottom with text under it runs through that text.
+    if ((es === 'bottom' && captioned[0]) || (ns === 'bottom' && captioned[1])) continue;
+    const ex = port(a, es); const en = port(b, ns);
+    const [x0, x1] = [ex.x, en.x].sort((m, n) => m - n);
+    const [y0, y1] = [ex.y, en.y].sort((m, n) => m - n);
+    const via = detour(ex, en, es, ns, clear, near(xs, x0, x1), near(ys, y0, y1));
+    if (!via) continue;
+    const pts = [ex, ...via, en];
+    const len = lengthOf(routeThrough(ex, via, en));
+    if (!best || pts.length < best.pts.length || (pts.length === best.pts.length && len < best.len)) {
+      best = { pts, len, sides: [es, ns] };
+    }
+  }
+  return best;
 }
 
 // ---------------------------------------------------------------- node shapes
@@ -519,6 +582,8 @@ function assemble(spec, style) {
   const edgeEnds = new Map();      // element id -> [from node id, to node id]
   const footprints = [];          // for looksLikeBoundary (#204)
   const textBelow = new Set();     // nodes with a caption or sublabel under them
+  const extentOf = new Map();      // node id -> box, caption and sublabel together
+  const parentOf = new Map((spec.nodes ?? []).map((n) => [n.id, n.parent]));
 
   const noteChild = (parentId, box) => {
     if (!parentId) return;
@@ -750,7 +815,8 @@ function assemble(spec, style) {
     // A boundary has to hold everything the node drew, in both axes. Counting
     // only the height let a caption or sublabel wider than its icon hang out
     // of its own scope (#191).
-    noteChild(n.parent, bbox([{ ...box, type: 'rectangle' }, ...produced]));
+    extentOf.set(n.id, bbox([{ ...box, type: 'rectangle' }, ...produced]));
+    noteChild(n.parent, extentOf.get(n.id));
     if (below !== null) textBelow.add(n.id);
     nodeLayer.push(...produced);
   }
@@ -870,6 +936,7 @@ function assemble(spec, style) {
 
   const usedKinds = new Set();
   const loopsOn = new Map();       // node id -> loops drawn on it so far
+  const runs = [];                 // every edge's segments so far, for a detour to keep off
   for (const [i, e] of (spec.edges ?? []).entries()) {
     const from = geom.get(e.from);
     const to = geom.get(e.to);
@@ -891,9 +958,31 @@ function assemble(spec, style) {
     // the app measures its fixed points against.
     const corner = e.from === e.to ? loopsOn.get(e.from) ?? 0 : null;
     if (corner !== null) loopsOn.set(e.from, corner + 1);
-    const pts = corner === null
-      ? routePoints(from, to, e.route ?? 'auto', gap)
+    const route = e.route ?? L.route ?? 'auto';
+    let pts = corner === null
+      ? routePoints(from, to, route === 'avoid' ? 'auto' : route, gap)
       : loopPoints(startAnchor ? elementBox(startAnchor) : from, corner, gap);
+    let avoided = null;
+    if (route === 'avoid' && corner === null) {
+      const others = [...extentOf].filter(([id]) => id !== e.from && id !== e.to).map(([, x]) => x);
+      const names = scopes.filter((el) => el.type === 'text').map(elementBox);
+      // A boundary holding neither end is no place for the edge to run
+      // through; a frame's name sits in a strip above it.
+      const holds = (bid, id) => {
+        for (let q = parentOf.get(id); q; q = byBoundary.get(q)?.parent) if (q === bid) return true;
+        return false;
+      };
+      const walls = boundaries.filter((b) => boundaryBox.has(b.id) && !holds(b.id, e.from) && !holds(b.id, e.to))
+        .map((b) => { const x = boundaryBox.get(b.id); return b.kind === 'frame' ? { ...x, y: x.y - FRAME_NAME, height: x.height + FRAME_NAME } : x; });
+      const blocks = [...others, ...names, ...walls];
+      const segs = pts.slice(1).map((q, n) => [pts[n], q]);
+      if (blocks.some((r) => segs.some((sg) => crosses(sg, r)))) {
+        avoided = avoidRoute(from, to, gap, blocks, [...blocks, extentOf.get(e.from), extentOf.get(e.to)],
+          [textBelow.has(e.from), textBelow.has(e.to)], runs);
+        if (avoided) pts = avoided.pts;
+      }
+    }
+    runs.push(...pts.slice(1).map((q, n) => [pts[n], q]));
     const ox = pts[0].x;
     const oy = pts[0].y;
 
@@ -904,7 +993,7 @@ function assemble(spec, style) {
     // ends of any other arrow, which folds a loop over itself.
     const routing = e.routing ?? S.edgeRouting;
     const elbowed = !!startAnchor && !!endAnchor
-      && (corner !== null || (routing === 'elbow' && (e.route ?? 'auto') !== 'straight'));
+      && (corner !== null || (routing === 'elbow' && route !== 'straight'));
     if (corner !== null && LOOP_CORNERS[corner].end[1] === 1 && textBelow.has(e.from)) {
       report.notes.push(`edges[${i}] loops under "${e.from}", across its caption or sublabel; `
         + 'the app routes it the same way when the node moves');
@@ -922,9 +1011,16 @@ function assemble(spec, style) {
       startArrowhead: e.startArrowhead ?? null,
       elbowed,
     });
+    // The app keeps a fixed segment where it is when either end moves, and
+    // routes the first and last runs to it; checked in the app (#124).
+    if (avoided && elbowed) {
+      a.fixedSegments = a.points.slice(2, -1).map((q, n) => ({ index: n + 2, start: a.points[n + 1], end: q }));
+    }
+    if (avoided && !elbowed) a.roundness = null;
     bindArrow(a, startAnchor, endAnchor, {
       gap,
       fixedPoints: corner !== null ? [[...LOOP_CORNERS[corner].start], [...LOOP_CORNERS[corner].end]]
+        : avoided && elbowed ? avoided.sides.map((side) => [...EDGE_POINT[side]])
         : elbowed ? edgePointsBetween(from, to) : null,
     });
     edgeLayer.push(a);
@@ -1064,11 +1160,12 @@ function assemble(spec, style) {
     ...unframed(nodeLayer), ...unframed(edgeLayer), ...chrome,
   ];
   reindex(scene.elements);
-  // Reported, not rerouted: the fix is a layout change the spec's author makes (#125).
+  // Reported, not rerouted unless the edge asked for "avoid" (#124): the fix is
+  // the spec author's to choose (#125).
   for (const c of connectorCrossings(scene.elements)) {
     const node = c.members.map((id) => nodeOf.get(id)).find(Boolean);
     if (!edgeOf.has(c.arrow) || !node) continue;
-    report.crossings.push(`edge ${edgeOf.get(c.arrow)} crosses node ${node}; move ${node} off the line or give the edge a route`);
+    report.crossings.push(`edge ${edgeOf.get(c.arrow)} crosses node ${node}; move ${node} off the line or give the edge "route": "avoid"`);
   }
   // An icon no edge touches claims no relation (#244). Draw.io's validate reads
   // this off the file; a scene cannot tell an icon from a drawn glyph, so here

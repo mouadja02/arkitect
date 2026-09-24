@@ -19,21 +19,25 @@ export function labelParts(label) {
     .filter((p) => !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase()));
 }
 
-// A box that is nothing but the product's name also gets `replace`, the node to
-// paste over it: the report alone was listed and then ignored, and agents take
-// what a tool hands them (#287, #231). The id stays, so its edges still bind.
+// A box that names one product, as its whole label or as a whole line of it,
+// also gets `replace`, the node to paste over it: the report alone was listed
+// and then ignored, and agents take what a tool hands them (#287, #231). A
+// label like "Orders DB" over "(Postgres)" is the common form. The id and
+// label stay, so its edges still bind and the caption reads as before.
 const BOX_ONLY = new Set(['kind', 'width', 'height', 'icon']);
+
+const lineOf = (label, text) => String(label).split('\n')
+  .some((l) => l.trim().replace(/^\((.*)\)$/, '$1').trim().toLowerCase() === text.toLowerCase());
 
 // resolveOne(text) returns the ref it would draw unattended, or null.
 export function namedProducts(boxes, resolveOne) {
   const found = [];
   for (const box of boxes) {
-    for (const text of labelParts(box.label)) {
-      const icon = resolveOne(text);
-      if (!icon) continue;
-      const whole = String(box.label).trim().toLowerCase() === text.toLowerCase();
-      const kept = Object.fromEntries(Object.entries(box).filter(([k]) => !BOX_ONLY.has(k)));
-      found.push({ node: box.id, text, icon, ...(whole ? { replace: { ...kept, kind: 'icon', icon } } : {}) });
+    const named = labelParts(box.label).map((text) => ({ text, icon: resolveOne(text) })).filter((n) => n.icon);
+    const kept = Object.fromEntries(Object.entries(box).filter(([k]) => !BOX_ONLY.has(k)));
+    for (const { text, icon } of named) {
+      const one = named.length === 1 && lineOf(box.label, text);
+      found.push({ node: box.id, text, icon, ...(one ? { replace: { ...kept, kind: 'icon', icon } } : {}) });
     }
   }
   return found;

@@ -80,7 +80,7 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
 | `arkitect-drawio` | 11,153 | 735 | 11,888 |
-| `arkitect-excalidraw` | 11,102 | 882 | 11,984 |
+| `arkitect-excalidraw` | 11,098 | 882 | 11,980 |
 
 The chosen worked example comes on top: Draw.io's starter spec is 2,887 bytes;
 Excalidraw's starter is 3,472 and the large AWS example 14,080. Before #113 the
@@ -366,7 +366,9 @@ A release is two workflows and one merge (#88):
 2. **Review and merge that pull request.** Merging is the approval.
    `release publish` then checks that the branch name and both manifests agree, tags
    the merge commit `vX.Y.Z`, and publishes a GitHub Release whose body is that
-   version's `CHANGELOG.md` section, verbatim. Closing it unmerged does nothing.
+   version's `CHANGELOG.md` section, verbatim. Last, it publishes the same version
+   to npm with provenance, if `NPM_TOKEN` is set, and skips it with a warning if
+   not (#126). Closing it unmerged does nothing.
 
 **Either workflow can be re-run** (#120). Each looks at what is already on the
 remote before it changes anything, and `scripts/release.mjs resume-prepare` /
@@ -379,6 +381,7 @@ remote before it changes anything, and `scripts/release.mjs resume-prepare` /
 | the branch is pushed, the pull request is open | nothing, and says so |
 | the tag is pushed, the release is missing | publishes the release against the existing tag |
 | the tag and the release are both there | nothing, and says so |
+| the version is already on npm | no npm publish, and says so |
 
 Three states it refuses instead: a branch whose manifests name another version,
 a tag pointing anywhere but the merge commit, and a pull request someone closed
@@ -392,7 +395,8 @@ bullets or it is refused. The pull request then opens as a **draft**, flagged as
 model-written: correct `CHANGELOG.md` on the branch, then mark it ready. A missing
 key or a failed call fails the run; nothing ships with an invented or empty section.
 
-Nothing is published to npm. Setup, once, in the repository settings:
+CI's `npm-latest` job runs `npm publish --dry-run` on every pull request, which
+lists what would ship and its size. Setup, once, in the repository settings:
 
 | name | kind | what |
 |---|---|---|
@@ -400,6 +404,7 @@ Nothing is published to npm. Setup, once, in the repository settings:
 | `RELEASE_LLM_BASE_URL` | variable | e.g. `https://api.deepseek.com/v1` or `https://openrouter.ai/api/v1` |
 | `RELEASE_LLM_MODEL` | variable | the model name that endpoint expects |
 | `RELEASE_LLM_API_KEY` | secret | only needed when `[Unreleased]` can be empty |
+| `NPM_TOKEN` | secret | granular npm token with publish rights on `arkitect` only; without it releases skip npm |
 
 The same steps run locally: `node scripts/release.mjs empty | draft | next <bump> | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`, and `resume-prepare` / `resume-publish` answer what a rerun would do from state you pass on the command line.
 

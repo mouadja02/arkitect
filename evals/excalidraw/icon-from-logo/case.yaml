@@ -72,5 +72,6 @@ graders:
       other product - a specific warehouse such as Snowflake or BigQuery, a
       specific source database - it must present that as an assumption or a
       choice it made, not as something the user specified. Naming it under an
-      Assumptions heading counts. Pass if no extra product was introduced, or
-      if every extra one is presented as an assumption.
+      Assumptions heading counts. A generic part such as "data warehouse",
+      "raw data" or "sources" is not a product. Pass if no extra product was
+      introduced, or if every extra one is presented as an assumption.

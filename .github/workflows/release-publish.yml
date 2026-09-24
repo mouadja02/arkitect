@@ -2,7 +2,8 @@ name: release publish
 
 # Runs when a release/vX.Y.Z pull request from release-prepare.yml is merged,
 # and only then (#88). Tags the merge commit and publishes a GitHub Release whose
-# body is that version's CHANGELOG.md section, verbatim. No npm publish.
+# body is that version's CHANGELOG.md section, verbatim. Then the same version
+# goes to npm with provenance, when an NPM_TOKEN secret is set (#126).
 
 on:
   pull_request:
@@ -11,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write   # npm provenance
 
 jobs:
   publish:
@@ -24,6 +26,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+          registry-url: https://registry.npmjs.org
 
       # The branch name and the manifests must agree, or nothing is tagged.
       - name: Version from the branch, checked against the merge commit
@@ -83,3 +86,22 @@ jobs:
         run: |
           node scripts/release.mjs notes "$VERSION" > notes.md
           gh release create "v$VERSION" --title "Arkitect $VERSION" --notes-file notes.md --verify-tag
+
+      # After the tag and the Release, never before: a version on npm can't be
+      # reused, and can't be unpublished after 72 hours. Without the secret the
+      # release stands and this says so. A rerun finds the version already
+      # there and publishes nothing (#126).
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::warning::NPM_TOKEN is not set: v$VERSION is tagged and on GitHub, not on npm"
+            exit 0
+          fi
+          if [ "$(npm view "arkitect@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
+            echo "::notice::arkitect@$VERSION is already on npm"
+            exit 0
+          fi
+          npm publish --provenance --access public

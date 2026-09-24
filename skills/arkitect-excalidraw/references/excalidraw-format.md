@@ -88,7 +88,12 @@ full set, taken from arrows the app itself wrote:
   clears the outline; exact edge values are fine to write and get normalised.
 - Without a `fixedPoint` on each binding there is nothing to route between, and
   the binding is dropped.
-- `points` is only the opening position — the app replaces it.
+- `points` is only the opening position — the app replaces it, except for a
+  run listed in `fixedSegments`: `{ "index": n, "start": points[n-1], "end":
+  points[n] }`, never the first or last run. The app keeps a fixed run where it
+  is when a node moves and routes the ends to it. That is how the builder's
+  `"route": "avoid"` (per edge, or `layout.route` for all) writes a detour
+  (#124).
 - An elbow arrow **cannot carry a bound label**. Put the caption beside the line
   as free text.
 
