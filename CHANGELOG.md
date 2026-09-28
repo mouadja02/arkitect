@@ -17,6 +17,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Excalidraw build reports when an edge's explicit colour, dash or width contradicts the sample for its connector kind in the legend (#296).
 - CI's npm dry run takes a prerelease version: npm 12 refuses even a dry run over a published one, which turned main red once 2.2.0 shipped (#126).
 
 ## [2.2.0] — 2026-09-24
