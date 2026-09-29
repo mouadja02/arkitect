@@ -150,9 +150,10 @@ function anchorOn(box, towards, gap, under = null) {
   return { x: cx + dx * scale, y: cy + dy * scale };
 }
 
-// The point half way along a polyline by length, and the direction of the
-// segment it lands on. Taking the middle vertex instead puts an edge caption at
-// the end of the first leg, which on an L-shaped route is up against the source.
+// The point half way along a polyline by length, and the unit direction of
+// the segment it lands on. Taking the middle vertex instead puts an edge
+// caption at the end of the first leg, which on an L-shaped route is up
+// against the source.
 function polylineMidpoint(pts) {
   const seg = [];
   let total = 0;
@@ -161,7 +162,7 @@ function polylineMidpoint(pts) {
     seg.push(len);
     total += len;
   }
-  if (!total) return { x: pts[0].x, y: pts[0].y, horizontal: true };
+  if (!total) return { x: pts[0].x, y: pts[0].y, dir: { x: 1, y: 0 } };
   let walked = 0;
   for (let i = 0; i < seg.length; i++) {
     if (walked + seg[i] >= total / 2) {
@@ -171,13 +172,13 @@ function polylineMidpoint(pts) {
       return {
         x: a.x + (b.x - a.x) * t,
         y: a.y + (b.y - a.y) * t,
-        horizontal: Math.abs(b.x - a.x) >= Math.abs(b.y - a.y),
+        dir: seg[i] ? { x: (b.x - a.x) / seg[i], y: (b.y - a.y) / seg[i] } : { x: 1, y: 0 },
       };
     }
     walked += seg[i];
   }
   const last = pts[pts.length - 1];
-  return { x: last.x, y: last.y, horizontal: true };
+  return { x: last.x, y: last.y, dir: { x: 1, y: 0 } };
 }
 
 // Which side of each shape a route leaves from and arrives at, as the middle
@@ -1175,19 +1176,37 @@ function assemble(spec, style) {
       // A loop's caption goes on the far side of its outer run, away from the
       // node and its own caption.
       const mid = corner === null ? polylineMidpoint(pts)
-        : { x: (pts[2].x + pts[3].x) / 2, y: pts[2].y, horizontal: true };
+        : { x: (pts[2].x + pts[3].x) / 2, y: pts[2].y, dir: { x: 1, y: 0 } };
       const under = corner !== null && !bound && LOOP_CORNERS[corner].end[1] === 1;
-      // Sit above a horizontal run, beside a vertical one, so the line stays
-      // unbroken instead of being knocked out by the text.
+      // Beside the run, so the line stays unbroken instead of being knocked
+      // out by the text: 10px above a horizontal run, 14px right of a vertical
+      // one. A diagonal run used to get the vertical rule and ran through its
+      // own label (#315); the label moves out along the run's normal, upwards,
+      // by its box's half-extent that way plus the margin.
+      const { x: ux, y: uy } = mid.dir;
+      let [nx, ny] = [uy, -ux];
+      if (ny > 0 || (ny === 0 && nx < 0)) [nx, ny] = [-nx, -ny];
+      const off = bound ? 0
+        : Math.abs(m.width / 2 * uy) + Math.abs(m.height / 2 * ux) + 10 * Math.abs(ux) + 14 * Math.abs(uy);
+      // Below a diagonal instead, when that side holds fewer nodes, captions
+      // and labels.
+      const at = (sign) => ({
+        x: mid.x + sign * nx * off - m.width / 2, y: mid.y + sign * ny * off - m.height / 2, width: m.width, height: m.height,
+      });
+      let sign = 1;
+      if (!bound && ux && uy) {
+        const taken = [...extentOf.values(), ...[...scopes, ...edgeLayer].filter((el) => el.type === 'text').map(elementBox)];
+        const hits = (b) => taken.filter((o) => b.x < o.x + o.width && o.x < b.x + b.width && b.y < o.y + o.height && o.y < b.y + b.height).length;
+        if (hits(at(-1)) < hits(at(1))) sign = -1;
+      }
       const t = text({
         text: e.label, fontSize: size, fontFamily: S.fontFamily,
         textAlign: 'center', verticalAlign: 'middle',
         strokeColor: e.labelColor ?? k.color,
         containerId: bound ? a.id : null,
         width: m.width, height: m.height,
-        x: Math.round(mid.x - m.width / 2 + (bound || mid.horizontal ? 0 : m.width / 2 + 14)),
-        y: Math.round(under ? mid.y + 10
-          : mid.y - m.height / 2 - (bound || !mid.horizontal ? 0 : m.height / 2 + 10)),
+        x: Math.round(at(sign).x),
+        y: Math.round(under ? mid.y + 10 : at(sign).y),
       });
       if (bound) a.boundElements = [...(a.boundElements ?? []), { id: t.id, type: 'text' }];
       edgeLayer.push(t);

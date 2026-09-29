@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The free label of a straight diagonal Excalidraw edge moves out along the line's normal until it clears it, below the line when above holds more text; it used to sit on its own line. Level and upright labels are where they were (#315).
 - Excalidraw edges that meet one side of a node at one point are spread along it, 28px apart, ordered by where each goes, so a fan-out, a fan-in or a request and its reply draws as separate lines; `validate` warns when two arrows share more than 10px of one line. A rebuilt spec with fan-in or fan-out draws differently (#313).
 - An Excalidraw edge leaving a node downward, or entering it from below, runs clear of the node's caption and sublabel: the rectangle its arrows bind to reaches down over them, and a loop comes back in under them. A rebuilt spec with stacked captioned nodes draws differently (#314).
 - Excalidraw arrows into a cylinder, an actor or a library icon bind to a transparent rectangle over the node, in its group, instead of a line or one piece of it, so they follow the node when it is dragged; `validate` refuses a binding to an element the app cannot bind. A rebuilt spec gains that rectangle per such node; routes are unchanged (#294).

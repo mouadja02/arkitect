@@ -3677,6 +3677,43 @@ test('edges that share a side of a node are spread along it, and a shared run is
   }
 });
 
+// A diagonal run got the vertical rule, 14px right of its midpoint, and its
+// line ran through the label (#315).
+test('a straight diagonal edge\'s label clears its own line; level and upright labels stay put (#315)', () => {
+  const labelled = (b, extra = {}, layout = {}) => builder.buildDiagram({
+    layout, nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', ...b }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place', route: 'straight', ...extra }],
+  }, { seed: 1 }).scene;
+  const square = { colPitch: 300, rowPitch: 300 };
+  for (const [what, b, layout] of [
+    ['shallow, down', { col: 2, row: 1 }, {}], ['shallow, up', { col: 2, row: -1 }, {}],
+    ['45deg, down', { col: 1, row: 1 }, square], ['45deg, up', { col: 1, row: -1 }, square],
+    ['steep, down', { col: 1, row: 3 }, {}], ['steep, up', { col: 1, row: -3 }, {}],
+    ['steep, down-left', { col: -1, row: 3 }, {}],
+  ]) {
+    const scene = labelled(b, {}, layout);
+    eq(textCrossings(scene).map(([, t]) => t.text).join(), '', `${what}: the line misses its label`);
+  }
+  // Level, upright and elbowed labels are where they were.
+  const at = (scene) => { const t = scene.elements.find((el) => el.text === 'query in place'); return `${t.x},${t.y}`; };
+  eq(at(labelled({ col: 1 })), '156,20', 'level: above the line');
+  eq(at(labelled({ row: 1 })), '64,140', 'upright: right of the line');
+  eq(at(labelled({ col: 2, row: 1 }, { route: undefined })), '384,140', 'elbowed: right of its middle run');
+  // aws-data-platform's four straight labels.
+  const { scene } = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8')), { seed: 1 });
+  const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+  const own = textCrossings(scene).filter(([i, t]) => (t.groupIds ?? []).length === 0 && scene.elements.indexOf(t) === scene.elements.indexOf(arrows[i]) + 1);
+  const straight = ['IoT rule', 'passes DQ rules', 'query in place', 'single-digit ms'];
+  eq(own.map(([, t]) => t.text).filter((x) => straight.includes(x)).join(), '', 'no straight edge through its own label');
+  // Nor on anyone else's text: above the line was a sublabel, so below it.
+  const texts = scene.elements.filter((el) => el.type === 'text' && !el.containerId);
+  for (const name of straight) {
+    const t = texts.find((el) => el.text === name);
+    const on = texts.filter((o) => o !== t && t.x < o.x + o.width && o.x < t.x + t.width && t.y < o.y + o.height && o.y < t.y + t.height);
+    eq(on.map((o) => o.text).join(), '', `"${name}" on no other text`);
+  }
+});
+
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
   const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
   const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c' }] };
