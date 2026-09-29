@@ -564,10 +564,13 @@ test('shared images deduplicate bytes, preserve aspect and bind connections on b
   const scale = 100 / Math.max(raster.width, raster.height);
   eq(images[2].width, Math.round(raster.width * scale), 'raster width');
   eq(images[2].height, Math.round(raster.height * scale), 'raster height');
+  // A captioned image binds through the rectangle over it and its caption (#314).
+  const byId = new Map(built.scene.elements.map((e) => [e.id, e]));
   for (const arrow of built.scene.elements.filter((e) => e.type === 'arrow')) {
     for (const binding of [arrow.startBinding, arrow.endBinding]) {
-      const anchor = images.find((e) => e.id === binding?.elementId);
-      assert(anchor?.boundElements?.some((e) => e.id === arrow.id), 'two-sided image binding');
+      const host = byId.get(binding?.elementId);
+      const image = host?.type === 'image' ? host : images.find((im) => im.groupIds.some((g) => host?.groupIds?.includes(g)));
+      assert(image && host.boundElements?.some((e) => e.id === arrow.id), 'two-sided image binding');
     }
   }
   const svg = renderer.sceneToSvg(built.scene);
@@ -679,10 +682,13 @@ test('every arrow end binds to an element the app can bind, and composites to a 
   for (const [what, a, end] of [['cylinder', dbArrow, 'startBinding'], ['traced mark', svcMark, 'endBinding'], ['actor', markWho, 'endBinding']]) {
     const proxy = host(a, end);
     eq(`${proxy.type} ${proxy.strokeColor} ${proxy.backgroundColor}`, 'rectangle transparent transparent', `${what}: an invisible rectangle`);
-    const pieces = scene.elements.filter((el) => el !== proxy && el.type !== 'text' && (el.groupIds ?? []).includes(proxy.groupIds[0]));
+    const node = scene.elements.filter((el) => el !== proxy && (el.groupIds ?? []).includes(proxy.groupIds.at(-1)));
+    const pieces = node.filter((el) => el.type !== 'text');
     assert(pieces.length > 1, `${what}: in the node's group`);
+    // As wide as the drawing, and down over its caption (#314).
     const drawn = core.bbox(pieces);
-    eq(`${proxy.x},${proxy.y},${proxy.width}x${proxy.height}`, `${drawn.x},${drawn.y},${drawn.width}x${drawn.height}`, `${what}: over the drawing`);
+    const all = core.bbox(node);
+    eq(`${proxy.x},${proxy.y},${proxy.width}x${proxy.height}`, `${drawn.x},${drawn.y},${drawn.width}x${all.y + all.height - drawn.y}`, `${what}: over the drawing`);
     assert(scene.elements.indexOf(proxy) < scene.elements.indexOf(pieces[0]), `${what}: behind it`);
   }
   // Controls: a box binds to its own rectangle, an image to itself.
@@ -1918,7 +1924,7 @@ test('an edge from a node to itself loops over its top-right corner, bound at bo
   assert(v.ok && v.warnings.length === 0, `validation: ${[...v.errors, ...v.warnings].join('; ')}`);
 });
 
-test('loops take a corner each, a bottom one under text is noted, and a fifth is refused (#159)', () => {
+test('loops take a corner each, a bottom one comes back in under the text, and a fifth is refused (#159, #314)', () => {
   const four = (node) => builder.buildDiagram({
     nodes: [node],
     edges: ['one', 'two', 'three', 'four'].map((label) => ({ from: node.id, to: node.id, label })),
@@ -1929,9 +1935,13 @@ test('loops take a corner each, a bottom one under text is noted, and a fifth is
   eq(loops.length, 4, 'four loops');
   eq(new Set(loops.map((a) => JSON.stringify(a.startBinding.fixedPoint))).size, 4, 'each leaves from its own corner');
   for (const a of loops) assert(outside(a, img), 'no loop has a corner inside the icon');
-  eq(report.notes.filter((n) => /loops under "db"/.test(n)).map((n) => n.slice(0, 8)).join(' '), 'edges[2] edges[3]',
-    'the two bottom loops cross the caption, and say so');
-  eq(four({ id: 'w', label: 'Worker' }).report.notes.length, 0, 'a box has nothing under it to cross');
+  // They used to come back into the icon's bottom, through the caption, and
+  // said so; now they come back in under it.
+  const under = core.bbox(scene.elements.filter((el) => ['PostgreSQL', 'primary'].includes(el.text)));
+  const bottoms = loops.filter((a) => a.endBinding.fixedPoint[1] === 1);
+  eq(bottoms.length, 2, 'two loops come back in from below');
+  for (const a of bottoms) assert(a.y + a.points.at(-1)[1] > under.y + under.height, 'below the caption and sublabel');
+  eq(report.notes.length, 0, `nothing to note: ${report.notes.join('; ')}`);
 
   let thrown = null;
   try {
@@ -3550,6 +3560,65 @@ test('the Excalidraw builder draws from the resolved style, not its own constant
     ['#1e1e1e', 'solid', 4], ['#1e1e1e', 'dashed', 4], ['#1971c2', 'solid', 4], ['#e03131', 'solid', 4],
     ['#2f9e44', 'dashed', 4], ['#29b5e8', 'solid', 4], ['#495057', 'dotted', 1],
   ]), 'every shipped kind draws exactly as before');
+});
+
+// Free text an arrow's segments pass through: [arrow index, text] pairs.
+function textCrossings(scene) {
+  const hits = (p, q, b) => {
+    const x0 = b.x + 1; const y0 = b.y + 1; const x1 = b.x + b.width - 1; const y1 = b.y + b.height - 1;
+    const dx = q.x - p.x; const dy = q.y - p.y;
+    let t0 = 0; let t1 = 1;
+    for (const [pk, qk] of [[-dx, p.x - x0], [dx, x1 - p.x], [-dy, p.y - y0], [dy, y1 - p.y]]) {
+      if (pk === 0) { if (qk < 0) return false; continue; }
+      const r = qk / pk;
+      if (pk < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+    }
+    return t0 < t1;
+  };
+  const texts = scene.elements.filter((el) => el.type === 'text' && !el.containerId);
+  return scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length).flatMap((a, i) => {
+    const pts = a.points.map(([px, py]) => ({ x: a.x + px, y: a.y + py }));
+    return texts.filter((t) => pts.slice(1).some((q, n) => hits(pts[n], q, t))).map((t) => [i, t]);
+  });
+}
+
+// An edge leaving a node downward ran through its caption and sublabel, and
+// one entering from below did too (#314).
+test('an edge leaving or entering a node from below runs clear of its caption and sublabel (#314)', () => {
+  const pair = (b, edge, sublabel = 'retries · DLQ') => builder.buildDiagram({ nodes: [
+    { id: 'a', kind: 'icon', icon: 'drawio:aws/aws-lambda', label: 'Worker', ...(sublabel ? { sublabel } : {}) },
+    { id: 'b', kind: 'icon', icon: 'drawio:aws/amazon-dynamodb', label: 'Table', ...b },
+  ], edges: [edge] }, { seed: 1 }).scene;
+  for (const sublabel of ['retries · DLQ', null]) {
+    for (const [what, edge] of [['leaving', { from: 'a', to: 'b' }], ['entering', { from: 'b', to: 'a' }]]) {
+      const scene = pair({ row: 1 }, edge, sublabel);
+      const crossed = textCrossings(scene).map(([, t]) => t.text);
+      eq(crossed.join(', '), '', `${what} from below${sublabel ? ', with a sublabel' : ''}: through no text`);
+      const a = scene.elements.find((el) => el.type === 'arrow');
+      const end = what === 'leaving' ? a.startBinding : a.endBinding;
+      const host = scene.elements.find((el) => el.id === end.elementId);
+      const text = core.bbox(scene.elements.filter((el) => el.type === 'text' && el.text !== 'Table'));
+      eq(host.y + host.height, text.y + text.height, `${what}: bound to a rectangle down to the bottom of the text`);
+      eq(JSON.stringify(end.fixedPoint), '[0.5,1]', `${what}: at the middle of its bottom`);
+      assert(validator.validateScene(scene).ok, 'valid');
+    }
+  }
+  // Control: side by side, the arrow runs level on the icons' centre line.
+  const level = pair({ col: 1, row: 0 }, { from: 'a', to: 'b' });
+  const a = level.elements.find((el) => el.type === 'arrow');
+  const icon = level.elements.find((el) => el.id === a.startBinding.elementId);
+  eq(`${a.y} ${a.points.map((p) => p[1]).join(',')}`, '50 0,0', 'level at y 50, the icons\' middle');
+  eq(a.startBinding.fixedPoint[1], Math.round((50 - icon.y) / icon.height * 10000) / 10000, 'and bound there');
+
+  // The committed examples: no arrow through its own ends' caption or sublabel.
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const { scene } = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8')), { seed: 1 });
+    const byId = new Map(scene.elements.map((el) => [el.id, el]));
+    const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+    const own = textCrossings(scene).filter(([i, t]) => [arrows[i].startBinding, arrows[i].endBinding]
+      .some((b) => (byId.get(b.elementId).groupIds ?? []).some((g) => (t.groupIds ?? []).includes(g))));
+    eq(own.map(([, t]) => t.text).join(', '), '', `${name}: no arrow through its own ends' text`);
+  }
 });
 
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {

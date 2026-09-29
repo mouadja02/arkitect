@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- An Excalidraw edge leaving a node downward, or entering it from below, runs clear of the node's caption and sublabel: the rectangle its arrows bind to reaches down over them, and a loop comes back in under them. A rebuilt spec with stacked captioned nodes draws differently (#314).
 - Excalidraw arrows into a cylinder, an actor or a library icon bind to a transparent rectangle over the node, in its group, instead of a line or one piece of it, so they follow the node when it is dragged; `validate` refuses a binding to an element the app cannot bind. A rebuilt spec gains that rectangle per such node; routes are unchanged (#294).
 - The Excalidraw preview frames a rotated element whole; SVG and PNG sized the viewport from its unrotated box and cut it off (#297).
 - Excalidraw build reports when an edge's explicit colour, dash or width contradicts the sample for its connector kind in the legend (#296).

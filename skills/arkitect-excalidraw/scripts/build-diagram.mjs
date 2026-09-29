@@ -129,18 +129,24 @@ function accentOf(name) {
 
 // ---------------------------------------------------------------- geometry
 
-function anchorOn(box, towards, gap) {
+// `under` is the caption and sublabel below the shape, { drop, width }, and
+// can be wider than it. A route that runs down into them leaves past them,
+// not through them (#314).
+function anchorOn(box, towards, gap, under = null) {
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   const dx = towards.x - cx;
   const dy = towards.y - cy;
   if (dx === 0 && dy === 0) return { x: cx, y: cy };
-  const halfW = box.width / 2 + gap;
-  const halfH = box.height / 2 + gap;
-  const scale = Math.min(
+  const exit = (halfW, halfH) => Math.min(
     Math.abs(dx) > 1e-6 ? halfW / Math.abs(dx) : Infinity,
     Math.abs(dy) > 1e-6 ? halfH / Math.abs(dy) : Infinity,
   );
+  let scale = exit(box.width / 2 + gap, box.height / 2 + gap);
+  if (under?.drop && dy > 1e-6) {
+    const past = exit(under.width / 2 + gap, box.height / 2 + under.drop + gap);
+    if (past > box.height / 2 / dy) scale = Math.max(scale, past);
+  }
   return { x: cx + dx * scale, y: cy + dy * scale };
 }
 
@@ -174,8 +180,8 @@ function polylineMidpoint(pts) {
   return { x: last.x, y: last.y, horizontal: true };
 }
 
-// Which edge of each shape an elbow arrow should leave from and arrive at,
-// as the normalised [u, v] pair Excalidraw stores on the binding.
+// Which side of each shape a route leaves from and arrives at, as the middle
+// of that side in Excalidraw's normalised [u, v].
 function edgePointsBetween(a, b) {
   const dx = (b.x + b.width / 2) - (a.x + a.width / 2);
   const dy = (b.y + b.height / 2) - (a.y + a.height / 2);
@@ -192,7 +198,7 @@ function edgePointsBetween(a, b) {
 // Straight when the two shapes share a centre line, elbowed otherwise. An
 // architecture reads better with square corners; a diagonal across three
 // columns reads as noise.
-function routePoints(a, b, mode, gap) {
+function routePoints(a, b, mode, gap, [underA, underB] = []) {
   const ca = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
   const cb = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   const alignedY = Math.abs(ca.y - cb.y) < 12;
@@ -202,20 +208,41 @@ function routePoints(a, b, mode, gap) {
     : mode;
 
   if (effective === 'straight') {
-    return [anchorOn(a, cb, gap), anchorOn(b, ca, gap)];
+    return [anchorOn(a, cb, gap, underA), anchorOn(b, ca, gap, underB)];
   }
 
   const horizontalFirst = Math.abs(cb.x - ca.x) >= Math.abs(cb.y - ca.y);
   if (horizontalFirst) {
     const midX = (ca.x + cb.x) / 2;
-    const start = anchorOn(a, { x: cb.x, y: ca.y }, gap);
-    const end = anchorOn(b, { x: ca.x, y: cb.y }, gap);
+    const start = anchorOn(a, { x: cb.x, y: ca.y }, gap, underA);
+    const end = anchorOn(b, { x: ca.x, y: cb.y }, gap, underB);
     return [start, { x: midX, y: start.y }, { x: midX, y: end.y }, end];
   }
-  const midY = (ca.y + cb.y) / 2;
-  const start = anchorOn(a, { x: ca.x, y: cb.y }, gap);
-  const end = anchorOn(b, { x: cb.x, y: ca.y }, gap);
+  // Between the ports, not the centres: a port under a caption is lower.
+  const start = anchorOn(a, { x: ca.x, y: cb.y }, gap, underA);
+  const end = anchorOn(b, { x: cb.x, y: ca.y }, gap, underB);
+  const midY = (start.y + end.y) / 2;
   return [start, { x: start.x, y: midY }, { x: end.x, y: midY }, end];
+}
+
+// The side of its node a route's end is on: the one it lies furthest outside.
+function sideOf(p, box) {
+  const out = {
+    right: p.x - (box.x + box.width), left: box.x - p.x,
+    bottom: p.y - (box.y + box.height), top: box.y - p.y,
+  };
+  return Object.keys(out).reduce((m, k) => (out[k] > out[m] ? k : m));
+}
+
+// The normalised [u, v] Excalidraw stores on an elbow arrow's binding, taken
+// from where the route actually meets its node, on the element the arrow is
+// bound to. That element can be taller than the shape, with the caption
+// under it (#314), so a side's middle is not always 0.5.
+function fixedOn(host, p, side) {
+  const r = (v) => Math.round(Math.min(1, Math.max(0, v)) * 10000) / 10000;
+  const u = r((p.x - host.x) / host.width);
+  const v = r((p.y - host.y) / host.height);
+  return { left: [0, v], right: [1, v], top: [u, 0], bottom: [u, 1] }[side];
 }
 
 // An edge from a node to itself goes over one of its corners, in this order.
@@ -233,12 +260,12 @@ export const LOOP_CORNERS = [
 // first drag in the app does not move the loop.
 const LOOP_CLEARANCE = 42;
 
-function loopPoints(box, corner, gap) {
+function loopPoints(box, corner, gap, drop = 0) {
   const { start: [su, sv], end: [eu, ev] } = LOOP_CORNERS[corner];
   const out = su === 1 ? 1 : -1;
   const down = ev === 1 ? 1 : -1;
   const side = box.x + box.width * su;
-  const edge = box.y + box.height * ev;
+  const edge = box.y + box.height * ev + (ev === 1 ? drop : 0);
   const s = { x: side + out * gap, y: box.y + box.height * sv };
   const e = { x: box.x + box.width * eu, y: edge + down * gap };
   const cx = side + out * LOOP_CLEARANCE;
@@ -275,12 +302,12 @@ function alongside([p, q], [r, t]) {
   return false;
 }
 
-function avoidRoute(a, b, gap, blocks, lanesFrom, captioned, runs) {
-  const port = (box, side) => ({
+function avoidRoute(a, b, gap, blocks, lanesFrom, [underA, underB], runs) {
+  const port = (box, side, drop) => ({
     left: { x: box.x - gap, y: box.y + box.height / 2, vertical: false },
     right: { x: box.x + box.width + gap, y: box.y + box.height / 2, vertical: false },
     top: { x: box.x + box.width / 2, y: box.y - gap, vertical: true },
-    bottom: { x: box.x + box.width / 2, y: box.y + box.height + gap, vertical: true },
+    bottom: { x: box.x + box.width / 2, y: box.y + box.height + drop + gap, vertical: true },
   })[side];
   const clear = (segs) => !blocks.some((r) => segs.some((sg) => crosses(sg, r)))
     && !runs.some((u) => segs.some((sg) => alongside(sg, u) && !meets(sg, u)));
@@ -292,9 +319,7 @@ function avoidRoute(a, b, gap, blocks, lanesFrom, captioned, runs) {
   const ys = lanes(lanesFrom, 'y', AVOID_MARGIN);
   let best = null;
   for (const [es, ns] of pairs) {
-    // Out of a bottom with text under it runs through that text.
-    if ((es === 'bottom' && captioned[0]) || (ns === 'bottom' && captioned[1])) continue;
-    const ex = port(a, es); const en = port(b, ns);
+    const ex = port(a, es, underA.drop); const en = port(b, ns, underB.drop);
     const [x0, x1] = [ex.x, en.x].sort((m, n) => m - n);
     const [y0, y1] = [ex.y, en.y].sort((m, n) => m - n);
     const via = detour(ex, en, es, ns, clear, near(xs, x0, x1), near(ys, y0, y1));
@@ -581,7 +606,7 @@ function assemble(spec, style) {
   const boundaryOf = new Map();    // element id -> boundary id
   const edgeEnds = new Map();      // element id -> [from node id, to node id]
   const footprints = [];          // for looksLikeBoundary (#204)
-  const textBelow = new Set();     // nodes with a caption or sublabel under them
+  const dropOf = new Map();        // node id -> height of the caption and sublabel under it
   const extentOf = new Map();      // node id -> box, caption and sublabel together
   const parentOf = new Map((spec.nodes ?? []).map((n) => [n.id, n.parent]));
 
@@ -805,11 +830,14 @@ function assemble(spec, style) {
     // all, so its arrows stayed behind on a drag (#294); an actor's head or a
     // library icon's largest piece is smaller than the node the route was
     // drawn to. Those bind to a transparent rectangle over the whole node,
-    // behind it and in its group.
+    // behind it and in its group. It reaches down over the caption and
+    // sublabel, so an arrow leaving downward starts below them and the app
+    // routes round them on a drag (#314).
     const same = (p, q) => ['x', 'y', 'width', 'height'].every((k) => Math.abs(p[k] - q[k]) < 0.5);
-    if (anchor && (!canBind(anchor) || !same(elementBox(anchor), box))) {
+    const covers = { x: box.x, y: box.y, width: box.width, height: bottom() - box.y };
+    if (anchor && (!canBind(anchor) || !same(elementBox(anchor), covers))) {
       const proxy = rectangle({
-        x: box.x, y: box.y, width: box.width, height: box.height,
+        ...covers,
         strokeColor: 'transparent', backgroundColor: 'transparent', fillStyle: 'solid',
         strokeWidth: STROKE_WIDTH.thin, roughness: look.roughness, roundness: null,
         groupIds: group ? [group] : [],
@@ -838,7 +866,7 @@ function assemble(spec, style) {
     // of its own scope (#191).
     extentOf.set(n.id, bbox([{ ...box, type: 'rectangle' }, ...produced]));
     noteChild(n.parent, extentOf.get(n.id));
-    if (below !== null) textBelow.add(n.id);
+    dropOf.set(n.id, below === null ? 0 : below - (box.y + box.height));
     nodeLayer.push(...produced);
   }
 
@@ -987,14 +1015,16 @@ function assemble(spec, style) {
     const gap = e.gap ?? 8;
     const startAnchor = anchorFor.get(e.from);
     const endAnchor = anchorFor.get(e.to);
-    // A loop is drawn around the shape its ends bind to, since that is what
-    // the app measures its fixed points against.
+    // A loop goes round the node's shape and comes back in from below under
+    // its caption; its fixed points are measured off that route like any
+    // other edge's.
     const corner = e.from === e.to ? loopsOn.get(e.from) ?? 0 : null;
     if (corner !== null) loopsOn.set(e.from, corner + 1);
     const route = e.route ?? L.route ?? 'auto';
+    const unders = [e.from, e.to].map((id) => ({ drop: dropOf.get(id), width: extentOf.get(id).width }));
     let pts = corner === null
-      ? routePoints(from, to, route === 'avoid' ? 'auto' : route, gap)
-      : loopPoints(startAnchor ? elementBox(startAnchor) : from, corner, gap);
+      ? routePoints(from, to, route === 'avoid' ? 'auto' : route, gap, unders)
+      : loopPoints(from, corner, gap, unders[0].drop);
     let avoided = null;
     if (route === 'avoid' && corner === null) {
       const others = [...extentOf].filter(([id]) => id !== e.from && id !== e.to).map(([, x]) => x);
@@ -1010,8 +1040,7 @@ function assemble(spec, style) {
       const blocks = [...others, ...names, ...walls];
       const segs = pts.slice(1).map((q, n) => [pts[n], q]);
       if (blocks.some((r) => segs.some((sg) => crosses(sg, r)))) {
-        avoided = avoidRoute(from, to, gap, blocks, [...blocks, extentOf.get(e.from), extentOf.get(e.to)],
-          [textBelow.has(e.from), textBelow.has(e.to)], runs);
+        avoided = avoidRoute(from, to, gap, blocks, [...blocks, extentOf.get(e.from), extentOf.get(e.to)], unders, runs);
         if (avoided) pts = avoided.pts;
       }
     }
@@ -1027,10 +1056,6 @@ function assemble(spec, style) {
     const routing = e.routing ?? S.edgeRouting;
     const elbowed = !!startAnchor && !!endAnchor
       && (corner !== null || (routing === 'elbow' && route !== 'straight'));
-    if (corner !== null && LOOP_CORNERS[corner].end[1] === 1 && textBelow.has(e.from)) {
-      report.notes.push(`edges[${i}] loops under "${e.from}", across its caption or sublabel; `
-        + 'the app routes it the same way when the node moves');
-    }
 
     const a = arrow({
       x: Math.round(ox),
@@ -1050,11 +1075,12 @@ function assemble(spec, style) {
       a.fixedSegments = a.points.slice(2, -1).map((q, n) => ({ index: n + 2, start: a.points[n + 1], end: q }));
     }
     if (avoided && !elbowed) a.roundness = null;
+    const last = pts[pts.length - 1];
     bindArrow(a, startAnchor, endAnchor, {
       gap,
-      fixedPoints: corner !== null ? [[...LOOP_CORNERS[corner].start], [...LOOP_CORNERS[corner].end]]
-        : avoided && elbowed ? avoided.sides.map((side) => [...EDGE_POINT[side]])
-        : elbowed ? edgePointsBetween(from, to) : null,
+      fixedPoints: elbowed
+        ? [fixedOn(elementBox(startAnchor), pts[0], sideOf(pts[0], from)), fixedOn(elementBox(endAnchor), last, sideOf(last, to))]
+        : null,
     });
     edgeLayer.push(a);
     edgeOf.set(a.id, `${e.from}->${e.to}`);
