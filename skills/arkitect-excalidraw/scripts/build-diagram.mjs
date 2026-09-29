@@ -245,6 +245,79 @@ function fixedOn(host, p, side) {
   return { left: [0, v], right: [1, v], top: [u, 0], bottom: [u, 1] }[side];
 }
 
+// Ends that meet at one point of one side read as one line: two flows out of
+// one port, or a request and its reply, drawn as a single edge (#313). They
+// are spread along the side, ordered by where each edge goes so they do not
+// cross, as the Draw.io builder does (#246). Wider apart than Draw.io's 16px,
+// which puts two 4px arrowheads on top of each other.
+const SPREAD = 28;
+const SIDE_MARGIN = 12;
+
+// plans: [{ e, pts, corner }], changed in place. A straight level edge whose
+// one end moved takes the other end with it when that stays on its side, and
+// gets a jog in the middle when it cannot.
+function spreadEnds(plans, geom) {
+  const axis = (side) => (side === 'left' || side === 'right' ? 'y' : 'x');
+  const size = (k) => (k === 'y' ? 'height' : 'width');
+  const centre = (box, k) => box[k] + box[size(k)] / 2;
+  const bySide = new Map();
+  plans.forEach((p, i) => {
+    if (p.corner !== null) return;
+    for (const [end, node, pt, other] of [['start', p.e.from, p.pts[0], p.e.to], ['end', p.e.to, p.pts.at(-1), p.e.from]]) {
+      const side = sideOf(pt, geom.get(node));
+      const key = `${node}\u0000${side}`;
+      if (!bySide.has(key)) bySide.set(key, []);
+      const k = axis(side);
+      bySide.get(key).push({ i, end, node, k, at: pt[k], towards: centre(geom.get(other), k) });
+    }
+  });
+  const moved = new Map();
+  for (const ends of bySide.values()) {
+    const groups = [];
+    for (const x of [...ends].sort((m, n) => m.at - n.at)) {
+      const last = groups.at(-1);
+      if (last && Math.abs(last[0].at - x.at) < 2) last.push(x); else groups.push([x]);
+    }
+    for (const g of groups) {
+      if (g.length < 2) continue;
+      const { k, node } = g[0];
+      const box = geom.get(node);
+      const len = box[size(k)];
+      const step = Math.max(0, Math.min(SPREAD, (len - 2 * SIDE_MARGIN) / (g.length - 1)));
+      g.sort((m, n) => m.towards - n.towards || m.i - n.i || (m.end === 'start' ? -1 : 1));
+      g.forEach((x, n) => {
+        const at = g[0].at + (n - (g.length - 1) / 2) * step;
+        moved.set(`${x.i}:${x.end}`, Math.min(box[k] + len - 6, Math.max(box[k] + 6, at)));
+      });
+    }
+  }
+  plans.forEach((p, i) => {
+    const s = moved.get(`${i}:start`);
+    const t = moved.get(`${i}:end`);
+    if (s === undefined && t === undefined) return;
+    const { pts } = p;
+    const [a, b] = [pts[0], pts.at(-1)];
+    const k = axis(sideOf(a, geom.get(p.e.from)));
+    const level = pts.length === 2 && k === axis(sideOf(b, geom.get(p.e.to))) && Math.abs(a[k] - b[k]) < 1;
+    if (!level) {
+      if (s !== undefined) { a[k] = s; if (pts.length > 2) pts[1][k] = s; }
+      const kb = axis(sideOf(b, geom.get(p.e.to)));
+      if (t !== undefined) { b[kb] = t; if (pts.length > 2) pts.at(-2)[kb] = t; }
+      return;
+    }
+    const fits = (v, id) => { const box = geom.get(id); return v >= box[k] + 6 && v <= box[k] + box[size(k)] - 6; };
+    const sa = s ?? (fits(t, p.e.from) ? t : a[k]);
+    const tb = t ?? (fits(s, p.e.to) ? s : b[k]);
+    a[k] = sa;
+    b[k] = tb;
+    if (Math.abs(sa - tb) < 1) return;
+    const o = k === 'y' ? 'x' : 'y';
+    const mid = (a[o] + b[o]) / 2;
+    pts.splice(1, 0, { [o]: mid, [k]: sa }, { [o]: mid, [k]: tb });
+    p.jogged = true;
+  });
+}
+
 // An edge from a node to itself goes over one of its corners, in this order.
 // Each loop needs a corner of its own: the app re-routes an elbow arrow with
 // the same clearance every time, so two loops sharing a corner merge on the
@@ -987,6 +1060,7 @@ function assemble(spec, style) {
   const legendMismatches = [];
   const loopsOn = new Map();       // node id -> loops drawn on it so far
   const runs = [];                 // every edge's segments so far, for a detour to keep off
+  const plans = [];                // each edge's route, drawn once every end is spread
   for (const [i, e] of (spec.edges ?? []).entries()) {
     const from = geom.get(e.from);
     const to = geom.get(e.to);
@@ -1045,6 +1119,12 @@ function assemble(spec, style) {
       }
     }
     runs.push(...pts.slice(1).map((q, n) => [pts[n], q]));
+    plans.push({ i, e, k, edgeStyle, gap, from, to, startAnchor, endAnchor, corner, route, pts, avoided });
+  }
+
+  spreadEnds(plans, geom);
+
+  for (const { i, e, k, edgeStyle, gap, from, to, startAnchor, endAnchor, corner, route, pts, avoided, jogged } of plans) {
     const ox = pts[0].x;
     const oy = pts[0].y;
 
@@ -1074,7 +1154,7 @@ function assemble(spec, style) {
     if (avoided && elbowed) {
       a.fixedSegments = a.points.slice(2, -1).map((q, n) => ({ index: n + 2, start: a.points[n + 1], end: q }));
     }
-    if (avoided && !elbowed) a.roundness = null;
+    if ((avoided || jogged) && !elbowed) a.roundness = null;
     const last = pts[pts.length - 1];
     bindArrow(a, startAnchor, endAnchor, {
       gap,

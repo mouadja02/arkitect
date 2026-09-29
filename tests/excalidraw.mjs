@@ -3621,6 +3621,62 @@ test('an edge leaving or entering a node from below runs clear of its caption an
   }
 });
 
+// Every end on one side of a node got that side's middle, so two edges drew
+// one line for hundreds of pixels (#313).
+test('edges that share a side of a node are spread along it, and a shared run is a warning (#313)', () => {
+  const arrowsOf = (spec) => {
+    const { scene } = builder.buildDiagram(spec, { seed: 1 });
+    return { scene, arrows: scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length) };
+  };
+  const ends = (a) => [{ x: a.x, y: a.y }, { x: a.x + a.points.at(-1)[0], y: a.y + a.points.at(-1)[1] }];
+  const box = { id: 'a', label: 'A' };
+
+  // Two out of one side: the one going higher leaves higher.
+  const out = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 2 }, { id: 'c', label: 'C', col: 2, row: 1 }],
+    edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] });
+  let v = validator.validateScene(out.scene);
+  eq(v.info.sharedRuns, 0, `two out of one side: no shared run: ${v.warnings.join('; ')}`);
+  const [toB, toC] = out.arrows;
+  eq(toB.startBinding.elementId, toC.startBinding.elementId, 'both bound to A');
+  eq(`${toB.startBinding.fixedPoint} ${toC.startBinding.fixedPoint}`, '1,0.3444 1,0.6556', 'spread along its right side, 28px apart');
+  eq(ends(toB)[0].y, ends(toB)[1].y, 'the edge to B stays level, its far end moved with it');
+
+  // Two into one side.
+  const into = arrowsOf({ nodes: [box, { id: 'b', label: 'B', row: 1 }, { id: 'c', label: 'C', col: 2 }],
+    edges: [{ from: 'a', to: 'c' }, { from: 'b', to: 'c' }] });
+  v = validator.validateScene(into.scene);
+  eq(v.info.sharedRuns, 0, `two into one side: no shared run: ${v.warnings.join('; ')}`);
+  eq(into.arrows.map((a) => a.endBinding.fixedPoint.join()).join(' '), '0,0.3444 0,0.6556', 'spread along C\'s left side');
+
+  // A request and its reply between the same pair: two level lines.
+  const pair = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'a' }] });
+  eq(validator.validateScene(pair.scene).info.sharedRuns, 0, 'a request and its reply');
+  for (const a of pair.arrows) eq(a.points.map((q) => q[1]).join(), '0,0', 'each level');
+  assert(pair.arrows[0].y !== pair.arrows[1].y, 'on two lines');
+
+  // Control: one edge per side keeps the middle of each.
+  const one = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 2 }, { id: 'c', label: 'C', row: 1 }],
+    edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] });
+  eq(one.arrows.map((a) => `${a.startBinding.fixedPoint}>${a.endBinding.fixedPoint}`).join(' '), '1,0.5>0,0.5 0.5,1>0.5,0',
+    'side middles, as before');
+
+  // The warning, for a hand edit: two arrows along one line, then 20px apart.
+  const at = (x, y, points) => core.arrow({ x, y, points });
+  const stacked = { type: 'excalidraw', elements: [at(0, 0, [[0, 0], [200, 0]]), at(50, 2, [[0, 0], [100, 0], [100, 100]])], files: {} };
+  const w = validator.validateScene(stacked).warnings.filter((x) => x.includes('share'));
+  eq(w.length, 1, 'one shared run');
+  assert(w[0].includes(`"${stacked.elements[0].id}"`) && w[0].includes(`"${stacked.elements[1].id}"`) && w[0].includes('100px'),
+    `names both, and how long: ${w[0]}`);
+  stacked.elements[1].y = 20;
+  eq(validator.validateScene(stacked).info.sharedRuns, 0, '20px apart is two lines');
+
+  // The committed examples had four; rebuilt, none.
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
+    eq(validator.validateScene(scene).info.sharedRuns, 0, `${name}: no shared run`);
+  }
+});
+
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
   const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
   const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c' }] };

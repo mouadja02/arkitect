@@ -339,6 +339,12 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
     warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
   }
 
+  const trunks = sharedRuns(live);
+  for (const r of trunks.slice(0, 10)) {
+    warnings.push(`arrows "${r.arrows[0]}" and "${r.arrows[1]}" share ${r.length}px of one line and read as one flow; `
+      + 'move one end along its side, or rebuild from the spec, which spreads ends that share a side');
+  }
+
   // ------------------------------------------------------------ house style
 
   const offPalette = new Set();
@@ -361,6 +367,7 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
   info.overlaps = overlaps;
   info.tightLabels = tight;
   info.crossings = crossings.length;
+  info.sharedRuns = trunks.length;
   info.canvas = { width: Math.round(view.width), height: Math.round(view.height) };
   // Off-palette colour is legal Excalidraw and sometimes correct - a brand
   // colour in a traced logo, for one - so it is reported, never failed.
@@ -418,6 +425,36 @@ export function connectorCrossings(elements) {
       for (let i = 1; i < pts.length; i++) {
         if (segmentHitsBox(pts[i - 1], pts[i], s.box)) { found.push({ arrow: a.id, node: s.id, members: [...s.members] }); break; }
       }
+    }
+  }
+  return found;
+}
+
+// Two arrows along one line, closer than a heavy stroke is wide, for more
+// than TRUNK_MIN: they draw as one (#313). The same 10px Draw.io's validate
+// allows two edges into one port (#246). Grouped arrows are legend samples.
+const TRUNK_MIN = 10;
+const RUN_APART = 4;
+
+export function sharedRuns(elements) {
+  const arrows = elements.filter((el) => el.type === 'arrow' && !el.isDeleted && !(el.groupIds ?? []).length
+    && Array.isArray(el.points) && el.points.length > 1);
+  const segs = arrows.map((a) => a.points.slice(1).map(([px, py], n) => [
+    { x: a.x + a.points[n][0], y: a.y + a.points[n][1] }, { x: a.x + px, y: a.y + py },
+  ]));
+  const overlap = ([p, q], [r, t]) => {
+    for (const [k, o] of [['x', 'y'], ['y', 'x']]) {
+      if (Math.abs(p[o] - q[o]) >= 1 || Math.abs(r[o] - t[o]) >= 1 || Math.abs(p[o] - r[o]) >= RUN_APART) continue;
+      return Math.max(0, Math.min(Math.max(p[k], q[k]), Math.max(r[k], t[k])) - Math.max(Math.min(p[k], q[k]), Math.min(r[k], t[k])));
+    }
+    return 0;
+  };
+  const found = [];
+  for (let i = 0; i < arrows.length; i++) {
+    for (let j = i + 1; j < arrows.length; j++) {
+      let n = 0;
+      for (const u of segs[i]) for (const w of segs[j]) n += overlap(u, w);
+      if (n > TRUNK_MIN) found.push({ arrows: [arrows[i].id, arrows[j].id], length: Math.round(n) });
     }
   }
   return found;
