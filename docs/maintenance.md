@@ -351,6 +351,10 @@ or `### Fixed`, naming what changed and the issue it came from. There are no
 fragment files; #32 tried them and the machinery cost more than the conflicts
 it saved.
 
+The bump is picked from these entries, so an entry that changes what an
+existing spec draws, or removes or renames a command, flag or spec field, says
+so in plain words.
+
 The suite still fails on a conflict marker left in any tracked text file
 (`tests/toolkit.mjs`).
 
@@ -370,6 +374,10 @@ the live record.
 together, always. [SemVer](https://semver.org): a new capability is a minor, a
 fix is a patch, and anything that changes the shape of generated output or
 removes a command is a major.
+
+Issues carry no bump. Fixes merge as they are ready and gather under
+`[Unreleased]`; when that section holds a release worth shipping, read it,
+pick the bump by the rule above, and prepare it. The maintainer's pick stands.
 
 A release is two workflows and one merge (#88):
 
