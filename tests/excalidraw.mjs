@@ -649,6 +649,62 @@ test('every connector is bound at both ends', () => {
   }
 });
 
+// A cylinder's body is a line and a traced icon is a stack of lines. The app
+// does not bind to a line: the arrow loaded fine and stayed behind on a drag,
+// 168px from the cylinder (#294).
+test('every arrow end binds to an element the app can bind, and composites to a rectangle over the node (#294)', () => {
+  const traced = finder.resolveIcon(`${TEST_PREFIX}donut`).elements;
+  const largest = traced.reduce((m, el) => (el.width * el.height > m.width * m.height ? el : m));
+  eq(largest.type, 'line', 'the traced fixture\'s largest piece is a line');
+  const spec = {
+    nodes: [
+      { id: 'db', kind: 'cylinder', label: 'Orders', width: 150, height: 120 },
+      { id: 'svc', label: 'Service', col: 1 },
+      { id: 'mark', kind: 'icon', icon: `${TEST_PREFIX}donut`, label: 'Traced', col: 2 },
+      { id: 'img', kind: 'icon', icon: `${TEST_PREFIX}clear`, col: 1, row: 1 },
+      { id: 'who', kind: 'actor', label: 'Operator', col: 2, row: 1 },
+    ],
+    edges: [{ from: 'db', to: 'svc' }, { from: 'svc', to: 'mark' }, { from: 'svc', to: 'img' }, { from: 'mark', to: 'who' }],
+  };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const byId = new Map(scene.elements.map((el) => [el.id, el]));
+  const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+  const host = (a, end) => byId.get(a[end].elementId);
+  for (const a of arrows) for (const end of ['startBinding', 'endBinding']) {
+    assert(core.canBind(host(a, end)), `arrow ${a.id} ${end} binds to a ${host(a, end).type}`);
+  }
+  const [dbArrow, svcMark, svcImg, markWho] = arrows;
+  // A cylinder, a traced mark and an actor bind to a transparent rectangle
+  // over the drawing, grouped with it, so it moves with the node.
+  for (const [what, a, end] of [['cylinder', dbArrow, 'startBinding'], ['traced mark', svcMark, 'endBinding'], ['actor', markWho, 'endBinding']]) {
+    const proxy = host(a, end);
+    eq(`${proxy.type} ${proxy.strokeColor} ${proxy.backgroundColor}`, 'rectangle transparent transparent', `${what}: an invisible rectangle`);
+    const pieces = scene.elements.filter((el) => el !== proxy && el.type !== 'text' && (el.groupIds ?? []).includes(proxy.groupIds[0]));
+    assert(pieces.length > 1, `${what}: in the node's group`);
+    const drawn = core.bbox(pieces);
+    eq(`${proxy.x},${proxy.y},${proxy.width}x${proxy.height}`, `${drawn.x},${drawn.y},${drawn.width}x${drawn.height}`, `${what}: over the drawing`);
+    assert(scene.elements.indexOf(proxy) < scene.elements.indexOf(pieces[0]), `${what}: behind it`);
+  }
+  // Controls: a box binds to its own rectangle, an image to itself.
+  eq(host(dbArrow, 'endBinding').type, 'rectangle', 'a box');
+  assert(host(dbArrow, 'endBinding').strokeColor !== 'transparent', 'a box binds to the box it draws');
+  eq(host(svcImg, 'endBinding').type, 'image', 'an image');
+  // Routes and artwork are as before: the cylinder's arrow still leaves its right side.
+  const body = scene.elements.find((el) => el.type === 'line' && el.groupIds?.includes(host(dbArrow, 'startBinding').groupIds[0]));
+  eq(dbArrow.x, Math.round(core.elementBox(body).x + core.elementBox(body).width + 8), 'the route starts where it did');
+  const v = validator.validateScene(scene);
+  assert(v.ok, `valid: ${v.errors.join('; ')}`);
+
+  // A file that binds to a line is an error naming the arrow and the line.
+  const line = body;
+  dbArrow.startBinding.elementId = line.id;
+  line.boundElements = [{ id: dbArrow.id, type: 'arrow' }];
+  const bad = validator.validateScene(scene);
+  assert(!bad.ok, 'refused');
+  assert(bad.errors.some((e) => e.includes(`"${dbArrow.id}"`) && e.includes(`"${line.id}"`) && e.includes('a line')),
+    `the error names both: ${bad.errors.join('; ')}`);
+});
+
 test('generated output has no overlapping nodes', () => {
   const r = validator.validateScene(built.scene);
   eq(r.info.overlaps, 0, 'overlaps');
@@ -671,7 +727,8 @@ test('the learned style tokens are applied', () => {
   const shapes = built.scene.elements.filter((e) => ['rectangle', 'ellipse', 'diamond'].includes(e.type));
   assert(shapes.every((s) => s.roughness === 1), 'hand-drawn roughness');
   const strokes = new Set(built.scene.elements.map((e) => e.strokeColor));
-  const allowed = new Set([...Object.values(core.PALETTE).map((p) => p.stroke), '#ffffff', '#bbb', '#1971c2']);
+  // transparent: the rectangle a composite node's arrows bind to (#294).
+  const allowed = new Set([...Object.values(core.PALETTE).map((p) => p.stroke), '#ffffff', '#bbb', '#1971c2', 'transparent']);
   for (const s of strokes) assert(allowed.has(s), `off-palette stroke ${s}`);
   const sizes = new Set(built.scene.elements.filter((e) => e.type === 'text').map((e) => e.fontSize));
   for (const s of sizes) assert(Object.values(core.FONT).includes(s), `off-scale font size ${s}`);

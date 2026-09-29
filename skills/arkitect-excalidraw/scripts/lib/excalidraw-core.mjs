@@ -403,6 +403,12 @@ export const EDGE_POINT = {
   bottom: [0.5, 1],
 };
 
+// What the app binds an arrow to, its isBindableElement (#294). A line, an
+// arrow or a freedraw stroke is not: an arrow bound to one loads, keeps the
+// binding, and stays behind when the shape is dragged.
+const BINDABLE = new Set(['rectangle', 'diamond', 'ellipse', 'image', 'iframe', 'embeddable', 'frame', 'magicframe']);
+export const canBind = (el) => !!el && (BINDABLE.has(el.type) || (el.type === 'text' && !el.containerId));
+
 // Bind both ends of an arrow. `focus` 0 aims at the shape's centre; `gap` is
 // the clear space Excalidraw keeps between arrowhead and shape. `fixedPoints`
 // is [start, end] edge points and is required for elbow arrows - without it the

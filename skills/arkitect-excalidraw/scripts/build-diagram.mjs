@@ -25,7 +25,7 @@ import { dirname } from 'node:path';
 import {
   emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
   rectangle, ellipse, diamond, line, arrow, text, frame, image as imageEl,
-  bindLabel, bindArrow, cloneElements, bbox, elementBox, translate, scaleElements,
+  bindLabel, bindArrow, canBind, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
   normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
@@ -628,6 +628,7 @@ function assemble(spec, style) {
     const captionOpts = { ...labelOpts, fontSize: n.fontSize ?? S.captionSize };
     const produced = [];
     let anchor = null;
+    let group = null;                // a composite's own group, which a proxy joins
     // `box` stays the shape itself, so arrows anchor on its centre line. Text
     // stacks underneath it, each piece below the last.
     let box = { x, y, width: w, height: h };
@@ -646,6 +647,7 @@ function assemble(spec, style) {
         const slot = iconPlaceholder(x, y, n.size ?? S.iconSize);
         produced.push(...slot.elements);
         anchor = slot.anchor;
+        group = slot.group;
         box = bbox(slot.elements);
       } else if (resolved.kind === 'embedded') {
         const e = resolved.entry;
@@ -664,7 +666,7 @@ function assemble(spec, style) {
           ...(resolved.provenance ? { provenance: resolved.provenance } : {}) });
         if (e.transparent === false) report.opaqueIcons.push(`${resolved.source} (${e.transparencyNote})`);
       } else {
-        const group = newId();
+        group = newId();
         const clone = cloneElements(resolved.elements, { groupId: group });
         const src = bbox(clone);
         const longest = n.size ?? S.iconSize;
@@ -675,8 +677,7 @@ function assemble(spec, style) {
         translate(clone, colX(n.col ?? 0) + (L.cell - after.width) / 2 - after.x, y - after.y);
         produced.push(...clone);
         box = bbox(clone);
-        // An arrow binds to one element; the largest piece of the mark is the
-        // most stable target when the group is dragged.
+        // Kept only when it is bindable and covers the whole mark; see the proxy below.
         anchor = clone.reduce((best, el) => {
           const b = elementBox(el);
           const bb = elementBox(best);
@@ -740,6 +741,7 @@ function assemble(spec, style) {
       const c = cylinder(x, y, w, h, look);
       produced.push(...c.elements);
       anchor = c.elements[0];
+      group = c.group;
       box = bbox(c.elements);
       if (n.label) {
         const m = measureText(n.label, captionOpts.fontSize, captionOpts.fontFamily);
@@ -757,6 +759,7 @@ function assemble(spec, style) {
       const a = actor(x, y, w, h, look);
       produced.push(...a.elements);
       anchor = a.elements[0];
+      group = a.group;
       box = bbox(a.elements);
       if (n.label) {
         const m = measureText(n.label, captionOpts.fontSize, captionOpts.fontFamily);
@@ -795,6 +798,24 @@ function assemble(spec, style) {
         y: Math.round(bottom() + 4),
       }));
       grow(4 + m.height);
+    }
+
+    // An arrow binds to one element, and the app moves its ends with that
+    // element alone. A cylinder's body is a line, which the app cannot bind at
+    // all, so its arrows stayed behind on a drag (#294); an actor's head or a
+    // library icon's largest piece is smaller than the node the route was
+    // drawn to. Those bind to a transparent rectangle over the whole node,
+    // behind it and in its group.
+    const same = (p, q) => ['x', 'y', 'width', 'height'].every((k) => Math.abs(p[k] - q[k]) < 0.5);
+    if (anchor && (!canBind(anchor) || !same(elementBox(anchor), box))) {
+      const proxy = rectangle({
+        x: box.x, y: box.y, width: box.width, height: box.height,
+        strokeColor: 'transparent', backgroundColor: 'transparent', fillStyle: 'solid',
+        strokeWidth: STROKE_WIDTH.thin, roughness: look.roughness, roundness: null,
+        groupIds: group ? [group] : [],
+      });
+      produced.unshift(proxy);
+      anchor = proxy;
     }
 
     // A caption or sublabel is free text under its node, so dragging the icon

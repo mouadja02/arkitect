@@ -12,7 +12,7 @@
 
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
-  elementBox, bbox, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
+  elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
   parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 
@@ -191,6 +191,11 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
       boundArrows++;
       const target = byId.get(bind.elementId);
       if (!target) { errors.push(`arrow "${el.id}" ${end} points at missing element "${bind.elementId}"`); continue; }
+      // Two reciprocal ids are not a connection the app keeps (#294).
+      if (!canBind(target)) {
+        errors.push(`arrow "${el.id}" ${end} binds to "${target.id}", a ${target.containerId ? 'bound text' : target.type}, `
+          + 'which the app cannot bind: the arrow stays behind when it moves. Bind to a rectangle, ellipse, diamond, image, frame or free text');
+      }
       if (!(target.boundElements ?? []).some((b) => b.id === el.id)) {
         errors.push(`arrow "${el.id}" binds to "${bind.elementId}" but that element does not list it back`);
       }
