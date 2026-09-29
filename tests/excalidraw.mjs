@@ -2172,6 +2172,65 @@ test('the render is stable across runs', () => {
   eq(renderer.sceneToSvg(built.scene), renderer.sceneToSvg(built.scene), 'same scene, same SVG');
 });
 
+// The renderer rotates a shape about its centre, and used to size the viewport
+// from the unrotated box, so a rotated shape was cut off in both SVG and PNG.
+test('the preview viewport holds a rotated element whole, with the padding round it (#297)', () => {
+  const viewOf = (svg) => {
+    const [x, y, w, h] = /viewBox="([^"]*)"/.exec(svg)[1].split(' ').map(Number);
+    return { x, y, w, h };
+  };
+  // The corners or points the renderer draws, rotated as its transform does.
+  const turned = (el) => {
+    const cx = el.x + el.width / 2;
+    const cy = el.y + el.height / 2;
+    const pts = el.points ? el.points.map(([px, py]) => [el.x + px, el.y + py])
+      : [[el.x, el.y], [el.x + el.width, el.y], [el.x, el.y + el.height], [el.x + el.width, el.y + el.height]];
+    const c = Math.cos(el.angle); const s = Math.sin(el.angle);
+    return pts.map(([px, py]) => [cx + (px - cx) * c - (py - cy) * s, cy + (px - cx) * s + (py - cy) * c]);
+  };
+  const holds = (el, padding = 40) => {
+    const scene = core.emptyScene();
+    scene.elements = [el];
+    const v = viewOf(renderer.sceneToSvg(scene, { style: 'clean', padding }));
+    for (const [px, py] of turned(el)) {
+      assert(px >= v.x + padding - 0.01 && px <= v.x + v.w - padding + 0.01 && py >= v.y + padding - 0.01 && py <= v.y + v.h - padding + 0.01,
+        `${el.type} at ${Math.round(el.angle * 180 / Math.PI)}deg: point ${px.toFixed(1)},${py.toFixed(1)} outside ${JSON.stringify(v)} less ${padding}px`);
+    }
+    return v;
+  };
+  const v90 = holds(core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 2 }));
+  eq(`${v90.x} ${v90.y} ${v90.w} ${v90.h}`, '35 -115 130 280', 'the 90deg reproduction spans x 75..125, y -75..125, padded');
+  holds(core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 4 }));
+  holds(core.rectangle({ x: -500, y: -320, width: 120, height: 30, angle: 2.2 }), 12);
+  holds(core.ellipse({ x: -60, y: 10, width: 160, height: 40, angle: -0.6 }));
+  holds(core.text({ text: 'rotated caption', fontSize: 20, x: -40, y: -90, angle: Math.PI / 3 }));
+  holds(core.line({ x: -30, y: 40, points: [[0, 0], [180, 20], [220, -60]], angle: 0.9 }));
+  holds(core.arrow({ x: 10, y: -200, points: [[0, 0], [0, 160]], angle: -Math.PI / 4 }));
+
+  const flat = core.emptyScene();
+  flat.elements = [core.rectangle({ x: 0, y: 0, width: 200, height: 50 })];
+  eq(/viewBox="([^"]*)"/.exec(renderer.sceneToSvg(flat, { style: 'clean' }))[1], '-40 -40 280 130', 'an unrotated shape frames as before');
+
+  // The PNG is the SVG rasterised, so it gets the same viewport.
+  const scene = core.emptyScene();
+  scene.elements = [core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 2 })];
+  const scenePath = join(TMP, 'rotated.excalidraw');
+  core.writeScene(scenePath, scene);
+  let drawn = null;
+  let windowSize = null;
+  const runner = (exe, args) => {
+    drawn = readFileSync(join(dirname(fileURLToPath(args.at(-1))), 'scene.svg'), 'utf8');
+    windowSize = args.find((a) => a.startsWith('--window-size='));
+    writeFileSync(args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length), makePng({ alpha: false, w: 130, h: 280 }));
+  };
+  const status = renderer.run([scenePath, '--out', join(TMP, 'rotated.png'), '--width', '130'], {
+    runner, platform: 'linux', env: { PATH: '' }, isExecutable: (p) => p === '/usr/bin/chromium', log: () => {}, error: () => {},
+  });
+  eq(status, 0, 'the PNG renders');
+  assert(drawn.includes('viewBox="35 -115 130 280"'), 'the SVG the browser draws carries the rotated viewport');
+  eq(windowSize, '--window-size=130,280', 'and the screenshot is its shape');
+});
+
 // A scene file is user input, and the preview is meant to be opened. A
 // strokeColor of `#1e1e1e"><script>` used to close the attribute, close the
 // element and write its own script, which ran on open - reaching the network
