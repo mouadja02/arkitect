@@ -14,6 +14,8 @@ separate file, no naming scheme, no required format beyond that.
 ### Changed
 
 - The docs are 11 pages, not 17: `install.md` takes agent setup and the npm and npx routes, `apps.md` the Excalidraw container, Draw.io Desktop and the MCP server, `icons.md` all five icon pages, and `maintenance.md` the pack-building and review detail. `cli.md` documents the 2.2.0 spec fields.
+- `docs/audit-prompt.md` has the auditor sweep seven defect classes and report a measured result for each, measure every host's reading route, not only `SKILL.md`, search the whole tracker from a file, and diagnose each finding to a cause, a control, its reach, the commit that introduced it and the test that missed it. It files from body files, re-running each reproduction first and reading each issue back after. Its issues carry `audit`, and its rejected ideas become one issue closed as not planned, so the next audit reads them as settled.
+- Issues carry no release. The `release:patch`, `release:minor` and `release:major` labels are gone; the bump is picked when a release is prepared, from `[Unreleased]` (`docs/maintenance.md`, "Version bumps").
 
 ### Fixed
 
