@@ -935,6 +935,7 @@ function assemble(spec, style) {
   // ------------------------------------------------------------ edges
 
   const usedKinds = new Set();
+  const legendMismatches = [];
   const loopsOn = new Map();       // node id -> loops drawn on it so far
   const runs = [];                 // every edge's segments so far, for a detour to keep off
   for (const [i, e] of (spec.edges ?? []).entries()) {
@@ -951,6 +952,17 @@ function assemble(spec, style) {
     }
     usedKinds.add(kind);
     const k = EDGE_KINDS[kind];
+    const edgeStyle = {
+      color: e.color ?? k.color,
+      strokeStyle: e.strokeStyle ?? k.strokeStyle,
+      strokeWidth: e.strokeWidth ?? k.width,
+    };
+    const differing = [
+      ['color', edgeStyle.color, k.color],
+      ['strokeStyle', edgeStyle.strokeStyle, k.strokeStyle],
+      ['strokeWidth', edgeStyle.strokeWidth, k.width],
+    ].filter(([, actual, sample]) => actual !== sample).map(([field]) => field);
+    if (differing.length) legendMismatches.push({ i, from: e.from, to: e.to, kind, differing });
     const gap = e.gap ?? 8;
     const startAnchor = anchorFor.get(e.from);
     const endAnchor = anchorFor.get(e.to);
@@ -1003,9 +1015,9 @@ function assemble(spec, style) {
       x: Math.round(ox),
       y: Math.round(oy),
       points: pts.map((p) => [Math.round(p.x - ox), Math.round(p.y - oy)]),
-      strokeColor: e.color ?? k.color,
-      strokeWidth: e.strokeWidth ?? k.width,
-      strokeStyle: e.strokeStyle ?? k.strokeStyle,
+      strokeColor: edgeStyle.color,
+      strokeWidth: edgeStyle.strokeWidth,
+      strokeStyle: edgeStyle.strokeStyle,
       roughness: e.roughness ?? style.tokens.roughness,
       endArrowhead: e.endArrowhead === null ? null : (e.endArrowhead ?? 'arrow'),
       startArrowhead: e.startArrowhead ?? null,
@@ -1071,6 +1083,9 @@ function assemble(spec, style) {
   }
 
   if (spec.legend !== false && usedKinds.size > 1) {
+    for (const mismatch of legendMismatches) {
+      report.notes.push(`edges[${mismatch.i}] ${mismatch.from} -> ${mismatch.to} (${mismatch.kind}) differs from its legend sample: ${mismatch.differing.join(', ')}`);
+    }
     const lx = Math.round(spec.legendX ?? contentBox.x + contentBox.width + 90);
     const ly = Math.round(spec.legendY ?? contentBox.y);
     const group = newId();

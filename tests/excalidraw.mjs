@@ -684,6 +684,43 @@ test('a legend appears once more than one connector kind is used', () => {
     'a single-kind diagram needs no legend');
 });
 
+test('edge style overrides that contradict the legend are reported (#296)', () => {
+  const base = {
+    nodes: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B', col: 1 },
+      { id: 'c', label: 'C', col: 2 },
+    ],
+    edges: [
+      { from: 'a', to: 'b', kind: 'flow', color: '#e03131', strokeStyle: 'dotted', strokeWidth: 2 },
+      { from: 'b', to: 'c', kind: 'async' },
+    ],
+  };
+  const r = builder.buildDiagram(base, { seed: 1 });
+  eq(r.report.notes.length, 1, 'one contradictory edge');
+  assert(/edges\[0\].*a.*b.*flow/.test(r.report.notes[0]), 'the note names the edge, endpoints and kind');
+  assert(/color.*strokeStyle.*strokeWidth/.test(r.report.notes[0]), 'the note names every differing attribute');
+
+  const matching = builder.buildDiagram({
+    ...base,
+    edges: [
+      { from: 'a', to: 'b', kind: 'flow', color: builder.EDGE_KINDS.flow.color,
+        strokeStyle: builder.EDGE_KINDS.flow.strokeStyle, strokeWidth: builder.EDGE_KINDS.flow.width },
+      base.edges[1],
+    ],
+  }, { seed: 1 });
+  eq(matching.report.notes.length, 0, 'matching explicit values stay quiet');
+
+  const personal = styleTokens.resolveStyle({
+    schemaVersion: 1,
+    engine: 'excalidraw',
+    tokens: {},
+    edgeKinds: { flow: { color: '#e03131', strokeStyle: 'dotted', width: 2 } },
+  });
+  const styled = builder.buildDiagram(base, { style: personal, seed: 1 });
+  eq(styled.report.notes.length, 0, 'resolved personal kinds define the matching legend');
+});
+
 test('an embedded icon travels with the scene', () => {
   eq(Object.keys(built.scene.files).length, 1, 'one embedded file');
   const img = built.scene.elements.find((e) => e.type === 'image');
