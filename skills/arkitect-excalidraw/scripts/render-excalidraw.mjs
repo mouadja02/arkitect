@@ -247,15 +247,37 @@ function renderElement(el, scene, patterns) {
   return `<g opacity="${f(opacity)}"${rot}>${body}</g>`;
 }
 
+// The box an element covers once renderElement has rotated it about the same
+// centre. elementBox() is the unrotated geometry routing and boundaries want;
+// sizing the viewport from it clipped a rotated shape (#297). Points for a
+// linear element, corners for the rest, which is conservative for an ellipse.
+//
+// Excalidraw's own fonts are not installed here, so the substitute face runs
+// wider than the stored width. Text boxes are inflated so a caption at the
+// edge is not sliced off; the elements themselves are untouched.
+function drawnBox(el) {
+  const b = el.type === 'text'
+    ? { x: num(el.x, 0), y: num(el.y, 0), width: num(el.width, 0) * 1.2, height: num(el.height, 0) * 1.1 }
+    : elementBox(el);
+  const angle = num(el.angle, 0);
+  if (!angle) return b;
+  const cx = num(el.x, 0) + num(el.width, 0) / 2;
+  const cy = num(el.y, 0) + num(el.height, 0) / 2;
+  const pts = Array.isArray(el.points) && el.type !== 'text'
+    ? el.points.map(([px, py]) => [num(el.x, 0) + num(px, 0), num(el.y, 0) + num(py, 0)])
+    : [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]];
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const xs = pts.map(([px, py]) => cx + (px - cx) * cos - (py - cy) * sin);
+  const ys = pts.map(([px, py]) => cy + (px - cx) * sin + (py - cy) * cos);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+}
+
 export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', background = null } = {}) {
   const elements = (scene.elements ?? []).filter((el) => !el.isDeleted);
-  // Excalidraw's own fonts are not installed here, so the substitute face runs
-  // wider than the stored width. Inflate text boxes when sizing the viewport so
-  // a caption at the edge is not sliced off; the elements themselves are
-  // untouched.
-  const view = bbox(elements.map((el) => (el.type === 'text'
-    ? { ...el, width: (el.width ?? 0) * 1.2, height: (el.height ?? 0) * 1.1 }
-    : el)));
+  const view = bbox(elements.map((el) => ({ ...drawnBox(el), type: 'rectangle' })));
   const width = Math.max(1, view.width + padding * 2);
   const height = Math.max(1, view.height + padding * 2);
   const patterns = new Map();

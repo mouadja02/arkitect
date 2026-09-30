@@ -564,10 +564,13 @@ test('shared images deduplicate bytes, preserve aspect and bind connections on b
   const scale = 100 / Math.max(raster.width, raster.height);
   eq(images[2].width, Math.round(raster.width * scale), 'raster width');
   eq(images[2].height, Math.round(raster.height * scale), 'raster height');
+  // A captioned image binds through the rectangle over it and its caption (#314).
+  const byId = new Map(built.scene.elements.map((e) => [e.id, e]));
   for (const arrow of built.scene.elements.filter((e) => e.type === 'arrow')) {
     for (const binding of [arrow.startBinding, arrow.endBinding]) {
-      const anchor = images.find((e) => e.id === binding?.elementId);
-      assert(anchor?.boundElements?.some((e) => e.id === arrow.id), 'two-sided image binding');
+      const host = byId.get(binding?.elementId);
+      const image = host?.type === 'image' ? host : images.find((im) => im.groupIds.some((g) => host?.groupIds?.includes(g)));
+      assert(image && host.boundElements?.some((e) => e.id === arrow.id), 'two-sided image binding');
     }
   }
   const svg = renderer.sceneToSvg(built.scene);
@@ -649,6 +652,65 @@ test('every connector is bound at both ends', () => {
   }
 });
 
+// A cylinder's body is a line and a traced icon is a stack of lines. The app
+// does not bind to a line: the arrow loaded fine and stayed behind on a drag,
+// 168px from the cylinder (#294).
+test('every arrow end binds to an element the app can bind, and composites to a rectangle over the node (#294)', () => {
+  const traced = finder.resolveIcon(`${TEST_PREFIX}donut`).elements;
+  const largest = traced.reduce((m, el) => (el.width * el.height > m.width * m.height ? el : m));
+  eq(largest.type, 'line', 'the traced fixture\'s largest piece is a line');
+  const spec = {
+    nodes: [
+      { id: 'db', kind: 'cylinder', label: 'Orders', width: 150, height: 120 },
+      { id: 'svc', label: 'Service', col: 1 },
+      { id: 'mark', kind: 'icon', icon: `${TEST_PREFIX}donut`, label: 'Traced', col: 2 },
+      { id: 'img', kind: 'icon', icon: `${TEST_PREFIX}clear`, col: 1, row: 1 },
+      { id: 'who', kind: 'actor', label: 'Operator', col: 2, row: 1 },
+    ],
+    edges: [{ from: 'db', to: 'svc' }, { from: 'svc', to: 'mark' }, { from: 'svc', to: 'img' }, { from: 'mark', to: 'who' }],
+  };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const byId = new Map(scene.elements.map((el) => [el.id, el]));
+  const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+  const host = (a, end) => byId.get(a[end].elementId);
+  for (const a of arrows) for (const end of ['startBinding', 'endBinding']) {
+    assert(core.canBind(host(a, end)), `arrow ${a.id} ${end} binds to a ${host(a, end).type}`);
+  }
+  const [dbArrow, svcMark, svcImg, markWho] = arrows;
+  // A cylinder, a traced mark and an actor bind to a transparent rectangle
+  // over the drawing, grouped with it, so it moves with the node.
+  for (const [what, a, end] of [['cylinder', dbArrow, 'startBinding'], ['traced mark', svcMark, 'endBinding'], ['actor', markWho, 'endBinding']]) {
+    const proxy = host(a, end);
+    eq(`${proxy.type} ${proxy.strokeColor} ${proxy.backgroundColor}`, 'rectangle transparent transparent', `${what}: an invisible rectangle`);
+    const node = scene.elements.filter((el) => el !== proxy && (el.groupIds ?? []).includes(proxy.groupIds.at(-1)));
+    const pieces = node.filter((el) => el.type !== 'text');
+    assert(pieces.length > 1, `${what}: in the node's group`);
+    // As wide as the drawing, and down over its caption (#314).
+    const drawn = core.bbox(pieces);
+    const all = core.bbox(node);
+    eq(`${proxy.x},${proxy.y},${proxy.width}x${proxy.height}`, `${drawn.x},${drawn.y},${drawn.width}x${all.y + all.height - drawn.y}`, `${what}: over the drawing`);
+    assert(scene.elements.indexOf(proxy) < scene.elements.indexOf(pieces[0]), `${what}: behind it`);
+  }
+  // Controls: a box binds to its own rectangle, an image to itself.
+  eq(host(dbArrow, 'endBinding').type, 'rectangle', 'a box');
+  assert(host(dbArrow, 'endBinding').strokeColor !== 'transparent', 'a box binds to the box it draws');
+  eq(host(svcImg, 'endBinding').type, 'image', 'an image');
+  // Routes and artwork are as before: the cylinder's arrow still leaves its right side.
+  const body = scene.elements.find((el) => el.type === 'line' && el.groupIds?.includes(host(dbArrow, 'startBinding').groupIds[0]));
+  eq(dbArrow.x, Math.round(core.elementBox(body).x + core.elementBox(body).width + 8), 'the route starts where it did');
+  const v = validator.validateScene(scene);
+  assert(v.ok, `valid: ${v.errors.join('; ')}`);
+
+  // A file that binds to a line is an error naming the arrow and the line.
+  const line = body;
+  dbArrow.startBinding.elementId = line.id;
+  line.boundElements = [{ id: dbArrow.id, type: 'arrow' }];
+  const bad = validator.validateScene(scene);
+  assert(!bad.ok, 'refused');
+  assert(bad.errors.some((e) => e.includes(`"${dbArrow.id}"`) && e.includes(`"${line.id}"`) && e.includes('a line')),
+    `the error names both: ${bad.errors.join('; ')}`);
+});
+
 test('generated output has no overlapping nodes', () => {
   const r = validator.validateScene(built.scene);
   eq(r.info.overlaps, 0, 'overlaps');
@@ -671,7 +733,8 @@ test('the learned style tokens are applied', () => {
   const shapes = built.scene.elements.filter((e) => ['rectangle', 'ellipse', 'diamond'].includes(e.type));
   assert(shapes.every((s) => s.roughness === 1), 'hand-drawn roughness');
   const strokes = new Set(built.scene.elements.map((e) => e.strokeColor));
-  const allowed = new Set([...Object.values(core.PALETTE).map((p) => p.stroke), '#ffffff', '#bbb', '#1971c2']);
+  // transparent: the rectangle a composite node's arrows bind to (#294).
+  const allowed = new Set([...Object.values(core.PALETTE).map((p) => p.stroke), '#ffffff', '#bbb', '#1971c2', 'transparent']);
   for (const s of strokes) assert(allowed.has(s), `off-palette stroke ${s}`);
   const sizes = new Set(built.scene.elements.filter((e) => e.type === 'text').map((e) => e.fontSize));
   for (const s of sizes) assert(Object.values(core.FONT).includes(s), `off-scale font size ${s}`);
@@ -1861,7 +1924,7 @@ test('an edge from a node to itself loops over its top-right corner, bound at bo
   assert(v.ok && v.warnings.length === 0, `validation: ${[...v.errors, ...v.warnings].join('; ')}`);
 });
 
-test('loops take a corner each, a bottom one under text is noted, and a fifth is refused (#159)', () => {
+test('loops take a corner each, a bottom one comes back in under the text, and a fifth is refused (#159, #314)', () => {
   const four = (node) => builder.buildDiagram({
     nodes: [node],
     edges: ['one', 'two', 'three', 'four'].map((label) => ({ from: node.id, to: node.id, label })),
@@ -1872,9 +1935,13 @@ test('loops take a corner each, a bottom one under text is noted, and a fifth is
   eq(loops.length, 4, 'four loops');
   eq(new Set(loops.map((a) => JSON.stringify(a.startBinding.fixedPoint))).size, 4, 'each leaves from its own corner');
   for (const a of loops) assert(outside(a, img), 'no loop has a corner inside the icon');
-  eq(report.notes.filter((n) => /loops under "db"/.test(n)).map((n) => n.slice(0, 8)).join(' '), 'edges[2] edges[3]',
-    'the two bottom loops cross the caption, and say so');
-  eq(four({ id: 'w', label: 'Worker' }).report.notes.length, 0, 'a box has nothing under it to cross');
+  // They used to come back into the icon's bottom, through the caption, and
+  // said so; now they come back in under it.
+  const under = core.bbox(scene.elements.filter((el) => ['PostgreSQL', 'primary'].includes(el.text)));
+  const bottoms = loops.filter((a) => a.endBinding.fixedPoint[1] === 1);
+  eq(bottoms.length, 2, 'two loops come back in from below');
+  for (const a of bottoms) assert(a.y + a.points.at(-1)[1] > under.y + under.height, 'below the caption and sublabel');
+  eq(report.notes.length, 0, `nothing to note: ${report.notes.join('; ')}`);
 
   let thrown = null;
   try {
@@ -2170,6 +2237,65 @@ test('the renderer produces an SVG covering every element', () => {
 
 test('the render is stable across runs', () => {
   eq(renderer.sceneToSvg(built.scene), renderer.sceneToSvg(built.scene), 'same scene, same SVG');
+});
+
+// The renderer rotates a shape about its centre, and used to size the viewport
+// from the unrotated box, so a rotated shape was cut off in both SVG and PNG.
+test('the preview viewport holds a rotated element whole, with the padding round it (#297)', () => {
+  const viewOf = (svg) => {
+    const [x, y, w, h] = /viewBox="([^"]*)"/.exec(svg)[1].split(' ').map(Number);
+    return { x, y, w, h };
+  };
+  // The corners or points the renderer draws, rotated as its transform does.
+  const turned = (el) => {
+    const cx = el.x + el.width / 2;
+    const cy = el.y + el.height / 2;
+    const pts = el.points ? el.points.map(([px, py]) => [el.x + px, el.y + py])
+      : [[el.x, el.y], [el.x + el.width, el.y], [el.x, el.y + el.height], [el.x + el.width, el.y + el.height]];
+    const c = Math.cos(el.angle); const s = Math.sin(el.angle);
+    return pts.map(([px, py]) => [cx + (px - cx) * c - (py - cy) * s, cy + (px - cx) * s + (py - cy) * c]);
+  };
+  const holds = (el, padding = 40) => {
+    const scene = core.emptyScene();
+    scene.elements = [el];
+    const v = viewOf(renderer.sceneToSvg(scene, { style: 'clean', padding }));
+    for (const [px, py] of turned(el)) {
+      assert(px >= v.x + padding - 0.01 && px <= v.x + v.w - padding + 0.01 && py >= v.y + padding - 0.01 && py <= v.y + v.h - padding + 0.01,
+        `${el.type} at ${Math.round(el.angle * 180 / Math.PI)}deg: point ${px.toFixed(1)},${py.toFixed(1)} outside ${JSON.stringify(v)} less ${padding}px`);
+    }
+    return v;
+  };
+  const v90 = holds(core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 2 }));
+  eq(`${v90.x} ${v90.y} ${v90.w} ${v90.h}`, '35 -115 130 280', 'the 90deg reproduction spans x 75..125, y -75..125, padded');
+  holds(core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 4 }));
+  holds(core.rectangle({ x: -500, y: -320, width: 120, height: 30, angle: 2.2 }), 12);
+  holds(core.ellipse({ x: -60, y: 10, width: 160, height: 40, angle: -0.6 }));
+  holds(core.text({ text: 'rotated caption', fontSize: 20, x: -40, y: -90, angle: Math.PI / 3 }));
+  holds(core.line({ x: -30, y: 40, points: [[0, 0], [180, 20], [220, -60]], angle: 0.9 }));
+  holds(core.arrow({ x: 10, y: -200, points: [[0, 0], [0, 160]], angle: -Math.PI / 4 }));
+
+  const flat = core.emptyScene();
+  flat.elements = [core.rectangle({ x: 0, y: 0, width: 200, height: 50 })];
+  eq(/viewBox="([^"]*)"/.exec(renderer.sceneToSvg(flat, { style: 'clean' }))[1], '-40 -40 280 130', 'an unrotated shape frames as before');
+
+  // The PNG is the SVG rasterised, so it gets the same viewport.
+  const scene = core.emptyScene();
+  scene.elements = [core.rectangle({ x: 0, y: 0, width: 200, height: 50, angle: Math.PI / 2 })];
+  const scenePath = join(TMP, 'rotated.excalidraw');
+  core.writeScene(scenePath, scene);
+  let drawn = null;
+  let windowSize = null;
+  const runner = (exe, args) => {
+    drawn = readFileSync(join(dirname(fileURLToPath(args.at(-1))), 'scene.svg'), 'utf8');
+    windowSize = args.find((a) => a.startsWith('--window-size='));
+    writeFileSync(args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length), makePng({ alpha: false, w: 130, h: 280 }));
+  };
+  const status = renderer.run([scenePath, '--out', join(TMP, 'rotated.png'), '--width', '130'], {
+    runner, platform: 'linux', env: { PATH: '' }, isExecutable: (p) => p === '/usr/bin/chromium', log: () => {}, error: () => {},
+  });
+  eq(status, 0, 'the PNG renders');
+  assert(drawn.includes('viewBox="35 -115 130 280"'), 'the SVG the browser draws carries the rotated viewport');
+  eq(windowSize, '--window-size=130,280', 'and the screenshot is its shape');
 });
 
 // A scene file is user input, and the preview is meant to be opened. A
@@ -3434,6 +3560,229 @@ test('the Excalidraw builder draws from the resolved style, not its own constant
     ['#1e1e1e', 'solid', 4], ['#1e1e1e', 'dashed', 4], ['#1971c2', 'solid', 4], ['#e03131', 'solid', 4],
     ['#2f9e44', 'dashed', 4], ['#29b5e8', 'solid', 4], ['#495057', 'dotted', 1],
   ]), 'every shipped kind draws exactly as before');
+});
+
+// Free text an arrow's segments pass through: [arrow index, text] pairs.
+function textCrossings(scene) {
+  const hits = (p, q, b) => {
+    const x0 = b.x + 1; const y0 = b.y + 1; const x1 = b.x + b.width - 1; const y1 = b.y + b.height - 1;
+    const dx = q.x - p.x; const dy = q.y - p.y;
+    let t0 = 0; let t1 = 1;
+    for (const [pk, qk] of [[-dx, p.x - x0], [dx, x1 - p.x], [-dy, p.y - y0], [dy, y1 - p.y]]) {
+      if (pk === 0) { if (qk < 0) return false; continue; }
+      const r = qk / pk;
+      if (pk < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+    }
+    return t0 < t1;
+  };
+  const texts = scene.elements.filter((el) => el.type === 'text' && !el.containerId);
+  return scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length).flatMap((a, i) => {
+    const pts = a.points.map(([px, py]) => ({ x: a.x + px, y: a.y + py }));
+    return texts.filter((t) => pts.slice(1).some((q, n) => hits(pts[n], q, t))).map((t) => [i, t]);
+  });
+}
+
+// An edge leaving a node downward ran through its caption and sublabel, and
+// one entering from below did too (#314).
+test('an edge leaving or entering a node from below runs clear of its caption and sublabel (#314)', () => {
+  const pair = (b, edge, sublabel = 'retries · DLQ') => builder.buildDiagram({ nodes: [
+    { id: 'a', kind: 'icon', icon: 'drawio:aws/aws-lambda', label: 'Worker', ...(sublabel ? { sublabel } : {}) },
+    { id: 'b', kind: 'icon', icon: 'drawio:aws/amazon-dynamodb', label: 'Table', ...b },
+  ], edges: [edge] }, { seed: 1 }).scene;
+  for (const sublabel of ['retries · DLQ', null]) {
+    for (const [what, edge] of [['leaving', { from: 'a', to: 'b' }], ['entering', { from: 'b', to: 'a' }]]) {
+      const scene = pair({ row: 1 }, edge, sublabel);
+      const crossed = textCrossings(scene).map(([, t]) => t.text);
+      eq(crossed.join(', '), '', `${what} from below${sublabel ? ', with a sublabel' : ''}: through no text`);
+      const a = scene.elements.find((el) => el.type === 'arrow');
+      const end = what === 'leaving' ? a.startBinding : a.endBinding;
+      const host = scene.elements.find((el) => el.id === end.elementId);
+      const text = core.bbox(scene.elements.filter((el) => el.type === 'text' && el.text !== 'Table'));
+      eq(host.y + host.height, text.y + text.height, `${what}: bound to a rectangle down to the bottom of the text`);
+      eq(JSON.stringify(end.fixedPoint), '[0.5,1]', `${what}: at the middle of its bottom`);
+      assert(validator.validateScene(scene).ok, 'valid');
+    }
+  }
+  // Control: side by side, the arrow runs level on the icons' centre line.
+  const level = pair({ col: 1, row: 0 }, { from: 'a', to: 'b' });
+  const a = level.elements.find((el) => el.type === 'arrow');
+  const icon = level.elements.find((el) => el.id === a.startBinding.elementId);
+  eq(`${a.y} ${a.points.map((p) => p[1]).join(',')}`, '50 0,0', 'level at y 50, the icons\' middle');
+  eq(a.startBinding.fixedPoint[1], Math.round((50 - icon.y) / icon.height * 10000) / 10000, 'and bound there');
+
+  // The committed examples: no arrow through its own ends' caption or sublabel.
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const { scene } = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8')), { seed: 1 });
+    const byId = new Map(scene.elements.map((el) => [el.id, el]));
+    const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+    const own = textCrossings(scene).filter(([i, t]) => [arrows[i].startBinding, arrows[i].endBinding]
+      .some((b) => (byId.get(b.elementId).groupIds ?? []).some((g) => (t.groupIds ?? []).includes(g))));
+    eq(own.map(([, t]) => t.text).join(', '), '', `${name}: no arrow through its own ends' text`);
+  }
+});
+
+// Every end on one side of a node got that side's middle, so two edges drew
+// one line for hundreds of pixels (#313).
+test('edges that share a side of a node are spread along it, and a shared run is a warning (#313)', () => {
+  const arrowsOf = (spec) => {
+    const { scene } = builder.buildDiagram(spec, { seed: 1 });
+    return { scene, arrows: scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length) };
+  };
+  const ends = (a) => [{ x: a.x, y: a.y }, { x: a.x + a.points.at(-1)[0], y: a.y + a.points.at(-1)[1] }];
+  const box = { id: 'a', label: 'A' };
+
+  // Two out of one side: the one going higher leaves higher.
+  const out = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 2 }, { id: 'c', label: 'C', col: 2, row: 1 }],
+    edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] });
+  let v = validator.validateScene(out.scene);
+  eq(v.info.sharedRuns, 0, `two out of one side: no shared run: ${v.warnings.join('; ')}`);
+  const [toB, toC] = out.arrows;
+  eq(toB.startBinding.elementId, toC.startBinding.elementId, 'both bound to A');
+  eq(`${toB.startBinding.fixedPoint} ${toC.startBinding.fixedPoint}`, '1,0.3444 1,0.6556', 'spread along its right side, 28px apart');
+  eq(ends(toB)[0].y, ends(toB)[1].y, 'the edge to B stays level, its far end moved with it');
+
+  // Two into one side.
+  const into = arrowsOf({ nodes: [box, { id: 'b', label: 'B', row: 1 }, { id: 'c', label: 'C', col: 2 }],
+    edges: [{ from: 'a', to: 'c' }, { from: 'b', to: 'c' }] });
+  v = validator.validateScene(into.scene);
+  eq(v.info.sharedRuns, 0, `two into one side: no shared run: ${v.warnings.join('; ')}`);
+  eq(into.arrows.map((a) => a.endBinding.fixedPoint.join()).join(' '), '0,0.3444 0,0.6556', 'spread along C\'s left side');
+
+  // A request and its reply between the same pair: two level lines.
+  const pair = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'a' }] });
+  eq(validator.validateScene(pair.scene).info.sharedRuns, 0, 'a request and its reply');
+  for (const a of pair.arrows) eq(a.points.map((q) => q[1]).join(), '0,0', 'each level');
+  assert(pair.arrows[0].y !== pair.arrows[1].y, 'on two lines');
+
+  // Control: one edge per side keeps the middle of each.
+  const one = arrowsOf({ nodes: [box, { id: 'b', label: 'B', col: 2 }, { id: 'c', label: 'C', row: 1 }],
+    edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] });
+  eq(one.arrows.map((a) => `${a.startBinding.fixedPoint}>${a.endBinding.fixedPoint}`).join(' '), '1,0.5>0,0.5 0.5,1>0.5,0',
+    'side middles, as before');
+
+  // The warning, for a hand edit: two arrows along one line, then 20px apart.
+  const at = (x, y, points) => core.arrow({ x, y, points });
+  const stacked = { type: 'excalidraw', elements: [at(0, 0, [[0, 0], [200, 0]]), at(50, 2, [[0, 0], [100, 0], [100, 100]])], files: {} };
+  const w = validator.validateScene(stacked).warnings.filter((x) => x.includes('share'));
+  eq(w.length, 1, 'one shared run');
+  assert(w[0].includes(`"${stacked.elements[0].id}"`) && w[0].includes(`"${stacked.elements[1].id}"`) && w[0].includes('100px'),
+    `names both, and how long: ${w[0]}`);
+  stacked.elements[1].y = 20;
+  eq(validator.validateScene(stacked).info.sharedRuns, 0, '20px apart is two lines');
+
+  // The committed examples had four; rebuilt, none.
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
+    eq(validator.validateScene(scene).info.sharedRuns, 0, `${name}: no shared run`);
+  }
+});
+
+// A diagonal run got the vertical rule, 14px right of its midpoint, and its
+// line ran through the label (#315).
+test('a straight diagonal edge\'s label clears its own line; level and upright labels stay put (#315)', () => {
+  const labelled = (b, extra = {}, layout = {}) => builder.buildDiagram({
+    layout, nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', ...b }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place', route: 'straight', ...extra }],
+  }, { seed: 1 }).scene;
+  const square = { colPitch: 300, rowPitch: 300 };
+  for (const [what, b, layout] of [
+    ['shallow, down', { col: 2, row: 1 }, {}], ['shallow, up', { col: 2, row: -1 }, {}],
+    ['45deg, down', { col: 1, row: 1 }, square], ['45deg, up', { col: 1, row: -1 }, square],
+    ['steep, down', { col: 1, row: 3 }, {}], ['steep, up', { col: 1, row: -3 }, {}],
+    ['steep, down-left', { col: -1, row: 3 }, {}],
+  ]) {
+    const scene = labelled(b, {}, layout);
+    eq(textCrossings(scene).map(([, t]) => t.text).join(), '', `${what}: the line misses its label`);
+  }
+  // Level, upright and elbowed labels are where they were.
+  const at = (scene) => { const t = scene.elements.find((el) => el.text === 'query in place'); return `${t.x},${t.y}`; };
+  eq(at(labelled({ col: 1 })), '156,20', 'level: above the line');
+  eq(at(labelled({ row: 1 })), '64,140', 'upright: right of the line');
+  eq(at(labelled({ col: 2, row: 1 }, { route: undefined })), '384,140', 'elbowed: right of its middle run');
+  // aws-data-platform's four straight labels.
+  const { scene } = builder.buildDiagram(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8')), { seed: 1 });
+  const arrows = scene.elements.filter((el) => el.type === 'arrow' && !(el.groupIds ?? []).length);
+  const own = textCrossings(scene).filter(([i, t]) => (t.groupIds ?? []).length === 0 && scene.elements.indexOf(t) === scene.elements.indexOf(arrows[i]) + 1);
+  const straight = ['IoT rule', 'passes DQ rules', 'query in place', 'single-digit ms'];
+  eq(own.map(([, t]) => t.text).filter((x) => straight.includes(x)).join(), '', 'no straight edge through its own label');
+  // Nor on anyone else's text: above the line was a sublabel, so below it.
+  const texts = scene.elements.filter((el) => el.type === 'text' && !el.containerId);
+  for (const name of straight) {
+    const t = texts.find((el) => el.text === name);
+    const on = texts.filter((o) => o !== t && t.x < o.x + o.width && o.x < t.x + t.width && t.y < o.y + o.height && o.y < t.y + t.height);
+    eq(on.map((o) => o.text).join(), '', `"${name}" on no other text`);
+  }
+});
+
+// Clearing captions (#314) shortened a run, and its label dropped onto another
+// edge's line; a label beside a short jog sat on the runs either side of it.
+test('an edge label takes the side of its run no other line crosses, and a jog too short for it is skipped', () => {
+  const labelOf = (scene) => scene.elements.find((el) => el.text === 'query in place');
+  const upright = (extra = []) => builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', row: 1 },
+      { id: 'c', label: 'C', col: 0.35, row: -1 }, { id: 'd', label: 'D', col: 0.35, row: 2 }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place' }, ...extra],
+  }, { seed: 1 }).scene;
+  const alone = labelOf(upright());
+  eq(`${alone.x},${alone.y}`, '64,140', 'nothing in the way: right of the line, as before');
+  const crossed = upright([{ from: 'c', to: 'd' }]);
+  const t = labelOf(crossed);
+  assert(t.x + t.width <= 50 - 10, `a line through the right side: the label goes left, ends at ${t.x + t.width}`);
+  eq(textCrossings(crossed).length, 0, 'no line through any text');
+
+  // A 13px jog: the label goes above the longest run, not beside the jog.
+  const jog = builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 2, row: 0.065 }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place' }],
+  }, { seed: 1 }).scene;
+  const a = jog.elements.find((el) => el.type === 'arrow');
+  eq(a.points.length, 4, 'an elbow with a jog');
+  const label = labelOf(jog);
+  eq(label.y + label.height, a.y - 10, 'above the first of the two equal runs');
+  eq(textCrossings(jog).length, 0, 'clear of the jog and both runs');
+});
+
+// validate never looked at text: an arrow through its own node's caption,
+// its own label or a boundary's name passed clean, 28 times in
+// aws-data-platform (#316).
+test('an arrow through free text is a warning naming both; bound text and a label beside the line are not (#316)', () => {
+  const node = core.rectangle({ x: 0, y: 0, width: 100, height: 60 });
+  const caption = core.text({ text: 'Orders service', fontSize: 20, x: -10, y: 70 });
+  const other = core.rectangle({ x: 0, y: 400, width: 100, height: 60 });
+  const scopeName = core.text({ text: 'Error handling', fontSize: 20, x: -20, y: 300 });
+  // Down from the node's bottom, through its caption and the scope's name.
+  const down = core.arrow({ x: 50, y: 68, points: [[0, 0], [0, 324]] });
+  core.bindArrow(down, node, other);
+  const ownLabel = core.text({ text: 'events', fontSize: 16, x: 30, y: 200 });
+  const beside = core.text({ text: 'beside', fontSize: 16, x: 64, y: 240 });
+  const scene = { type: 'excalidraw', elements: [node, caption, other, scopeName, down, ownLabel, beside], files: {} };
+  const v = validator.validateScene(scene);
+  assert(v.ok, `valid: ${v.errors.join('; ')}`);
+  const through = v.warnings.filter((w) => w.includes('runs through text'));
+  eq(through.length, 3, `the caption, its own label and the scope's name: ${through.join(' | ')}`);
+  for (const t of [caption, ownLabel, scopeName]) {
+    assert(through.some((w) => w.includes(`"${down.id}"`) && w.includes(`"${t.id}"`)), `names the arrow and "${t.text}"`);
+  }
+  eq(v.info.textCrossings, 3, 'counted in info');
+
+  // Bound to the arrow, the app clears the line behind it.
+  const bound = core.text({ text: 'bound', fontSize: 16, x: 30, y: 250, containerId: down.id });
+  down.boundElements = [...(down.boundElements ?? []), { id: bound.id, type: 'text' }];
+  scene.elements.push(bound);
+  eq(validator.validateScene(scene).info.textCrossings, 3, 'a bound label is not counted');
+  // A grouped arrow is a legend sample.
+  down.groupIds = ['legend'];
+  eq(validator.validateScene(scene).info.textCrossings, 0, 'nor a grouped arrow');
+
+  // The starter draws no arrow through text; aws-data-platform keeps one, its
+  // straight sqs -> dlq edge across the name of the scope dlq sits in.
+  const names = (name) => {
+    const built = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
+    const byId = new Map(built.elements.map((el) => [el.id, el]));
+    return validator.textCrossings(built.elements).map((c) => byId.get(c.text).text).join(' | ');
+  };
+  eq(names('starter-architecture'), '', 'starter-architecture');
+  eq(names('aws-data-platform'), 'Error handling & recovery', 'aws-data-platform');
 });
 
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {

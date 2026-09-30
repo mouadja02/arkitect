@@ -12,7 +12,7 @@
 
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
-  elementBox, bbox, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
+  elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
   parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 
@@ -191,6 +191,11 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
       boundArrows++;
       const target = byId.get(bind.elementId);
       if (!target) { errors.push(`arrow "${el.id}" ${end} points at missing element "${bind.elementId}"`); continue; }
+      // Two reciprocal ids are not a connection the app keeps (#294).
+      if (!canBind(target)) {
+        errors.push(`arrow "${el.id}" ${end} binds to "${target.id}", a ${target.containerId ? 'bound text' : target.type}, `
+          + 'which the app cannot bind: the arrow stays behind when it moves. Bind to a rectangle, ellipse, diamond, image, frame or free text');
+      }
       if (!(target.boundElements ?? []).some((b) => b.id === el.id)) {
         errors.push(`arrow "${el.id}" binds to "${bind.elementId}" but that element does not list it back`);
       }
@@ -334,6 +339,18 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
     warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
   }
 
+  const through = textCrossings(live);
+  for (const c of through.slice(0, 10)) {
+    warnings.push(`arrow "${c.arrow}" runs through text "${c.text}"; move that text off the line, `
+      + 'or the shapes so the line misses it');
+  }
+
+  const trunks = sharedRuns(live);
+  for (const r of trunks.slice(0, 10)) {
+    warnings.push(`arrows "${r.arrows[0]}" and "${r.arrows[1]}" share ${r.length}px of one line and read as one flow; `
+      + 'move one end along its side, or rebuild from the spec, which spreads ends that share a side');
+  }
+
   // ------------------------------------------------------------ house style
 
   const offPalette = new Set();
@@ -356,6 +373,8 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
   info.overlaps = overlaps;
   info.tightLabels = tight;
   info.crossings = crossings.length;
+  info.sharedRuns = trunks.length;
+  info.textCrossings = through.length;
   info.canvas = { width: Math.round(view.width), height: Math.round(view.height) };
   // Off-palette colour is legal Excalidraw and sometimes correct - a brand
   // colour in a traced logo, for one - so it is reported, never failed.
@@ -418,11 +437,63 @@ export function connectorCrossings(elements) {
   return found;
 }
 
+// Arrows through free text: a caption, a sublabel, a boundary's name, their
+// own label (#316). connectorCrossings skips text and every unit an arrow
+// ends on, so a line through its own node's name passed clean. Any text
+// without a container counts, the arrow's own ends' and its own label
+// included: the builder puts a free label beside its line, never on it.
+// Bound text is drawn by the app on a cleared patch of the line.
+export function textCrossings(elements) {
+  const texts = elements.filter((el) => el.type === 'text' && !el.isDeleted && !el.containerId && el.width > 0 && el.height > 0);
+  const found = [];
+  for (const a of elements) {
+    if (a.type !== 'arrow' || a.isDeleted || (a.groupIds ?? []).length || !Array.isArray(a.points) || a.points.length < 2) continue;
+    const pts = a.points.map(([px, py]) => ({ x: a.x + px, y: a.y + py }));
+    for (const t of texts) {
+      const box = elementBox(t);
+      for (let i = 1; i < pts.length; i++) {
+        if (segmentHitsBox(pts[i - 1], pts[i], box)) { found.push({ arrow: a.id, text: t.id }); break; }
+      }
+    }
+  }
+  return found;
+}
+
+// Two arrows along one line, closer than a heavy stroke is wide, for more
+// than TRUNK_MIN: they draw as one (#313). The same 10px Draw.io's validate
+// allows two edges into one port (#246). Grouped arrows are legend samples.
+const TRUNK_MIN = 10;
+const RUN_APART = 4;
+
+export function sharedRuns(elements) {
+  const arrows = elements.filter((el) => el.type === 'arrow' && !el.isDeleted && !(el.groupIds ?? []).length
+    && Array.isArray(el.points) && el.points.length > 1);
+  const segs = arrows.map((a) => a.points.slice(1).map(([px, py], n) => [
+    { x: a.x + a.points[n][0], y: a.y + a.points[n][1] }, { x: a.x + px, y: a.y + py },
+  ]));
+  const overlap = ([p, q], [r, t]) => {
+    for (const [k, o] of [['x', 'y'], ['y', 'x']]) {
+      if (Math.abs(p[o] - q[o]) >= 1 || Math.abs(r[o] - t[o]) >= 1 || Math.abs(p[o] - r[o]) >= RUN_APART) continue;
+      return Math.max(0, Math.min(Math.max(p[k], q[k]), Math.max(r[k], t[k])) - Math.max(Math.min(p[k], q[k]), Math.min(r[k], t[k])));
+    }
+    return 0;
+  };
+  const found = [];
+  for (let i = 0; i < arrows.length; i++) {
+    for (let j = i + 1; j < arrows.length; j++) {
+      let n = 0;
+      for (const u of segs[i]) for (const w of segs[j]) n += overlap(u, w);
+      if (n > TRUNK_MIN) found.push({ arrows: [arrows[i].id, arrows[j].id], length: Math.round(n) });
+    }
+  }
+  return found;
+}
+
 const pointIn = (p, b) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
 
 // Liang-Barsky against the box shrunk by a pixel, so a line that only grazes
 // an edge does not count.
-function segmentHitsBox(p, q, box) {
+export function segmentHitsBox(p, q, box) {
   const x0 = box.x + 1, y0 = box.y + 1, x1 = box.x + box.width - 1, y1 = box.y + box.height - 1;
   if (x1 <= x0 || y1 <= y0) return false;
   const dx = q.x - p.x, dy = q.y - p.y;

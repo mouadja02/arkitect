@@ -239,6 +239,9 @@ previous file untouched and is never reported as a render (#157).
   `points[0]` is `[0,0]`.
 - **Excalidraw bindings are stored twice:** the arrow names its shapes and each
   shape lists the arrow. `validate` treats a one-sided binding as an error.
+- **An Excalidraw arrow binds to a rectangle, ellipse, diamond, image, frame
+  or free text, nothing else.** Bound to a line it loads, keeps the binding and
+  stays behind when the line is dragged; `validate` refuses it (#294).
 
 Scene format notes for hand-editing:
 `skills/arkitect-excalidraw/references/excalidraw-format.md`.
