@@ -3714,6 +3714,34 @@ test('a straight diagonal edge\'s label clears its own line; level and upright l
   }
 });
 
+// Clearing captions (#314) shortened a run, and its label dropped onto another
+// edge's line; a label beside a short jog sat on the runs either side of it.
+test('an edge label takes the side of its run no other line crosses, and a jog too short for it is skipped', () => {
+  const labelOf = (scene) => scene.elements.find((el) => el.text === 'query in place');
+  const upright = (extra = []) => builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', row: 1 },
+      { id: 'c', label: 'C', col: 0.35, row: -1 }, { id: 'd', label: 'D', col: 0.35, row: 2 }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place' }, ...extra],
+  }, { seed: 1 }).scene;
+  const alone = labelOf(upright());
+  eq(`${alone.x},${alone.y}`, '64,140', 'nothing in the way: right of the line, as before');
+  const crossed = upright([{ from: 'c', to: 'd' }]);
+  const t = labelOf(crossed);
+  assert(t.x + t.width <= 50 - 10, `a line through the right side: the label goes left, ends at ${t.x + t.width}`);
+  eq(textCrossings(crossed).length, 0, 'no line through any text');
+
+  // A 13px jog: the label goes above the longest run, not beside the jog.
+  const jog = builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 2, row: 0.065 }],
+    edges: [{ from: 'a', to: 'b', label: 'query in place' }],
+  }, { seed: 1 }).scene;
+  const a = jog.elements.find((el) => el.type === 'arrow');
+  eq(a.points.length, 4, 'an elbow with a jog');
+  const label = labelOf(jog);
+  eq(label.y + label.height, a.y - 10, 'above the first of the two equal runs');
+  eq(textCrossings(jog).length, 0, 'clear of the jog and both runs');
+});
+
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
   const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
   const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c' }] };

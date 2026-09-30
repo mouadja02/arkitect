@@ -464,7 +464,7 @@ const pointIn = (p, b) => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.
 
 // Liang-Barsky against the box shrunk by a pixel, so a line that only grazes
 // an edge does not count.
-function segmentHitsBox(p, q, box) {
+export function segmentHitsBox(p, q, box) {
   const x0 = box.x + 1, y0 = box.y + 1, x1 = box.x + box.width - 1, y1 = box.y + box.height - 1;
   if (x1 <= x0 || y1 <= y0) return false;
   const dx = q.x - p.x, dy = q.y - p.y;

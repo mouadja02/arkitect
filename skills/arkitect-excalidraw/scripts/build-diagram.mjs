@@ -31,7 +31,7 @@ import {
   normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon, unattended } from './find-icon.mjs';
-import { connectorCrossings } from './validate-excalidraw.mjs';
+import { connectorCrossings, segmentHitsBox } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
@@ -153,8 +153,10 @@ function anchorOn(box, towards, gap, under = null) {
 // The point half way along a polyline by length, and the unit direction of
 // the segment it lands on. Taking the middle vertex instead puts an edge
 // caption at the end of the first leg, which on an L-shaped route is up
-// against the source.
-function polylineMidpoint(pts) {
+// against the source. A label is longer than a short jog, and beside one it
+// sat on the runs either side, so when the segment is shorter than `room`
+// asks the middle of the longest one is used instead.
+function polylineMidpoint(pts, room = () => 0) {
   const seg = [];
   let total = 0;
   for (let i = 1; i < pts.length; i++) {
@@ -163,17 +165,19 @@ function polylineMidpoint(pts) {
     total += len;
   }
   if (!total) return { x: pts[0].x, y: pts[0].y, dir: { x: 1, y: 0 } };
+  const at = (i, t) => {
+    const a = pts[i];
+    const b = pts[i + 1];
+    const dir = seg[i] ? { x: (b.x - a.x) / seg[i], y: (b.y - a.y) / seg[i] } : { x: 1, y: 0 };
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, dir };
+  };
   let walked = 0;
   for (let i = 0; i < seg.length; i++) {
     if (walked + seg[i] >= total / 2) {
-      const t = seg[i] ? (total / 2 - walked) / seg[i] : 0;
-      const a = pts[i];
-      const b = pts[i + 1];
-      return {
-        x: a.x + (b.x - a.x) * t,
-        y: a.y + (b.y - a.y) * t,
-        dir: seg[i] ? { x: (b.x - a.x) / seg[i], y: (b.y - a.y) / seg[i] } : { x: 1, y: 0 },
-      };
+      const mid = at(i, seg[i] ? (total / 2 - walked) / seg[i] : 0);
+      if (seg[i] >= room(mid.dir)) return mid;
+      const longest = seg.indexOf(Math.max(...seg));
+      return at(longest, 0.5);
     }
     walked += seg[i];
   }
@@ -1124,6 +1128,7 @@ function assemble(spec, style) {
   }
 
   spreadEnds(plans, geom);
+  const lines = plans.flatMap(({ pts }) => pts.slice(1).map((q, n) => [pts[n], q]));
 
   for (const { i, e, k, edgeStyle, gap, from, to, startAnchor, endAnchor, corner, route, pts, avoided, jogged } of plans) {
     const ox = pts[0].x;
@@ -1175,7 +1180,7 @@ function assemble(spec, style) {
       const m = measureText(e.label, size, S.fontFamily);
       // A loop's caption goes on the far side of its outer run, away from the
       // node and its own caption.
-      const mid = corner === null ? polylineMidpoint(pts)
+      const mid = corner === null ? polylineMidpoint(pts, (d) => Math.abs(m.width * d.x) + Math.abs(m.height * d.y) + 20)
         : { x: (pts[2].x + pts[3].x) / 2, y: pts[2].y, dir: { x: 1, y: 0 } };
       const under = corner !== null && !bound && LOOP_CORNERS[corner].end[1] === 1;
       // Beside the run, so the line stays unbroken instead of being knocked
@@ -1188,15 +1193,17 @@ function assemble(spec, style) {
       if (ny > 0 || (ny === 0 && nx < 0)) [nx, ny] = [-nx, -ny];
       const off = bound ? 0
         : Math.abs(m.width / 2 * uy) + Math.abs(m.height / 2 * ux) + 10 * Math.abs(ux) + 14 * Math.abs(uy);
-      // Below a diagonal instead, when that side holds fewer nodes, captions
-      // and labels.
+      // The other side of the run instead, when it holds fewer nodes, texts
+      // and lines. Shortening a run to clear a caption (#314) moved a label
+      // onto another edge's line, which validate now reports (#316).
       const at = (sign) => ({
         x: mid.x + sign * nx * off - m.width / 2, y: mid.y + sign * ny * off - m.height / 2, width: m.width, height: m.height,
       });
       let sign = 1;
-      if (!bound && ux && uy) {
+      if (!bound && corner === null) {
         const taken = [...extentOf.values(), ...[...scopes, ...edgeLayer].filter((el) => el.type === 'text').map(elementBox)];
-        const hits = (b) => taken.filter((o) => b.x < o.x + o.width && o.x < b.x + b.width && b.y < o.y + o.height && o.y < b.y + b.height).length;
+        const hits = (b) => taken.filter((o) => b.x < o.x + o.width && o.x < b.x + b.width && b.y < o.y + o.height && o.y < b.y + b.height).length
+          + lines.filter(([p, q]) => segmentHitsBox(p, q, b)).length;
         if (hits(at(-1)) < hits(at(1))) sign = -1;
       }
       const t = text({
