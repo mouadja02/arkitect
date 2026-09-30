@@ -339,6 +339,12 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
     warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
   }
 
+  const through = textCrossings(live);
+  for (const c of through.slice(0, 10)) {
+    warnings.push(`arrow "${c.arrow}" runs through text "${c.text}"; move that text off the line, `
+      + 'or the shapes so the line misses it');
+  }
+
   const trunks = sharedRuns(live);
   for (const r of trunks.slice(0, 10)) {
     warnings.push(`arrows "${r.arrows[0]}" and "${r.arrows[1]}" share ${r.length}px of one line and read as one flow; `
@@ -368,6 +374,7 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
   info.tightLabels = tight;
   info.crossings = crossings.length;
   info.sharedRuns = trunks.length;
+  info.textCrossings = through.length;
   info.canvas = { width: Math.round(view.width), height: Math.round(view.height) };
   // Off-palette colour is legal Excalidraw and sometimes correct - a brand
   // colour in a traced logo, for one - so it is reported, never failed.
@@ -424,6 +431,28 @@ export function connectorCrossings(elements) {
       if ([pts[0], pts[pts.length - 1]].some((p) => pointIn(p, s.box))) continue;
       for (let i = 1; i < pts.length; i++) {
         if (segmentHitsBox(pts[i - 1], pts[i], s.box)) { found.push({ arrow: a.id, node: s.id, members: [...s.members] }); break; }
+      }
+    }
+  }
+  return found;
+}
+
+// Arrows through free text: a caption, a sublabel, a boundary's name, their
+// own label (#316). connectorCrossings skips text and every unit an arrow
+// ends on, so a line through its own node's name passed clean. Any text
+// without a container counts, the arrow's own ends' and its own label
+// included: the builder puts a free label beside its line, never on it.
+// Bound text is drawn by the app on a cleared patch of the line.
+export function textCrossings(elements) {
+  const texts = elements.filter((el) => el.type === 'text' && !el.isDeleted && !el.containerId && el.width > 0 && el.height > 0);
+  const found = [];
+  for (const a of elements) {
+    if (a.type !== 'arrow' || a.isDeleted || (a.groupIds ?? []).length || !Array.isArray(a.points) || a.points.length < 2) continue;
+    const pts = a.points.map(([px, py]) => ({ x: a.x + px, y: a.y + py }));
+    for (const t of texts) {
+      const box = elementBox(t);
+      for (let i = 1; i < pts.length; i++) {
+        if (segmentHitsBox(pts[i - 1], pts[i], box)) { found.push({ arrow: a.id, text: t.id }); break; }
       }
     }
   }

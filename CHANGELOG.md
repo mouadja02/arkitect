@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Excalidraw `validate` warns when an arrow runs through free text: a caption, a sublabel, a boundary's name or the arrow's own label, naming both. Bound labels don't count (#316).
 - An Excalidraw edge label takes the other side of its run when the preferred side is crossed by another edge or holds more text, and a label whose middle falls on a jog too short for it goes on the route's longest run. Shorter runs under captions (#314) had moved one onto another edge's line; the elbow labels #315 left on their lines are clear.
 - The free label of a straight diagonal Excalidraw edge moves out along the line's normal until it clears it, below the line when above holds more text; it used to sit on its own line. Level and upright labels are where they were (#315).
 - Excalidraw edges that meet one side of a node at one point are spread along it, 28px apart, ordered by where each goes, so a fan-out, a fan-in or a request and its reply draws as separate lines; `validate` warns when two arrows share more than 10px of one line. A rebuilt spec with fan-in or fan-out draws differently (#313).

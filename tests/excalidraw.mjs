@@ -3742,6 +3742,49 @@ test('an edge label takes the side of its run no other line crosses, and a jog t
   eq(textCrossings(jog).length, 0, 'clear of the jog and both runs');
 });
 
+// validate never looked at text: an arrow through its own node's caption,
+// its own label or a boundary's name passed clean, 28 times in
+// aws-data-platform (#316).
+test('an arrow through free text is a warning naming both; bound text and a label beside the line are not (#316)', () => {
+  const node = core.rectangle({ x: 0, y: 0, width: 100, height: 60 });
+  const caption = core.text({ text: 'Orders service', fontSize: 20, x: -10, y: 70 });
+  const other = core.rectangle({ x: 0, y: 400, width: 100, height: 60 });
+  const scopeName = core.text({ text: 'Error handling', fontSize: 20, x: -20, y: 300 });
+  // Down from the node's bottom, through its caption and the scope's name.
+  const down = core.arrow({ x: 50, y: 68, points: [[0, 0], [0, 324]] });
+  core.bindArrow(down, node, other);
+  const ownLabel = core.text({ text: 'events', fontSize: 16, x: 30, y: 200 });
+  const beside = core.text({ text: 'beside', fontSize: 16, x: 64, y: 240 });
+  const scene = { type: 'excalidraw', elements: [node, caption, other, scopeName, down, ownLabel, beside], files: {} };
+  const v = validator.validateScene(scene);
+  assert(v.ok, `valid: ${v.errors.join('; ')}`);
+  const through = v.warnings.filter((w) => w.includes('runs through text'));
+  eq(through.length, 3, `the caption, its own label and the scope's name: ${through.join(' | ')}`);
+  for (const t of [caption, ownLabel, scopeName]) {
+    assert(through.some((w) => w.includes(`"${down.id}"`) && w.includes(`"${t.id}"`)), `names the arrow and "${t.text}"`);
+  }
+  eq(v.info.textCrossings, 3, 'counted in info');
+
+  // Bound to the arrow, the app clears the line behind it.
+  const bound = core.text({ text: 'bound', fontSize: 16, x: 30, y: 250, containerId: down.id });
+  down.boundElements = [...(down.boundElements ?? []), { id: bound.id, type: 'text' }];
+  scene.elements.push(bound);
+  eq(validator.validateScene(scene).info.textCrossings, 3, 'a bound label is not counted');
+  // A grouped arrow is a legend sample.
+  down.groupIds = ['legend'];
+  eq(validator.validateScene(scene).info.textCrossings, 0, 'nor a grouped arrow');
+
+  // The starter draws no arrow through text; aws-data-platform keeps one, its
+  // straight sqs -> dlq edge across the name of the scope dlq sits in.
+  const names = (name) => {
+    const built = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
+    const byId = new Map(built.elements.map((el) => [el.id, el]));
+    return validator.textCrossings(built.elements).map((c) => byId.get(c.text).text).join(' | ');
+  };
+  eq(names('starter-architecture'), '', 'starter-architecture');
+  eq(names('aws-data-platform'), 'Error handling & recovery', 'aws-data-platform');
+});
+
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
   const row = (ids, extra = {}) => ids.map((id, col) => ({ id, label: id.toUpperCase(), col, row: 0, ...extra[id] }));
   const three = { nodes: row(['a', 'b', 'c']), edges: [{ from: 'a', to: 'c' }] };
