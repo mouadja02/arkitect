@@ -112,6 +112,7 @@ from a clone.
 | GitHub Copilot | `.github/copilot-instructions.md` | `arkitect install copilot` |
 | Antigravity | `AGENTS.md` | `arkitect install antigravity` |
 | Pi | `AGENTS.md` | `arkitect install pi` |
+| Gemini CLI | `GEMINI.md` | `arkitect install gemini` |
 | anything else | `AGENTS.md` | `arkitect install agents` |
 
 Each adapter is a short block pointing at [`AGENTS.md`](../AGENTS.md), the full
@@ -140,6 +141,12 @@ update. Arkitect no longer ships a custom prompt; one copied into
 Cursor's rule has `alwaysApply: false`, so it loads only when the conversation
 is about diagrams. Recent Cursor and VS Code builds also read `AGENTS.md`, so
 adding `agents` to either command is harmless.
+
+### Gemini CLI
+
+Gemini CLI reads `GEMINI.md` from the project root by default. `install gemini`
+writes the same short Arkitect pointer block there and preserves the rest of an
+existing file outside its fenced markers.
 
 ### Checking it took
 

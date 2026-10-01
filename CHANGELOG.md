@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- `arkitect install gemini` writes `GEMINI.md`, the default project context file Gemini CLI actually reads, instead of relying on an `AGENTS.md` alias.
+
 ### Changed
 
 - The docs are 11 pages, not 17: `install.md` takes agent setup and the npm and npx routes, `apps.md` the Excalidraw container, Draw.io Desktop and the MCP server, `icons.md` all five icon pages, and `maintenance.md` the pack-building and review detail. `cli.md` documents the 2.2.0 spec fields.

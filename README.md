@@ -115,6 +115,7 @@ has the full statement.
 | **OpenCode** | `AGENTS.md` + `.opencode/command/diagram.md` | `arkitect install opencode agents` |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | `arkitect install copilot` |
 | **Antigravity**, **Pi** | `AGENTS.md` | `arkitect install antigravity` / `pi` |
+| **Gemini CLI** | `GEMINI.md` | `arkitect install gemini` |
 | anything else | `AGENTS.md`, or paste it into the tool's rules | `arkitect install agents` |
 
 | skill | runs |
