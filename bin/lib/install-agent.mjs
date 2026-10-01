@@ -153,7 +153,6 @@ export const ALIASES = {
   codex: ['agents', 'codex-skill'],
   antigravity: 'agents',
   pi: 'agents',
-  gemini: 'gemini',
   generic: 'agents',
   all: '--all',
 };

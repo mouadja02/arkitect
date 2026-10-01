@@ -184,7 +184,7 @@ test('every alias resolves to a real adapter', () => {
       assert(adapters.ADAPTERS[target], `alias ${alias} points at unknown adapter ${target}`);
     }
   }
-  eq(adapters.ALIASES.gemini, 'gemini', 'Gemini uses its dedicated adapter');
+  assert(!Object.hasOwn(adapters.ALIASES, 'gemini'), 'gemini is an adapter, not an alias of one');
   eq(adapters.ADAPTERS.gemini.file, 'GEMINI.md', 'Gemini reads GEMINI.md by default');
 });
 
