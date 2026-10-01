@@ -10,6 +10,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ADAPTERS, BEGIN, END } from './install-agent.mjs';
@@ -148,8 +149,10 @@ export async function rendererRows(root, { platform = process.platform, env = pr
 // engine that is running and the compose file; `docker --version` answered
 // only the first (#307). A remote engine is named, never contacted.
 export function dockerRow(root, { env = process.env, exists = existsSync, run } = {}) {
-  run ??= (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8', env, timeout: 5000, windowsHide: true,
-    shell: process.platform === 'win32' });
+  // No shell, so a timeout kills docker itself and not a cmd.exe above it; and
+  // from home, so a probe that outlives doctor holds no folder of the caller's
+  // open. A slow engine left docker.exe in the cwd and CI could not delete it.
+  run ??= (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8', env, timeout: 5000, windowsHide: true, cwd: homedir() });
   const label = 'excalidraw app (docker)';
   const cli = run('docker', ['--version']);
   if (cli.status !== 0) return [WARN, label, 'docker not found - optional, needed only to open the real Excalidraw'];
