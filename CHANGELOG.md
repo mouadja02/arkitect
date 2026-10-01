@@ -13,6 +13,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Added
 
+- `doctor` opens with the version, root and platform, and says which style each engine draws with: the house style, an applied override, or an ignored one with the fields at fault, never their values (#309).
+- `doctor` checks that the Arkitect adapters in the current project point at this install, and names any that point at another install or at one that is gone (#310).
 - `arkitect install gemini` writes `GEMINI.md`, the default project context file Gemini CLI actually reads, instead of relying on an `AGENTS.md` alias.
 
 ### Changed
@@ -23,6 +25,11 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- `doctor` exits 1 when Node is older than 20 or a bundled asset is missing or does not parse; it always exited 0 (#308).
+- `doctor` parses the icon catalog, the pack list, the AWS pack, the Excalidraw library index and the plugin manifest, and checks every file they name. A file cut short read "present" (#306).
+- `doctor` reports the browser an Excalidraw PNG render would use or why its `ARKITECT_BROWSER` pin is refused, and on Linux the display or `xvfb-run` a Draw.io export would use, from the renderers' own discovery (#305).
+- `doctor` checks the local Excalidraw app's whole route: the docker CLI, Compose, a running local engine and the compose file. A remote engine is named, not contacted (#307).
+- `arkitect drawio sheets --help` prints usage and exits 0; it looked for a pack called `--help` and threw (#311).
 - The committed Excalidraw AWS data-platform example validates clean: its error lane lines up with the band below, so the straight edge into the dead-letter queue misses the lane's name (#319).
 - Excalidraw `route: "avoid"` finds a detour when a band as wide as the drawing leaves no lane between columns. It took its lanes from the whole drawing, found none, and kept the crossing (#319).
 - An Excalidraw edge label with something on both sides of its run's middle slides along the run to the first spot clear of nodes, text, lines and boundary strokes; one sat on an icon in the AWS example. A rebuilt spec with such a label draws it elsewhere (#319).

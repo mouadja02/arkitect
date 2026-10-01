@@ -1946,6 +1946,203 @@ test('the report check counts a build by the installed, npx or script command, u
   }
 });
 
+// ------------------------------------------------------------- doctor
+
+const doc = await import(pathToFileURL(join(ROOT, 'bin', 'lib', 'doctor.mjs')).href);
+const quietDoctor = async (opts) => {
+  const lines = [];
+  const code = await doc.doctor({ root: ROOT, cwd: TMP, log: (l) => lines.push(l), ...opts });
+  return { code, out: lines.join('\n') };
+};
+const oldNode = await settle(quietDoctor({ node: '18.0.0' }));
+const nothingOnPath = await settle(quietDoctor({ env: { PATH: join(TMP, 'nothing-here') } }));
+
+// Node below 20 was a warning and exit 0, so a script could not tell (#308).
+test('doctor exits 1 when a core requirement fails, and 0 when only optional tools are missing (#308)', () => {
+  const old = oldNode.value;
+  eq(old.code, 1, 'node 18');
+  assert(/^fail\s+node >= 20\s+found v18\.0\.0/m.test(old.out) && /1 failed: exit 1/.test(old.out), old.out);
+  eq(nothingOnPath.value.code, 0, `no renderer, browser or docker: exit 0\n${nothingOnPath.value.out}`);
+  const broken = doc.assetRows(ROOT, { exists: (p) => !p.endsWith('index.json') && existsSync(p) });
+  eq(broken.filter((r) => r[0] === 'fail').map((r) => r[1]).join(), 'excalidraw libraries', 'a missing asset is a fail row');
+});
+
+// Present is not usable: a catalog cut short read "present" while every icon
+// search failed on it (#306).
+test('doctor parses each bundled asset and checks the files it names (#306)', () => {
+  const rows = (read, exists = existsSync) => Object.fromEntries(doc.assetRows(ROOT, {
+    exists, read: (p) => read(p.replace(/\\/g, '/')) ?? readFileSync(p, 'utf8'),
+  }).map(([s, label, detail]) => [label, `${s} ${detail}`]));
+  const intact = rows(() => null);
+  for (const [label, row] of Object.entries(intact)) assert(row.startsWith('ok '), `${label}: ${row}`);
+  assert(/^ok [\d,]+ marks in 18 packs/.test(intact['draw.io icon catalog']), intact['draw.io icon catalog']);
+
+  const cut = rows((p) => (p.endsWith('/icon-catalog.json') ? '{' : null));
+  assert(/^fail .*icon-catalog\.json: not valid JSON/.test(cut['draw.io icon catalog']), cut['draw.io icon catalog']);
+  const shape = rows((p) => (p.endsWith('/index.json') ? '{"libraries": {}}' : null));
+  assert(/no libraries list/.test(shape['excalidraw libraries']), shape['excalidraw libraries']);
+  const aws = rows((p) => (p.endsWith('/aws.drawio') ? '<mxlibrary>[{"xml"</mxlibrary>' : null));
+  assert(/^fail .*not valid JSON/.test(aws['draw.io AWS pack']), aws['draw.io AWS pack']);
+  const gone = rows(() => null, (p) => !/[\\/]gcp\.drawio$/.test(p) && existsSync(p));
+  assert(/^fail .*names 1 file that are not there: gcp\.drawio/.test(gone['draw.io icon catalog']), gone['draw.io icon catalog']);
+});
+
+// doctor asked only for Draw.io Desktop, so a bad browser pin or a headless
+// Linux with no Xvfb read as able to render (#305).
+const pathDir = join(TMP, 'doctor-path');
+const xvfbOnly = (p) => /xvfb-run$/.test(p);
+const linuxRows = (env, executable = () => false) => settle(doc.rendererRows(ROOT, { platform: 'linux', env: { PATH: pathDir, ...env }, isExecutable: executable }));
+const renderers = {
+  pinned: await linuxRows({ ARKITECT_BROWSER: join(TMP, 'missing-browser'), DISPLAY: 'remote:0' }),
+  bare: await linuxRows({}),
+  stale: await linuxRows({ DISPLAY: ':99' }, xvfbOnly),
+  windows: await settle(doc.rendererRows(ROOT, { platform: 'win32', env: { PATH: pathDir } })),
+  found: await linuxRows({}, (p) => /google-chrome$/.test(p)),
+};
+test('doctor reports the browser pin and the Linux display the renderers would use (#305)', () => {
+  const row = (rows, label) => rows.value.map(([s, l, d, more = []]) => (l.startsWith(label) ? [s, d, ...more].join(' ') : null)).find(Boolean) ?? '';
+  const pinned = renderers.pinned;
+  assert(/^warn ARKITECT_BROWSER .*missing-browser is not executable.*--format svg needs no browser/.test(row(pinned, 'browser')), row(pinned, 'browser'));
+  eq(row(pinned, 'display'), 'ok DISPLAY remote:0', 'a remote display is trusted, as render trusts it');
+
+  assert(/^warn no DISPLAY, and no xvfb-run on PATH/.test(row(renderers.bare, 'display')), row(renderers.bare, 'display'));
+  const stale = row(renderers.stale, 'display');
+  assert(/^ok DISPLAY :99 has no X server here; render runs under .*xvfb-run$/.test(stale), stale);
+  const picked = renderDrawio.displayFor({ platform: 'linux', env: { PATH: pathDir, DISPLAY: ':99' }, isExecutable: xvfbOnly }).xvfb;
+  assert(stale.endsWith(picked), `render picks the same xvfb-run: ${picked}`);
+  eq(row(renderers.windows, 'display'), '', 'no display row off Linux');
+  assert(/^ok .*google-chrome \(PATH\)$/.test(row(renderers.found, 'browser')), row(renderers.found, 'browser'));
+});
+
+// `docker --version` stood for the whole local Excalidraw route (#307).
+test('doctor tells a docker CLI from a ready local Excalidraw app, and never contacts a remote engine (#307)', () => {
+  const answers = (over = {}) => {
+    const asked = [];
+    const run = (cmd, args) => {
+      const key = args.slice(0, 2).join(' ');
+      asked.push(key);
+      const base = { '--version': 'Docker version 27.1.1', 'compose version': 'v2.29.1', 'context inspect': 'unix:///var/run/docker.sock', 'version --format': '27.1.1' };
+      const v = Object.hasOwn(over, key) ? over[key] : base[key];
+      return v === null ? { status: 1, stdout: '' } : { status: 0, stdout: `${v}\n` };
+    };
+    return { run, asked };
+  };
+  const row = (over, opts = {}) => {
+    const { run, asked } = answers(over);
+    const [s, , d, more = []] = doc.dockerRow(ROOT, { env: {}, run, ...opts });
+    return { text: [`${s} ${d}`, ...more].join(' | '), asked };
+  };
+  assert(/^ok Docker version 27\.1\.1, Compose v2\.29\.1, engine 27\.1\.1; docker[\\/]docker-compose\.yml$/.test(row({}).text), row({}).text);
+  assert(/^warn docker not found/.test(row({ '--version': null }).text), 'no CLI');
+  assert(/^warn .*no Compose plugin/.test(row({ 'compose version': null }).text), 'no Compose');
+  assert(/^warn .*local engine is not running/.test(row({ 'version --format': null }).text), 'engine stopped');
+  assert(/^warn .*no compose file at/.test(row({}, { exists: () => false }).text), 'no compose file');
+  const clientOnly = row({ 'compose version': null, 'version --format': null });
+  assert(clientOnly.text.startsWith('warn ') && /Compose/.test(clientOnly.text) && /not running/.test(clientOnly.text), clientOnly.text);
+  const remote = row({ 'context inspect': 'tcp://build.example:2376' });
+  assert(/^warn .*remote \(tcp:\/\/build\.example:2376\); not checked/.test(remote.text), remote.text);
+  assert(!remote.asked.includes('version --format'), 'a remote engine is not asked anything');
+  const viaEnv = (() => { const { run, asked } = answers(); doc.dockerRow(ROOT, { env: { DOCKER_HOST: 'ssh://ops@host' }, run }); return asked; })();
+  assert(!viaEnv.includes('version --format') && !viaEnv.includes('context inspect'), 'DOCKER_HOST is the endpoint');
+});
+
+// The version, the root and the style each engine draws with, so a report of
+// odd output says which install made it (#309).
+const styleHome = join(TMP, 'doctor-style-home');
+const styleStore = (drawio, excalidraw) => {
+  rmSync(styleHome, { recursive: true, force: true });
+  for (const [engine, text] of [['drawio', drawio], ['excalidraw', excalidraw]]) {
+    if (text === null) continue;
+    mkdirSync(join(styleHome, engine), { recursive: true });
+    writeFileSync(join(styleHome, engine, 'style-overrides.json'), text);
+  }
+  return settle(doc.styleRows(ROOT, { ...process.env, ARKITECT_HOME: styleHome }));
+};
+const styleCases = {
+  none: await styleStore(null, null),
+  broken: await styleStore('{', JSON.stringify({ schemaVersion: 1, engine: 'excalidraw', tokens: { roughness: 'very' } })),
+  applied: await styleStore(JSON.stringify({ schemaVersion: 1, engine: 'drawio', tokens: { fontBody: 14 } }),
+    JSON.stringify({ schemaVersion: 1, engine: 'excalidraw', tokens: { roughness: 0 } })),
+};
+test('doctor names the install and the style each engine draws with, never the values (#309)', () => {
+  const home = styleHome;
+  const styles = (c) => Object.fromEntries(c.value.map(([s, label, d, more = []]) => [label, [s, d, ...more].join(' ')]));
+  let rows = styles(styleCases.none);
+  eq(rows['draw.io style'], 'ok house style, no override', 'no store');
+  eq(rows['excalidraw style'], 'ok house style, no override', 'no store');
+
+  rows = styles(styleCases.broken);
+  assert(/^warn override ignored, .*style-overrides\.json the file is not valid JSON$/.test(rows['draw.io style']), rows['draw.io style']);
+  assert(/^warn override ignored, .* tokens\.roughness$/.test(rows['excalidraw style']) && !rows['excalidraw style'].includes('very'),
+    `the field, not the value: ${rows['excalidraw style']}`);
+
+  rows = styles(styleCases.applied);
+  assert(/^ok override applied, 1 field: .*drawio[\\/]style-overrides\.json$/.test(rows['draw.io style']), rows['draw.io style']);
+  assert(/^ok override applied, 1 field: /.test(rows['excalidraw style']), rows['excalidraw style']);
+
+  // The same store build reads, through the real CLI.
+  writeFileSync(join(home, 'drawio', 'style-overrides.json'), '{');
+  const env = { ...process.env, ARKITECT_HOME: home };
+  const out = cli(['doctor'], { env });
+  eq(out.split('\n')[0], `arkitect ${pkg.version} at ${ROOT} (${process.platform} ${process.arch})`, 'the identity line');
+  assert(/^warn\s+draw\.io style\s+override ignored/m.test(out), out);
+  eq(JSON.parse(cli(['drawio', 'build', '--print-style'], { env })).reason, 'override ignored: it has problems', 'build agrees');
+  rmSync(home, { recursive: true, force: true });
+});
+
+// An adapter carries the absolute path of the install that wrote it; moving
+// or removing that install stranded it with nothing said (#310).
+test('doctor checks the adapters in this project point at this install (#310)', () => {
+  const project = (name, files) => {
+    const dir = join(TMP, 'doctor-adapters', name);
+    rmSync(dir, { recursive: true, force: true });
+    for (const [file, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, file)), { recursive: true });
+      writeFileSync(join(dir, file), text);
+    }
+    return dir;
+  };
+  const fenced = (root) => `My own rules.\n\n${adapters.BEGIN}\n${adapters.ADAPTERS.agents.render(root)}${adapters.END}\n`;
+  const row = (dir) => { const [s, , d, more = []] = doc.adapterRow(ROOT, dir); return [`${s} ${d}`, ...more].join(' | '); };
+
+  eq(row(project('empty', {})), `ok none in ${join(TMP, 'doctor-adapters', 'empty')}`, 'no adapters is fine');
+  const here = project('here', {});
+  cli(['install', 'agents', 'codex-skill', '--dir', here]);
+  eq(row(here), `ok ${['AGENTS.md', join('.agents', 'skills', 'arkitect', 'SKILL.md')].join(', ')} point here`, 'current');
+
+  const gone = join(TMP, 'doctor-adapters', 'removed-install');
+  assert(/^warn 1 of 1 points elsewhere.* \| AGENTS\.md -> .*removed-install, which is gone$/.test(row(project('removed', { 'AGENTS.md': fenced(gone) }))),
+    row(project('removed', { 'AGENTS.md': fenced(gone) })));
+  const other = join(TMP, 'doctor-adapters', 'other-install');
+  mkdirSync(join(other, 'bin'), { recursive: true });
+  writeFileSync(join(other, 'bin', 'arkitect.mjs'), '');
+  assert(/AGENTS\.md -> another install, .*other-install$/.test(row(project('other', { 'AGENTS.md': fenced(other) }))), 'a different install');
+
+  // Text outside Arkitect's markers is the user's: not read as an adapter, not printed.
+  const own = project('own', { 'AGENTS.md': `Arkitect is installed at \`${gone}\` - a note of mine.\n` });
+  eq(row(own), `ok none in ${own}`, 'no markers, no adapter');
+  assert(!row(project('mixed', { 'AGENTS.md': fenced(gone) })).includes('My own rules'), 'the user\'s text is never printed');
+});
+
+// --help went looking for a pack called "--help" (#311).
+test('drawio sheets --help prints usage and exits 0 before reading the catalog (#311)', () => {
+  const guard = join(TMP, 'no-catalog.mjs');
+  writeFileSync(guard, "import fs from 'node:fs';\nimport { syncBuiltinESMExports } from 'node:module';\n"
+    + 'const read = fs.readFileSync;\n'
+    + "fs.readFileSync = (p, ...a) => { if (String(p).includes('icon-catalog')) throw new Error('read the catalog'); return read(p, ...a); };\n"
+    + 'syncBuiltinESMExports();\n');
+  for (const flag of ['--help', '-h']) {
+    const r = spawnSync(process.execPath, ['--import', pathToFileURL(guard).href, CLI, 'drawio', 'sheets', flag], { encoding: 'utf8' });
+    eq(r.status, 0, `${flag}: ${r.stderr}`);
+    assert(r.stdout.startsWith('usage: contact-sheet.mjs (--pack <id> | --all)') && !r.stderr, `${flag}: ${r.stdout}${r.stderr}`);
+  }
+  for (const args of [[], ['--pack'], ['--pack', '--png']]) {
+    const r = spawnSync(process.execPath, [CLI, 'drawio', 'sheets', ...args], { encoding: 'utf8' });
+    eq(r.status, 2, `sheets ${args.join(' ')}`);
+    assert(r.stderr.startsWith('usage:') && !/at .*contact-sheet\.mjs/.test(r.stderr), `no stack trace: ${r.stderr}`);
+  }
+});
+
 // -------------------------------------------------------------
 
 finish();

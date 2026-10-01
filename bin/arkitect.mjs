@@ -84,58 +84,6 @@ function run(script, args, cwd = process.cwd()) {
   process.exit(r.status ?? 1);
 }
 
-async function doctor() {
-  const checks = [];
-  const ok = (label, detail, more) => checks.push(['ok  ', label, detail, more]);
-  const warn = (label, detail, more) => checks.push(['warn', label, detail, more]);
-
-  const major = Number(process.versions.node.split('.')[0]);
-  (major >= 20 ? ok : warn)('node >= 20', `found ${process.version}`);
-
-  for (const [label, p] of [
-    ['draw.io icon packs', join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'libraries', 'sources.json')],
-    ['draw.io AWS pack', join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'libraries', 'aws.drawio')],
-    ['draw.io icon catalog', join(ROOT, 'skills', 'arkitect-drawio', 'references', 'icon-catalog.json')],
-    ['excalidraw libraries', join(ROOT, 'skills', 'arkitect-excalidraw', 'assets', 'libraries', 'bundled', 'index.json')],
-    ['plugin manifest', join(ROOT, '.claude-plugin', 'plugin.json')],
-    ['agent contract', join(ROOT, 'AGENTS.md')],
-  ]) {
-    existsSync(p) ? ok(label, 'present') : warn(label, `missing: ${p}`);
-  }
-
-  const which = (cmd, args) => {
-    const r = spawnSync(cmd, args, { encoding: 'utf8', shell: process.platform === 'win32' });
-    return r.status === 0 ? (r.stdout || '').trim().split('\n')[0] : null;
-  };
-
-  const docker = which('docker', ['--version']);
-  docker ? ok('docker (Excalidraw app)', docker) : warn('docker (Excalidraw app)', 'not found - optional, needed only to open the real Excalidraw');
-
-  // The renderer's own discovery, not a second list of paths: doctor used to
-  // miss /opt/drawio, PATH and DRAWIO_EXE while `drawio render` found them (#46).
-  const { locateDrawio } = await import(pathToFileURL(join(DRAWIO, 'render-drawio.mjs')).href);
-  const drawio = locateDrawio();
-  const drawioLabel = 'draw.io desktop (PNG render)';
-  if (drawio.path) ok(drawioLabel, `${drawio.path} (${drawio.source})`);
-  else if (drawio.source) warn(drawioLabel, `${drawio.source} ${drawio.tried[0]} is not executable - render refuses it; fix or unset ${drawio.source}`);
-  else {
-    // A PATH can run to dozens of directories; one line for those keeps the
-    // install locations readable. `drawio render` still names every one.
-    const dirs = drawio.onPath.length;
-    warn(drawioLabel, 'not found - optional, generation and validation work without it', [
-      ...(dirs ? [`tried drawio in ${dirs} PATH director${dirs === 1 ? 'y' : 'ies'}`] : []),
-      ...drawio.tried.filter((p) => !drawio.onPath.includes(p)).map((p) => `tried ${p}`),
-    ]);
-  }
-
-  const width = Math.max(...checks.map((c) => c[1].length));
-  for (const [status, label, detail, more = []] of checks) {
-    console.log(`${status}  ${label.padEnd(width)}  ${detail}`);
-    for (const line of more) console.log(`${' '.repeat(width + 8)}${line}`);
-  }
-  console.log('\nNothing here is required except Node. The rest only widens what you can see.');
-}
-
 const argv = process.argv.slice(2);
 const first = Object.hasOwn(ALIASES, argv[0]) ? ALIASES[argv[0]] : argv[0];
 
@@ -145,7 +93,10 @@ if (first === 'version' || first === '--version' || first === '-v') {
   process.exit(0);
 }
 if (first === 'where') { console.log(ROOT); process.exit(0); }
-if (first === 'doctor') { await doctor(); process.exit(0); }
+if (first === 'doctor') {
+  const { doctor } = await import(pathToFileURL(join(HERE, 'lib', 'doctor.mjs')).href);
+  process.exit(await doctor({ root: ROOT }));
+}
 if (first === 'install') {
   const { install } = await import(pathToFileURL(join(HERE, 'lib', 'install-agent.mjs')).href);
   process.exit(install(ROOT, argv.slice(1)));

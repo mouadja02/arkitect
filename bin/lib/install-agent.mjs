@@ -18,8 +18,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
 
-const BEGIN = '<!-- arkitect:begin -->';
-const END = '<!-- arkitect:end -->';
+export const BEGIN = '<!-- arkitect:begin -->';
+export const END = '<!-- arkitect:end -->';
 
 // What every adapter says. `read` is where the workflow lives: AGENTS.md for
 // most hosts; for the Codex skill, one engine guide (#303).

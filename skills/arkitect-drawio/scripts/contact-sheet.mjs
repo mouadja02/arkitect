@@ -294,17 +294,27 @@ function reviewMain(argv) {
   if (failed) process.exit(1);
 }
 
+const USAGE = `usage: contact-sheet.mjs (--pack <id> | --all) [--png [--keep-html]]
+       contact-sheet.mjs --pack <id> --review [--page N]`;
+
 function main(argv) {
+  // Before anything reads the catalog: with no --pack, indexOf gave -1 and
+  // argv[0], so --help was looked up as a pack (#311).
+  if (argv.includes('--help') || argv.includes('-h')) {
+    console.log(USAGE);
+    return;
+  }
   if (argv.includes('--review')) return reviewMain(argv);
   const png = argv.includes('--png');
   const keepHtml = argv.includes('--keep-html');
-  const catalog = JSON.parse(readFileSync(CATALOG_FILE, 'utf8'));
+  const at = argv.indexOf('--pack');
+  const named = at === -1 ? null : argv[at + 1];
   const ids = argv.includes('--all')
-    ? catalog.packs.map((p) => p.id).filter((id) => !SKIP.has(id))
-    : [argv[argv.indexOf('--pack') + 1]].filter(Boolean);
+    ? JSON.parse(readFileSync(CATALOG_FILE, 'utf8')).packs.map((p) => p.id).filter((id) => !SKIP.has(id))
+    : [named].filter((id) => id && !id.startsWith('-'));
 
   if (!ids.length) {
-    console.error('usage: contact-sheet.mjs (--pack <id> | --all) [--png [--keep-html]]');
+    console.error(USAGE);
     process.exit(2);
   }
 
