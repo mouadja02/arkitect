@@ -184,6 +184,8 @@ test('every alias resolves to a real adapter', () => {
       assert(adapters.ADAPTERS[target], `alias ${alias} points at unknown adapter ${target}`);
     }
   }
+  assert(!Object.hasOwn(adapters.ALIASES, 'gemini'), 'gemini is an adapter, not an alias of one');
+  eq(adapters.ADAPTERS.gemini.file, 'GEMINI.md', 'Gemini reads GEMINI.md by default');
 });
 
 test('install writes each adapter into the target project', () => {
@@ -208,6 +210,17 @@ test('install is idempotent and leaves existing content alone', () => {
   const after = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
   eq(after.split('<!-- arkitect:begin -->').length - 1, 1, 'marker blocks after three runs');
   assert(after.includes('Always rebase.'), 'existing content was lost');
+
+  const geminiDir = join(TMP, 'gemini-merge');
+  mkdirSync(geminiDir, { recursive: true });
+  writeFileSync(join(geminiDir, 'GEMINI.md'), own);
+  cli(['install', 'gemini', '--dir', geminiDir]);
+  cli(['install', 'gemini', '--dir', geminiDir]);
+  cli(['install', 'gemini', '--dir', geminiDir]);
+  const gemini = readFileSync(join(geminiDir, 'GEMINI.md'), 'utf8');
+  eq(gemini.split('<!-- arkitect:begin -->').length - 1, 1, 'Gemini marker blocks after three runs');
+  assert(gemini.includes('Always rebase.'), 'existing Gemini context was lost');
+  assert(!existsSync(join(geminiDir, 'AGENTS.md')), 'install gemini also wrote AGENTS.md');
 });
 
 test('a non-merge adapter refuses to clobber without --force', () => {

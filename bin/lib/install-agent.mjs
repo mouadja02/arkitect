@@ -106,7 +106,13 @@ for them by name.
 export const ADAPTERS = {
   agents: {
     file: 'AGENTS.md',
-    hosts: 'Codex, OpenCode, Antigravity, Pi, Gemini CLI, Amp, Jules, most others',
+    hosts: 'Codex, OpenCode, Antigravity, Pi, Amp, Jules, most others',
+    render: body,
+    merge: true,
+  },
+  gemini: {
+    file: 'GEMINI.md',
+    hosts: 'Gemini CLI',
     render: body,
     merge: true,
   },
@@ -147,7 +153,6 @@ export const ALIASES = {
   codex: ['agents', 'codex-skill'],
   antigravity: 'agents',
   pi: 'agents',
-  gemini: 'agents',
   generic: 'agents',
   all: '--all',
 };
@@ -240,6 +245,9 @@ export function install(root, argv) {
 
   if (!parsed.options.print && chosen.includes('agents')) {
     console.log('\nCodex, Antigravity and Pi read AGENTS.md from the project root - which is what was just written.');
+  }
+  if (!parsed.options.print && chosen.includes('gemini')) {
+    console.log('\nGemini CLI reads GEMINI.md from the project root - which is what was just written.');
   }
   if (!parsed.options.print && chosen.includes('codex-skill')) {
     console.log('Codex runs the skill as $arkitect, or picks it from its description. For every');
