@@ -25,6 +25,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The edit-existing eval case takes "validates successfully" as a validation result, as it takes PASS; an accurate report failed on it.
 - `doctor` exits 1 when Node is older than 20 or a bundled asset is missing or does not parse; it always exited 0 (#308).
 - `doctor` parses the icon catalog, the pack list, the AWS pack, the Excalidraw library index and the plugin manifest, and checks every file they name. A file cut short read "present" (#306).
 - `doctor` reports the browser an Excalidraw PNG render would use or why its `ARKITECT_BROWSER` pin is refused, and on Linux the display or `xvfb-run` a Draw.io export would use, from the renderers' own discovery (#305).
