@@ -23,6 +23,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The committed Excalidraw AWS data-platform example validates clean: its error lane lines up with the band below, so the straight edge into the dead-letter queue misses the lane's name (#319).
+- Excalidraw `route: "avoid"` finds a detour when a band as wide as the drawing leaves no lane between columns. It took its lanes from the whole drawing, found none, and kept the crossing (#319).
+- An Excalidraw edge label with something on both sides of its run's middle slides along the run to the first spot clear of nodes, text, lines and boundary strokes; one sat on an icon in the AWS example. A rebuilt spec with such a label draws it elsewhere (#319).
 - The report check runs after a build by `arkitect`, `npx arkitect`, any engine alias (`dio`, `ex`) and the PowerShell tool, not only by a script path or `bin/arkitect.mjs` (#301).
 - The Codex skill sends the agent to one engine guide instead of all of `AGENTS.md` first, and the `AGENTS.md` pointer says the guide takes the contract's place under Codex: 15,894 bytes off every Codex diagram (#303).
 - The adapters and `AGENTS.md` teach `icon ... --compact`, as both guides already did: 145 bytes for "bedrock" instead of 4,611 (#304).
