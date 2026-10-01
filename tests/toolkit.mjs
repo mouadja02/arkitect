@@ -329,6 +329,45 @@ test('install codex writes a Codex skill whose every path resolves from another 
   assert(!/cp .*\.codex\/prompts/.test(agents) && !existsSync(join(ROOT, '.codex')), 'the deprecated prompt is still shipped');
 });
 
+// The Codex skill sent the agent through all of AGENTS.md and then an engine
+// guide that repeats it: 15,894 bytes no other host reads twice (#303). Its
+// route is now the AGENTS.md pointer Codex loads, the skill, and one guide.
+test('the Codex reading route reaches one engine guide, not the full contract as well (#303)', () => {
+  const skill = adapters.ADAPTERS['codex-skill'].render(ROOT);
+  const pointer = adapters.ADAPTERS.agents.render(ROOT);
+  const contract = join(ROOT, 'AGENTS.md');
+  assert(!skill.includes(contract), 'the Codex skill still sends the agent to AGENTS.md');
+  assert(pointer.includes(contract) && /`arkitect` skill is loaded \(Codex\), its engine guide is that contract/.test(pointer),
+    'the AGENTS.md pointer does not hand Codex to the skill\'s guide');
+
+  // What the entry blocks drop is still said on the route.
+  for (const rule of ['Nothing is uploaded', 'Never substitute one product\'s mark', '**Draw.io** for', '**Excalidraw** for',
+    'run only when the user asks', '`${CLAUDE_PLUGIN_ROOT}`']) {
+    assert(skill.includes(rule), `the Codex skill dropped: ${rule}`);
+  }
+  const guides = ['arkitect-drawio', 'arkitect-excalidraw'].map((g) => join(ROOT, 'skills', g, 'SKILL.md'));
+  for (const g of guides) assert(skill.includes(`\`${g}\``), `the Codex skill does not name ${g}`);
+
+  const bytes = (s) => Buffer.byteLength(s);
+  const guide = Math.max(...guides.map((g) => bytes(readFileSync(g, 'utf8'))));
+  const route = bytes(pointer) + bytes(skill) + guide;
+  assert(bytes(pointer) + bytes(skill) <= 5000, `the Codex entry blocks are ${bytes(pointer) + bytes(skill)} bytes`);
+  assert(route < guide + bytes(readFileSync(contract, 'utf8')),
+    `the Codex route is ${route} bytes, more than a guide and the full contract`);
+});
+
+// The entry paths taught the verbose search, 4,611 bytes for "bedrock" where
+// --compact answers in 145, though both guides already used it (#304).
+test('every icon search an adapter or AGENTS.md teaches is compact, and the detail route is named (#304)', () => {
+  const md = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8');
+  const commands = md.slice(md.indexOf('## 3. Commands'), md.indexOf('## 4.'));
+  const taught = [commands, ...Object.values(adapters.ADAPTERS).map((a) => a.render(ROOT))]
+    .flatMap((text) => text.split('\n').filter((l) => /arkitect\.mjs"? (drawio|excalidraw) icon /.test(l)));
+  assert(taught.length >= 4, `found ${taught.length} icon searches to check`);
+  for (const line of taught) assert(line.includes('--compact'), `not compact: ${line.trim()}`);
+  assert(/drop --compact for detail/.test(commands), 'AGENTS.md no longer says how to get the full search');
+});
+
 test('install rejects malformed requests before writing any adapter', () => {
   const dir = join(TMP, 'invalid-install');
   mkdirSync(dir, { recursive: true });
@@ -1872,6 +1911,38 @@ test('the report check sends back a report missing headings, or one describing a
   for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'Stop', transcript_path: '/nowhere' })]) {
     const quiet = run(input);
     eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
+  }
+});
+
+// docs/install.md teaches `arkitect` and `npx arkitect`; a build by either was
+// not a build to the check, so the same report went unchecked (#301).
+test('the report check counts a build by the installed, npx or script command, under any engine alias (#301)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    const built = (name, command) => {
+      writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name, input: { command } }] } }));
+      return reportHook.sessionOf(transcript).built;
+    };
+    for (const command of ['arkitect drawio build a.json --out a.drawio', 'arkitect excalidraw build a.json --out a.excalidraw',
+      'npx arkitect drawio build a.json --out a.drawio', 'npx -y arkitect@2.2.0 excalidraw build a.json --out a.excalidraw',
+      'cd docs && arkitect dio build a.json --out a.drawio', 'arkitect draw.io build a.json', 'arkitect ex build a.json',
+      'node "C:\\Program Files\\arkitect\\bin\\arkitect.mjs" excali build a.json', "node '/opt/arkitect/bin/arkitect.mjs' drawio build a.json",
+      'node bin/arkitect.mjs drawio build a.json --out a.drawio', 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs a.json']) {
+      assert(built('Bash', command), `not a build: ${command}`);
+    }
+    assert(built('PowerShell', 'arkitect drawio build a.json --out a.drawio'), 'a build in the PowerShell tool');
+    for (const command of ['arkitect drawio validate a.drawio', 'arkitect excalidraw render a.excalidraw --format svg',
+      'npx arkitect drawio icon build', 'node skills/arkitect-drawio/scripts/validate-drawio.mjs a.drawio', 'ls arkitect-drawio build']) {
+      assert(!built('Bash', command), `a build: ${command}`);
+    }
+    assert(!built('Read', 'arkitect drawio build a.json'), 'only a shell tool builds');
+
+    built('Bash', 'arkitect drawio build a.json --out a.drawio');
+    const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
+    assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent?.reason), 'the installed build is checked like the script one');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
