@@ -125,7 +125,8 @@ alone. An unknown adapter or option exits 2 before anything is written;
 
 `install codex` also writes a skill. Codex picks it when a request matches, or
 run it yourself: `$arkitect draw the ingestion pipeline as excalidraw`, or pick
-it from `/skills`. Its paths are absolute, so it works from any folder. For
+it from `/skills`. It sends Codex to the chosen engine's guide, not through
+`AGENTS.md` as well. Its paths are absolute, so it works from any folder. For
 every project on the machine, install it in your user scope:
 
 ```bash

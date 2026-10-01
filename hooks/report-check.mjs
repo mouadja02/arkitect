@@ -17,7 +17,11 @@ import { lastReply } from './style-question.mjs';
 
 export const HEADINGS = ['File', 'Assumptions', 'Icons', 'Validation', 'Render', 'Deviations'];
 const heading = (name) => new RegExp(`\\*\\*${name}\\b|#+\\s*\\**${name}\\b`);
-const BUILD = /build-diagram\.mjs|arkitect\.mjs"?\s+(drawio|excalidraw)\s+build\b/;
+// A build by script, by the dispatcher's path, or by the installed or npx
+// `arkitect` with any engine alias: docs/install.md teaches the last two, and
+// the check used to skip them (#301).
+const BUILD = /build-diagram\.mjs|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
+const SHELLS = ['Bash', 'PowerShell'];
 // What a reply says when it describes a picture: "Layout is clean", "SVG
 // confirms structure and spacing". A sentence that is validate's finding, or
 // that says nothing was seen, is what the report should say, so it passes.
@@ -41,7 +45,7 @@ export function sessionOf(transcriptPath) {
         const e = JSON.parse(line);
         for (const part of (e.message ?? e).content ?? []) {
           if (part?.type !== 'tool_use') continue;
-          if (part.name === 'Bash' && BUILD.test(String(part.input?.command ?? ''))) seen.built = true;
+          if (SHELLS.includes(part.name) && BUILD.test(String(part.input?.command ?? ''))) seen.built = true;
           if (part.name === 'Read' && /\.png$/i.test(String(part.input?.file_path ?? ''))) seen.viewed = true;
         }
       } catch { /* one bad line is not ours to fail */ }

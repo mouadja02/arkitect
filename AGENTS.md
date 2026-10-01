@@ -125,7 +125,7 @@ node bin/arkitect.mjs                              # every command, one screen
 node bin/arkitect.mjs doctor                       # what is installed, what is optional
 
 # Draw.io
-node bin/arkitect.mjs drawio icon "bedrock"                     # search the AWS palette
+node bin/arkitect.mjs drawio icon "bedrock" --compact            # verdict + spec node; drop --compact for detail
 node bin/arkitect.mjs drawio logo --url <https url> --name snowflake
 node bin/arkitect.mjs drawio build --print-style                 # the style this install draws with
 node bin/arkitect.mjs drawio build spec.json --out docs/arch.drawio
@@ -133,7 +133,7 @@ node bin/arkitect.mjs drawio validate docs/arch.drawio
 node bin/arkitect.mjs drawio analyze docs/arch.drawio --page 0 --cells
 
 # Excalidraw
-node bin/arkitect.mjs excalidraw icon "postgres"                # native libraries + shared packs
+node bin/arkitect.mjs excalidraw icon "postgres" --compact       # native libraries, then shared packs
 node bin/arkitect.mjs excalidraw libraries --unnamed
 node bin/arkitect.mjs excalidraw build --print-style             # the style this install draws with
 node bin/arkitect.mjs excalidraw build spec.json --out docs/arch.excalidraw

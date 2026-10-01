@@ -23,6 +23,9 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The report check runs after a build by `arkitect`, `npx arkitect`, any engine alias (`dio`, `ex`) and the PowerShell tool, not only by a script path or `bin/arkitect.mjs` (#301).
+- The Codex skill sends the agent to one engine guide instead of all of `AGENTS.md` first, and the `AGENTS.md` pointer says the guide takes the contract's place under Codex: 15,894 bytes off every Codex diagram (#303).
+- The adapters and `AGENTS.md` teach `icon ... --compact`, as both guides already did: 145 bytes for "bedrock" instead of 4,611 (#304).
 - Both builders report an unsupported boundary `kind` under `unknownKinds`, including its scope fallback and the valid choices, instead of silently discarding it (#300).
 - Excalidraw `validate` warns when an arrow runs through free text: a caption, a sublabel, a boundary's name or the arrow's own label, naming both. Bound labels don't count (#316).
 - An Excalidraw edge label takes the other side of its run when the preferred side is crossed by another edge or holds more text, and a label whose middle falls on a jog too short for it goes on the route's longest run. Shorter runs under captions (#314) had moved one onto another edge's line; the elbow labels #315 left on their lines are clear.

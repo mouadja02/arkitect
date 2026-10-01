@@ -21,14 +21,16 @@ import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/d
 const BEGIN = '<!-- arkitect:begin -->';
 const END = '<!-- arkitect:end -->';
 
-const body = (root) => `## Arkitect — editable architecture diagrams
+// What every adapter says. `read` is where the workflow lives: AGENTS.md for
+// most hosts; for the Codex skill, one engine guide (#303).
+const intro = (root, read) => `## Arkitect — editable architecture diagrams
 
 Arkitect is installed at \`${root}\`. It draws **native, editable** diagrams:
 \`.drawio\` (Draw.io / diagrams.net) and \`.excalidraw\` (Excalidraw). Never hand
 over a screenshot or Mermaid as the final artifact when a real diagram was asked
 for.
 
-Read \`${join(root, 'AGENTS.md')}\` for the full contract before drawing. In short:
+${read} In short:
 
 - **Draw.io** for formal solution architecture, AWS-heavy designs, client-facing
   decks. **Excalidraw** for system design, block diagrams, flows, README art.
@@ -44,12 +46,15 @@ Read \`${join(root, 'AGENTS.md')}\` for the full contract before drawing. In sho
 
 \`\`\`bash
 node "${join(root, 'bin', 'arkitect.mjs')}"                       # every command
-node "${join(root, 'bin', 'arkitect.mjs')}" drawio icon "bedrock"
+node "${join(root, 'bin', 'arkitect.mjs')}" drawio icon "bedrock" --compact
 node "${join(root, 'bin', 'arkitect.mjs')}" drawio build spec.json --out docs/arch.drawio
-node "${join(root, 'bin', 'arkitect.mjs')}" excalidraw icon "postgres"
+node "${join(root, 'bin', 'arkitect.mjs')}" excalidraw icon "postgres" --compact
 node "${join(root, 'bin', 'arkitect.mjs')}" excalidraw build spec.json --out docs/arch.excalidraw
 \`\`\`
 `;
+
+const body = (root) => intro(root, `Read \`${join(root, 'AGENTS.md')}\` for the full contract before drawing.
+Where the \`arkitect\` skill is loaded (Codex), its engine guide is that contract.`);
 
 const cursorRule = (root) => `---
 description: Draw editable Draw.io and Excalidraw architecture, system and flow diagrams with Arkitect
@@ -86,10 +91,9 @@ name: arkitect
 description: Draw editable Draw.io (.drawio) and Excalidraw (.excalidraw) architecture, system, component and flow diagrams, or edit an existing .drawio or .excalidraw file, with Arkitect.
 ---
 
-${body(root)}
+${intro(root, `Choose the engine, then read its guide below and follow it; it is the whole
+workflow, so read nothing else first.`)}
 ## Engine guides
-
-Once the engine is chosen, read its guide and follow it:
 
 - Draw.io: \`${join(root, 'skills', 'arkitect-drawio', 'SKILL.md')}\`
 - Excalidraw: \`${join(root, 'skills', 'arkitect-excalidraw', 'SKILL.md')}\`
