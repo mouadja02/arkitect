@@ -30,8 +30,7 @@ export function render(options, { platform = process.platform, env = process.env
     throw new Error(`Page index ${options.pageIndex} is out of range: "${basename(source)}" has ${count} page${count === 1 ? '' : 's'} (0-${count - 1}).`);
   }
   const exe = discoverDrawio(options.drawioExe, { platform, env, isExecutable });
-  const xvfb = platform === 'linux' && !displayUp(env.DISPLAY)
-    ? pathCandidates('xvfb-run', platform, env).find(isExecutable) : undefined;
+  const xvfb = displayFor({ platform, env, isExecutable, displayUp }).xvfb ?? undefined;
   if (xvfb) {
     log(env.DISPLAY ? `DISPLAY ${env.DISPLAY} has no X server here; using xvfb-run -a for local Draw.io export.`
       : 'No DISPLAY; using xvfb-run -a for local Draw.io export.');
@@ -89,6 +88,17 @@ export function displayReachable(display, { exists = existsSync } = {}) {
   if (!display) return false;
   const local = /^(?:unix)?:(\d+)(?:\.\d+)?$/.exec(display);
   return local ? exists(`/tmp/.X11-unix/X${local[1]}`) : true;
+}
+
+// How an export gets a display: none needed off Linux; on Linux the X server
+// DISPLAY names, or xvfb-run when that is missing or stale, or nothing, and
+// the export fails. `render` and `doctor` both ask this (#305).
+export function displayFor({ platform = process.platform, env = process.env,
+  isExecutable = executable, displayUp = displayReachable } = {}) {
+  if (platform !== 'linux') return { needed: false };
+  if (displayUp(env.DISPLAY)) return { needed: true, display: env.DISPLAY };
+  return { needed: true, display: null, stale: env.DISPLAY || null,
+    xvfb: pathCandidates('xvfb-run', platform, env).find(isExecutable) ?? null };
 }
 
 // Why an export produced nothing, in one line: the spawn error, or how the
