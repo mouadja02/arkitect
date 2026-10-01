@@ -55,6 +55,7 @@ export { STYLE, T, HOUSE_ACCENTS, EDGE_KINDS, resolveStyle, loadStyle, validateO
 // rectangle, and is named in the build report so a typo cannot silently change
 // the diagram (#48).
 export const NODE_KINDS = ['box', 'round', 'ellipse', 'diamond', 'cylinder', 'actor', 'note', 'text', 'icon', 'placeholder'];
+const BOUNDARY_KINDS = ['scope', 'frame'];
 
 // Every key each part of a spec may carry. An unknown key is not a broken
 // spec - one written against a field this builder does not have yet still has
@@ -1011,10 +1012,13 @@ function assemble(spec, style) {
   };
 
   const frameIdFor = new Map();
-  for (const b of boundaries) {
+  for (const [i, b] of boundaries.entries()) {
     const drawnScopes = scopes.length;
     const box = resolveBoundary(b);
     const look = accentOf(b.color ?? b.accent ?? 'grey');
+    if (b.kind != null && !BOUNDARY_KINDS.includes(b.kind)) {
+      report.unknownKinds.push({ field: `boundaries[${i}].kind`, value: b.kind, drawnAs: 'scope', valid: BOUNDARY_KINDS });
+    }
     if (b.kind === 'frame') {
       const fr = frame({ name: b.label ?? null, x: box.x, y: box.y, width: box.width, height: box.height });
       frames.push(fr);

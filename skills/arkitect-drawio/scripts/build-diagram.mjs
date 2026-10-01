@@ -61,6 +61,7 @@ const TITLE_GAP = 12;
 // Node kinds the builder draws. Any other kind still draws, as a box, and is
 // named in the build report so a typo cannot silently change the diagram (#48).
 const NODE_KINDS = ['box', 'icon', 'aws4', 'logo', 'note', 'text'];
+const BOUNDARY_KINDS = ['scope', 'aws-cloud', 'aws-group', 'lane'];
 
 // Every key each part of a spec may carry. An unknown key is not a broken
 // spec - one written against a field this builder does not have yet still has
@@ -497,6 +498,9 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     for (const [i, b] of boundaries.entries()) {
       const abs = boxOf(b);
       const origin = originOf(b.parent);
+      if (b.kind != null && !BOUNDARY_KINDS.includes(b.kind)) {
+        report.unknownKinds.push({ field: `${at}boundaries[${i}].kind`, value: b.kind, drawnAs: 'scope', valid: BOUNDARY_KINDS });
+      }
       let style;
       if (b.kind === 'aws-cloud') style = STYLE.awsGroup('mxgraph.aws4.group_aws_cloud_alt', b.color ?? T.text);
       else if (b.kind === 'aws-group') style = STYLE.awsGroup(b.grIcon, b.color ?? T.text);

@@ -823,6 +823,7 @@ test('kind "placeholder" asks for a slot without pretending to search', () => {
 
 test('an unknown node or edge kind is named in the report, and constructor is not a kind (#48)', () => {
   const spec = {
+    boundaries: [{ id: 'scope', kind: 'fram', label: 'Scope', col: 0, row: 0, cols: 3 }],
     nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }, { id: 'b', kind: 'cilinder', label: 'B', col: 1, row: 0 },
       { id: 'c', kind: 'constructor', label: 'C', col: 2, row: 0 }],
     edges: [{ from: 'a', to: 'b', kind: 'asnyc' }, { from: 'b', to: 'c', kind: 'constructor' }, { from: 'a', to: 'c', kind: 'async' }],
@@ -830,10 +831,12 @@ test('an unknown node or edge kind is named in the report, and constructor is no
   const r = builder.buildDiagram(spec);
   eq(JSON.stringify(r.report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
     ['nodes[1].kind', 'cilinder', 'round'], ['nodes[2].kind', 'constructor', 'round'],
+    ['boundaries[0].kind', 'fram', 'scope'],
     ['edges[0].kind', 'asnyc', 'flow'], ['edges[1].kind', 'constructor', 'flow'],
   ]), 'every unknown kind, in spec order, with its fallback');
   for (const u of r.report.unknownKinds) {
-    assert(u.valid.includes(u.field.startsWith('nodes') ? 'cylinder' : 'async') && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
+    const expected = u.field.startsWith('boundaries') ? 'frame' : (u.field.startsWith('nodes') ? 'cylinder' : 'async');
+    assert(u.valid.includes(expected) && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
   }
   eq(builder.buildDiagram({ ...spec, style: { rounded: false } }).report.unknownKinds[0].drawnAs, 'box', 'the node fallback follows the style');
 
@@ -848,6 +851,7 @@ test('an unknown node or edge kind is named in the report, and constructor is no
   }
   assert(!r.scene.elements.some((e) => e.type === 'text' && /undefined/.test(e.text ?? '')), 'the legend names no undefined kind');
   eq(builder.buildDiagram({
+    boundaries: [{ id: 's', kind: 'scope' }, { id: 'f', kind: 'frame' }, { id: 'o' }],
     nodes: [spec.nodes[0], { id: 'd', kind: 'cylinder', label: 'D', col: 1, row: 0 }],
     edges: [{ from: 'a', to: 'd', kind: 'data' }, { from: 'd', to: 'a' }],
   }).report.unknownKinds.length, 0, 'known and omitted kinds report nothing');
@@ -856,7 +860,7 @@ test('an unknown node or edge kind is named in the report, and constructor is no
   writeFileSync(specPath, JSON.stringify(spec));
   const out = JSON.parse(execFileSync(process.execPath,
     [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-kinds.excalidraw')], { encoding: 'utf8' }));
-  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['cilinder', 'constructor', 'asnyc', 'constructor']),
+  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['cilinder', 'constructor', 'fram', 'asnyc', 'constructor']),
     'the CLI prints them and the build still succeeds');
 });
 

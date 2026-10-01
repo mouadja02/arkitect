@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- Both builders report an unsupported boundary `kind` under `unknownKinds`, including its scope fallback and the valid choices, instead of silently discarding it (#300).
 - Excalidraw `validate` warns when an arrow runs through free text: a caption, a sublabel, a boundary's name or the arrow's own label, naming both. Bound labels don't count (#316).
 - An Excalidraw edge label takes the other side of its run when the preferred side is crossed by another edge or holds more text, and a label whose middle falls on a jog too short for it goes on the route's longest run. Shorter runs under captions (#314) had moved one onto another edge's line; the elbow labels #315 left on their lines are clear.
 - The free label of a straight diagonal Excalidraw edge moves out along the line's normal until it clears it, below the line when above holds more text; it used to sit on its own line. Level and upright labels are where they were (#315).

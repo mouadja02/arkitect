@@ -4136,6 +4136,7 @@ test('an unknown edge kind draws as a flow instead of crashing on its label (#36
 
 test('an unknown node or edge kind is named in the build report with what it was drawn as (#48)', () => {
   const spec = {
+    boundaries: [{ id: 'scope', kind: 'aws-clod', label: 'Scope', col: 0, row: 0, cols: 4 }],
     nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }, { id: 'b', kind: 'cylinder', label: 'B', col: 1, row: 0 },
       { id: 'c', kind: 'constructor', label: 'C', col: 2, row: 0 }, { id: 'd', label: 'D', col: 3, row: 0 }],
     edges: [{ from: 'a', to: 'b', kind: 'asnyc' }, { from: 'b', to: 'c', kind: 'toString' },
@@ -4143,21 +4144,27 @@ test('an unknown node or edge kind is named in the build report with what it was
   };
   const { report } = builder.buildDiagram(spec);
   eq(JSON.stringify(report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
+    ['boundaries[0].kind', 'aws-clod', 'scope'],
     ['nodes[1].kind', 'cylinder', 'box'], ['nodes[2].kind', 'constructor', 'box'],
     ['edges[0].kind', 'asnyc', 'flow'], ['edges[1].kind', 'toString', 'flow'],
   ]), 'every unknown kind, in spec order, with its fallback');
   for (const u of report.unknownKinds) {
-    assert(u.valid.includes(u.field.startsWith('nodes') ? 'icon' : 'async') && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
+    const expected = u.field.startsWith('boundaries') ? 'aws-cloud' : (u.field.startsWith('nodes') ? 'icon' : 'async');
+    assert(u.valid.includes(expected) && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
   }
   eq(builder.buildDiagram({
+    boundaries: [{ id: 's', kind: 'scope' }, { id: 'c', kind: 'aws-cloud' }, { id: 'g', kind: 'aws-group' }, { id: 'l', kind: 'lane' }, { id: 'o' }],
     nodes: [{ id: 'a', kind: 'note', label: 'A', col: 0, row: 0 }, { id: 'd', label: 'D', col: 1, row: 0 }],
     edges: [{ from: 'a', to: 'd', kind: 'error' }, { from: 'd', to: 'a' }],
   }).report.unknownKinds.length, 0, 'known and omitted kinds report nothing');
 
+  eq(builder.buildDiagram({ pages: [{ boundaries: [{ id: 's', kind: 'aws-clod' }] }] }).report.unknownKinds[0].field,
+    'pages[0].boundaries[0].kind', 'a page-qualified boundary path is reported');
+
   const specPath = join(TMP, 'unknown-kinds.spec.json');
   writeFileSync(specPath, JSON.stringify(spec));
   const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-kinds.drawio')], { encoding: 'utf8' }));
-  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['cylinder', 'constructor', 'asnyc', 'toString']),
+  eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['aws-clod', 'cylinder', 'constructor', 'asnyc', 'toString']),
     'the CLI prints them and the build still succeeds');
 });
 
