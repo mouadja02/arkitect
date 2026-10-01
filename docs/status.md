@@ -1,31 +1,39 @@
 # Project status
 
-Snapshot of 2026-09-24, at 2.2.0. The live record is the
+Snapshot of 2026-10-01, at 2.2.1. The live record is the
 [issue tracker](https://github.com/mouadja02/arkitect/issues) and the
 [releases](https://github.com/mouadja02/arkitect/releases); what each release
 changed is in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Where it stands
 
-- **2.2.0** is on GitHub and, for the first time, on npm with provenance
-  (`npm install -g arkitect`).
-- **No issue is open.**
+- **2.2.1** is on GitHub and npm.
+- **Ten issues are open.** #295 (Draw.io boundaries sized to their children)
+  changes layout and #302 (a portable report check) adds a command, so neither
+  went into a patch. #325 is the scheduled note that three pinned icon sources
+  have moved on. #326 to #332 are the eval reds below.
 - The suite passes on Ubuntu 24.04 and 26.04, Windows and macOS, Node 20 to
-  24. The last full eval batch (17 cases, Haiku under test) scored 1.00 on 15;
-  the two misses were judge calls on correct replies, since fixed in the cases.
+  24. The last full eval batch (17 cases, 49 runs, Haiku under test, Sonnet
+  judging, at a1bc464) scored 0.94. Nothing it failed touches what 2.2.1
+  fixed. A wrong grader was fixed; the rest is agent behaviour, filed as
+  #326 to #332. The three judge reds that repeated on a re-run were run
+  against 2.2.0 as a control: the same replies are there, so they predate it.
 
-## What 2.2.0 added
+## What 2.2.1 changed
 
-- **Layout.** Draw.io edges take their sides from the grid and get waypoints
-  only round what is in the way; labels, titles and wordmarks are placed from
-  measurements. Excalidraw takes `"route": "avoid"`. Desktop 29.0.3 and the
-  local Excalidraw app both keep the builder's routes through a drag.
-- **Icons.** A vendor's name no longer draws the vendor's logo in place of its
-  product, and a box named for a product, or like an account, is handed the
-  node or boundary to paste.
-- **Reports.** A Claude Code hook sends back a report missing its headings, or
-  one describing a render nobody opened.
-- **Release.** Publishing to npm.
+- **Excalidraw connectors.** Arrows bind only to elements the app can bind;
+  edges spread along a shared side, clear their own node's caption, and keep
+  their labels off other lines. `validate` warns when an arrow runs through
+  text. `"route": "avoid"` finds its way past a full-width band.
+- **doctor.** It exits 1 when Node or a bundled asset is broken, parses the
+  assets instead of checking they exist, and reports what each render route,
+  the local Excalidraw app, the style override and the project's adapters
+  actually need.
+- **Agents other than Claude.** `install gemini` writes `GEMINI.md`; the Codex
+  skill reads one engine guide, not all of `AGENTS.md` first; the entry
+  routes teach the compact icon search.
+- **Reports.** The report check runs after a build by `arkitect` or
+  `npx arkitect` too, and both builders name an unknown boundary `kind`.
 
 ## How work gets done here
 
