@@ -1,5 +1,5 @@
 {
-  "_comment": "Second worked example: a large, detailed cloud architecture, where starter-architecture.spec.json is the small tour of every node and connector kind. Everything here is drawn from one bundled library (aws-architecture-icons), which is why the marks look like a set rather than a collection. Worth copying the shape of: column-per-phase regions sized from their contents, a caption naming the ROLE under an icon that already draws its own product name, a sublabel carrying the scaling or availability fact, an error lane along the bottom with the recovery loop closed back into the flow, a cross-cutting band that is labelled rather than wired to everything, assumptions in a note on the canvas, and fractional col/row values used to place things off the main grid. Note the handful of route:\"straight\" edges - each one is an elbow that would otherwise have been routed through another icon.",
+  "_comment": "Second worked example: a large, detailed cloud architecture, where starter-architecture.spec.json is the small tour of every node and connector kind. Everything here is drawn from one bundled library (aws-architecture-icons), which is why the marks look like a set rather than a collection. Worth copying the shape of: column-per-phase regions sized from their contents, a caption naming the ROLE under an icon that already draws its own product name, a sublabel carrying the scaling or availability fact, an error lane along the bottom with the recovery loop closed back into the flow, a cross-cutting band that is labelled rather than wired to everything, assumptions in a note on the canvas, and fractional col/row values used to place things off the main grid. Note the handful of route:\"straight\" edges - each one is an elbow that would otherwise have been routed through another icon. The error lane's padLeft lines it up with the band below it, which also keeps its name clear of the straight edge into the dead-letter queue.",
 
   "title": "AWS data platform — decoupled, distributed, scalable, highly available",
   "canvasBackground": "white",
@@ -16,7 +16,7 @@
     { "id": "process",  "kind": "scope", "label": "Processing", "color": "teal", "parent": "aws" },
     { "id": "storage",  "kind": "scope", "label": "Lakehouse", "color": "cyan", "parent": "aws" },
     { "id": "serving",  "kind": "scope", "label": "Serving & consumption", "color": "green", "parent": "aws" },
-    { "id": "errors",   "kind": "scope", "label": "Error handling & recovery", "color": "red", "parent": "aws" },
+    { "id": "errors",   "kind": "scope", "label": "Error handling & recovery", "color": "red", "parent": "aws", "padLeft": 401 },
     { "id": "ops",      "kind": "scope", "label": "Cross-cutting — attached to every component above", "color": "grey", "parent": "aws" }
   ],
 

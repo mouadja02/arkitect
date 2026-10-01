@@ -170,7 +170,7 @@ function polylineMidpoint(pts, room = () => 0) {
     const a = pts[i];
     const b = pts[i + 1];
     const dir = seg[i] ? { x: (b.x - a.x) / seg[i], y: (b.y - a.y) / seg[i] } : { x: 1, y: 0 };
-    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, dir };
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, dir, from: t * seg[i], to: (1 - t) * seg[i] };
   };
   let walked = 0;
   for (let i = 0; i < seg.length; i++) {
@@ -394,22 +394,34 @@ function avoidRoute(a, b, gap, blocks, lanesFrom, [underA, underB], runs) {
   const pairs = s0 === 'left' || s0 === 'right'
     ? [[s0, s1], ['top', 'top'], ['bottom', 'bottom']]
     : [[s0, s1], ['left', 'left'], ['right', 'right']];
-  const xs = lanes(lanesFrom, 'x', AVOID_MARGIN);
-  const ys = lanes(lanesFrom, 'y', AVOID_MARGIN);
-  let best = null;
-  for (const [es, ns] of pairs) {
-    const ex = port(a, es, underA.drop); const en = port(b, ns, underB.drop);
-    const [x0, x1] = [ex.x, en.x].sort((m, n) => m - n);
-    const [y0, y1] = [ex.y, en.y].sort((m, n) => m - n);
-    const via = detour(ex, en, es, ns, clear, near(xs, x0, x1), near(ys, y0, y1));
-    if (!via) continue;
-    const pts = [ex, ...via, en];
-    const len = lengthOf(routeThrough(ex, via, en));
-    if (!best || pts.length < best.pts.length || (pts.length === best.pts.length && len < best.len)) {
-      best = { pts, len, sides: [es, ns] };
+  // Lanes from every block first. A band as wide as the drawing, a
+  // cross-cutting row along the bottom, then leaves no free stretch on its
+  // axis but the two outside the whole drawing, and the detour gave up (#319);
+  // so failing that, lanes from only the blocks beside the corridor between
+  // the two ports.
+  const everywhere = [lanes(lanesFrom, 'x', AVOID_MARGIN), lanes(lanesFrom, 'y', AVOID_MARGIN)];
+  const beside = (x0, x1, y0, y1) => [
+    lanes(lanesFrom.filter((r) => r.y < y1 && r.y + r.height > y0), 'x', AVOID_MARGIN),
+    lanes(lanesFrom.filter((r) => r.x < x1 && r.x + r.width > x0), 'y', AVOID_MARGIN),
+  ];
+  for (const lanesFor of [() => everywhere, beside]) {
+    let best = null;
+    for (const [es, ns] of pairs) {
+      const ex = port(a, es, underA.drop); const en = port(b, ns, underB.drop);
+      const [x0, x1] = [ex.x, en.x].sort((m, n) => m - n);
+      const [y0, y1] = [ex.y, en.y].sort((m, n) => m - n);
+      const [xs, ys] = lanesFor(x0, x1, y0, y1);
+      const via = detour(ex, en, es, ns, clear, near(xs, x0, x1), near(ys, y0, y1));
+      if (!via) continue;
+      const pts = [ex, ...via, en];
+      const len = lengthOf(routeThrough(ex, via, en));
+      if (!best || pts.length < best.pts.length || (pts.length === best.pts.length && len < best.len)) {
+        best = { pts, len, sides: [es, ns] };
+      }
     }
+    if (best) return best;
   }
-  return best;
+  return null;
 }
 
 // ---------------------------------------------------------------- node shapes
@@ -1200,15 +1212,37 @@ function assemble(spec, style) {
       // The other side of the run instead, when it holds fewer nodes, texts
       // and lines. Shortening a run to clear a caption (#314) moved a label
       // onto another edge's line, which validate now reports (#316).
-      const at = (sign) => ({
-        x: mid.x + sign * nx * off - m.width / 2, y: mid.y + sign * ny * off - m.height / 2, width: m.width, height: m.height,
+      const at = (sign, d = 0) => ({
+        x: mid.x + ux * d + sign * nx * off - m.width / 2, y: mid.y + uy * d + sign * ny * off - m.height / 2,
+        width: m.width, height: m.height,
       });
       let sign = 1;
+      let slide = 0;
       if (!bound && corner === null) {
         const taken = [...extentOf.values(), ...[...scopes, ...edgeLayer].filter((el) => el.type === 'text').map(elementBox)];
         const hits = (b) => taken.filter((o) => b.x < o.x + o.width && o.x < b.x + b.width && b.y < o.y + o.height && o.y < b.y + b.height).length
           + lines.filter(([p, q]) => segmentHitsBox(p, q, b)).length;
         if (hits(at(-1)) < hits(at(1))) sign = -1;
+        // Both sides taken at the middle: along the run, nearest the middle
+        // first, to the first spot clear of boundary strokes as well, the
+        // label staying beside its own run. One sat on an icon in the AWS
+        // template (#319).
+        const borders = scopes.filter((el) => el.type === 'rectangle').flatMap((r) => {
+          const [x0, y0, x1, y1] = [r.x, r.y, r.x + r.width, r.y + r.height];
+          return [[{ x: x0, y: y0 }, { x: x1, y: y0 }], [{ x: x1, y: y0 }, { x: x1, y: y1 }],
+            [{ x: x0, y: y1 }, { x: x1, y: y1 }], [{ x: x0, y: y0 }, { x: x0, y: y1 }]];
+        });
+        const clear = (b) => !hits(b) && !borders.some(([p, q]) => segmentHitsBox(p, q, b));
+        const half = Math.abs(m.width / 2 * ux) + Math.abs(m.height / 2 * uy) + 12;
+        const room = Math.max(mid.from ?? 0, mid.to ?? 0) - half;
+        search: for (let d = 16; hits(at(sign)) && d <= room; d += 16) {
+          for (const [s, dd] of [[sign, d], [-sign, d], [sign, -d], [-sign, -d]]) {
+            if ((dd > 0 ? mid.to : mid.from) - half >= d && clear(at(s, dd))) {
+              [sign, slide] = [s, dd];
+              break search;
+            }
+          }
+        }
       }
       const t = text({
         text: e.label, fontSize: size, fontFamily: S.fontFamily,
@@ -1216,8 +1250,8 @@ function assemble(spec, style) {
         strokeColor: e.labelColor ?? k.color,
         containerId: bound ? a.id : null,
         width: m.width, height: m.height,
-        x: Math.round(at(sign).x),
-        y: Math.round(under ? mid.y + 10 : at(sign).y),
+        x: Math.round(at(sign, slide).x),
+        y: Math.round(under ? mid.y + 10 : at(sign, slide).y),
       });
       if (bound) a.boundElements = [...(a.boundElements ?? []), { id: t.id, type: 'text' }];
       edgeLayer.push(t);

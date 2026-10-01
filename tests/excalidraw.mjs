@@ -3778,15 +3778,50 @@ test('an arrow through free text is a warning naming both; bound text and a labe
   down.groupIds = ['legend'];
   eq(validator.validateScene(scene).info.textCrossings, 0, 'nor a grouped arrow');
 
-  // The starter draws no arrow through text; aws-data-platform keeps one, its
-  // straight sqs -> dlq edge across the name of the scope dlq sits in.
+  // Neither committed example draws an arrow through text (#319).
   const names = (name) => {
     const built = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.excalidraw`), 'utf8'));
     const byId = new Map(built.elements.map((el) => [el.id, el]));
     return validator.textCrossings(built.elements).map((c) => byId.get(c.text).text).join(' | ');
   };
   eq(names('starter-architecture'), '', 'starter-architecture');
-  eq(names('aws-data-platform'), 'Error handling & recovery', 'aws-data-platform');
+  eq(names('aws-data-platform'), '', 'aws-data-platform');
+});
+
+// aws-data-platform's straight sqs -> dlq edge ran through the error lane's
+// name, the one warning validate gave the committed example, and its label
+// sat on the AppFlow icon (#319).
+test('the AWS example\'s dead-letter edge misses the error lane\'s name, and its label sits on nothing (#319)', () => {
+  const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8'));
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  eq(validator.validateScene(scene).warnings.join(' | '), '', 'no warning at all');
+  const texts = scene.elements.filter((el) => el.type === 'text' && !el.containerId);
+  const lane = texts.find((t) => t.text === 'Error handling & recovery');
+  const band = texts.find((t) => t.text.startsWith('Cross-cutting'));
+  eq(lane.x, band.x, 'the error lane lines up with the band below it');
+  const label = texts.find((t) => t.text === '5 failed receives');
+  const overlaps = (o) => label.x < o.x + o.width && o.x < label.x + label.width && label.y < o.y + o.height && o.y < label.y + label.height;
+  const on = scene.elements.filter((el) => el !== label && ['text', 'image', 'rectangle'].includes(el.type)
+    && !(el.type === 'rectangle' && el.strokeStyle === 'dashed') && overlaps(el));
+  eq(on.map((el) => el.text ?? el.type).join(), '', 'the label overlaps no icon, box or text');
+});
+
+// "avoid" took its lanes from the whole drawing, so a band as wide as it -
+// the example's cross-cutting row - left only the two outside it, and an edge
+// boxed in by scopes kept its crossing (#319).
+test('route "avoid" finds a way round when a full-width band leaves no lane on the whole drawing (#319)', () => {
+  const col = (c, ids, parent) => ids.map((id, row) => ({ id, label: id.toUpperCase(), col: c, row, ...(parent && { parent }) }));
+  const spec = {
+    boundaries: [{ id: 'left', label: 'Left' }, { id: 'right', label: 'Right' }, { id: 'band', label: 'Cross-cutting' }],
+    nodes: [...col(0, ['l0', 'l1', 'l2'], 'left'), ...col(1, ['a', 'm', 'b']), ...col(2, ['r0', 'r1', 'r2'], 'right'),
+      { id: 'o0', label: 'O0', col: 0, row: 3, parent: 'band' }, { id: 'o2', label: 'O2', col: 2, row: 3, parent: 'band' }],
+    edges: [{ from: 'a', to: 'b', route: 'avoid' }],
+  };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  eq(built.report.crossings.join(), '', 'a -> b goes round M');
+  const a = built.scene.elements.find((el) => el.type === 'arrow');
+  assert(a.points.length > 2 && a.fixedSegments?.length, 'a detour, on fixed segments');
+  eq(validator.validateScene(built.scene).warnings.filter((w) => w.includes('crosses')).join(), '', 'validate agrees');
 });
 
 test('a connector drawn through a node it does not connect is a warning that names both (#125)', () => {
