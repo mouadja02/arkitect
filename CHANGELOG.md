@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.2.1] — 2026-10-01
+
 ### Added
 
 - `doctor` opens with the version, root and platform, and says which style each engine draws with: the house style, an applied override, or an ignored one with the fields at fault, never their values (#309).
