@@ -52,12 +52,13 @@ now.
 The plugin also carries two hooks:
 
 - `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
-  adds one sentence saying a style carries over only through
-  `/learn-*-style`, and sends a reply that promises to remember it back once
-  (#265).
+  adds one sentence saying a style carries over only through `/learn-*-style`,
+  which records it, and `/apply-*-style`, which changes the build. It sends a
+  reply that promises to remember the style back once (#265, #331).
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
-  is missing one of its headings, or when its Render section describes a
-  picture and no PNG was opened (#215).
+  is missing one of its headings, when no PNG was opened and its Render
+  section describes a picture or doesn't say nothing saw it, or when it calls
+  a validate warning intentional (#215, #328, #330).
 
 Neither reads anything but the prompt, the last reply and, after a build, the
 session's tool calls. Neither blocks a prompt.
