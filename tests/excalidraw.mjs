@@ -1106,6 +1106,32 @@ test('a shape labelled only with a product name carries a replace node that draw
   assert(v.ok, `arrows stay bound: ${v.errors.join('; ')}`);
 });
 
+// The agent read the replace node as done and reported a mark the scene did
+// not have (#326). Validate, read last, now names the plain shape.
+test('validate warns on a plain shape named for one product with a bundled mark, and not on its icon (#326)', () => {
+  const spec = { nodes: [
+    { id: 'web', kind: 'box', label: 'Web shop', col: 0, row: 0 },
+    { id: 'api', kind: 'box', label: 'Orders API', col: 1, row: 0 },
+    { id: 'db', kind: 'cylinder', label: 'PostgreSQL', col: 2, row: 0 },
+    { id: 'cache', kind: 'box', label: 'Session cache\n(Redis)', col: 3, row: 0 },
+    { id: 'src', kind: 'box', label: 'Sources: PostgreSQL, MySQL', col: 0, row: 1, width: 260 },
+    { id: 'n', kind: 'note', label: 'Assumption: PostgreSQL 15', col: 2, row: 1 },
+  ], edges: [{ from: 'web', to: 'api' }, { from: 'api', to: 'db' }, { from: 'api', to: 'cache' }] };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  const warned = validator.validateScene(built.scene).warnings.filter((w) => w.includes('labels a plain shape'));
+  const replaced = built.report.namesAProduct.filter((x) => x.replace);
+  eq(warned.length, 2, `the cylinder and the box named for one product: ${warned.join(' | ')}`);
+  for (const x of replaced) assert(warned.some((w) => w.includes(`"icon": "${x.icon}"`)), `names ${x.icon}`);
+  assert(!warned.join().includes('PostgreSQL'), 'prints the ref, never the label');
+
+  const fixed = builder.buildDiagram({ ...spec, nodes: spec.nodes.map((n) => replaced.find((x) => x.node === n.id)?.replace ?? n) }, { seed: 1 });
+  eq(validator.validateScene(fixed.scene).warnings.filter((w) => w.includes('labels a plain shape')).length, 0, 'pasting each replace clears it');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.excalidraw'))) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', f), 'utf8'));
+    eq(validator.validateScene(scene).warnings.filter((w) => w.includes('labels a plain shape')).join(), '', `${f}: icons, boundaries and notes`);
+  }
+});
+
 // The learning case's judge is told the fixture's style, since it never sees
 // the scene; the fixture is the starter template, so the two must agree.
 test('the learning-skill eval criteria describe the starter template as it is drawn', () => {

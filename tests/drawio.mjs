@@ -3373,6 +3373,32 @@ test('the numbered-flow-one-sequence eval case passes one path and fails a numbe
   assert(!sequence.test(drawn([{ from: 'web', to: 'gateway', label: '0. Start' }, ...path])), 'a step 0 fails');
 });
 
+// Run 0 of the 2.2.1 batch never opened the pattern and numbered the ways in
+// 1 to 3; nothing it ran said so (#329).
+test('the build notes and validate warns on entry points numbered as steps, and pass one numbered path (#329)', () => {
+  const nodes = ['web', 'mobile', 'partner', 'gateway', 'handler', 'table']
+    .map((id, i) => ({ id, kind: 'box', label: id, col: i < 3 ? 0 : i - 2, row: i < 3 ? i : 1 }));
+  const path = [{ from: 'gateway', to: 'handler', label: '4. Validate' }, { from: 'handler', to: 'table', label: '5. Write' }];
+  const check = (edges) => {
+    const { xml, report } = builder.buildDiagram({ nodes, edges });
+    const file = join(TMP, 'numbered-entries.drawio');
+    writeFileSync(file, xml);
+    return { notes: report.notes.filter((n) => n.includes('numbered as steps')), warnings: validator.validateFile(file).warnings.filter((w) => w.includes('numbered as steps')) };
+  };
+  const bad = check([{ from: 'web', to: 'gateway', label: '1. Order' }, { from: 'mobile', to: 'gateway', label: '2. Order' },
+    { from: 'partner', to: 'gateway', label: '3) Order' }, ...path]);
+  eq(bad.notes.join(), 'edges[0], edges[1], edges[2] into "gateway" are numbered as steps: entry points are not steps: letter them (A., B.) '
+    + 'or leave them unnumbered, and number the path from 1 after they meet', 'the build names the edges and the rule');
+  assert(bad.warnings.length === 1 && /edges "e1", "e2", "e3" into "gateway"/.test(bad.warnings[0]), bad.warnings.join());
+
+  const renumbered = path.map((e, i) => ({ ...e, label: `${i + 1}. ${e.label.slice(3)}` }));
+  for (const edges of [[{ from: 'web', to: 'gateway', label: 'A. Order' }, { from: 'mobile', to: 'gateway', label: 'B. Order' }, ...renumbered],
+    [{ from: 'web', to: 'gateway' }, { from: 'mobile', to: 'gateway', label: 'Order' }, ...renumbered],
+    [{ from: 'web', to: 'gateway', label: '1. Order' }, ...path]]) {
+    eq(JSON.stringify(check(edges)), '{"notes":[],"warnings":[]}', JSON.stringify(edges.map((e) => e.label ?? '')));
+  }
+});
+
 test('the committed Draw.io templates print no note (#244, #245)', () => {
   for (const name of ['starter-architecture', 'as-is-to-be']) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', `${name}.drawio`)).notes.join('; '), '', name);
