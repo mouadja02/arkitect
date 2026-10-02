@@ -1822,7 +1822,8 @@ test('the style-question hook speaks only for a prompt about a diagram\'s style,
     assert(promisesToRemember(said), `a promise: ${said}`);
   }
   for (const said of ['Nice preferences — rounded + dashed gives it a cleaner, more approachable look!',
-    'To keep that style for later diagrams, run /learn-drawio-style.',
+    'Run /learn-drawio-style to record that style, then /apply-drawio-style to have later builds draw with it.',
+    '/learn-excalidraw-style records what your diagrams do; it changes no build by itself.',
     'The diagram uses rounded corners and the arrow is dashed — exactly the style you like.']) {
     assert(!promisesToRemember(said), `no promise: ${said}`);
   }
@@ -1899,7 +1900,7 @@ test('the report check sends back a report missing headings, or one describing a
       use('Read', { file_path: 'o.svg' })].join('\n'));
     const sent = JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }));
     eq(sent.decision, 'block', 'sent back');
-    assert(/Render says "clean"/.test(sent.reason), sent.reason);
+    assert(/Render says "Layout"/.test(sent.reason), sent.reason);
     eq(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad, stop_hook_active: true }), null, 'once');
     writeFileSync(transcript, use('Read', { file_path: 'o.drawio' }));
     eq(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }), null, 'no build, no check');
@@ -1943,6 +1944,53 @@ test('the report check counts a build by the installed, npx or script command, u
     assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent?.reason), 'the installed build is checked like the script one');
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// From the 2.2.1 batch: a promise worded past the pattern, and the rewrite
+// that said learning applies a style (#331).
+test('the style-question hook sends back "now I know your style" and a claim that learning applies it (#331)', () => {
+  const { promisesToRemember, RULE, SEND_BACK } = styleHook;
+  for (const said of ['Now I know your style preference!', 'Noted your preference for rounded corners.',
+    "I've noted that you like dashed arrows.",
+    'You can run `/learn-drawio-style` to have it applied to new Draw.io diagrams.',
+    "If you'd like to make this automatic for future diagrams, you can run `/learn-drawio-style` or `/learn-excalidraw-style` to have Claude Code remember your preferred approach."]) {
+    assert(promisesToRemember(said), `sent back: ${said}`);
+  }
+  for (const text of [RULE, SEND_BACK]) {
+    assert(/learn-drawio-style or \/learn-excalidraw-style records/.test(text) && /apply-drawio-style or \/apply-excalidraw-style/.test(text),
+      `says learning records and applying changes the build: ${text}`);
+    assert(!/how a style is kept/.test(text), 'no longer calls learning how a style is kept');
+  }
+});
+
+// From the 2.2.1 batch: a Render section with no picture word in the list,
+// and warnings named and then explained away (#328, #330).
+test('the report check sends back an unseen render described in other words, and a warning called intentional (#328, #330)', () => {
+  const { problems, describesThePicture, excusesAWarning } = reportHook;
+  const report = (validation, render) => ['**File** `./eval-output/pipeline.drawio`', '**Assumptions** none', '**Icons** none',
+    `**Validation** ${validation}`, `**Render** ${render}`, '**Deviations** none'].join('\n');
+  const unseen = 'SVG rendered successfully (900×277px). PNG render blocked by sandbox (browser socket denied). Layout from SVG '
+    + 'shows horizontal flow: Web shop (left) → Orders API (center) → PostgreSQL (right). All elements properly positioned, '
+    + 'labels adjacent to arrows.';
+  assert(describesThePicture(unseen), 'the #328 Render section is a claim');
+  eq(problems(report('PASS, no warnings', unseen), { viewed: false }).length, 1, 'sent back once');
+  eq(problems(report('PASS, no warnings', unseen), { viewed: true }).length, 0, 'unless a PNG was opened');
+  assert(/doesn't say so/.test(problems(report('PASS', 'SVG written to o.svg.'), { viewed: false })[0]), 'a render nobody saw must say so');
+  eq(problems(report('PASS', "SVG written to o.svg; I haven't opened a picture of it."), { viewed: false }).length, 0, 'says so');
+  eq(problems(report('PASS', 'PNG render failed: no browser.'), { viewed: false }).length, 0, 'nothing rendered to see');
+
+  const named = 'PASS with 2 warnings: dlq overlaps worker; retention-note lies across the acct-boundary border.';
+  for (const [excuse, said] of [['not errors', "Both warnings are direct results of the spec's grid coordinates and represent the agreed layout—not errors."],
+    ['intentional', 'These reflect the exact spec layout you provided; the overlaps are intentional per your coordinates.'],
+    ['by spec', 'Both warnings are by spec design.']]) {
+    eq(excusesAWarning(report(`${named} ${said}`, 'failed, not seen.')), excuse, said);
+    assert(problems(report(named, 'failed, not seen.').replace('**Deviations** none', `**Deviations** ${said}`), { viewed: false })
+      .some((p) => p.includes(`"${excuse}"`)), `an excuse outside Validation: ${said}`);
+  }
+  for (const validation of [`${named} Both are defects still in the drawing; the spec was locked, so neither is fixed.`,
+    'PASS, no warnings. The dashed edges are intentional.', 'PASS (0 errors, 0 warnings).']) {
+    eq(excusesAWarning(report(validation, 'failed, not seen.')), null, validation);
   }
 });
 

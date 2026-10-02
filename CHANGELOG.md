@@ -11,6 +11,12 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- The report check sends back a Render section that describes an unseen render in words its list lacked ("layout", "positioned", "shows … flow"), and one that doesn't say nothing saw the picture or that the render failed (#328).
+- The report check sends back a report that names validate's warnings and then calls them intentional, by design, expected or not errors (#330).
+- The style-question hook sends back "now I know your style" and "noted your preference", and a reply saying `/learn-*-style` applies a style. Its rule and send-back say learning records and `/apply-*-style` changes the build (#331).
+
 ## [2.2.1] — 2026-10-01
 
 ### Added
