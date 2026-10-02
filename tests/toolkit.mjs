@@ -1947,6 +1947,43 @@ test('the report check counts a build by the installed, npx or script command, u
   }
 });
 
+// Asked to build a spec into a diagram file, the agent loaded no skill and
+// wrote its own builder (#327). A prompt naming a diagram file or a spec gets
+// one line naming the skill; any other prompt gets nothing.
+const routeHook = await import(pathToFileURL(join(ROOT, 'hooks', 'build-route.mjs')).href);
+test('a prompt naming a diagram file or spec is told which skill to load; any other prompt gets nothing (#327)', () => {
+  const prompts = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.UserPromptSubmit[0].hooks;
+  eq(prompts.map((h) => h.command).join(' | '), 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs" | node "${CLAUDE_PLUGIN_ROOT}/hooks/build-route.mjs"', 'a second prompt hook');
+  const { routeFor } = routeHook;
+  const promptOf = (engine, name) => readFileSync(join(ROOT, 'evals', engine, name, 'case.yaml'), 'utf8')
+    .replace(/\r\n/g, '\n').match(/prompt: \|\n([\s\S]*?)\n\n/)[1];
+  const skill = (text) => text?.match(/the (arkitect-\w+) skill/)?.[1] ?? null;
+  eq(skill(routeFor(promptOf('excalidraw', 'names-a-product-box'))), 'arkitect-excalidraw', 'the #327 prompt');
+  eq(skill(routeFor(promptOf('drawio', 'report-names-every-warning'))), 'arkitect-drawio', 'the 2.2.0 control prompt');
+  for (const engine of ['drawio', 'excalidraw']) {
+    for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+      if (!existsSync(join(ROOT, 'evals', engine, name, 'case.yaml'))) continue;
+      const prompt = promptOf(engine, name);
+      const said = routeFor(prompt);
+      if (styleHook.ruleFor(prompt)) eq(said, null, `${engine}/${name}: a style question gets the style rule instead`);
+      else if (/\.(drawio|excalidraw)\b/.test(prompt)) assert(said?.includes(`arkitect-${engine}`), `${engine}/${name}: ${said}`);
+      else eq(said, null, `${engine}/${name} names no file`);
+    }
+  }
+  assert(/arkitect-drawio or arkitect-excalidraw skill/.test(routeFor('Build specs/a.spec.json and validate it.')), 'a spec alone names both');
+  for (const prompt of ['Draw our AWS pipeline', 'What is a spec?', '/learn-drawio-style docs/a.drawio', 'Fix the bug in parser.json']) {
+    eq(routeFor(prompt), null, prompt);
+  }
+  const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'build-route.mjs')], { input, encoding: 'utf8' });
+  const said = run(JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'Build a.spec.json into out/a.excalidraw' }));
+  eq([said.status, skill(said.stdout)].join('|'), '0|arkitect-excalidraw', 'printed for Claude Code to add');
+  for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'Stop', last_assistant_message: 'a.drawio' }),
+    JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'Draw our AWS pipeline' })]) {
+    const quiet = run(input);
+    eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${JSON.stringify(input)}`);
+  }
+});
+
 // From the 2.2.1 batch: a promise worded past the pattern, and the rewrite
 // that said learning applies a style (#331).
 test('the style-question hook sends back "now I know your style" and a claim that learning applies it (#331)', () => {

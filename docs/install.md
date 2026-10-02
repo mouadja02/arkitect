@@ -49,19 +49,22 @@ now.
 | `learn-drawio-style`, `learn-excalidraw-style` | only when you type the command |
 | `apply-drawio-style`, `apply-excalidraw-style` | only when you type the command |
 
-The plugin also carries two hooks:
+The plugin also carries three hooks:
 
 - `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
   adds one sentence saying a style carries over only through `/learn-*-style`,
   which records it, and `/apply-*-style`, which changes the build. It sends a
   reply that promises to remember the style back once (#265, #331).
+- `hooks/build-route.mjs`: when a prompt names a `.drawio` or `.excalidraw`
+  file or a `*.spec.json`, it adds one sentence naming the skill to load
+  first (#327).
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
   a validate warning intentional (#215, #328, #330).
 
-Neither reads anything but the prompt, the last reply and, after a build, the
-session's tool calls. Neither blocks a prompt.
+None reads anything but the prompt, the last reply and, after a build, the
+session's tool calls. None blocks a prompt.
 
 ## npm
 

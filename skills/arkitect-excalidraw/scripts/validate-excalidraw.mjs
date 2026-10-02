@@ -15,6 +15,8 @@ import {
   elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
   parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
+import { catalog, unattended } from './find-icon.mjs';
+import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 
 const MAX_COORD = 200000;
 
@@ -115,7 +117,7 @@ export function shapeErrors(elements, files) {
   return out;
 }
 
-export function validateScene(scene, { path = '<scene>' } = {}) {
+export function validateScene(scene, { path = '<scene>', products = true } = {}) {
   const errors = [];
   const warnings = [];
   const info = {};
@@ -351,6 +353,16 @@ export function validateScene(scene, { path = '<scene>' } = {}) {
       + 'move one end along its side, or rebuild from the spec, which spreads ends that share a side');
   }
 
+  // The build lists such a shape under namesAProduct with a node to paste
+  // over it, and an agent read that as done and reported a mark the file did
+  // not have (#326). Here it is a warning, the last thing read before the
+  // report. Only the mark's ref is printed, never the label.
+  const named = products ? plainProducts(live) : [];
+  for (const p of named.slice(0, 10)) {
+    warnings.push(`text "${p.text}" labels a plain shape, but its product has a bundled mark, ${p.icon}; `
+      + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
+  }
+
   // ------------------------------------------------------------ house style
 
   const offPalette = new Set();
@@ -435,6 +447,46 @@ export function connectorCrossings(elements) {
     }
   }
   return found;
+}
+
+// Plain shapes whose label names a product with a bundled mark: the text
+// bound to a rectangle, ellipse or diamond, or the free text of a group drawn
+// from such shapes and lines (a cylinder). A group with an image is an icon and
+// its text a caption; a shape around another shape is a boundary. The verdict
+// is the build's own namesAProduct one (#240).
+export function plainProducts(elements) {
+  const live = elements.filter((el) => !el.isDeleted);
+  const byId = new Map(live.map((el) => [el.id, el]));
+  const PLAIN = new Set(['rectangle', 'ellipse', 'diamond']);
+  const outer = (el) => (el.groupIds ?? []).at(-1);
+  const members = new Map();
+  for (const el of live) if (outer(el)) members.set(outer(el), [...(members.get(outer(el)) ?? []), el]);
+  const encloses = (box) => live.some((o) => o !== box && PLAIN.has(o.type) && !o.containerId && o.x >= box.x && o.y >= box.y
+    && o.x + o.width <= box.x + box.width && o.y + o.height <= box.y + box.height && !(o.groupIds ?? []).includes(outer(box)));
+  const labels = [];
+  for (const el of live) {
+    // A note is prose, which the build never asks either (#240).
+    if (el.type !== 'text' || !el.text || el.text.split('\n').length > 3) continue;
+    const container = el.containerId && byId.get(el.containerId);
+    if (container) {
+      if (PLAIN.has(container.type) && !outer(container) && !encloses(container)) labels.push(el);
+    } else if (outer(el)) {
+      // A cylinder is one flat group of three pieces and its name. A library
+      // icon nests groups and has more; a boundary's rectangle holds nodes.
+      const group = members.get(outer(el));
+      const shapes = group.filter((m) => m.type !== 'text');
+      if (group.length - shapes.length === 1 && shapes.length <= 3 && shapes.some((m) => PLAIN.has(m.type))
+        && group.every((m) => m.groupIds.length === el.groupIds.length)
+        && shapes.every((m) => (PLAIN.has(m.type) && !encloses(m)) || m.type === 'line')) labels.push(el);
+    }
+  }
+  if (!labels.length) return [];
+  const entries = catalog();
+  // Only a shape named for one product, as its whole label or a whole line of
+  // it, the entries the build gives a `replace`: a box listing several is the
+  // build report's to name, and a sentence that mentions one is prose.
+  return labels.flatMap((el) => namedProducts([{ id: el.id, label: el.text }], (text) => unattended(text, { entries }).entry?.ref ?? null)
+    .filter((p) => p.replace).map((p) => ({ text: el.id, icon: p.icon })));
 }
 
 // Arrows through free text: a caption, a sublabel, a boundary's name, their
@@ -527,7 +579,8 @@ export function validateLibrary(doc, { path = '<library>' } = {}) {
   items.forEach((elements, i) => {
     if (!Array.isArray(elements)) { errors.push(`item ${i} is ${kindOf(elements)}, expected a list of elements`); return; }
     if (!elements.length) { errors.push(`item ${i} has no elements`); return; }
-    const r = validateScene({ type: 'excalidraw', elements, files }, { path: `${path}#${i}` });
+    // A library item named for its product is the mark itself, not a box.
+    const r = validateScene({ type: 'excalidraw', elements, files }, { path: `${path}#${i}`, products: false });
     for (const e of r.errors) errors.push(`item ${i}: ${e}`);
     for (const w of r.warnings.filter((w) => !w.includes('is bound at neither end'))) warnings.push(`item ${i}: ${w}`);
   });

@@ -12,6 +12,7 @@ import {
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { checkXml } from './lib/xml-check.mjs';
+import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/routes.mjs';
 
 const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
@@ -156,6 +157,13 @@ export function validateFile(path, { pageIndex = null } = {}) {
         if (!ref) { dangling++; warnings.push(`${label}: edge "${c.id}" has no ${end} (floating endpoint)`); continue; }
         if (!ids.has(ref)) errors.push(`${label}: edge "${c.id}" ${end} "${ref}" does not exist`);
       }
+    }
+
+    // An edge's label is its own value or a child cell's, as the builder writes it.
+    const edgeCells = cells.filter((c) => c.edge && c.source && c.target);
+    const labelOf = (e) => e.value || cells.filter((c) => c.parent === e.id && c.vertex).map((c) => c.value).find(Boolean) || '';
+    for (const { to, edges } of numberedEntries(edgeCells.map((e) => ({ id: e.id, from: e.source, to: e.target, label: labelOf(e) })))) {
+      warnings.push(`${label}: edges ${edges.map((id) => `"${id}"`).join(', ')} into "${to}" are numbered as steps; ${ENTRY_RULE}`);
     }
 
     let embedded = 0; let remote = 0;

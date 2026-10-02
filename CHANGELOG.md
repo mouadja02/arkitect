@@ -11,7 +11,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- A third hook, `hooks/build-route.mjs`: a prompt naming a `.drawio` or `.excalidraw` file or a `*.spec.json` gets one sentence naming the Arkitect skill to load before building, editing or validating it. An agent asked to build a spec loaded none and wrote its own builder (#327).
+
 ### Fixed
+
+- Excalidraw `validate` warns on a plain shape named for one product with a bundled mark, giving the icon to draw. The build's `namesAProduct` entry was read as done and the mark reported as drawn (#326).
+- A Draw.io build notes, and `validate` warns on, two or more entry points into one node numbered as steps (#329).
 
 - The report check sends back a Render section that describes an unseen render in words its list lacked ("layout", "positioned", "shows … flow"), and one that doesn't say nothing saw the picture or that the render failed (#328).
 - The report check sends back a report that names validate's warnings and then calls them intentional, by design, expected or not errors (#330).

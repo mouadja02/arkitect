@@ -37,6 +37,7 @@ import {
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
 import { namedProducts } from './lib/named-products.mjs';
+import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
 import { GENERIC_VENDOR } from './lib/generic-words.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
@@ -669,6 +670,11 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         push(`<mxCell id="${esc(id)}-lbl" value="${labelValue(e.label)}" style="${STYLE.edgeLabel(color)}" vertex="1" connectable="0" parent="${esc(id)}">`
           + `<mxGeometry x="${e.labelPos ?? plan?.labelX ?? -0.1}" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry></mxCell>`);
       }
+    }
+
+    const specEdges = (spec.edges ?? []).map((e, i) => ({ id: `${at}edges[${i}]`, from: e.from, to: e.to, label: e.label }));
+    for (const { to, edges } of numberedEntries(specEdges)) {
+      report.notes.push(`${edges.join(', ')} into "${to}" are numbered as steps: ${ENTRY_RULE}`);
     }
 
     // Legend: the reference corpus documents line semantics explicitly, so any
