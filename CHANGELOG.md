@@ -19,6 +19,7 @@ separate file, no naming scheme, no required format beyond that.
 
 - Excalidraw `validate` warns on a plain shape named for one product with a bundled mark, giving the icon to draw. The build's `namesAProduct` entry was read as done and the mark reported as drawn (#326).
 - A Draw.io build notes, and `validate` warns on, two or more entry points into one node numbered as steps (#329).
+- The Excalidraw learning eval case checks the scene's colours and a claim to have learned by regex, and asks its judge only about that claim. It failed accurate descriptions 3 votes of 3 (#332).
 
 - The report check sends back a Render section that describes an unseen render in words its list lacked ("layout", "positioned", "shows … flow"), and one that doesn't say nothing saw the picture or that the render failed (#328).
 - The report check sends back a report that names validate's warnings and then calls them intentional, by design, expected or not errors (#330).

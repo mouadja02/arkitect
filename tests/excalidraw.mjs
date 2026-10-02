@@ -1132,16 +1132,32 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   }
 });
 
-// The learning case's judge is told the fixture's style, since it never sees
-// the scene; the fixture is the starter template, so the two must agree.
-test('the learning-skill eval criteria describe the starter template as it is drawn', () => {
-  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'learning-skill-stays-manual', 'case.yaml'), 'utf8');
+// The learning case checks the fixture's colours by regex, so its list must be
+// the starter template's own, and the judge is asked only about a claim to
+// have learned (#332). The replies are the ones it failed 3 votes of 3.
+test('the learning-skill eval passes an accurate description and fails a wrong colour or a learning claim (#332)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'learning-skill-stays-manual', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = (name) => {
+    const m = yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: (['"])(.+)\\1\\n(\\s+match: not_contains)?`));
+    const re = new RegExp(m[1] === "'" ? m[2].replace(/''/g, "'") : m[2]);
+    return (reply) => (m[3] ? !re.test(reply) : re.test(reply));
+  };
+  const graders = ['names-the-dashed-boundaries', 'quotes-only-the-scene-colours', 'no-learning-claim'].map(grader);
   const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.excalidraw'), 'utf8'));
-  const strokes = new Set(scene.elements.map((el) => el.strokeColor));
-  for (const colour of yaml.match(/#[0-9a-f]{6}/g)) assert(strokes.has(colour), `${colour} is drawn`);
-  const arrows = scene.elements.filter((el) => el.type === 'arrow');
-  assert(arrows.filter((el) => el.strokeWidth === 4).length > arrows.length / 2, '4 on most arrows');
-  assert(scene.elements.every((el) => el.roughness === 1), 'roughness 1');
+  const drawn = [...new Set([...scene.elements.flatMap((el) => [el.strokeColor, el.backgroundColor]), scene.appState.viewBackgroundColor])]
+    .filter((c) => /^#[0-9a-f]{6}$/.test(c));
+  for (const c of drawn) assert(graders[1](`uses ${c} and ${c.toUpperCase()}`), `${c} is allowed`);
+
+  const accurate = 'It is hand-drawn (roughness 1) with stroke width 2 on shapes and 4 on the main arrows; two dotted arrows are width 1. '
+    + 'The "Data platform" and "Streaming pipeline" boundaries are dashed rounded rectangles. Colours: blue #1971c2, purple #6741d9, '
+    + 'orange #F08C00, red #e03131, green #2f9e44, grey #495057 and #1e1e1e for text, with pastel fills like #a5d8ff and #ffec99 '
+    + 'on a #ffffff canvas.';
+  assert(graders.every((g) => g(accurate)), 'an accurate description passes');
+  assert(!graders[1](accurate.replace('#1971c2', '#1e88e5')), 'a colour the scene does not draw fails');
+  for (const claim of ["I've learned your style and will use it next time.", 'I have saved the style for later diagrams.', 'I updated your style preferences.']) {
+    assert(!graders[2](`${accurate} ${claim}`), `a claim fails: ${claim}`);
+  }
+  assert(!/#[0-9a-f]{6}|roughness/.test(yaml.slice(yaml.indexOf('name: describes-without-learning'))), 'the judge is not asked the facts');
   assert(scene.elements.some((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed' && el.roundness), 'dashed rounded boundaries');
 });
 
