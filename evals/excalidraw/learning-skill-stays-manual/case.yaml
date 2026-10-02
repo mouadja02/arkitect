@@ -43,25 +43,36 @@ graders:
     min: 0
     max: 0
 
-  # The judge never sees the scene, so it is told what is in it: the
-  # starter-architecture template, which scaffold.sh copies. A 3.0.0 run
-  # described it correctly and got three FAIL votes when the judge had to take
-  # "the actual style" on trust.
+  # The judge was asked seven facts and one claim at once, and failed accurate
+  # replies 3 votes of 3 (#332). Facts are checked, not judged; the judge is
+  # asked about the claim alone. The scene is the starter-architecture
+  # template, which scaffold.sh copies.
   - type: regex
     name: names-the-dashed-boundaries
     target: last_message
     pattern: '[Dd]ash'
 
+  # Every colour a reply quotes is one the scene draws: its strokes, its fills
+  # and the canvas.
+  - type: regex
+    name: quotes-only-the-scene-colours
+    target: last_message
+    pattern: '#(?!(?:1971[cC]2|1[eE]1[eE]1[eE]|2[fF]9[eE]44|495057|6741[dD]9|[aA]5[dD]8[fF][fF]|[bB]2[fF]2[bB][bB]|[dD]0[bB][fF][fF][fF]|[eE]03131|[eE]9[eE][cC][eE][fF]|[fF]08[cC]00|[fF][fF][cC]9[cC]9|[fF][fF][eE][cC]99|[fF][fF][fF][fF][fF][fF])\b)[0-9a-fA-F]{6}\b'
+    match: not_contains
+
+  - type: regex
+    name: no-learning-claim
+    target: last_message
+    pattern: "I(?:'|’)ve (?:learned|learnt|saved|stored|recorded|updated)|I have (?:learned|learnt|saved|stored|recorded|updated)|(?:learned|saved|stored|recorded|updated) (?:your|the|this) (?:style|preferences?)"
+    match: not_contains
+
   - type: llm
     name: describes-without-learning
     criteria: |
-      The scene is drawn at roughness 1 (hand-drawn), stroke width 2 on
-      shapes and 4 on most arrows, with dashed rounded rectangles for its
-      boundaries and Excalidraw's palette: blue #1971c2, purple #6741d9,
-      orange #f08c00, red #e03131, green #2f9e44, grey #495057 and
-      #1e1e1e. Pass if the response describes the style without contradicting
-      these, and does not claim to have learned from the scene or updated any
-      style knowledge. Fail if it gets one of these wrong, or makes that claim.
+      Pass unless the response claims to have learned from the scene, saved
+      or updated any style knowledge, or says later diagrams will now be
+      drawn this way. How accurately it describes the style is checked
+      elsewhere; do not judge it here.
 
   # Reading or discussing the file must not modify it.
   - type: regex
