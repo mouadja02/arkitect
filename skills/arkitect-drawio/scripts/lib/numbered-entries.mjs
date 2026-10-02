@@ -8,7 +8,9 @@
 // into the same target, each starting with a step number, are listed; one
 // numbered entry is just the first step of its path.
 
-const STEP = /^\s*\d+\s*[.):]/;
+// "1. Order", "2) Order", "Step 3", and a bare "1" on each way in (the 2.2.1
+// follow-up batch). "100 req/s" is a rate, not a step.
+const STEP = /^\s*(?:step\s*)?\(?\d{1,2}\s*(?:[.):]|$)|^\s*step\s*\d/i;
 const plain = (label) => String(label ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
 
 export const ENTRY_RULE = 'entry points are not steps: letter them (A., B.) or leave them unnumbered, '

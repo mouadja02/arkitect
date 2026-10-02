@@ -32,6 +32,8 @@ const PROMISE = new RegExp([
   /\bfor (any |all |your )?(future|later|upcoming|next) (diagrams?|work|drawings?)\b/,
   // "Now I know your style preference!" went through with no send-back (#331).
   /\bnow I know\b|\bI['’]ve (noted|recorded|saved|stored)\b|\bnoted\b[^.!?\n]{0,40}\b(style|preferences?)\b/,
+  // "Got it — I'll apply that style when creating or editing your diagrams."
+  /\bI['’]ll (apply|use|follow|match|carry|stick (to|with))\b[^.!?\n]{0,60}\b(style|preferences?|conventions?|that way|the same)\b/,
 ].map((r) => r.source).join('|'), 'i');
 const LEARN = /\/(arkitect:)?learn-(drawio|excalidraw)-style\b/i;
 const APPLY = /\/(arkitect:)?apply-(drawio|excalidraw)-style\b/i;

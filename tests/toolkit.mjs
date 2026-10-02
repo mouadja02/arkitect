@@ -1990,6 +1990,7 @@ test('the style-question hook sends back "now I know your style" and a claim tha
   const { promisesToRemember, RULE, SEND_BACK } = styleHook;
   for (const said of ['Now I know your style preference!', 'Noted your preference for rounded corners.',
     "I've noted that you like dashed arrows.",
+    "So your diagram style uses dashed boundaries and orthogonal (elbow) connectors throughout. Got it — I'll apply that style when creating or editing your diagrams.",
     'You can run `/learn-drawio-style` to have it applied to new Draw.io diagrams.',
     "If you'd like to make this automatic for future diagrams, you can run `/learn-drawio-style` or `/learn-excalidraw-style` to have Claude Code remember your preferred approach."]) {
     assert(promisesToRemember(said), `sent back: ${said}`);

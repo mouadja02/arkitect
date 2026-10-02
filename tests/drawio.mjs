@@ -3329,7 +3329,7 @@ test('the report-names-every-warning eval case warns as its graders expect, and 
 });
 
 // The edit case's report is checked by pattern since a judge failed accurate
-// reports; the replies below are from the bc69020, 2ab2b1d and a1bc464 runs.
+// reports; the replies below are from the bc69020, 2ab2b1d, a1bc464 and def24b8 runs.
 test('the edit-existing eval case passes the recorded reports and fails one that took the house style', () => {
   const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
   const pattern = (name) => new RegExp(yaml.match(new RegExp(`name: ${name}\\n\\s+target: last_message\\n\\s+pattern: '([^']+)'`))[1]);
@@ -3339,6 +3339,7 @@ test('the edit-existing eval case passes the recorded reports and fails one that
     '**Validation** · ✓ PASS — 4 vertices, 3 edges, 0 crossings. **Deviations** · None; followed the existing diagram\'s styling exactly. Redis Cache',
     '## Validation\n✓ PASS — 4 vertices, 3 edges\n## Deviations\nNone — edited file maintains exact match with original styling. The Redis Cache is now wired in.',
     'Added a Redis Cache node. The new component matches the existing styling. The diagram validates successfully with 4 vertices and 3 edges.',
+    '**Validation**  \n✓ Passes: 4 vertices (Web App, Redis Cache, Checkout API, Orders DB), 3 edges. **Deviations** None — follows the exact styling of existing components.',
   ]) assert(graders.every((g) => g.test(reply)), `passes: ${reply.slice(0, 60)}`);
   assert(!pattern('reports-the-validation').test('Validation failed with 1 error.'), 'a failed validation does not pass');
   const wrong = 'Added a Redis node in the house style (square corners). Validation: 2 warnings.';
@@ -3390,11 +3391,17 @@ test('the build notes and validate warns on entry points numbered as steps, and 
   eq(bad.notes.join(), 'edges[0], edges[1], edges[2] into "gateway" are numbered as steps: entry points are not steps: letter them (A., B.) '
     + 'or leave them unnumbered, and number the path from 1 after they meet', 'the build names the edges and the rule');
   assert(bad.warnings.length === 1 && /edges "e1", "e2", "e3" into "gateway"/.test(bad.warnings[0]), bad.warnings.join());
+  // The def24b8 batch put a bare "1" on each way in.
+  for (const labels of [['1', '1', '1'], ['Step 1', 'Step 2', 'Step 3'], ['(1) Order', '(2) Order', '(3) Order']]) {
+    const edges = ['web', 'mobile', 'partner'].map((from, i) => ({ from, to: 'gateway', label: labels[i] }));
+    eq(check([...edges, ...path]).warnings.length, 1, labels.join(' | '));
+  }
 
   const renumbered = path.map((e, i) => ({ ...e, label: `${i + 1}. ${e.label.slice(3)}` }));
   for (const edges of [[{ from: 'web', to: 'gateway', label: 'A. Order' }, { from: 'mobile', to: 'gateway', label: 'B. Order' }, ...renumbered],
     [{ from: 'web', to: 'gateway' }, { from: 'mobile', to: 'gateway', label: 'Order' }, ...renumbered],
-    [{ from: 'web', to: 'gateway', label: '1. Order' }, ...path]]) {
+    [{ from: 'web', to: 'gateway', label: '1. Order' }, ...path],
+    [{ from: 'web', to: 'gateway', label: '100 req/s' }, { from: 'mobile', to: 'gateway', label: '20 req/s' }, ...renumbered]]) {
     eq(JSON.stringify(check(edges)), '{"notes":[],"warnings":[]}', JSON.stringify(edges.map((e) => e.label ?? '')));
   }
 });
