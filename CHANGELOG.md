@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-10-03
+
 ### Added
 
 - A third hook, `hooks/build-route.mjs`: a prompt naming a `.drawio` or `.excalidraw` file or a `*.spec.json` gets one sentence naming the Arkitect skill to load before building, editing or validating it. An agent asked to build a spec loaded none and wrote its own builder (#327).

@@ -1,39 +1,40 @@
 # Project status
 
-Snapshot of 2026-10-01, at 2.2.1. The live record is the
+Snapshot of 2026-10-03, at 2.3.0. The live record is the
 [issue tracker](https://github.com/mouadja02/arkitect/issues) and the
 [releases](https://github.com/mouadja02/arkitect/releases); what each release
 changed is in [CHANGELOG.md](../CHANGELOG.md).
 
 ## Where it stands
 
-- **2.2.1** is on GitHub and npm.
-- **Ten issues are open.** #295 (Draw.io boundaries sized to their children)
-  changes layout and #302 (a portable report check) adds a command, so neither
-  went into a patch. #325 is the scheduled note that three pinned icon sources
-  have moved on. #326 to #332 are the eval reds below.
+- **2.3.0** is on GitHub and npm.
+- **Seven issues are open.** #295 (Draw.io boundaries sized to their
+  children) changes layout and #302 (a portable report check) adds a command.
+  #325 is the scheduled note that three pinned icon sources have moved on.
+  #339 to #342 are agent behaviour the 2.3.0 eval found on paths this release
+  didn't touch: a rebuild in place of an edit, a hosted-editor link, an
+  ignored `looksLikeBoundary` entry and a whole-file read.
 - The suite passes on Ubuntu 24.04 and 26.04, Windows and macOS, Node 20 to
-  24. The last full eval batch (17 cases, 49 runs, Haiku under test, Sonnet
-  judging, at a1bc464) scored 0.94. Nothing it failed touches what 2.2.1
-  fixed. A wrong grader was fixed; the rest is agent behaviour, filed as
-  #326 to #332. The three judge reds that repeated on a re-run were run
-  against 2.2.0 as a control: the same replies are there, so they predate it.
+  24. The full eval batch after the fixes merged (17 cases, 49 runs, Haiku
+  under test, Sonnet judging, at def24b8) scored 0.97. Its reds on #326,
+  #329 and #331 were new wordings of the same misses, fixed in #343 and
+  re-run green on the branch: names-a-product 3/3, numbered flow 3/3, the
+  Excalidraw style question 3/3.
 
-## What 2.2.1 changed
+## What 2.3.0 changed
 
-- **Excalidraw connectors.** Arrows bind only to elements the app can bind;
-  edges spread along a shared side, clear their own node's caption, and keep
-  their labels off other lines. `validate` warns when an arrow runs through
-  text. `"route": "avoid"` finds its way past a full-width band.
-- **doctor.** It exits 1 when Node or a bundled asset is broken, parses the
-  assets instead of checking they exist, and reports what each render route,
-  the local Excalidraw app, the style override and the project's adapters
-  actually need.
-- **Agents other than Claude.** `install gemini` writes `GEMINI.md`; the Codex
-  skill reads one engine guide, not all of `AGENTS.md` first; the entry
-  routes teach the compact icon search.
-- **Reports.** The report check runs after a build by `arkitect` or
-  `npx arkitect` too, and both builders name an unknown boundary `kind`.
+- **Routing.** A third hook names the skill to load when a prompt names a
+  `.drawio` or `.excalidraw` file or a spec; an agent asked to build a spec
+  had loaded none and written its own builder.
+- **Validate, read last.** Excalidraw warns on a plain shape named for one
+  product with a bundled mark; Draw.io warns on entry points numbered as
+  steps, and the build notes them.
+- **Reports.** The report check sends back a Render section describing an
+  unseen picture in other words, or not saying nothing saw it, and a
+  validate warning called intentional. The style hook catches more promises
+  and says learning records while applying changes the build.
+- **Evals.** The learning case checks facts by regex and judges one claim;
+  the names-a-product case passes either honest outcome.
 
 ## How work gets done here
 
