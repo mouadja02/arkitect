@@ -1132,6 +1132,20 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   }
 });
 
+// The names-a-product case passes either honest outcome (#326); the replies
+// are the bf67c76 batch's, all three reporting the cylinder as still plain.
+test('the names-a-product eval case passes a report of the cylinder as still plain, and leaves the claim to its judge (#326)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'names-a-product-box', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const named = new RegExp(yaml.match(/name: names-the-postgresql-mark\n\s+target: last_message\n\s+pattern: '([^']+)'/)[1]);
+  for (const reply of ['PostgreSQL (node `db`) is drawn as a plain cylinder; the bundled mark `drawio:databases/postgresql` is available but not used.',
+    'Bundled icon available but not used: `drawio:databases/postgresql` (builder suggested replacing it)',
+    '`db` node: `drawio:databases/postgresql` (Simple Icons PostgreSQL, CC0 licence, embedded in the file)']) {
+    assert(named.test(reply), reply);
+  }
+  assert(!/source: file/.test(yaml), 'no grader fails the cylinder the contract allows');
+  assert(/says the mark was drawn,\s+embedded or replaced without saying the spec was changed/.test(yaml), 'the judge fails the #326 claim');
+});
+
 // The learning case checks the fixture's colours by regex, so its list must be
 // the starter template's own, and the judge is asked only about a claim to
 // have learned (#332). The replies are the ones it failed 3 votes of 3.
