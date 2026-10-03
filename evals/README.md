@@ -22,7 +22,7 @@ evals/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
     unknown-product-placeholder/    a name with no mark gets a placeholder, not a lie
-    names-a-product-box/            a plain shape named for a bundled product gets its mark
+    names-a-product-box/            a plain shape named for a bundled product: its mark, or reported plain
     native-not-mermaid/             "for the README" still hands over a real scene
     engine-choice-is-explained/     the same request, with no engine named at all
     learning-skill-stays-manual/    same rule, other engine

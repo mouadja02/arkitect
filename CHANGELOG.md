@@ -17,10 +17,11 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
-- Excalidraw `validate` warns on a plain shape named for one product with a bundled mark, giving the icon to draw, and says to draw it unless told to build the spec unchanged. The build's `namesAProduct` entry was read as done and the mark reported as drawn (#326).
+- Excalidraw `validate` warns on a plain shape named for one product with a bundled mark, giving the icon to draw. The build's `namesAProduct` entry was read as done and the mark reported as drawn (#326).
 - A Draw.io build notes, and `validate` warns on, two or more entry points into one node numbered as steps: "1.", "2)", "(3)", "Step 1" or a bare "1" (#329).
 - The Excalidraw learning eval case checks the scene's colours and a claim to have learned by regex, and asks its judge only about that claim. It failed accurate descriptions 3 votes of 3 (#332).
 - The edit-existing eval case takes "**Validation** ✓ Passes" as a validation result.
+- The names-a-product eval case passes the mark drawn or the shape reported as still plain, as the contract allows, and its judge fails a mark claimed but not drawn. After #326 every run reported the cylinder honestly and the file-only grader failed all three (#326).
 - The report check sends back a Render section that describes an unseen render in words its list lacked ("layout", "positioned", "shows … flow"), and one that doesn't say nothing saw the picture or that the render failed (#328).
 - The report check sends back a report that names validate's warnings and then calls them intentional, by design, expected or not errors (#330).
 - The style-question hook sends back "now I know your style", "noted your preference" and "I'll apply that style", and a reply saying `/learn-*-style` applies a style. Its rule and send-back say learning records and `/apply-*-style` changes the build (#331).

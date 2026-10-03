@@ -360,8 +360,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   const named = products ? plainProducts(live) : [];
   for (const p of named.slice(0, 10)) {
     warnings.push(`text "${p.text}" labels a plain shape, but its product has a bundled mark, ${p.icon}; `
-      + `draw it: give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild. Only if you were told `
-      + 'to build the spec unchanged, report the shape as still plain');
+      + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
   }
 
   // ------------------------------------------------------------ house style

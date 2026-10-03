@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner. It needs a clone; the npm
 package doesn't carry it.
 
-On a fresh clone expect `425 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `426 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
