@@ -1044,8 +1044,8 @@ test('the licence and attribution files are present and name their sources', () 
   // The Draw.io packs carry their own generated attribution, one row per source.
   const packs = readFileSync(
     join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'libraries', 'ATTRIBUTION.md'), 'utf8');
-  for (const source of ['simple-icons@16.30.0', 'devicon@2.17.0', 'lucide-static@1.45.0',
-    '@primer/octicons@19.36.0', 'azure-v24', 'gcp-legacy']) {
+  for (const source of ['simple-icons@16.35.0', 'devicon@2.17.0', 'lucide-static@1.57.0',
+    '@primer/octicons@19.40.0', 'azure-v24', 'gcp-legacy']) {
     assert(packs.includes(source), `pack attribution does not name ${source}`);
   }
   assert(packs.includes('nominative use'), 'pack attribution must state the trademark position');

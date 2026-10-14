@@ -1,10 +1,10 @@
 # Icons
 
 A box labelled "Snowflake" is a wireframe of your system, not a diagram of it.
-Arkitect ships 6,005 marks and refuses to fake the rest.
+Arkitect ships 6,012 marks and refuses to fake the rest.
 
 ```bash
-arkitect drawio icon "bedrock"          # 4,843 marks in 18 packs
+arkitect drawio icon "bedrock"          # 4,850 marks in 18 packs
 arkitect drawio icon --list-packs       # what each pack holds, live counts
 arkitect excalidraw icon "postgres"     # native libraries, then the shared packs
 arkitect excalidraw icon --stats
@@ -14,8 +14,8 @@ arkitect excalidraw icon --stats
 
 | | Draw.io | Excalidraw |
 |---|---|---|
-| bundled | 4,843 marks across 18 packs | 1,162 native items across 36 libraries plus 4,843 shared marks |
-| coverage | AWS (311), Azure (638), Google Cloud (249), plus curated packs for data platforms, databases, AI frameworks, ML, streaming, observability, DevOps, security, GitHub, SaaS, languages and file types; agent and architecture concepts as tiles; 3,092 more brands as a catch-all | AWS (249), Azure (86), GCP (83), Google products (139), Snowflake (54), data platform (33), DevOps (29), IT logos (38), plus system-design components, forms, network topology, sticky notes |
+| bundled | 4,850 marks across 18 packs | 1,162 native items across 36 libraries plus 4,850 shared marks |
+| coverage | AWS (311), Azure (638), Google Cloud (249), plus curated packs for data platforms, databases, AI frameworks, ML, streaming, observability, DevOps, security, GitHub, SaaS, languages and file types; agent and architecture concepts as tiles; 3,099 more brands as a catch-all | AWS (249), Azure (86), GCP (83), Google products (139), Snowflake (54), data platform (33), DevOps (29), IT logos (38), plus system-design components, forms, network topology, sticky notes |
 | beyond that | Draw.io's built-in `mxgraph.aws4.*` shapes; a fetched logo | a library from the public catalogue; an icon built from a logo |
 | per-pack detail | [pack index](../skills/arkitect-drawio/references/pack-index.md) | [library credits](../skills/arkitect-excalidraw/assets/libraries/bundled/ATTRIBUTION.md) |
 
@@ -160,7 +160,7 @@ use its number.
 
 ### Shared packs
 
-When no library item is confident, the 4,843 Draw.io marks fill the gap as
+When no library item is confident, the 4,850 Draw.io marks fill the gap as
 embedded original SVG or PNG. Caption, size and connections stay editable; the
 logo's paths are not Excalidraw strokes. Pick one exactly with its Draw.io id:
 

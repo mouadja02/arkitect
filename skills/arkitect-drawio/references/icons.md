@@ -73,7 +73,7 @@ several and settles a tie between packs that ship one exact title. Lower rank wi
 | `file-types` | 35 | Document sheets badged with an extension |
 | `agents` | 33 | Agent concepts — memory, tracing, RAG, guardrail |
 | `primitives` | 43 | Generic concepts — queue, cache, load balancer |
-| `brands` | 3,092 | Every other Simple Icons mark; ranked last |
+| `brands` | 3,099 | Every other Simple Icons mark; ranked last |
 
 `node scripts/find-icon.mjs --list-packs` prints this live.
 `pack-index.md` lists what each curated pack contains, and which products are

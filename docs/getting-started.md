@@ -60,7 +60,7 @@ existing Draw.io files.
 
 ## 3. Get the icons right
 
-6,005 marks ship with Arkitect: 4,843 across 18 Draw.io packs, AWS, Azure and
+6,012 marks ship with Arkitect: 4,850 across 18 Draw.io packs, AWS, Azure and
 Google Cloud among them, and 1,162 items across 36 Excalidraw libraries.
 Search before reaching for anything else:
 

@@ -23,7 +23,7 @@ Two kinds of terms appear below, and the difference matters:
 |---|---|---|---|
 | [aws-icons-2026-07](https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/architecture-icon-release/Icon-package_07312026.5846e92413caa21490223536cc97f1269e44fa92.zip) | permission | [AWS Architecture Icons terms](https://aws.amazon.com/architecture/icons/) | 306 |
 | aws-agentcore-extras | permission | [AWS Architecture Icons terms](https://aws.amazon.com/architecture/icons/) | 5 |
-| simple-icons@16.30.0 | licence | [CC0-1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md) | 3467 |
+| simple-icons@16.35.0 | licence | [CC0-1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md) | 3474 |
 | simple-icons@15.22.0 | licence | CC0-1.0 | - |
 | devicon@2.17.0 | licence | [MIT](https://github.com/devicons/devicon/blob/master/LICENSE) | 11 |
 | asf-logos | licence | [Apache-2.0](https://www.apache.org/foundation/marks/) | 4 |
@@ -37,8 +37,8 @@ Two kinds of terms appear below, and the difference matters:
 | tilt-logo | licence | [Apache-2.0](https://github.com/tilt-dev/tilt/blob/1bcaf4181b42f0fc220b9f00473a8dbeb58474a1/LICENSE) | 1 |
 | colima-logo | licence | [MIT](https://github.com/abiosoft/colima/blob/c3a5f9184d83a197184f897a9f07eb3c01b3bc88/LICENSE) | 1 |
 | dokku-logo | licence | [MIT](https://github.com/dokku/dokku/blob/aa39920cc78726ef51252d5ac6c543c40a27983d/LICENSE) | 1 |
-| lucide-static@1.45.0 | licence | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE) | 89 |
-| @primer/octicons@19.36.0 | licence | [MIT](https://github.com/primer/octicons/blob/main/LICENSE) | 31 |
+| lucide-static@1.57.0 | licence | [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE) | 89 |
+| @primer/octicons@19.40.0 | licence | [MIT](https://github.com/primer/octicons/blob/main/LICENSE) | 31 |
 | [azure-v24](https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip) | permission | [Microsoft Azure architecture icon terms](https://learn.microsoft.com/en-us/azure/architecture/icons/) | 638 |
 | [gcp-core](https://services.google.com/fh/files/misc/core-products-icons.zip) | permission | [Google Cloud icon terms](https://cloud.google.com/icons) | 19 |
 | [gcp-category](https://services.google.com/fh/files/misc/category-icons.zip) | permission | [Google Cloud icon terms](https://cloud.google.com/icons) | 26 |
@@ -89,7 +89,7 @@ Downloaded from `https://d1.awsstatic.com/onedam/marketing-channels/website/publ
 
 The five Amazon Bedrock AgentCore feature marks Amazon published only as ~1024px PNGs and not in the icon package. Proportionally downscaled to 156px on the longest side - twice the size they are drawn at - by build-packs.mjs --downscale-png: area-averaged, nothing cropped, recoloured or reshaped.
 
-### simple-icons@16.30.0
+### simple-icons@16.35.0
 
 **Licence:** CC0-1.0 - <https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md>
 
@@ -171,11 +171,11 @@ Colima's own logo, colima.png at the root of abiosoft/colima at commit c3a5f91, 
 
 Dokku's own logo, docs/assets/dokku-logo.svg in dokku/dokku at commit aa39920, committed byte-for-byte on 2026-09-14. The project authored it and ships it in its own repository under that repository's MIT licence, and no separate logo or trademark policy governs it (#20).
 
-### lucide-static@1.45.0
+### lucide-static@1.57.0
 
 **Licence:** ISC - <https://github.com/lucide-icons/lucide/blob/main/LICENSE>
 
-### @primer/octicons@19.36.0
+### @primer/octicons@19.40.0
 
 **Licence:** MIT - <https://github.com/primer/octicons/blob/main/LICENSE>
 

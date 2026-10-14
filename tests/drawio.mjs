@@ -1965,7 +1965,7 @@ test('Teleport, Argo CD, Playwright and dlt ship from sources already pinned (#2
     ['security-identity/teleport', 'Teleport', 'devicon@2.17.0', 'icons/teleport/teleport-original.svg'],
     ['devops/argocd', 'Argo CD', 'devicon@2.17.0', 'icons/argocd/argocd-original.svg'],
     ['languages-runtimes/playwright', 'Playwright', 'devicon@2.17.0', 'icons/playwright/playwright-original.svg'],
-    ['streaming-orchestration/dlthub', 'dlt', 'simple-icons@16.30.0', 'dlthub'],
+    ['streaming-orchestration/dlthub', 'dlt', 'simple-icons@16.35.0', 'dlthub'],
   ]) {
     const r = byId.get(id);
     assert(r, `${id} does not ship`);

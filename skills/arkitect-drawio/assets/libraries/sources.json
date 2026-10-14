@@ -22,12 +22,12 @@
     "simple-icons": {
       "type": "npm",
       "package": "simple-icons",
-      "version": "16.30.0",
+      "version": "16.35.0",
       "terms": "licence",
       "licence": "CC0-1.0",
       "licenceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md",
-      "urlTemplate": "https://cdn.jsdelivr.net/npm/simple-icons@16.30.0/icons/{id}.svg",
-      "dataUrl": "https://cdn.jsdelivr.net/npm/simple-icons@16.30.0/data/simple-icons.json",
+      "urlTemplate": "https://cdn.jsdelivr.net/npm/simple-icons@16.35.0/icons/{id}.svg",
+      "dataUrl": "https://cdn.jsdelivr.net/npm/simple-icons@16.35.0/data/simple-icons.json",
       "note": "The icons are CC0. The trademarks they depict are not."
     },
     "simple-icons-15": {
@@ -201,20 +201,20 @@
     "lucide": {
       "type": "npm",
       "package": "lucide-static",
-      "version": "1.45.0",
+      "version": "1.57.0",
       "terms": "licence",
       "licence": "ISC",
       "licenceUrl": "https://github.com/lucide-icons/lucide/blob/main/LICENSE",
-      "urlTemplate": "https://cdn.jsdelivr.net/npm/lucide-static@1.45.0/icons/{id}.svg"
+      "urlTemplate": "https://cdn.jsdelivr.net/npm/lucide-static@1.57.0/icons/{id}.svg"
     },
     "octicons": {
       "type": "npm",
       "package": "@primer/octicons",
-      "version": "19.36.0",
+      "version": "19.40.0",
       "terms": "licence",
       "licence": "MIT",
       "licenceUrl": "https://github.com/primer/octicons/blob/main/LICENSE",
-      "urlTemplate": "https://cdn.jsdelivr.net/npm/@primer/octicons@19.36.0/build/svg/{id}-24.svg"
+      "urlTemplate": "https://cdn.jsdelivr.net/npm/@primer/octicons@19.40.0/build/svg/{id}-24.svg"
     },
     "azure-v24": {
       "type": "zip",
@@ -1465,7 +1465,7 @@
           "aliases": [
             "snowflake"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "databricks",
@@ -1474,7 +1474,7 @@
           "aliases": [
             "databricks"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "clickhouse",
@@ -1483,7 +1483,7 @@
           "aliases": [
             "clickhouse"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "duckdb",
@@ -1492,7 +1492,7 @@
           "aliases": [
             "duckdb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachespark",
@@ -1502,7 +1502,7 @@
             "apache spark",
             "apachespark"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachehadoop",
@@ -1512,7 +1512,7 @@
             "apache hadoop",
             "apachehadoop"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachehive",
@@ -1522,7 +1522,7 @@
             "apache hive",
             "apachehive"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "trino",
@@ -1531,7 +1531,7 @@
           "aliases": [
             "trino"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "presto",
@@ -1540,7 +1540,7 @@
           "aliases": [
             "presto"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "teradata",
@@ -1549,7 +1549,7 @@
           "aliases": [
             "teradata"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cloudera",
@@ -1558,7 +1558,7 @@
           "aliases": [
             "cloudera"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachedruid",
@@ -1568,7 +1568,7 @@
             "apache druid",
             "apachedruid"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachedoris",
@@ -1578,7 +1578,7 @@
             "apache doris",
             "apachedoris"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "singlestore",
@@ -1587,7 +1587,7 @@
           "aliases": [
             "singlestore"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "minio",
@@ -1596,7 +1596,7 @@
           "aliases": [
             "minio"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apacheparquet",
@@ -1606,7 +1606,7 @@
             "apache parquet",
             "apacheparquet"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "looker",
@@ -1615,7 +1615,7 @@
           "aliases": [
             "looker"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "metabase",
@@ -1624,7 +1624,7 @@
           "aliases": [
             "metabase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachesuperset",
@@ -1634,7 +1634,7 @@
             "apache superset",
             "apachesuperset"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "qlik",
@@ -1643,7 +1643,7 @@
           "aliases": [
             "qlik"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "microstrategy",
@@ -1652,7 +1652,7 @@
           "aliases": [
             "microstrategy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachekylin",
@@ -1662,7 +1662,7 @@
             "apache kylin",
             "apachekylin"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mixpanel",
@@ -1671,7 +1671,7 @@
           "aliases": [
             "mixpanel"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "posthog",
@@ -1680,7 +1680,7 @@
           "aliases": [
             "posthog"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "elementary",
@@ -1689,7 +1689,7 @@
           "aliases": [
             "elementary"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apacheiceberg",
@@ -2155,7 +2155,7 @@
           "aliases": [
             "postgresql"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mysql",
@@ -2164,7 +2164,7 @@
           "aliases": [
             "mysql"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mariadb",
@@ -2173,7 +2173,7 @@
           "aliases": [
             "mariadb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "sqlite",
@@ -2182,7 +2182,7 @@
           "aliases": [
             "sqlite"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mongodb",
@@ -2193,7 +2193,7 @@
             "mongodb atlas",
             "mongodbatlas"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "redis",
@@ -2202,7 +2202,7 @@
           "aliases": [
             "redis"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachecassandra",
@@ -2212,7 +2212,7 @@
             "apache cassandra",
             "apachecassandra"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "couchbase",
@@ -2221,7 +2221,7 @@
           "aliases": [
             "couchbase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachecouchdb",
@@ -2231,7 +2231,7 @@
             "apache couchdb",
             "apachecouchdb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "neo4j",
@@ -2240,7 +2240,7 @@
           "aliases": [
             "neo4j"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "elasticsearch",
@@ -2249,7 +2249,7 @@
           "aliases": [
             "elasticsearch"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "opensearch",
@@ -2258,7 +2258,7 @@
           "aliases": [
             "opensearch"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "influxdb",
@@ -2267,7 +2267,7 @@
           "aliases": [
             "influxdb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "timescale",
@@ -2276,7 +2276,7 @@
           "aliases": [
             "timescale"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cockroachlabs",
@@ -2286,7 +2286,7 @@
             "cockroach labs",
             "cockroachlabs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "planetscale",
@@ -2295,7 +2295,7 @@
           "aliases": [
             "planetscale"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "supabase",
@@ -2304,7 +2304,7 @@
           "aliases": [
             "supabase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "firebase",
@@ -2313,7 +2313,7 @@
           "aliases": [
             "firebase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "arangodb",
@@ -2322,7 +2322,7 @@
           "aliases": [
             "arangodb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dgraph",
@@ -2331,7 +2331,7 @@
           "aliases": [
             "dgraph"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "etcd",
@@ -2340,7 +2340,7 @@
           "aliases": [
             "etcd"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "scylladb",
@@ -2349,7 +2349,7 @@
           "aliases": [
             "scylladb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "surrealdb",
@@ -2358,7 +2358,7 @@
           "aliases": [
             "surrealdb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "tidb",
@@ -2367,7 +2367,7 @@
           "aliases": [
             "tidb"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vitess",
@@ -2376,7 +2376,7 @@
           "aliases": [
             "vitess"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "prisma",
@@ -2385,7 +2385,7 @@
           "aliases": [
             "prisma"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "sqlalchemy",
@@ -2394,7 +2394,7 @@
           "aliases": [
             "sqlalchemy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dbeaver",
@@ -2403,7 +2403,7 @@
           "aliases": [
             "dbeaver"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "oracle",
@@ -2470,7 +2470,7 @@
           "aliases": [
             "pocketbase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "appwrite",
@@ -2479,7 +2479,7 @@
           "aliases": [
             "appwrite"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "turso",
@@ -2488,7 +2488,7 @@
           "aliases": [
             "turso"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "lancedb",
@@ -2634,7 +2634,7 @@
           "aliases": [
             "langchain"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "langgraph",
@@ -2645,7 +2645,7 @@
             "langchain langgraph",
             "langchainlanggraph"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "crewai",
@@ -2654,7 +2654,7 @@
           "aliases": [
             "crewai"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "n8n",
@@ -2663,7 +2663,7 @@
           "aliases": [
             "n8n"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "anthropic",
@@ -2672,7 +2672,7 @@
           "aliases": [
             "anthropic"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "huggingface",
@@ -2682,7 +2682,7 @@
             "hugging face",
             "huggingface"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ollama",
@@ -2691,7 +2691,7 @@
           "aliases": [
             "ollama"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mistralai",
@@ -2701,7 +2701,7 @@
             "mistral ai",
             "mistralai"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "googlegemini",
@@ -2713,7 +2713,7 @@
             "google bard",
             "googlebard"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "perplexity",
@@ -2722,7 +2722,7 @@
           "aliases": [
             "perplexity"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "replicate",
@@ -2731,7 +2731,7 @@
           "aliases": [
             "replicate"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openrouter",
@@ -2740,7 +2740,7 @@
           "aliases": [
             "openrouter"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dify",
@@ -2749,7 +2749,7 @@
           "aliases": [
             "dify"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "gradio",
@@ -2758,7 +2758,7 @@
           "aliases": [
             "gradio"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "streamlit",
@@ -2767,7 +2767,7 @@
           "aliases": [
             "streamlit"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "milvus",
@@ -2776,7 +2776,7 @@
           "aliases": [
             "milvus"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pydantic",
@@ -2785,7 +2785,7 @@
           "aliases": [
             "pydantic"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "zapier",
@@ -2794,7 +2794,7 @@
           "aliases": [
             "zapier"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "make",
@@ -2803,7 +2803,7 @@
           "aliases": [
             "make"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "haystack",
@@ -2812,7 +2812,7 @@
           "aliases": [
             "haystack"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "deepseek",
@@ -2821,7 +2821,7 @@
           "aliases": [
             "deepseek"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "meta",
@@ -2830,7 +2830,7 @@
           "aliases": [
             "meta"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "claude",
@@ -2841,7 +2841,7 @@
             "anthropic claude",
             "anthropicclaude"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "v0",
@@ -2850,7 +2850,7 @@
           "aliases": [
             "v0"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cursor",
@@ -2859,7 +2859,7 @@
           "aliases": [
             "cursor"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "windsurf",
@@ -2869,7 +2869,7 @@
             "windsurf",
             "codeium"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "lmstudio",
@@ -2882,7 +2882,7 @@
             "lm studio bionic",
             "lmstudiobionic"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "modelcontextprotocol",
@@ -2893,7 +2893,7 @@
             "modelcontextprotocol",
             "mcp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vllm",
@@ -2902,7 +2902,7 @@
           "aliases": [
             "vllm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "qdrant",
@@ -2911,7 +2911,7 @@
           "aliases": [
             "qdrant"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "modal",
@@ -2920,7 +2920,7 @@
           "aliases": [
             "modal"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "braintrust",
@@ -2929,7 +2929,7 @@
           "aliases": [
             "braintrust"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "langflow",
@@ -2938,7 +2938,7 @@
           "aliases": [
             "langflow"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openaigym",
@@ -2948,7 +2948,7 @@
             "openai gym",
             "openaigym"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dspy",
@@ -3423,7 +3423,7 @@
           "aliases": [
             "pytorch"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "tensorflow",
@@ -3432,7 +3432,7 @@
           "aliases": [
             "tensorflow"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "keras",
@@ -3441,7 +3441,7 @@
           "aliases": [
             "keras"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "scikitlearn",
@@ -3451,7 +3451,7 @@
             "scikit learn",
             "scikitlearn"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "numpy",
@@ -3460,7 +3460,7 @@
           "aliases": [
             "numpy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pandas",
@@ -3469,7 +3469,7 @@
           "aliases": [
             "pandas"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "scipy",
@@ -3478,7 +3478,7 @@
           "aliases": [
             "scipy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mlflow",
@@ -3487,7 +3487,7 @@
           "aliases": [
             "mlflow"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "weightsandbiases",
@@ -3498,7 +3498,7 @@
             "weightsbiases",
             "weightsandbiases"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ray",
@@ -3507,7 +3507,7 @@
           "aliases": [
             "ray"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dvc",
@@ -3518,7 +3518,7 @@
             "data version control",
             "dataversioncontrol"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "onnx",
@@ -3527,7 +3527,7 @@
           "aliases": [
             "onnx"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nvidia",
@@ -3536,7 +3536,7 @@
           "aliases": [
             "nvidia"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jupyter",
@@ -3545,7 +3545,7 @@
           "aliases": [
             "jupyter"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "googlecolab",
@@ -3555,7 +3555,7 @@
             "google colab",
             "googlecolab"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kaggle",
@@ -3564,7 +3564,7 @@
           "aliases": [
             "kaggle"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "optuna",
@@ -3573,7 +3573,7 @@
           "aliases": [
             "optuna"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "polars",
@@ -3582,7 +3582,7 @@
           "aliases": [
             "polars"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dask",
@@ -3591,7 +3591,7 @@
           "aliases": [
             "dask"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "roboflow",
@@ -3600,7 +3600,7 @@
           "aliases": [
             "roboflow"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ultralytics",
@@ -3609,7 +3609,7 @@
           "aliases": [
             "ultralytics"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "opencv",
@@ -3618,7 +3618,7 @@
           "aliases": [
             "opencv"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "spacy",
@@ -3627,7 +3627,7 @@
           "aliases": [
             "spacy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "bentoml",
@@ -3636,7 +3636,7 @@
           "aliases": [
             "bentoml"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kubeflow",
@@ -3658,7 +3658,7 @@
           "aliases": [
             "deepnote"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "lightning",
@@ -3667,7 +3667,7 @@
           "aliases": [
             "lightning"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jax",
@@ -3963,7 +3963,7 @@
             "apache kafka",
             "apachekafka"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apacheflink",
@@ -3973,7 +3973,7 @@
             "apache flink",
             "apacheflink"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachepulsar",
@@ -3983,7 +3983,7 @@
             "apache pulsar",
             "apachepulsar"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rabbitmq",
@@ -3992,7 +3992,7 @@
           "aliases": [
             "rabbitmq"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "natsdotio",
@@ -4003,7 +4003,7 @@
             "natsio",
             "natsdotio"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apacheairflow",
@@ -4013,7 +4013,7 @@
             "apache airflow",
             "apacheairflow"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "prefect",
@@ -4022,7 +4022,7 @@
           "aliases": [
             "prefect"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachenifi",
@@ -4032,7 +4032,7 @@
             "apache nifi",
             "apachenifi"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "celery",
@@ -4041,7 +4041,7 @@
           "aliases": [
             "celery"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "argo",
@@ -4051,7 +4051,7 @@
             "argo",
             "argo workflows"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachestorm",
@@ -4061,7 +4061,7 @@
             "apache storm",
             "apachestorm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mqtt",
@@ -4070,7 +4070,7 @@
           "aliases": [
             "mqtt"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "temporal",
@@ -4079,7 +4079,7 @@
           "aliases": [
             "temporal"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "airbyte",
@@ -4088,7 +4088,7 @@
           "aliases": [
             "airbyte"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "matillion",
@@ -4097,7 +4097,7 @@
           "aliases": [
             "matillion"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "talend",
@@ -4106,7 +4106,7 @@
           "aliases": [
             "talend"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachebeam",
@@ -4128,7 +4128,7 @@
             "dlthub",
             "data load tool"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "hatchet",
@@ -4476,7 +4476,7 @@
           "aliases": [
             "grafana"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "prometheus",
@@ -4485,7 +4485,7 @@
           "aliases": [
             "prometheus"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "opentelemetry",
@@ -4495,7 +4495,7 @@
             "opentelemetry",
             "otel"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "datadog",
@@ -4504,7 +4504,7 @@
           "aliases": [
             "datadog"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "elastic",
@@ -4513,7 +4513,7 @@
           "aliases": [
             "elastic"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "elasticstack",
@@ -4523,7 +4523,7 @@
             "elastic stack",
             "elasticstack"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kibana",
@@ -4534,7 +4534,7 @@
             "elastic kibana",
             "elastickibana"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "logstash",
@@ -4545,7 +4545,7 @@
             "elastic logstash",
             "elasticlogstash"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "splunk",
@@ -4554,7 +4554,7 @@
           "aliases": [
             "splunk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "sentry",
@@ -4563,7 +4563,7 @@
           "aliases": [
             "sentry"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "newrelic",
@@ -4573,7 +4573,7 @@
             "new relic",
             "newrelic"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dynatrace",
@@ -4582,7 +4582,7 @@
           "aliases": [
             "dynatrace"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jaeger",
@@ -4591,7 +4591,7 @@
           "aliases": [
             "jaeger"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pagerduty",
@@ -4600,7 +4600,7 @@
           "aliases": [
             "pagerduty"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "opsgenie",
@@ -4611,7 +4611,7 @@
             "atlassian opsgenie",
             "atlassianopsgenie"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "uptimekuma",
@@ -4621,7 +4621,7 @@
             "uptime kuma",
             "uptimekuma"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "victoriametrics",
@@ -4631,7 +4631,7 @@
             "victoriametrics",
             "vm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "betterstack",
@@ -4641,7 +4641,7 @@
             "better stack",
             "betterstack"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "graylog",
@@ -4650,7 +4650,7 @@
           "aliases": [
             "graylog"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "fluentbit",
@@ -4660,7 +4660,7 @@
             "fluent bit",
             "fluentbit"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "fluentd",
@@ -4669,7 +4669,7 @@
           "aliases": [
             "fluentd"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "statuspage",
@@ -4680,7 +4680,7 @@
             "atlassian statuspage",
             "atlassianstatuspage"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "checkmk",
@@ -4689,7 +4689,7 @@
           "aliases": [
             "checkmk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "icinga",
@@ -4698,7 +4698,7 @@
           "aliases": [
             "icinga"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "netdata",
@@ -4707,7 +4707,7 @@
           "aliases": [
             "netdata"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "thanos",
@@ -4716,7 +4716,7 @@
           "aliases": [
             "thanos"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "signoz",
@@ -4894,7 +4894,7 @@
             "terraform cloud",
             "terraformcloud"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ansible",
@@ -4906,7 +4906,7 @@
             "redhatansible",
             "redhat ansible"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jenkins",
@@ -4915,7 +4915,7 @@
           "aliases": [
             "jenkins"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kubernetes",
@@ -4924,7 +4924,7 @@
           "aliases": [
             "kubernetes"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "docker",
@@ -4933,7 +4933,7 @@
           "aliases": [
             "docker"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "helm",
@@ -4942,7 +4942,7 @@
           "aliases": [
             "helm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "gitlab",
@@ -4951,7 +4951,7 @@
           "aliases": [
             "gitlab"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "circleci",
@@ -4960,7 +4960,7 @@
           "aliases": [
             "circleci"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "travisci",
@@ -4970,7 +4970,7 @@
             "travis ci",
             "travisci"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "teamcity",
@@ -4981,7 +4981,7 @@
             "jetbrains teamcity",
             "jetbrainsteamcity"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "puppet",
@@ -4990,7 +4990,7 @@
           "aliases": [
             "puppet"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "chef",
@@ -4999,7 +4999,7 @@
           "aliases": [
             "chef"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vagrant",
@@ -5010,7 +5010,7 @@
             "hashicorp vagrant",
             "hashicorpvagrant"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "packer",
@@ -5023,7 +5023,7 @@
             "hcp packer",
             "hcppacker"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "consul",
@@ -5036,7 +5036,7 @@
             "hcp consul",
             "hcpconsul"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nomad",
@@ -5047,7 +5047,7 @@
             "hashicorp nomad",
             "hashicorpnomad"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "podman",
@@ -5056,7 +5056,7 @@
           "aliases": [
             "podman"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "containerd",
@@ -5065,7 +5065,7 @@
           "aliases": [
             "containerd"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rancher",
@@ -5074,7 +5074,7 @@
           "aliases": [
             "rancher"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "redhatopenshift",
@@ -5085,7 +5085,7 @@
             "red hat open shift",
             "redhatopenshift"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "istio",
@@ -5094,7 +5094,7 @@
           "aliases": [
             "istio"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "linkerd",
@@ -5103,7 +5103,7 @@
           "aliases": [
             "linkerd"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "envoyproxy",
@@ -5113,7 +5113,7 @@
             "envoy proxy",
             "envoyproxy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nginx",
@@ -5122,7 +5122,7 @@
           "aliases": [
             "nginx"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "traefikproxy",
@@ -5132,7 +5132,7 @@
             "traefik proxy",
             "traefikproxy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apache",
@@ -5141,7 +5141,7 @@
           "aliases": [
             "apache"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "caddy",
@@ -5150,7 +5150,7 @@
           "aliases": [
             "caddy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cloudflare",
@@ -5159,7 +5159,7 @@
           "aliases": [
             "cloudflare"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pulumi",
@@ -5168,7 +5168,7 @@
           "aliases": [
             "pulumi"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "tekton",
@@ -5177,7 +5177,7 @@
           "aliases": [
             "tekton"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "spinnaker",
@@ -5186,7 +5186,7 @@
           "aliases": [
             "spinnaker"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jfrog",
@@ -5195,7 +5195,7 @@
           "aliases": [
             "jfrog"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "k3s",
@@ -5204,7 +5204,7 @@
           "aliases": [
             "k3s"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "skaffold",
@@ -5213,7 +5213,7 @@
           "aliases": [
             "skaffold"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "buildkite",
@@ -5222,7 +5222,7 @@
           "aliases": [
             "buildkite"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "gitea",
@@ -5231,7 +5231,7 @@
           "aliases": [
             "gitea"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "bitbucket",
@@ -5242,7 +5242,7 @@
             "atlassian bitbucket",
             "atlassianbitbucket"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kubespray",
@@ -5251,7 +5251,7 @@
           "aliases": [
             "kubespray"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openstack",
@@ -5260,7 +5260,7 @@
           "aliases": [
             "openstack"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vmware",
@@ -5269,7 +5269,7 @@
           "aliases": [
             "vmware"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "proxmox",
@@ -5278,7 +5278,7 @@
           "aliases": [
             "proxmox"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ubuntu",
@@ -5287,7 +5287,7 @@
           "aliases": [
             "ubuntu"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "debian",
@@ -5296,7 +5296,7 @@
           "aliases": [
             "debian"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "alpinelinux",
@@ -5306,7 +5306,7 @@
             "alpine linux",
             "alpinelinux"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "redhat",
@@ -5316,7 +5316,7 @@
             "red hat",
             "redhat"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nixos",
@@ -5325,7 +5325,7 @@
           "aliases": [
             "nixos"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "sonarqube",
@@ -5347,7 +5347,7 @@
           "aliases": [
             "devbox"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "talos",
@@ -5356,7 +5356,7 @@
           "aliases": [
             "talos"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "coolify",
@@ -5365,7 +5365,7 @@
           "aliases": [
             "coolify"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "caprover",
@@ -5374,7 +5374,7 @@
           "aliases": [
             "caprover"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "portainer",
@@ -5383,7 +5383,7 @@
           "aliases": [
             "portainer"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "watchtower",
@@ -5392,7 +5392,7 @@
           "aliases": [
             "watchtower"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kong",
@@ -5401,7 +5401,7 @@
           "aliases": [
             "kong"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "argocd",
@@ -5698,7 +5698,7 @@
             "hcp vault",
             "hcpvault"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "keycloak",
@@ -5707,7 +5707,7 @@
           "aliases": [
             "keycloak"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "auth0",
@@ -5716,7 +5716,7 @@
           "aliases": [
             "auth0"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "okta",
@@ -5725,7 +5725,7 @@
           "aliases": [
             "okta"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "owasp",
@@ -5734,7 +5734,7 @@
           "aliases": [
             "owasp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "snyk",
@@ -5743,7 +5743,7 @@
           "aliases": [
             "snyk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "trivy",
@@ -5752,7 +5752,7 @@
           "aliases": [
             "trivy"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "aqua",
@@ -5763,7 +5763,7 @@
             "aqua security",
             "aquasec"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "falco",
@@ -5772,7 +5772,7 @@
           "aliases": [
             "falco"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cilium",
@@ -5781,7 +5781,7 @@
           "aliases": [
             "cilium"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "letsencrypt",
@@ -5791,7 +5791,7 @@
             "let s encrypt",
             "letsencrypt"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openssl",
@@ -5800,7 +5800,7 @@
           "aliases": [
             "openssl"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jsonwebtokens",
@@ -5810,7 +5810,7 @@
             "json web tokens",
             "jsonwebtokens"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openid",
@@ -5819,7 +5819,7 @@
           "aliases": [
             "openid"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "1password",
@@ -5828,7 +5828,7 @@
           "aliases": [
             "1password"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "bitwarden",
@@ -5837,7 +5837,7 @@
           "aliases": [
             "bitwarden"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "hashicorp",
@@ -5846,7 +5846,7 @@
           "aliases": [
             "hashicorp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "fortinet",
@@ -5855,7 +5855,7 @@
           "aliases": [
             "fortinet"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "paloaltonetworks",
@@ -5865,7 +5865,7 @@
             "palo alto networks",
             "paloaltonetworks"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "wireguard",
@@ -5874,7 +5874,7 @@
           "aliases": [
             "wireguard"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openvpn",
@@ -5883,7 +5883,7 @@
           "aliases": [
             "openvpn"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "tailscale",
@@ -5892,7 +5892,7 @@
           "aliases": [
             "tailscale"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "authelia",
@@ -5901,7 +5901,7 @@
           "aliases": [
             "authelia"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "authentik",
@@ -5910,7 +5910,7 @@
           "aliases": [
             "authentik"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ory",
@@ -5919,7 +5919,7 @@
           "aliases": [
             "ory"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "clerk",
@@ -5928,7 +5928,7 @@
           "aliases": [
             "clerk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "teleport",
@@ -6233,7 +6233,7 @@
           "aliases": [
             "github"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "githubactions",
@@ -6243,7 +6243,7 @@
             "github actions",
             "githubactions"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "githubcopilot",
@@ -6253,7 +6253,7 @@
             "github copilot",
             "githubcopilot"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "githubpages",
@@ -6263,7 +6263,7 @@
             "github pages",
             "githubpages"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "githubsponsors",
@@ -6273,7 +6273,7 @@
             "github sponsors",
             "githubsponsors"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "git",
@@ -6282,7 +6282,7 @@
           "aliases": [
             "git"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "gitlfs",
@@ -6292,7 +6292,7 @@
             "git lfs",
             "gitlfs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         }
       ],
       "onDemand": [],
@@ -6353,7 +6353,7 @@
             "atlassian jira",
             "atlassianjira"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "atlassian",
@@ -6362,7 +6362,7 @@
           "aliases": [
             "atlassian"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "confluence",
@@ -6373,7 +6373,7 @@
             "atlassian confluence",
             "atlassianconfluence"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "notion",
@@ -6382,7 +6382,7 @@
           "aliases": [
             "notion"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "linear",
@@ -6391,7 +6391,7 @@
           "aliases": [
             "linear"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "asana",
@@ -6400,7 +6400,7 @@
           "aliases": [
             "asana"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "trello",
@@ -6411,7 +6411,7 @@
             "atlassian trello",
             "atlassiantrello"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "discord",
@@ -6420,7 +6420,7 @@
           "aliases": [
             "discord"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "zoom",
@@ -6429,7 +6429,7 @@
           "aliases": [
             "zoom"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "miro",
@@ -6438,7 +6438,7 @@
           "aliases": [
             "miro"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "figma",
@@ -6447,7 +6447,7 @@
           "aliases": [
             "figma"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "googledrive",
@@ -6457,7 +6457,7 @@
             "google drive",
             "googledrive"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "zendesk",
@@ -6466,7 +6466,7 @@
           "aliases": [
             "zendesk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "intercom",
@@ -6475,7 +6475,7 @@
           "aliases": [
             "intercom"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "hubspot",
@@ -6484,7 +6484,7 @@
           "aliases": [
             "hubspot"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "stripe",
@@ -6493,7 +6493,7 @@
           "aliases": [
             "stripe"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "mailchimp",
@@ -6502,7 +6502,7 @@
           "aliases": [
             "mailchimp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "airtable",
@@ -6511,7 +6511,7 @@
           "aliases": [
             "airtable"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "clickup",
@@ -6520,7 +6520,7 @@
           "aliases": [
             "clickup"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "basecamp",
@@ -6529,7 +6529,7 @@
           "aliases": [
             "basecamp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "loom",
@@ -6538,7 +6538,7 @@
           "aliases": [
             "loom"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "calendly",
@@ -6547,7 +6547,7 @@
           "aliases": [
             "calendly"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "coda",
@@ -6556,7 +6556,7 @@
           "aliases": [
             "coda"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "obsidian",
@@ -6565,7 +6565,7 @@
           "aliases": [
             "obsidian"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "logseq",
@@ -6574,7 +6574,7 @@
           "aliases": [
             "logseq"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "shortcut",
@@ -6583,7 +6583,7 @@
           "aliases": [
             "shortcut"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pivotaltracker",
@@ -6593,7 +6593,7 @@
             "pivotal tracker",
             "pivotaltracker"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "retool",
@@ -6602,7 +6602,7 @@
           "aliases": [
             "retool"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "appsmith",
@@ -6611,7 +6611,7 @@
           "aliases": [
             "appsmith"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "budibase",
@@ -6620,7 +6620,7 @@
           "aliases": [
             "budibase"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "flagsmith",
@@ -6853,7 +6853,7 @@
           "aliases": [
             "python"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openjdk",
@@ -6862,7 +6862,7 @@
           "aliases": [
             "openjdk"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "go",
@@ -6871,7 +6871,7 @@
           "aliases": [
             "go"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rust",
@@ -6880,7 +6880,7 @@
           "aliases": [
             "rust"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "javascript",
@@ -6889,7 +6889,7 @@
           "aliases": [
             "javascript"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "typescript",
@@ -6898,7 +6898,7 @@
           "aliases": [
             "typescript"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nodedotjs",
@@ -6909,7 +6909,7 @@
             "nodejs",
             "nodedotjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "deno",
@@ -6918,7 +6918,7 @@
           "aliases": [
             "deno"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "bun",
@@ -6927,7 +6927,7 @@
           "aliases": [
             "bun"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "scala",
@@ -6936,7 +6936,7 @@
           "aliases": [
             "scala"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "kotlin",
@@ -6945,7 +6945,7 @@
           "aliases": [
             "kotlin"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "swift",
@@ -6954,7 +6954,7 @@
           "aliases": [
             "swift"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ruby",
@@ -6963,7 +6963,7 @@
           "aliases": [
             "ruby"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "php",
@@ -6972,7 +6972,7 @@
           "aliases": [
             "php"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cplusplus",
@@ -6981,7 +6981,7 @@
           "aliases": [
             "cplusplus"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "c",
@@ -6990,7 +6990,7 @@
           "aliases": [
             "c"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "r",
@@ -6999,7 +6999,7 @@
           "aliases": [
             "r"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "julia",
@@ -7008,7 +7008,7 @@
           "aliases": [
             "julia"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "perl",
@@ -7017,7 +7017,7 @@
           "aliases": [
             "perl"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "elixir",
@@ -7026,7 +7026,7 @@
           "aliases": [
             "elixir"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "haskell",
@@ -7035,7 +7035,7 @@
           "aliases": [
             "haskell"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "lua",
@@ -7044,7 +7044,7 @@
           "aliases": [
             "lua"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dart",
@@ -7053,7 +7053,7 @@
           "aliases": [
             "dart"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "flutter",
@@ -7062,7 +7062,7 @@
           "aliases": [
             "flutter"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "react",
@@ -7071,7 +7071,7 @@
           "aliases": [
             "react"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vuedotjs",
@@ -7082,7 +7082,7 @@
             "vuejs",
             "vuedotjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "angular",
@@ -7091,7 +7091,7 @@
           "aliases": [
             "angular"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "svelte",
@@ -7100,7 +7100,7 @@
           "aliases": [
             "svelte"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nextdotjs",
@@ -7111,7 +7111,7 @@
             "nextjs",
             "nextdotjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "django",
@@ -7120,7 +7120,7 @@
           "aliases": [
             "django"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "flask",
@@ -7129,7 +7129,7 @@
           "aliases": [
             "flask"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "fastapi",
@@ -7138,7 +7138,7 @@
           "aliases": [
             "fastapi"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "spring",
@@ -7147,7 +7147,7 @@
           "aliases": [
             "spring"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "dotnet",
@@ -7157,7 +7157,7 @@
             "net",
             "dotnet"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "express",
@@ -7168,7 +7168,7 @@
             "express js",
             "expressjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rubyonrails",
@@ -7178,7 +7178,7 @@
             "ruby on rails",
             "rubyonrails"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "laravel",
@@ -7187,7 +7187,7 @@
           "aliases": [
             "laravel"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "graphql",
@@ -7196,7 +7196,7 @@
           "aliases": [
             "graphql"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "openapiinitiative",
@@ -7206,7 +7206,7 @@
             "openapi initiative",
             "openapiinitiative"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "apachemaven",
@@ -7216,7 +7216,7 @@
             "apache maven",
             "apachemaven"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "gradle",
@@ -7225,7 +7225,7 @@
           "aliases": [
             "gradle"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "npm",
@@ -7234,7 +7234,7 @@
           "aliases": [
             "npm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pnpm",
@@ -7243,7 +7243,7 @@
           "aliases": [
             "pnpm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "yarn",
@@ -7252,7 +7252,7 @@
           "aliases": [
             "yarn"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "anaconda",
@@ -7261,7 +7261,7 @@
           "aliases": [
             "anaconda"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pypi",
@@ -7270,7 +7270,7 @@
           "aliases": [
             "pypi"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "quarkus",
@@ -7279,7 +7279,7 @@
           "aliases": [
             "quarkus"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "csharp",
@@ -7315,7 +7315,7 @@
           "aliases": [
             "zig"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nim",
@@ -7324,7 +7324,7 @@
           "aliases": [
             "nim"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "crystal",
@@ -7333,7 +7333,7 @@
           "aliases": [
             "crystal"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ocaml",
@@ -7342,7 +7342,7 @@
           "aliases": [
             "ocaml"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "fsharp",
@@ -7352,7 +7352,7 @@
             "fsharp",
             "f sharp"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "clojure",
@@ -7361,7 +7361,7 @@
           "aliases": [
             "clojure"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "erlang",
@@ -7370,7 +7370,7 @@
           "aliases": [
             "erlang"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "solidity",
@@ -7379,7 +7379,7 @@
           "aliases": [
             "solidity"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "astro",
@@ -7388,7 +7388,7 @@
           "aliases": [
             "astro"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "solid",
@@ -7397,7 +7397,7 @@
           "aliases": [
             "solid"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "qwik",
@@ -7406,7 +7406,7 @@
           "aliases": [
             "qwik"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "remix",
@@ -7415,7 +7415,7 @@
           "aliases": [
             "remix"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nuxt",
@@ -7426,7 +7426,7 @@
             "nuxt js",
             "nuxtjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vite",
@@ -7435,7 +7435,7 @@
           "aliases": [
             "vite"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "esbuild",
@@ -7444,7 +7444,7 @@
           "aliases": [
             "esbuild"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rollupdotjs",
@@ -7455,7 +7455,7 @@
             "rollupjs",
             "rollupdotjs"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "webpack",
@@ -7464,7 +7464,7 @@
           "aliases": [
             "webpack"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "turborepo",
@@ -7473,7 +7473,7 @@
           "aliases": [
             "turborepo"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "nx",
@@ -7482,7 +7482,7 @@
           "aliases": [
             "nx"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "biome",
@@ -7491,7 +7491,7 @@
           "aliases": [
             "biome"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "eslint",
@@ -7500,7 +7500,7 @@
           "aliases": [
             "eslint"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "prettier",
@@ -7509,7 +7509,7 @@
           "aliases": [
             "prettier"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "ruff",
@@ -7518,7 +7518,7 @@
           "aliases": [
             "ruff"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "uv",
@@ -7527,7 +7527,7 @@
           "aliases": [
             "uv"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "poetry",
@@ -7536,7 +7536,7 @@
           "aliases": [
             "poetry"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pdm",
@@ -7545,7 +7545,7 @@
           "aliases": [
             "pdm"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "rye",
@@ -7554,7 +7554,7 @@
           "aliases": [
             "rye"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "pytest",
@@ -7563,7 +7563,7 @@
           "aliases": [
             "pytest"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "vitest",
@@ -7572,7 +7572,7 @@
           "aliases": [
             "vitest"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "jest",
@@ -7581,7 +7581,7 @@
           "aliases": [
             "jest"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "cypress",
@@ -7590,7 +7590,7 @@
           "aliases": [
             "cypress"
           ],
-          "source": "simple-icons@16.30.0"
+          "source": "simple-icons@16.35.0"
         },
         {
           "slug": "playwright",
@@ -7772,7 +7772,7 @@
           "ext": "md",
           "kind": "brand-glyph",
           "glyph": "markdown",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "000000",
           "title": "Markdown file (.md)"
         },
@@ -7780,7 +7780,7 @@
           "ext": "py",
           "kind": "brand-glyph",
           "glyph": "python",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "3776AB",
           "title": "Python file (.py)"
         },
@@ -7788,7 +7788,7 @@
           "ext": "json",
           "kind": "brand-glyph",
           "glyph": "json",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "000000",
           "title": "JSON file (.json)"
         },
@@ -7796,7 +7796,7 @@
           "ext": "yaml",
           "kind": "brand-glyph",
           "glyph": "yaml",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "CB171E",
           "title": "YAML file (.yaml)"
         },
@@ -7804,7 +7804,7 @@
           "ext": "xml",
           "kind": "brand-glyph",
           "glyph": "xml",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "005FAD",
           "title": "XML file (.xml)"
         },
@@ -7812,7 +7812,7 @@
           "ext": "html",
           "kind": "brand-glyph",
           "glyph": "html5",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "E34F26",
           "title": "HTML5 file (.html)"
         },
@@ -7820,7 +7820,7 @@
           "ext": "css",
           "kind": "brand-glyph",
           "glyph": "css",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "663399",
           "title": "CSS file (.css)"
         },
@@ -7828,7 +7828,7 @@
           "ext": "js",
           "kind": "brand-glyph",
           "glyph": "javascript",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "F7DF1E",
           "title": "JavaScript file (.js)"
         },
@@ -7836,7 +7836,7 @@
           "ext": "ts",
           "kind": "brand-glyph",
           "glyph": "typescript",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "3178C6",
           "title": "TypeScript file (.ts)"
         },
@@ -7844,7 +7844,7 @@
           "ext": "parquet",
           "kind": "brand-glyph",
           "glyph": "apacheparquet",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "50ABF1",
           "title": "Apache Parquet file (.parquet)"
         },
@@ -7852,7 +7852,7 @@
           "ext": "ipynb",
           "kind": "brand-glyph",
           "glyph": "jupyter",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "F37626",
           "title": "Jupyter file (.ipynb)"
         },
@@ -7860,7 +7860,7 @@
           "ext": "tf",
           "kind": "brand-glyph",
           "glyph": "terraform",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "844FBA",
           "title": "Terraform file (.tf)"
         },
@@ -7868,7 +7868,7 @@
           "ext": "sh",
           "kind": "brand-glyph",
           "glyph": "gnubash",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "4EAA25",
           "title": "GNU Bash file (.sh)"
         },
@@ -7877,7 +7877,7 @@
           "band": "docker",
           "kind": "brand-glyph",
           "glyph": "docker",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "2496ED",
           "title": "Docker file (.dockerfile)"
         },
@@ -7885,7 +7885,7 @@
           "ext": "toml",
           "kind": "brand-glyph",
           "glyph": "toml",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "9C4121",
           "title": "TOML file (.toml)"
         },
@@ -7893,7 +7893,7 @@
           "ext": "svg",
           "kind": "brand-glyph",
           "glyph": "svg",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "FFB13B",
           "title": "SVG file (.svg)"
         },
@@ -7901,7 +7901,7 @@
           "ext": "graphql",
           "kind": "brand-glyph",
           "glyph": "graphql",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "E10098",
           "title": "GraphQL file (.graphql)"
         },
@@ -7909,7 +7909,7 @@
           "ext": "avro",
           "kind": "brand-glyph",
           "glyph": "apacheavro",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "30638E",
           "title": "Apache Avro file (.avro)"
         },
@@ -7917,7 +7917,7 @@
           "ext": "env",
           "kind": "brand-glyph",
           "glyph": "dotenv",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "ECD53F",
           "title": ".ENV file (.env)"
         },
@@ -7925,7 +7925,7 @@
           "ext": "mmd",
           "kind": "brand-glyph",
           "glyph": "mermaid",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "FF3670",
           "title": "Mermaid file (.mmd)"
         },
@@ -7933,7 +7933,7 @@
           "ext": "drawio",
           "kind": "brand-glyph",
           "glyph": "diagramsdotnet",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "F08705",
           "title": "diagrams.net file (.drawio)"
         },
@@ -7942,7 +7942,7 @@
           "band": "excali",
           "kind": "brand-glyph",
           "glyph": "excalidraw",
-          "source": "simple-icons@16.30.0",
+          "source": "simple-icons@16.35.0",
           "hex": "6965DB",
           "title": "Excalidraw file (.excalidraw)"
         },
@@ -8060,8 +8060,8 @@
       "rank": 90,
       "kind": "brands",
       "builder": "brand-marks-all",
-      "source": "simple-icons@16.30.0",
-      "note": "Every mark in simple-icons@16.30.0, minus any slug a curated pack already owns."
+      "source": "simple-icons@16.35.0",
+      "note": "Every mark in simple-icons@16.35.0, minus any slug a curated pack already owns."
     }
   ]
 }
