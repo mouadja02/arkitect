@@ -2015,6 +2015,28 @@ test('the report check reads only a reply naming a file the session built (#345)
   }
 });
 
+// A report linked "Draw.io Desktop" to https://www.draw.io, the hosted editor
+// (#340). The check uses the eval cases' own pattern, so the two can't drift.
+test('the report check sends back a link to the hosted editor, once, with the pattern the evals grade (#340)', () => {
+  const { problems, HOSTED, DESKTOP } = reportHook;
+  for (const name of ['edit-existing-diagram', 'engine-choice-is-explained', 'generate-architecture']) {
+    const yaml = readFileSync(join(ROOT, 'evals', 'drawio', name, 'case.yaml'), 'utf8');
+    const pattern = yaml.match(/name: no-hosted-editor[\s\S]*?pattern: '([^']+)'/)[1];
+    eq(pattern, HOSTED.source.replaceAll('\\/', '/'), `${name}'s no-hosted-editor pattern`);
+  }
+  const report = (file) => ['**File** `./eval-output/landing-zone.drawio`', '**Assumptions** none', '**Icons** none',
+    '**Validation** PASS, no warnings', '**Render** PNG opened and looked at.', '**Deviations** none', `**To see it:** ${file}`].join('\n');
+  const sent = problems(report('open `./eval-output/landing-zone.drawio` in [Draw.io Desktop](https://www.draw.io) or the VS Code extension'), { viewed: true });
+  eq(sent.length, 1, 'sent back');
+  assert(sent[0].includes('//www.draw.io') && sent[0].includes(DESKTOP), sent[0]);
+  for (const link of ['https://app.diagrams.net/?src=about', 'https://viewer.diagrams.net/#R', 'https://draw.io']) {
+    eq(problems(report(link), { viewed: true }).length, 1, link);
+  }
+  for (const fine of ['open it in Draw.io Desktop or the VS Code extension', `[Draw.io Desktop](${DESKTOP})`]) {
+    eq(problems(report(fine), { viewed: true }).length, 0, fine);
+  }
+});
+
 // Asked to build a spec into a diagram file, the agent loaded no skill and
 // wrote its own builder (#327). A prompt naming a diagram file or a spec gets
 // one line naming the skill; any other prompt gets nothing.

@@ -10,9 +10,9 @@
 // that build wrote is checked for the six headings the report needs (Engine is
 // asked for only when the user named no engine); when no PNG was opened, for a
 // Render section that describes the picture anyway or doesn't say nothing saw
-// it; and for a validate warning explained away. Any of them sends the reply
-// back once, saying what to fix. Any other session is not read past its last
-// reply.
+// it; for a validate warning explained away; and for a link to the hosted
+// editor. Any of them sends the reply back once, saying what to fix. Any other
+// session is not read past its last reply.
 
 import { readFileSync } from 'node:fs';
 import { lastReply } from './style-question.mjs';
@@ -49,6 +49,12 @@ export const admitsUnseen = (section) => UNSEEN.test(String(section)) || FAILED.
 // "intentional per spec" and "not errors" (#330).
 const EXCUSE = /\b(intentional(ly)?|by (design|spec)|expected|acceptable|harmless|cosmetic|minor|benign|false positives?|ignor(e|ed|able))\b|\b(not|n't)\b[^.]{0,20}\b(errors?|defects?|problems?|issues?|bugs?)\b/i;
 const NO_WARNINGS = /\b(no|0|zero|without)\s+(\w+\s+)?warnings?\b/gi;
+
+// A report linked "Draw.io Desktop" to www.draw.io, the web app (#340). The
+// eval cases grade `no-hosted-editor` with this same pattern (#186); a test
+// keeps the two identical.
+export const HOSTED = /app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net\/\?|\/\/(?:www\.)?draw\.io/;
+export const DESKTOP = 'https://github.com/jgraph/drawio-desktop/releases';
 
 const ABOUT_A_WARNING = /\bwarn(ing|ings|s|ed)?\b|\boverlap|\bborder\b|\bdefects?\b/i;
 const sentences = (text) => String(text).split(/(?<=[.!?])\s+|\n+/);
@@ -130,6 +136,11 @@ export function problems(reply, { viewed }) {
     out.push(`Validation calls a warning "${excuse}", but a warning validate printed is a defect still in the drawing, `
       + 'even when the spec could not change: name each one as a defect still there, with its ids, and drop "'
       + `${excuse}"`);
+  }
+  const hosted = String(reply ?? '').match(HOSTED)?.[0];
+  if (hosted) {
+    out.push(`the reply links ${hosted}, the hosted editor, and a diagram dropped into it leaves the machine: link `
+      + `Draw.io Desktop's releases page, ${DESKTOP}, or name the VS Code extension instead`);
   }
   return out;
 }
