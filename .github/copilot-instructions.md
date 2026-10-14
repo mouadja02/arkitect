@@ -2,7 +2,7 @@
 
 This repository is **Arkitect**: a toolkit that draws native, editable
 architecture diagrams — `.drawio` (Draw.io / diagrams.net) and `.excalidraw`
-(Excalidraw). Everything runs locally with Node 20+ and **no dependencies**.
+(Excalidraw). Everything runs locally with Node 22+ and **no dependencies**.
 
 ## When asked for a diagram
 
@@ -30,7 +30,7 @@ node bin/arkitect.mjs excalidraw validate docs/arch.excalidraw
 
 ## When changing this repository
 
-- **Node 20+, zero dependencies.** Do not add a package to make something
+- **Node 22+, zero dependencies.** Do not add a package to make something
   easier; every script is plain Node and every helper lives in
   `skills/*/scripts/lib/`.
 - **Run the suite before proposing a change:** `node tests/run-tests.mjs`.

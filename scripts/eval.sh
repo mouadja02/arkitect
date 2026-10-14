@@ -84,7 +84,7 @@ esac
 
 echo "prerequisites"
 need claude "install Claude Code, and log in once"
-need node "Node 20 or newer"
+need node "Node 22 or newer"
 if have node; then
   major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
   [ "${major:-0}" -ge 20 ] || { printf 'MISSING %-20s %s\n' "node >= 20" "found $(node --version)"; missing=1; }

@@ -16,7 +16,7 @@ arkitect version
 
 A command's own help is one level down: `arkitect drawio icon --help`.
 
-`doctor` exits 1 when Node is older than 20 or a bundled asset is missing or
+`doctor` exits 1 when Node is older than 22 or a bundled asset is missing or
 does not parse, and 0 otherwise: a missing renderer, browser or Docker, an
 ignored style override or an adapter pointing at another install is a
 warning. It reads files and asks programs their version; it never starts a

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local Draw.io Desktop export. Node 20+, no runtime dependencies or uploads.
+// Local Draw.io Desktop export. Node 22+, no runtime dependencies or uploads.
 // Observed: Draw.io Desktop 29.0.3, Windows x64: --page-index is 1-based;
 // both 0 and 1 export the first page (as recorded by render-drawio.ps1).
 // Draw.io Desktop 24.7.17, Linux arm64: 0-based; 0 and 1 differ, while 2

@@ -41,6 +41,10 @@ separate file, no naming scheme, no required format beyond that.
 - The `/diagram` command for Cursor and OpenCode points at AGENTS.md §2 instead of restating the workflow in four steps that left out the engine reason, validation, render and icons from the report (#354).
 - Maintainer-only text moved off agents' reading paths into `docs/maintenance.md`: AGENTS.md's render-helper internals and pull-request ritual, and both learning skills' instructions for rebuilding the shipped house style, which pointed a write into the plugin. AGENTS.md is held at 14,800 bytes (#356).
 
+### Removed
+
+- **Node 20 is no longer supported.** It reached end of life on 2026-04-30. `package.json` now asks for Node 22 or newer, `doctor` fails on Node 20 as it did on 18, every "Node 20+" statement reads "Node 22+", and CI tests Node 22, 24 and 26 (26 becomes LTS on 2026-10-28). Nothing in the code needed Node 22, so a Node 20 install still runs today; it is simply no longer tested or promised (#346).
+
 ## [2.3.0] — 2026-10-03
 
 ### Added

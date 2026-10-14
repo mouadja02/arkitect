@@ -2243,13 +2243,17 @@ const quietDoctor = async (opts) => {
   return { code, out: lines.join('\n') };
 };
 const oldNode = await settle(quietDoctor({ node: '18.0.0' }));
+const eolNode = await settle(quietDoctor({ node: '20.20.2' }));
 const nothingOnPath = await settle(quietDoctor({ env: { PATH: join(TMP, 'nothing-here') } }));
 
 // Node below 20 was a warning and exit 0, so a script could not tell (#308).
 test('doctor exits 1 when a core requirement fails, and 0 when only optional tools are missing (#308)', () => {
   const old = oldNode.value;
   eq(old.code, 1, 'node 18');
-  assert(/^fail\s+node >= 20\s+found v18\.0\.0/m.test(old.out) && /1 failed: exit 1/.test(old.out), old.out);
+  assert(/^fail\s+node >= 22\s+found v18\.0\.0/m.test(old.out) && /1 failed: exit 1/.test(old.out), old.out);
+  // Node 20 reached end of life on 2026-04-30; 22 is the floor (#346).
+  eq(eolNode.value.code, 1, 'node 20');
+  assert(/^fail\s+node >= 22\s+found v20\.20\.2/m.test(eolNode.value.out), eolNode.value.out);
   eq(nothingOnPath.value.code, 0, `no renderer, browser or docker: exit 0\n${nothingOnPath.value.out}`);
   const broken = doc.assetRows(ROOT, { exists: (p) => !p.endsWith('index.json') && existsSync(p) });
   eq(broken.filter((r) => r[0] === 'fail').map((r) => r[1]).join(), 'excalidraw libraries', 'a missing asset is a fail row');

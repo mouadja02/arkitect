@@ -101,7 +101,7 @@ default. How to run them, and what each case checks:
 ## CI
 
 `.github/workflows/ci.yml` runs the suite on Ubuntu 24.04 and 26.04, Windows
-and macOS against Node 20, 22 and 24, with no local sources, so CI always sees
+and macOS against Node 22, 24 and 26, with no local sources, so CI always sees
 the fresh-clone result. No job uses `ubuntu-latest`: its switch to Ubuntu 26
 would change the image without anyone choosing it (#122). One more job runs
 the newest npm, for the packaging tests, and dry-runs `npm publish` on a

@@ -82,7 +82,7 @@ Caveats:
   suite from WSL or macOS. From Windows: `wsl -d <distro>`, put the plugin on
   the Linux filesystem rather than under `/mnt/c`, then `scripts/eval.sh`.
 - Prerequisites, all checked by `scripts/eval.sh --check`: Claude Code, logged
-  in once; Node 20+; on Linux `bubblewrap` and `socat` for the sandbox.
+  in once; Node 22+; on Linux `bubblewrap` and `socat` for the sandbox.
   `xvfb`, Draw.io Desktop and a browser are checked too, because they matter
   outside the sandbox - but none of them renders anything inside a run. See
   "What renders inside the sandbox" below.

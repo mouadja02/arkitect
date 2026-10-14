@@ -12,7 +12,7 @@ toolkit any other agent drives, and a CLI. Pick the route your tool needs.
 
 ## Requirements
 
-Node.js 20 or newer. There are no npm dependencies to install. Everything else
+Node.js 22 or newer. There are no npm dependencies to install. Everything else
 is optional and only widens what the agent can see:
 
 | | needed for |

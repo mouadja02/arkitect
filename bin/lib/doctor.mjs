@@ -203,7 +203,7 @@ export async function doctor({ root, cwd = process.cwd(), env = process.env, pla
   arch = process.arch, node = process.versions.node, log = console.log } = {}) {
   const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
   const rows = [
-    [Number(node.split('.')[0]) >= 20 ? OK : FAIL, 'node >= 20', `found v${node}`],
+    [Number(node.split('.')[0]) >= 22 ? OK : FAIL, 'node >= 22', `found v${node}`],
     ...assetRows(root),
     ...await styleRows(root, env),
     ...await rendererRows(root, { platform, env }),

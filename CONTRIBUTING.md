@@ -34,7 +34,7 @@ model or to an LLM judge. A change that adds weight, adds a dependency, or
 works only because a large model papers over it does not ship. The full
 statement is in `AGENTS.md`, under "What Arkitect optimises for".
 
-**Zero runtime dependencies.** Every script is plain Node 20+. If something
+**Zero runtime dependencies.** Every script is plain Node 22+. If something
 needs a library, it either does not belong here or belongs written out longhand
 in `scripts/lib/`. This is what makes Arkitect installable by a `git clone` and
 auditable in an afternoon.
