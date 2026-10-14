@@ -8,7 +8,7 @@
 // Offline and deterministic, like the others.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, mkdtempSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, chmodSync, mkdtempSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -1403,6 +1403,44 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
   const bash = spawnSync('bash', ['-n', 'scripts/eval.sh'], { cwd: ROOT, encoding: 'utf8' });
   if (bash.error) { console.log('      (bash was not found, so the parse check was skipped)'); return 'skip'; }
   eq(bash.status, 0, `bash rejected scripts/eval.sh: ${(bash.stderr || '').trim().slice(0, 200)}`);
+});
+
+// It passed --threshold 0 and exited with the run's own status, so a batch
+// whose every run errored exited 0. Under WSL it took the Windows claude from
+// /mnt/c, and it still accepted Node 20 (#369). Run for real against stubs:
+// a `claude` that writes the result it is handed, and a `node` that says 20.
+test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () => {
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(/\/mnt\/\[a-zA-Z\]\/\*\)/.test(sh) && sh.includes('linux claude'), 'the WSL check for a Windows claude is gone');
+  if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS only)'); return 'skip'; }
+
+  const dir = join(TMP, 'eval-sh');
+  const bin = join(dir, 'bin');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(bin, { recursive: true });
+  const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
+  stub('claude', 'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$STUB_RESULT" "$2"; shift; done; exit 0');
+  stub('bwrap', 'exit 0');
+  stub('socat', 'exit 0');
+  const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin` };
+  const run = (result, args = []) => {
+    writeFileSync(join(dir, 'result.json'), JSON.stringify(result));
+    return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], {
+      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json') },
+    });
+  };
+  const errored = run({ cases: [{ name: 'c', arms: { with: [{ score: 0, error: 'scaffold failed (exit 127)' }] } }],
+    aggregates: { overallScore: 0, overallPassRate: 0 } });
+  eq(errored.status, 1, `every run errored, so the script fails:\n${errored.stdout.slice(-400)}`);
+  const clean = run({ cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }],
+    aggregates: { overallScore: 1, overallPassRate: 1 } });
+  eq(clean.status, 0, `a clean run passes:\n${clean.stdout.slice(-400)}`);
+
+  stub('node', 'echo 20');
+  const old = spawnSync('bash', ['scripts/eval.sh', '--check'], { cwd: ROOT, encoding: 'utf8', env });
+  eq(old.status, 2, 'Node 20 is refused');
+  assert(old.stdout.includes('node >= 22'), old.stdout);
+  rmSync(dir, { recursive: true, force: true });
 });
 
 // A .sh authored on Windows is recorded 0644 by default, and the working-tree
