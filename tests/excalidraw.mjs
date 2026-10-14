@@ -2608,7 +2608,7 @@ test('no scene field can write an attribute or an element into the preview (#150
   // A frame name is a label: it is drawn, escaped, and that is correct. What
   // must never appear is the payload copied through as markup.
   assert(!svg.includes(payload), 'the payload is never written verbatim');
-  assert(!/<\/?(script|foreignObject|iframe|use|a)/i.test(svg), 'and no element that could carry behaviour');
+  assert(!/<\/?(script|foreignObject|iframe|use|a)\b/i.test(svg), 'and no element that could carry behaviour');
   assert(!/(NaN|Infinity)/.test(svg), 'and no nonfinite number is written');
   eq(xml.checkXml(svg).ok, true, 'the preview is well-formed XML');
 

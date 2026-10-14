@@ -989,6 +989,24 @@ test('no file still refers to a pre-merge project name', () => {
   assert(hits.length === 0, `stale names:\n        ${hits.slice(0, 10).join('\n        ')}`);
 });
 
+// A raw control character in source is invisible in review and in most
+// terminals. One sat in a regex as a backspace where `\b` was meant, so the
+// #150 preview-safety assertion could never fail (#365). A fixture that needs
+// one writes it as an escape.
+test('no committed text file holds a raw control character (#365)', () => {
+  const C0 = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
+  const scripts = repoFiles(ROOT, ({ name }) => /\.(sh|ya?ml)$/i.test(name));
+  const hits = [];
+  for (const f of new Set([...FILES, ...scripts])) {
+    const lines = readFileSync(f, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      const m = line.match(C0);
+      if (m) hits.push(`${relative(ROOT, f)}:${i + 1}: U+${m[0].charCodeAt(0).toString(16).padStart(4, '0').toUpperCase()}`);
+    });
+  }
+  assert(hits.length === 0, `raw control characters; write them as \\uXXXX escapes:\n        ${hits.slice(0, 10).join('\n        ')}`);
+});
+
 test('every relative link in the docs resolves', () => {
   const broken = [];
   const docs = FILES.filter((f) => f.endsWith('.md') || f.endsWith('.mdc'));

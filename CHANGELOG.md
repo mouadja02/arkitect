@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- The #150 check that no element able to carry behaviour reaches the Excalidraw preview could never fail: its `\b` was a literal backspace. It now reads `\b`, and a new test fails on any raw control character in a committed text file; the two fixtures that need one write it as `\u0001` (#365).
+
 ## [2.3.1] — 2026-10-14
 
 ### Added
