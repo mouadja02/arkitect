@@ -28,7 +28,8 @@ under `more` (#117). A generic word that only a cloud vendor's mark matches
 gets a `node` that draws a labelled box, and vendor-neutral `choices` only (#231). The rest of the detail is the same search without it.
 
 `--cell`/`--style`/`--data` print the raw XML cell, style string or data URI for
-an icon and exist only for hand-written XML (see `editing.md`). Redirect their
+an icon, by id or by a confident product name (an unsure one prints its choices
+and no bytes), and exist only for hand-written XML (see `editing.md`). Redirect their
 output straight to a file (`> cell.xml`); never read the bytes into the
 conversation.
 

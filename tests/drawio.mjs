@@ -1660,6 +1660,33 @@ test('recommendedSize is the library cell of every committed mark (#80)', () => 
   eq(hit.recommended, '78x69', 'a search recommends Restate at its cell');
 });
 
+// `redis --cell` dropped the flag and printed the search: the payload flags
+// worked only first, on an exact id, and an agent mid-edit built a scratch spec
+// to get the cell (#367).
+test('--cell, --style and --data work anywhere, on an id or a confident name (#367)', () => {
+  const run = (args) => spawnSync(process.execPath, [join(SCRIPTS, 'find-icon.mjs'), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const byId = run(['--cell', 'databases/redis']);
+  eq(byId.status, 0, 'by id');
+  assert(byId.stdout.startsWith('<mxCell id="icon-databases-redis"'), byId.stdout.slice(0, 80));
+  eq(run(['redis', '--cell']).stdout, byId.stdout, 'a name after the flag gives the same cell');
+  eq(run(['--cell', 'redis']).stdout, byId.stdout, 'and a name after it');
+  const placed = run(['Redis', '--cell', '--label', 'Redis Cache', '--x', '441', '--y', '340']).stdout;
+  assert(placed.includes('value="Redis Cache"') && placed.includes('x="441" y="340"'), 'value flags are not read as the name');
+  eq(run(['kafka', '--style']).stdout, run(['--style', 'streaming-orchestration/apachekafka']).stdout, 'style by name');
+  assert(run(['redis', '--data']).stdout.startsWith('data:image/'), 'data by name');
+
+  const tie = run(['monitor', '--cell']);
+  eq(tie.status, 1, 'an open tie is refused');
+  eq(tie.stdout, '', 'with no bytes on stdout');
+  const choices = JSON.parse(tie.stderr.split('\n')[0]).choices.map((c) => c.id);
+  assert(choices.includes('primitives/monitor') && choices.includes('azure/monitor'), `and its choices on stderr: ${choices}`);
+
+  const none = run(['--data', 'data-platforms/deltalake']);
+  eq(none.status, 1, 'an on-demand mark has no bytes to print');
+  assert(none.stderr.includes('ships no bytes') && !none.stderr.includes('    at '), 'and says why, without a stack');
+  eq(run(['--cell']).status, 2, 'nothing to print');
+});
+
 test('both SVG and PNG entries decode with real dimensions', () => {
   const aws = core.readLibrary(join(LIB_DIR, 'aws.drawio'));
   const svg = aws.find((e) => e.mime === 'image/svg+xml');
