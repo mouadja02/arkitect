@@ -60,7 +60,7 @@ Every route, and setup per agent: [docs/install.md](docs/install.md).
 
 - **Two engines, one workflow.** Draw.io for formal architecture a client or a
   review board will see; Excalidraw for sketches, system design and READMEs.
-- **6,005 icons bundled.** 4,843 marks in 18 shared packs (AWS, Azure, Google
+- **6,012 icons bundled.** 4,850 marks in 18 shared packs (AWS, Azure, Google
   Cloud, data platforms, databases, AI frameworks, streaming, observability,
   DevOps, security, SaaS, languages and more) plus 1,162 items
   across 36 Excalidraw libraries. Searched by product name, offline, and
@@ -94,7 +94,7 @@ has the full statement.
 |---|---|---|
 | looks | crisp, formal, vendor icons | hand-drawn |
 | for | a client, a review board, an RFC; AWS-heavy designs; several pages; as-is/to-be | system design, component and block diagrams, flows, README art |
-| icons | 18 packs, 4,843 marks + built-in `mxgraph.aws4.*` + fetched logos | 1,162 native items across 36 libraries + 4,843 shared marks as embedded artwork |
+| icons | 18 packs, 4,850 marks + built-in `mxgraph.aws4.*` + fetched logos | 1,162 native items across 36 libraries + 4,850 shared marks as embedded artwork |
 | edit in | Draw.io Desktop or VS Code, never the hosted editor | the local container (`npm run excalidraw:up`) or excalidraw.com |
 
 <div align="center">
@@ -109,7 +109,7 @@ has the full statement.
 
 | agent | loads | install |
 |---|---|---|
-| **Claude Code** | plugin: 6 skills, 2 hooks | `claude plugin install arkitect@arkitect` |
+| **Claude Code** | plugin: 6 skills, 4 hooks | `claude plugin install arkitect@arkitect` |
 | **Codex** | `AGENTS.md` + `.agents/skills/arkitect` (`$arkitect`) | `arkitect install codex` |
 | **Cursor** | `.cursor/rules/arkitect.mdc` + `/diagram` | `arkitect install cursor cursor-command` |
 | **OpenCode** | `AGENTS.md` + `.opencode/command/diagram.md` | `arkitect install opencode agents` |

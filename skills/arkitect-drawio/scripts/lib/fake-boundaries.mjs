@@ -31,7 +31,7 @@ const NAMED = 'named like a boundary, drawn as a box: move it to `boundaries` (`
 // The label's last word, less a trailing number: "Workload Account 2" is an
 // account, "Account service" is not.
 const BOUNDARY_WORDS = /\b(account|vpc|vnet|subnet|region|availability zone|resource group|tenant)$/i;
-const boundaryWord = (label) => String(label ?? '').trim().replace(/\s+\d+$/, '').match(BOUNDARY_WORDS)?.[1];
+export const boundaryWord = (label) => String(label ?? '').trim().replace(/\s+\d+$/, '').match(BOUNDARY_WORDS)?.[1];
 
 // Bigger in both directions, and around the other node's centre. A shape
 // smaller than the node it sits on is not claiming to contain it: a 2px dot

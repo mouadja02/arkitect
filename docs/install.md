@@ -12,7 +12,7 @@ toolkit any other agent drives, and a CLI. Pick the route your tool needs.
 
 ## Requirements
 
-Node.js 20 or newer. There are no npm dependencies to install. Everything else
+Node.js 22 or newer. There are no npm dependencies to install. Everything else
 is optional and only widens what the agent can see:
 
 | | needed for |
@@ -49,7 +49,7 @@ now.
 | `learn-drawio-style`, `learn-excalidraw-style` | only when you type the command |
 | `apply-drawio-style`, `apply-excalidraw-style` | only when you type the command |
 
-The plugin also carries three hooks:
+The plugin also carries four hooks:
 
 - `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
   adds one sentence saying a style carries over only through `/learn-*-style`,
@@ -62,10 +62,16 @@ The plugin also carries three hooks:
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
-  a validate warning intentional (#215, #328, #330).
+  a validate warning intentional (#215, #328, #330). It reads only a reply
+  naming a file the session built (#345), and sends back one linking the
+  hosted editor (#340).
+- `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or
+  `.excalidraw`, it refuses one the session has not analyzed, and one over
+  64 KB at all, naming the analyze command to run. A line range passes (#342).
 
-None reads anything but the prompt, a `*.spec.json` it names, the last reply
-and, after a build, the session's tool calls. None blocks a prompt.
+None reads anything but the prompt, a `*.spec.json` it names, the last reply,
+the size of a diagram about to be read and the session's tool calls. None
+blocks a prompt.
 
 ## npm
 

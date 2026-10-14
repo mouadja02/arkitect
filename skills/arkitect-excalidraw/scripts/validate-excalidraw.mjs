@@ -17,6 +17,7 @@ import {
 } from './lib/excalidraw-core.mjs';
 import { catalog, unattended } from './find-icon.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
+import { boundaryWord } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 
 const MAX_COORD = 200000;
 
@@ -377,6 +378,10 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   // over it, and an agent read that as done and reported a mark the file did
   // not have (#326). Here it is a warning, the last thing read before the
   // report. Only the mark's ref is printed, never the label.
+  for (const b of plainBoundaries(live).slice(0, 10)) {
+    warnings.push(`text ${who(b.text)} labels a plain shape named like a boundary (${b.named}), which owns nothing; `
+      + 'move it to `boundaries` in the spec and give each node inside it `parent`');
+  }
   const named = products ? plainProducts(live) : [];
   for (const p of named.slice(0, 10)) {
     warnings.push(`text ${who(p.text)} labels a plain shape, but its product has a bundled mark, ${p.icon}; `
@@ -469,12 +474,11 @@ export function connectorCrossings(elements) {
   return found;
 }
 
-// Plain shapes whose label names a product with a bundled mark: the text
-// bound to a rectangle, ellipse or diamond, or the free text of a group drawn
-// from such shapes and lines (a cylinder). A group with an image is an icon and
-// its text a caption; a shape around another shape is a boundary. The verdict
-// is the build's own namesAProduct one (#240).
-export function plainProducts(elements) {
+// The labels of plain shapes: the text bound to a rectangle, ellipse or
+// diamond, or the free text of a group drawn from such shapes and lines (a
+// cylinder). A group with an image is an icon and its text a caption; a shape
+// around another shape is a boundary.
+function plainLabels(elements) {
   const live = elements.filter((el) => !el.isDeleted);
   const byId = new Map(live.map((el) => [el.id, el]));
   const PLAIN = new Set(['rectangle', 'ellipse', 'diamond']);
@@ -500,6 +504,19 @@ export function plainProducts(elements) {
         && shapes.every((m) => (PLAIN.has(m.type) && !encloses(m)) || m.type === 'line')) labels.push(el);
     }
   }
+  return labels;
+}
+
+// A plain shape named like a boundary, "Management Account" or "Prod VPC",
+// owns nothing: the build lists it under looksLikeBoundary, and validate said
+// nothing (#341). The rule is the build's own.
+export const plainBoundaries = (elements) => plainLabels(elements)
+  .map((el) => ({ text: el.id, named: boundaryWord(el.text.replace(/\n/g, ' '))?.toLowerCase() })).filter((b) => b.named);
+
+// Plain shapes whose label names a product with a bundled mark. The verdict
+// is the build's own namesAProduct one (#240).
+export function plainProducts(elements) {
+  const labels = plainLabels(elements);
   if (!labels.length) return [];
   const entries = catalog();
   // Only a shape named for one product, as its whole label or a whole line of

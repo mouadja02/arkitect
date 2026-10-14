@@ -50,6 +50,7 @@ export const ICON_STYLE_BASE =
 // catch-all still beats a vague hit in a curated pack - otherwise "tailwindcss"
 // would lose to whatever "tail" happened to match.
 const CATCH_ALL_PENALTY = 10;
+const CATCH_ALL = 'brands';
 const CONTEXT_BONUS = 12;
 const CONFIDENT_AT = 85;
 const CLEAR_MARGIN = 15;
@@ -108,8 +109,8 @@ export function score(icon, query, opts = {}) {
   return match(icon, query, opts).strength;
 }
 
-export function search(query, { limit = 8, catalog = loadCatalog(), packs = null, pack = null } = {}) {
-  const pool = pack ? catalog.icons.filter((i) => i.pack === pack) : catalog.icons;
+export function search(query, { limit = 8, catalog = loadCatalog(), packs = null, pack = null, skip = null } = {}) {
+  const pool = catalog.icons.filter((i) => (!pack || i.pack === pack) && !skip?.(i.pack));
   const ranked = pool
     .map((icon) => {
       const m = match(icon, query, { packs, catalog });
@@ -138,6 +139,31 @@ export function search(query, { limit = 8, catalog = loadCatalog(), packs = null
 // The head never settles a tie the whole query found (#75), and never reaches
 // a vendor's mark the spec did not ask for: "billing service" is not GCP's.
 export function resolve(query, opts = {}) {
+  const result = resolveNamed(query, opts);
+  if (result.confident) return result;
+  // A query that names the vendor names its stack, as the spec's context does:
+  // "Azure Key Vault" is Key Vaults, which "key vault" alone no longer draws
+  // (#347). Only that vendor's own mark is taken this way.
+  const m = VENDOR_LEAD.exec(String(query ?? '').trim());
+  if (!m) return result;
+  const pack = VENDOR_OF_WORD[m[1].toLowerCase().replace(/\s+/g, ' ')];
+  // "Google Cloud Router" is Cloud Router: try the name with the vendor's
+  // first word gone as well as all of it.
+  const rests = [m[2], ...(/\s/.test(m[1]) ? [String(query).trim().replace(/^\S+\s+/, '')] : [])];
+  for (const rest of rests) {
+    const stack = resolveNamed(rest, { ...opts, packs: [...new Set([...(opts.packs ?? []), pack])] });
+    if (stack.confident && stack.icon.pack === pack) return { ...stack, query };
+  }
+  return result;
+}
+
+const VENDOR_LEAD = /^(microsoft azure|azure|amazon web services|aws|amazon|google cloud|google|gcp)\s+(.+)$/i;
+const VENDOR_OF_WORD = {
+  'microsoft azure': 'azure', azure: 'azure', 'amazon web services': 'aws', aws: 'aws', amazon: 'aws',
+  'google cloud': 'gcp', google: 'gcp', gcp: 'gcp',
+};
+
+function resolveNamed(query, opts) {
   const whole = resolveWhole(query, opts);
   const head = productHead(query);
   const open = whole.confident ? borrowsAName(whole.icon, head, query, opts)
@@ -172,18 +198,42 @@ export function productHead(query) {
 function resolveWhole(query, opts = {}) {
   const groups = search(query, opts);
   if (!groups.length) return { query, confident: false, reason: 'no match', groups: [] };
-  const [top, next] = groups;
+  // A vendor's mark the spec and the query never asked for (#347). It loses a
+  // tie to a vendor-neutral mark, and does not count as the runner-up that
+  // stops a neutral leader. A query of generic words looks past every one of
+  // them to the neutral packs: "router" is a router, not Google's Cloud Router.
+  const barred = (g) => (VENDOR_PACKS.has(g.pack) && !opts.packs?.includes(g.pack) && !VENDOR_NAMES[g.pack].test(query))
+    // Nor does a company named for the idea: "chatbot" is not ChatBot's logo.
+    || (g.pack === CATCH_ALL && onlyGenericWords(query) && !opts.packs?.includes(g.pack));
+  const judged = judge(query, groups, opts, barred);
+  if (!judged.confident && barred(groups[0]) && onlyGenericWords(query)) {
+    const neutral = search(query, { ...opts, skip: (pack) => barred({ pack }) });
+    const found = neutral.length ? judge(query, neutral, opts, barred) : null;
+    if (found?.confident) return found;
+  }
+  return judged;
+}
+
+function judge(query, ranked, opts, barred) {
+  let groups = ranked;
+  if (groups[1] && barred(groups[0]) && !barred(groups[1]) && groups[1].best === groups[0].best) {
+    groups = [groups[1], groups[0], ...groups.slice(2)];
+  }
+  const [top] = groups;
+  const next = barred(top) ? groups[1] : groups.slice(1).find((g) => !barred(g) || g.best > top.best);
   const margin = next ? top.best - next.best : Infinity;
   // A stack the spec named settles a tie the scores cannot. Two packs can ship
   // marks with exactly the same title - Azure and primitives both call one
   // "Monitor" - and both then score 105, so the margin is 0 and nothing is
   // drawn. CONTEXT_BONUS is below CLEAR_MARGIN, so naming the stack could not
-  // decide it either. When the whole of the leader's margin is that bonus and
-  // the runner-up sits outside the named packs, the spec has already said which
-  // one it means (#75). A runner-up inside those packs still decides nothing.
+  // decide it either. When the leader is in the named packs and the runner-up
+  // sits outside them, the spec has already said which one it means (#75),
+  // even when the runner-up's own title is a closer match: a GCP spec's
+  // "router" is Cloud Router, not the generic Router (#347). A runner-up
+  // inside those packs still decides nothing.
   const decidedByContext = Boolean(next && opts.packs?.length
     && opts.packs.includes(top.pack) && !opts.packs.includes(next.pack)
-    && margin >= CONTEXT_BONUS);
+    && margin > 0);
   // A generic word never draws a cloud vendor's own mark unattended, unless
   // the spec names that vendor's stack (#231).
   const vendorForGeneric = VENDOR_PACKS.has(top.pack) && onlyGenericWords(query)

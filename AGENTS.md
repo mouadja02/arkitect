@@ -10,7 +10,7 @@ OpenCode, Cursor, Copilot, Antigravity, Pi, and most others). Claude Code loads
 the same knowledge as skills; see `skills/*/SKILL.md`, which go deeper.
 
 `ARKITECT_ROOT` below means this repository's directory. Every path is relative
-to it, and every command is Node 20+ with **no dependencies to install**.
+to it, and every command is Node 22+ with **no dependencies to install**.
 
 ---
 
@@ -19,7 +19,7 @@ to it, and every command is Node 20+ with **no dependencies to install**.
 Two constraints govern every change, and they outrank any feature:
 
 1. **Stay functional and lightweight.** No dependencies, no services, no build
-   step — Node 20+ and the files in this repository.
+   step — Node 22+ and the files in this repository.
 2. **Work with whatever model is driving.** A small local model must get a good
    diagram out of this, not only a frontier one.
 
@@ -48,7 +48,7 @@ model papers over it does not ship — however good the output looks.
 |---|---|---|
 | looks like | crisp, formal, vendor icons | hand-drawn, sketchy |
 | best for | solution architecture for a client or a review board, AWS-heavy designs, multi-page decks, as-is/to-be comparisons | system design, whiteboard-style architecture, component and block diagrams, flows and decision paths, anything for a README |
-| icons | 18 packs, 4,843 marks — 311 AWS Architecture Icons, Azure, Google Cloud and curated product packs — + built-in `mxgraph.aws4.*` + real product logos fetched from the web | 1,162 native items across 36 bundled libraries plus the 4,843 shared marks as embedded original artwork |
+| icons | 18 packs, 4,850 marks — 311 AWS Architecture Icons, Azure, Google Cloud and curated product packs — + built-in `mxgraph.aws4.*` + real product logos fetched from the web | 1,162 native items across 36 bundled libraries plus the 4,850 shared marks as embedded original artwork |
 | edit later in | Draw.io Desktop or the VS Code extension, never the hosted editor | the Excalidraw container this repo ships, or excalidraw.com |
 
 If the person did not say which, ask once in a single line, or infer: "solution
@@ -108,13 +108,13 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
 7. **Render it and actually look at the PNG.** Read the image back. Iterate on
    spacing, hierarchy, routing and label legibility. A diagram that validates
    but reads badly is not done.
-8. **Report.** File path, assumptions, validation and render results, which
-   icons came from where, anything unresolved, and any deliberate deviation
-   from the style guide. When the user named no engine, which one you chose and
-   why it over the other — §1 asks for the reason, and the report is where it
-   goes. Each validate warning still printed is named with every id it gives,
-   as a defect still there, and each defect seen in the render and left by
-   page — never "minor" or "a few".
+8. **Report** under **File**, **Engine** (if none was named: why it
+   over the other, §1), **Assumptions**, **Icons** (sources, gaps),
+   **Validation**, **Render**, **Deviations** from the style guide. Each
+   validate warning still printed is named with every id it gives, as a defect
+   still there, and each defect seen in the render and left by page — never
+   "minor" or "a few". Save it, run `node bin/arkitect.mjs report <file>`
+   (`--png-viewed` once you looked) and fix what it names.
 
 ## 3. Commands
 

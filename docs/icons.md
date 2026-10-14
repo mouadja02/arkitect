@@ -1,10 +1,10 @@
 # Icons
 
 A box labelled "Snowflake" is a wireframe of your system, not a diagram of it.
-Arkitect ships 6,005 marks and refuses to fake the rest.
+Arkitect ships 6,012 marks and refuses to fake the rest.
 
 ```bash
-arkitect drawio icon "bedrock"          # 4,843 marks in 18 packs
+arkitect drawio icon "bedrock"          # 4,850 marks in 18 packs
 arkitect drawio icon --list-packs       # what each pack holds, live counts
 arkitect excalidraw icon "postgres"     # native libraries, then the shared packs
 arkitect excalidraw icon --stats
@@ -14,8 +14,8 @@ arkitect excalidraw icon --stats
 
 | | Draw.io | Excalidraw |
 |---|---|---|
-| bundled | 4,843 marks across 18 packs | 1,162 native items across 36 libraries plus 4,843 shared marks |
-| coverage | AWS (311), Azure (638), Google Cloud (249), plus curated packs for data platforms, databases, AI frameworks, ML, streaming, observability, DevOps, security, GitHub, SaaS, languages and file types; agent and architecture concepts as tiles; 3,092 more brands as a catch-all | AWS (249), Azure (86), GCP (83), Google products (139), Snowflake (54), data platform (33), DevOps (29), IT logos (38), plus system-design components, forms, network topology, sticky notes |
+| bundled | 4,850 marks across 18 packs | 1,162 native items across 36 libraries plus 4,850 shared marks |
+| coverage | AWS (311), Azure (638), Google Cloud (249), plus curated packs for data platforms, databases, AI frameworks, ML, streaming, observability, DevOps, security, GitHub, SaaS, languages and file types; agent and architecture concepts as tiles; 3,099 more brands as a catch-all | AWS (249), Azure (86), GCP (83), Google products (139), Snowflake (54), data platform (33), DevOps (29), IT logos (38), plus system-design components, forms, network topology, sticky notes |
 | beyond that | Draw.io's built-in `mxgraph.aws4.*` shapes; a fetched logo | a library from the public catalogue; an icon built from a logo |
 | per-pack detail | [pack index](../skills/arkitect-drawio/references/pack-index.md) | [library credits](../skills/arkitect-excalidraw/assets/libraries/bundled/ATTRIBUTION.md) |
 
@@ -49,19 +49,26 @@ drawn unattended. A result that isn't confident is a question, not an answer.
   RabbitMQ. `tempo` doesn't name Grafana Tempo, so it comes back flagged.
 - **A generic word isn't a vendor's product.** `service`, `storage`, `function`
   never take an AWS, Azure or GCP mark unattended; the node gets a labelled box
-  or a placeholder (#231). Azure's App Service is named entirely in generic
-  words, so it needs `context.packs` or its exact id.
+  or a placeholder (#231). The same holds for every architecture noun a vendor
+  titles a product with, `router`, `etl`, `region`, `key vault`, `iam`, and for
+  a company named for the idea: a vendor-neutral mark draws instead, if one
+  matches (#347). Azure's Key Vault is named entirely in generic words, so it
+  needs `context.packs`, the vendor in the name ("Azure Key Vault"), or its
+  exact id. A vendor alias names its product, never the idea: AWS Glue no
+  longer answers to `etl`.
 - **The product before the vendor.** "HashiCorp Vault" draws Vault, not
   HashiCorp's company logo (#285). "Redis cache" draws Redis, and ElastiCache
   only when the spec names AWS (#283).
 - **Ties stay open.** Two packs with the same exact title, Azure and
   `primitives` both calling one mark **Monitor**, both come back flagged until
-  `context.packs` names one (#75).
+  `context.packs` names one (#75). A cloud vendor's mark against a single
+  vendor-neutral one is not a tie: "Oracle Database" draws Oracle's own mark,
+  not Azure's tile, unless the spec names Azure (#347).
 
 Searches never print image payloads. `--compact` prints one line: the verdict
 and a spec node to paste. The rules are held to account by answer keys: for
-Draw.io, `tests/icon-queries.json` is an answer key of 471
-queries, plus 43 that must
+Draw.io, `tests/icon-queries.json` is an answer key of 489
+queries, plus 53 that must
 come back flagged, and the suite fails on any confident wrong answer.
 
 Search results also carry:
@@ -153,7 +160,7 @@ use its number.
 
 ### Shared packs
 
-When no library item is confident, the 4,843 Draw.io marks fill the gap as
+When no library item is confident, the 4,850 Draw.io marks fill the gap as
 embedded original SVG or PNG. Caption, size and connections stay editable; the
 logo's paths are not Excalidraw strokes. Pick one exactly with its Draw.io id:
 

@@ -1,6 +1,6 @@
 // Shared backup naming and retention for both diagram engines.
 
-import { existsSync, copyFileSync, readdirSync, statSync, unlinkSync, constants } from 'node:fs';
+import { existsSync, copyFileSync, readFileSync, readdirSync, statSync, unlinkSync, constants } from 'node:fs';
 import { dirname, join, basename, extname, resolve } from 'node:path';
 
 // A backup is created exclusively and never replaces an earlier one. Two updates
@@ -35,6 +35,25 @@ export function backupExisting(path, { now = new Date() } = {}) {
   }
   throw new Error(`no free backup name for ${path}: ${MAX_BACKUPS_PER_SECOND} already exist for ${stamp}`);
 }
+
+// Asked to add one node to a .drawio someone drew, an agent wrote a spec for
+// the whole diagram and built over it; the user's corners and colours came
+// back in the house style and the report said it had followed the file
+// (#339). The backup was the only trace. So a builder asks, before its
+// backup, whether the file it replaces carries the engine's sign of an
+// Arkitect build (`isOurs(text)`), and when it does not, its report says what
+// was lost and where the original went. Never refused: rebuilding a diagram
+// that was drawn by hand can be what the user asked for.
+export function replacesForeign(path, isOurs) {
+  if (!existsSync(path)) return false;
+  let text;
+  try { text = readFileSync(path, 'utf8'); } catch { return false; }
+  try { return !isOurs(text); } catch { return true; }
+}
+
+export const foreignNote = (path, backup) => `${path} carries no sign of an Arkitect build, so its own styling, `
+  + `positions and anything drawn by hand were replaced by this build; the original is at ${backup}. To change a `
+  + 'diagram someone drew, edit it in place instead, as references/editing.md says, and say so in the report';
 
 // Retention (#49). Every rebuild leaves a backup, so a build-look-fix loop used
 // to leave ten or twenty beside the user's diagram. After a successful write

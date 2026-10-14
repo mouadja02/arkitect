@@ -6,12 +6,13 @@
 // 3.0.0 batch. SKILL.md step 9 says both things already; wording has not moved
 // either, as it did not for #265.
 //
-// So on Stop, in a session that ran an Arkitect build, the reply is checked
-// for the six headings the report needs (Engine is asked for only when the
-// user named no engine); when no PNG was opened, for a Render section that
-// describes the picture anyway or doesn't say nothing saw it; and for a
-// validate warning explained away. Any of them sends the reply back once,
-// saying what to fix. Any other session is not read past its last reply.
+// So on Stop, in a session that ran an Arkitect build, a reply naming the file
+// that build wrote is checked for the six headings the report needs (Engine is
+// asked for only when the user named no engine); when no PNG was opened, for a
+// Render section that describes the picture anyway or doesn't say nothing saw
+// it; for a validate warning explained away; and for a link to the hosted
+// editor. Any of them sends the reply back once, saying what to fix. Any other
+// session is not read past its last reply.
 
 import { readFileSync } from 'node:fs';
 import { lastReply } from './style-question.mjs';
@@ -49,6 +50,12 @@ export const admitsUnseen = (section) => UNSEEN.test(String(section)) || FAILED.
 const EXCUSE = /\b(intentional(ly)?|by (design|spec)|expected|acceptable|harmless|cosmetic|minor|benign|false positives?|ignor(e|ed|able))\b|\b(not|n't)\b[^.]{0,20}\b(errors?|defects?|problems?|issues?|bugs?)\b/i;
 const NO_WARNINGS = /\b(no|0|zero|without)\s+(\w+\s+)?warnings?\b/gi;
 
+// A report linked "Draw.io Desktop" to www.draw.io, the web app (#340). The
+// eval cases grade `no-hosted-editor` with this same pattern (#186); a test
+// keeps the two identical.
+export const HOSTED = /app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net\/\?|\/\/(?:www\.)?draw\.io/;
+export const DESKTOP = 'https://github.com/jgraph/drawio-desktop/releases';
+
 const ABOUT_A_WARNING = /\bwarn(ing|ings|s|ed)?\b|\boverlap|\bborder\b|\bdefects?\b/i;
 const sentences = (text) => String(text).split(/(?<=[.!?])\s+|\n+/);
 
@@ -60,9 +67,20 @@ export function excusesAWarning(reply) {
     .map((s) => s.match(EXCUSE)?.[0]).find(Boolean) ?? null;
 }
 
-// What the session did, from its transcript: a build, and a PNG opened.
+// The file a build command wrote, by basename, from `--out x` or `--out=x`.
+// A path the shell expands (`$OUT`, `%OUT%`) can't be read here, so it stands
+// for any file, as every build did before #345.
+export function outOf(command) {
+  const m = String(command).match(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|(\S+))/);
+  if (!m) return null;
+  const path = m[1] ?? m[2] ?? m[3];
+  return /[$%]/.test(path) ? '*' : path.split(/[\\/]/).pop();
+}
+
+// What the session did, from its transcript: a build, the files it wrote, and
+// a PNG opened.
 export function sessionOf(transcriptPath) {
-  const seen = { built: false, viewed: false };
+  const seen = { built: false, viewed: false, outs: [] };
   try {
     for (const line of readFileSync(transcriptPath, 'utf8').split('\n')) {
       if (!line.includes('"tool_use"')) continue;
@@ -70,7 +88,12 @@ export function sessionOf(transcriptPath) {
         const e = JSON.parse(line);
         for (const part of (e.message ?? e).content ?? []) {
           if (part?.type !== 'tool_use') continue;
-          if (SHELLS.includes(part.name) && BUILD.test(String(part.input?.command ?? ''))) seen.built = true;
+          const command = String(part.input?.command ?? '');
+          if (SHELLS.includes(part.name) && BUILD.test(command)) {
+            seen.built = true;
+            const out = outOf(command);
+            if (out && !seen.outs.includes(out)) seen.outs.push(out);
+          }
           if (part.name === 'Read' && /\.png$/i.test(String(part.input?.file_path ?? ''))) seen.viewed = true;
         }
       } catch { /* one bad line is not ours to fail */ }
@@ -90,8 +113,10 @@ export function sectionOf(reply, name) {
 }
 export const renderSection = (reply) => sectionOf(reply, 'Render');
 
-// Each problem with a report, as a sentence to send back.
-export function problems(reply, { viewed }) {
+// Each problem with a report, as a sentence to send back. `unseen` says how
+// the check knows no PNG was looked at: the hook reads the session, the
+// portable command takes the agent's word (#302).
+export function problems(reply, { viewed, unseen = 'no PNG was opened in this session' }) {
   const out = [];
   const missing = HEADINGS.filter((h) => !heading(h).test(String(reply ?? '')));
   if (missing.length) {
@@ -102,10 +127,10 @@ export function problems(reply, { viewed }) {
   const render = renderSection(reply);
   const said = describesThePicture(render);
   if (!viewed && said) {
-    out.push(`no PNG was opened in this session, so nothing has seen the diagram, but Render says "${said}": say what `
+    out.push(`${unseen}, so nothing has seen the diagram, but Render says "${said}": say what `
       + "was rendered and that you haven't seen it, and give spacing and crossings only as validate's findings");
   } else if (!viewed && render.trim() && !admitsUnseen(render)) {
-    out.push("no PNG was opened in this session, so nothing has seen the diagram, and Render doesn't say so: say what "
+    out.push(`${unseen}, so nothing has seen the diagram, and Render doesn't say so: say what `
       + "was rendered and that you haven't seen it, and give spacing and crossings only as validate's findings");
   }
   const excuse = excusesAWarning(reply);
@@ -114,15 +139,31 @@ export function problems(reply, { viewed }) {
       + 'even when the spec could not change: name each one as a defect still there, with its ids, and drop "'
       + `${excuse}"`);
   }
+  const hosted = String(reply ?? '').match(HOSTED)?.[0];
+  if (hosted) {
+    out.push(`the reply links ${hosted}, the hosted editor, and a diagram dropped into it leaves the machine: link `
+      + `Draw.io Desktop's releases page, ${DESKTOP}, or name the VS Code extension instead`);
+  }
   return out;
+}
+
+// A reply is a report of a build only when it names a file that build wrote: a
+// status message that mentions "an existing `.drawio`" hours after a build run
+// to reproduce a bug is not one, and no honest rewrite could satisfy the check
+// (#345).
+const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function namesABuiltFile(reply, outs) {
+  const text = String(reply ?? '');
+  return outs.some((out) => (out === '*' ? /\.(drawio|excalidraw)\b/.test(text)
+    : new RegExp(`(^|[^\\w.-])${escape(out)}(?![\\w.-]*\\w)`, 'i').test(text)));
 }
 
 export function respond(input) {
   if (input.hook_event_name !== 'Stop' || input.stop_hook_active) return null;
   const reply = input.last_assistant_message ?? lastReply(input.transcript_path);
-  if (!/\.(drawio|excalidraw)\b/.test(String(reply ?? ''))) return null;
+  if (!/\.(drawio|excalidraw|json)\b/.test(String(reply ?? ''))) return null;
   const session = sessionOf(input.transcript_path);
-  if (!session.built) return null;
+  if (!session.built || !namesABuiltFile(reply, session.outs)) return null;
   const found = problems(reply, session);
   if (!found.length) return null;
   return JSON.stringify({ decision: 'block', reason: `Arkitect: ${found.join('; and ')}. Write the whole report again.` });

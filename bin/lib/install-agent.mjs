@@ -39,7 +39,7 @@ ${read} In short:
   Never substitute one product's mark for another; use a named placeholder and
   say so.
 - **Generate from a spec**, validate, render, and *look at the PNG* before
-  calling it done.
+  calling it done. Save the report and check it with \`report\` before sending it.
 - **Nothing is uploaded.** Diagrams stay local; only a public product logo or
   the public Excalidraw catalogue ever leaves the machine, and never with
   anything from the diagram in the query.
@@ -50,6 +50,7 @@ node "${join(root, 'bin', 'arkitect.mjs')}" drawio icon "bedrock" --compact
 node "${join(root, 'bin', 'arkitect.mjs')}" drawio build spec.json --out docs/arch.drawio
 node "${join(root, 'bin', 'arkitect.mjs')}" excalidraw icon "postgres" --compact
 node "${join(root, 'bin', 'arkitect.mjs')}" excalidraw build spec.json --out docs/arch.excalidraw
+node "${join(root, 'bin', 'arkitect.mjs')}" report report.md --png-viewed   # exit 1: fix what it names
 \`\`\`
 `;
 
@@ -71,7 +72,8 @@ description: Draw an editable architecture, system or flow diagram (Draw.io or E
 Draw the diagram the user asked for using Arkitect, installed at \`${root}\`.
 
 Read \`${join(root, 'AGENTS.md')}\` first — it is the contract — and follow
-its §2, the report in step 8 included.
+its §2, the report in step 8 included, checked with
+\`node "${join(root, 'bin', 'arkitect.mjs')}" report <saved report>\`.
 
 $ARGUMENTS
 `;

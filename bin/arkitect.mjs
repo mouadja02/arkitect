@@ -62,7 +62,7 @@ function usage() {
     `arkitect ${version} - editable Draw.io and Excalidraw diagrams, drawn by your agent`,
     '',
     'usage: arkitect <engine> <command> [args...]',
-    '       arkitect install [agent] | test | doctor | where | version',
+    '       arkitect install [agent] | report <file> | test | doctor | where | version',
     '',
   ];
   for (const [engine, verbs] of Object.entries(COMMANDS)) {
@@ -100,6 +100,10 @@ if (first === 'doctor') {
 if (first === 'install') {
   const { install } = await import(pathToFileURL(join(HERE, 'lib', 'install-agent.mjs')).href);
   process.exit(install(ROOT, argv.slice(1)));
+}
+if (first === 'report') {
+  const { report } = await import(pathToFileURL(join(HERE, 'lib', 'report.mjs')).href);
+  process.exit(report(argv.slice(1)));
 }
 if (first === 'test') {
   // The suite ships with the git checkout, not the npm package (#38).

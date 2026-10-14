@@ -1965,7 +1965,7 @@ test('Teleport, Argo CD, Playwright and dlt ship from sources already pinned (#2
     ['security-identity/teleport', 'Teleport', 'devicon@2.17.0', 'icons/teleport/teleport-original.svg'],
     ['devops/argocd', 'Argo CD', 'devicon@2.17.0', 'icons/argocd/argocd-original.svg'],
     ['languages-runtimes/playwright', 'Playwright', 'devicon@2.17.0', 'icons/playwright/playwright-original.svg'],
-    ['streaming-orchestration/dlthub', 'dlt', 'simple-icons@16.30.0', 'dlthub'],
+    ['streaming-orchestration/dlthub', 'dlt', 'simple-icons@16.35.0', 'dlthub'],
   ]) {
     const r = byId.get(id);
     assert(r, `${id} does not ship`);
@@ -2018,7 +2018,7 @@ test('a name that only starts a different product flags itself instead of resolv
   }
   // A prefix that only drops a generic tail still names the product.
   for (const [q, id] of [['postgres', 'databases/postgresql'], ['rabbit', 'streaming-orchestration/rabbitmq'],
-    ['envoy', 'devops/envoyproxy'], ['key vault', 'azure/key-vaults'], ['storage account', 'azure/storage-accounts']]) {
+    ['envoy', 'devops/envoyproxy'], ['azure key vault', 'azure/key-vaults'], ['azure storage account', 'azure/storage-accounts']]) {
     const r = finder.resolve(q);
     assert(r.confident, `"${q}" lost confidence: ${r.reason}`);
     eq(r.icon.id, id, `"${q}"`);
@@ -2109,7 +2109,9 @@ test('a product name before generic words draws the product, not a vendor mark c
     ['activity log', 'azure/activity-log'], ['amazon elasticache', 'aws/amazon-elasticache']]) {
     eq(drawn(q), id, `"${q}"`);
   }
-  for (const q of ['oracle database', 'billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
+  // Oracle's own mark wins the tie with Azure's tile of the same name (#347).
+  eq(drawn('oracle database'), 'databases/oracle', 'Oracle Database');
+  for (const q of ['billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
 
   // Every alias a vendor mark carries that names another bundled product,
   // not through the vendor's own title or name, must not draw the vendor.
@@ -2139,7 +2141,7 @@ test('a product name before generic words draws the product, not a vendor mark c
     }
   }
   eq(borrowed.map(([id, a]) => `${id} "${a}"`).join(', '), 'aws/amazon-elasticache "redis cache", aws/amazon-elasticache "memcached cache", '
-    + 'aws/amazon-opensearch-service "elasticsearch service", gcp/cloud-composer "managed airflow"', 'the aliases that name another product');
+    + 'aws/amazon-opensearch-service "elasticsearch service"', 'the aliases that name another product (Composer\'s "managed airflow" names a concept, gone with #347)');
   for (const [id, a, got] of borrowed) assert(got !== id, `"${a}" still draws ${id} unattended`);
 });
 
@@ -2164,6 +2166,50 @@ test('icon resolution corpus: never confidently wrong, and precision at rank 1 h
   assert(!wrong.length, `confident and wrong: ${wrong.join('; ')}`);
   assert(m.top1 / m.answerable >= key.precisionFloor,
     `precision@1 ${pct(m.top1, m.answerable)} fell below the ${key.precisionFloor * 100}% floor`);
+});
+
+// "router" drew Google's Cloud Router, "etl" AWS Glue, "state machine" Step
+// Functions, "object storage" S3: 24 of 63 common architecture nouns drew a
+// vendor's mark with no vendor in the spec (#347).
+const vendorAliases = await import(`file://${join(SCRIPTS, 'lib', 'vendor-aliases.mjs').replace(/\\/g, '/')}`);
+test('a generic noun draws no cloud vendor\'s mark unless the spec or the query names the vendor (#347)', () => {
+  const { aliasNamesItsProduct } = vendorAliases;
+  for (const [alias, title] of [['etl', 'AWS Glue'], ['state machine', 'AWS Step Functions'], ['object storage', 'Amazon Simple Storage Service'],
+    ['blob', 'Storage Accounts'], ['web app', 'App Services'], ['serverless function', 'AWS Lambda'], ['managed airflow', 'Cloud Composer']]) {
+    assert(!aliasNamesItsProduct(alias, title), `"${alias}" names a concept, not ${title}`);
+  }
+  for (const [alias, title] of [['s3', 'Amazon Simple Storage Service'], ['aks', 'Kubernetes Services'], ['iam', 'Identity and Access Management'],
+    ['key vault', 'Key Vaults'], ['relational database service', 'Amazon RDS'], ['dynamo', 'Amazon DynamoDB'], ['google redis', 'Memorystore']]) {
+    assert(aliasNamesItsProduct(alias, title), `"${alias}" names ${title}`);
+  }
+  const sources = JSON.parse(readFileSync(join(SKILL, 'assets', 'libraries', 'sources.json'), 'utf8'));
+  const cat = finder.loadCatalog();
+  const bad = [];
+  for (const pack of sources.packs.filter((p) => ['aws', 'azure', 'gcp'].includes(p.id))) {
+    for (const map of [pack.aliasExtras ?? {}, pack.abbreviations ?? {}]) {
+      for (const [slug, aliases] of Object.entries(map)) {
+        const title = cat.icons.find((i) => i.id === `${pack.id}/${slug}`)?.title ?? slug;
+        for (const a of aliases) if (!aliasNamesItsProduct(a, title)) bad.push(`${pack.id}/${slug} "${a}"`);
+      }
+    }
+  }
+  eq(bad.join(', '), '', 'every vendor alias names its own product');
+
+  const drawn = (q, opts) => { const r = finder.resolve(q, opts); return r.confident ? r.icon.id : null; };
+  const vendor = /^(aws|azure|gcp)\//;
+  for (const q of ['router', 'agent', 'agents', 'etl', 'object storage', 'block storage', 'directory', 'translation', 'vision', 'region',
+    'model', 'notebook', 'chatbot', 'iam', 'waf', 'nat gateway', 'virtual machine', 'sql database', 'key vault', 'billing',
+    'artifact registry', 'secret manager', 'text to speech', 'subnet', 'state machine']) {
+    assert(!vendor.test(drawn(q) ?? ''), `"${q}" drew ${drawn(q)}`);
+    assert(!/^brands\//.test(drawn(q) ?? ''), `"${q}" drew a company's logo, ${drawn(q)}`);
+  }
+  eq(drawn('router'), 'agents/router', 'a neutral router');
+  eq(drawn('router', { packs: ['gcp'] }), 'gcp/cloud-router', 'a GCP spec\'s router is Cloud Router');
+  for (const [q, id] of [['azure key vault', 'azure/key-vaults'], ['google cloud router', 'gcp/cloud-router'], ['aws glue', 'aws/aws-glue'],
+    ['google text-to-speech', 'gcp/text-to-speech'], ['lambda', 'aws/aws-lambda'], ['s3', 'aws/amazon-simple-storage-service']]) {
+    eq(drawn(q), id, `"${q}" names its product or its vendor`);
+  }
+  eq(drawn('azure lambda'), null, 'naming one vendor never takes another\'s mark');
 });
 
 // Two packs can ship marks with exactly the same title, and both then score 105,
@@ -2192,7 +2238,21 @@ test('every exact-title tie is judged, and naming the stack settles it (#75)', (
     if (!judged.has(title)) {
       problems.push(`"${title}" ties ${group.map((i) => i.id).join(' and ')}, with no row in icon-queries.json`);
     }
-    if (finder.resolve(title).confident) {
+    // A cloud vendor's mark loses a tie to the one vendor-neutral mark that
+    // shares its title, so the neutral one draws with no stack named (#347).
+    // Any other tie still needs the stack.
+    const vendors = new Set(['aws', 'azure', 'gcp']);
+    const neutral = group.filter((i) => !vendors.has(i.pack));
+    const plain = finder.resolve(title);
+    if (neutral.length === 1 && neutral.length < group.length) {
+      // Unless a neutral runner-up is as close: primitives ships Desktop
+      // beside Monitor, agents Orchestrator beside GitHub's Workflow.
+      const rest = finder.search(title, { skip: (pack) => vendors.has(pack) || pack === 'brands' });
+      const crowded = rest[1] && rest[0].best - rest[1].best < 15;
+      if (crowded ? plain.confident : (!plain.confident || plain.icon.id !== neutral[0].id)) {
+        problems.push(`"${title}" should draw the neutral ${neutral[0].id} with no stack named: ${plain.confident ? plain.icon.id : plain.reason}`);
+      }
+    } else if (plain.confident) {
       problems.push(`"${title}" is confident with no stack named, although ${group.length} packs share the title`);
     }
     for (const icon of group) {
@@ -2594,8 +2654,11 @@ test('AWS and Google Cloud captions their file names mangled are corrected, and 
     ['gcp/beyondcorp', 'BeyondCorp', 'beyondcorp'], ['gcp/speech-to-text', 'Speech-to-Text', 'speech to text'],
   ]) {
     eq(title(id), caption, id);
+    // "Speech-to-Text" is all generic words, which draw Google's mark only
+    // with Google's stack named (#347).
+    const opts = id === 'gcp/speech-to-text' ? { packs: ['gcp'] } : {};
     for (const q of [caption, upstream]) {
-      const r = finder.resolve(q);
+      const r = finder.resolve(q, opts);
       assert(r.confident && r.icon.id === id, `"${q}" should resolve to ${id}, got ${r.icon?.id} (${r.reason})`);
     }
   }
@@ -4446,6 +4509,132 @@ test('a box named like an account or a VPC is listed with the boundary to paste 
   });
   eq(fixed.report.looksLikeBoundary.length, 0, 'nothing left to report');
   assert(/id="mgmt"[^>]*container=1/.test(fixed.xml), 'a container');
+});
+
+// A boundary was sized from its grid span alone: a default 190px box crossed
+// both sides of a one-cell scope, and one given no col or row sat at the page
+// origin while its children were drawn far to the right. Validate passed both
+// (#295).
+test('a Draw.io boundary grows to hold its children, nested ones and captions included, and validate names one that does not (#295)', () => {
+  mkdirSync(TMP, { recursive: true });
+  const geometry = (xml) => {
+    const cells = new Map();
+    for (const m of xml.matchAll(/<mxCell id="([^"]+)"[^>]*?parent="([^"]+)"[^>]*>\s*<mxGeometry x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)"/g)) {
+      cells.set(m[1], { parent: m[2], x: Number(m[3]), y: Number(m[4]), w: Number(m[5]), h: Number(m[6]) });
+    }
+    const abs = (id) => {
+      const c = cells.get(id);
+      const p = cells.has(c.parent) ? abs(c.parent) : { x: 0, y: 0 };
+      return { x: c.x + p.x, y: c.y + p.y, w: c.w, h: c.h };
+    };
+    return abs;
+  };
+  const inside = (abs, child, parent, gap = 0) => {
+    const c = abs(child); const p = abs(parent);
+    return c.x >= p.x + gap && c.y >= p.y + gap && c.x + c.w <= p.x + p.w - gap && c.y + c.h <= p.y + p.h - gap;
+  };
+  const clean = (xml, name) => {
+    const file = join(TMP, `${name}.drawio`);
+    writeFileSync(file, xml);
+    return validator.validateFile(file).warnings.filter((w) => /outside its container|container "/.test(w));
+  };
+
+  const one = builder.buildDiagram({ boundaries: [{ id: 'group', kind: 'scope', label: 'Service' }], nodes: [{ id: 'worker', parent: 'group', label: 'Worker' }] });
+  assert(inside(geometry(one.xml), 'worker', 'group', 25), 'the issue\'s worker sits inside its scope with the default padding');
+  eq(clean(one.xml, 'p295-one').join(), '', 'validates clean');
+
+  const spec = {
+    boundaries: [
+      { id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0 },
+      { id: 'core', kind: 'scope', label: 'Core services', parent: 'cloud' },
+      { id: 'edge', kind: 'scope', label: 'Edge', parent: 'cloud', col: 0, row: 0 },
+    ],
+    nodes: [
+      { id: 'cdn', kind: 'icon', icon: 'aws/amazon-cloudfront', label: 'CDN', parent: 'edge', col: 0, row: 0 },
+      { id: 'wide', label: 'A box wider than its cell', parent: 'edge', col: 0, row: 1, width: 320 },
+      { id: 'fn', kind: 'icon', icon: 'aws/aws-lambda', label: 'An orders function with a caption far wider than its icon', parent: 'core', col: 4, row: 0 },
+      { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', parent: 'core', col: 5, row: 2 },
+    ],
+    edges: [{ from: 'cdn', to: 'fn' }, { from: 'fn', to: 'q' }, { from: 'wide', to: 'q' }],
+  };
+  const built = builder.buildDiagram(spec);
+  const abs = geometry(built.xml);
+  for (const [child, parent] of [['cdn', 'edge'], ['wide', 'edge'], ['fn', 'core'], ['q', 'core'], ['edge', 'cloud'], ['core', 'cloud']]) {
+    assert(inside(abs, child, parent, 10), `${child} inside ${parent}`);
+  }
+  assert(abs('core').y - abs('cloud').y >= 30, 'a nested boundary sits under its parent\'s name');
+  eq(clean(built.xml, 'p295-nested').join(' | '), '', 'no child outside, no caption across a border');
+  for (const e of ['e0', 'e1', 'e2'].map((_, i) => spec.edges[i])) {
+    assert(new RegExp(`source="${e.from}" target="${e.to}"`).test(built.xml), `edge ${e.from} -> ${e.to} still bound to its nodes`);
+  }
+  // A span asked for is a minimum: a child inside it changes nothing.
+  const asked = builder.buildDiagram({ boundaries: [{ id: 'b', label: 'B', col: 0, row: 0, cols: 4, rows: 2 }], nodes: [{ id: 'i', kind: 'icon', icon: 'aws/aws-lambda', label: 'L', parent: 'b', col: 1, row: 0 }] });
+  const grid = builder.buildDiagram({ boundaries: [{ id: 'b', label: 'B', col: 0, row: 0, cols: 4, rows: 2 }], nodes: [] });
+  eq(asked.xml.match(/<mxCell id="b"[\s\S]*?<\/mxCell>/)[0], grid.xml.match(/<mxCell id="b"[\s\S]*?<\/mxCell>/)[0], 'the grid span holds');
+
+  // A file built before this, read back: validate names the child and its container.
+  const old = one.xml.replace(/(<mxCell id="group"[^>]*>\s*<mxGeometry x=")-?\d+(" y="\d+" width=")\d+/, '$140$2158')
+    .replace(/(<mxCell id="worker"[^>]*>\s*<mxGeometry x=")-?\d+/, '$1-16');
+  eq(clean(old, 'p295-old').join(), 'page 0: cell "worker" is drawn 16px outside its container "group"; widen the container, '
+    + 'or rebuild from the spec, which sizes a boundary to hold what names it as parent', 'both ids, and by how much');
+});
+
+// Asked to add one node, an agent rebuilt a hand-drawn .drawio from a new spec
+// and reported it had followed the file; the build said nothing (#339).
+test('a build over a .drawio Arkitect did not write says so in its notes, naming the backup (#339)', () => {
+  const dir = join(TMP, 'p339');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'checkout.drawio');
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  writeFileSync(out, '<mxfile host="Electron" agent="Mozilla/5.0 draw.io/29.0.3" version="29.0.3"><diagram name="P" id="p">'
+    + '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>');
+  const first = JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  eq(first.notes.length, 1, 'one note');
+  assert(first.notes[0].startsWith(`${out} carries no sign of an Arkitect build`) && first.notes[0].includes(first.backup)
+    && first.notes[0].includes('references/editing.md'), first.notes[0]);
+  eq(readFileSync(first.backup, 'utf8').includes('draw.io/29.0.3'), true, 'the backup is the hand-drawn file');
+  eq(JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout).notes.join(), '', 'rebuilding its own output says nothing');
+  assert(builder.isArkitectDrawio(builder.buildDiagram({ nodes: [{ id: 'a' }] }).xml), 'the builder signs what it writes');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// Five AWS accounts shipped as plain boxes with every one listed under
+// looksLikeBoundary, and validate passed silent (#341); a PostgreSQL box
+// listed under namesAProduct did the same, where Excalidraw's validate warns
+// (#326). Validate, read last, now names both.
+test('validate warns on a plain box named like a boundary, and on one named for a bundled product (#341)', () => {
+  const accounts = [['mgmt', 'Management Account'], ['shared', 'Shared Services Account'], ['security', 'Security Account'],
+    ['workload1', 'Workload Account 1'], ['workload2', 'Workload Account 2']];
+  const spec = { nodes: [
+    ...accounts.map(([id, label], i) => ({ id, kind: 'box', label, col: i * 2, row: 0 })),
+    { id: 'db', label: 'PostgreSQL', col: 0, row: 2 }, { id: 'mem', label: 'Memory', col: 2, row: 2 },
+    { id: 'svc', label: 'Account service', col: 4, row: 2 },
+  ], edges: [{ from: 'svc', to: 'db' }] };
+  mkdirSync(TMP, { recursive: true });
+  const file = join(TMP, 'p341.drawio');
+  const built = builder.buildDiagram(spec);
+  writeFileSync(file, built.xml);
+  const r = validator.validateFile(file);
+  const named = r.warnings.filter((w) => w.includes('named like a boundary'));
+  eq(named.map((w) => w.match(/cell "([^"]+)"/)[1]).join(), built.report.looksLikeBoundary.map((x) => x.node).join(), 'one per entry the build listed');
+  eq(named.length, 5, 'once per account box');
+  const products = r.warnings.filter((w) => w.includes('its product has a bundled mark'));
+  eq(products.join(' | '), 'page 0: cell "db" is a plain box, but its product has a bundled mark, databases/postgresql; '
+    + 'give that node "kind": "icon", "icon": "databases/postgresql" in the spec and rebuild', 'the replace the build gave');
+  assert(!r.warnings.join().includes('PostgreSQL') && !r.warnings.join().includes('Account 1'), 'prints ids, never a label');
+  eq(r.info.pages[0].fakeBoundaries, 5, 'counted');
+
+  const fixed = builder.buildDiagram({
+    boundaries: accounts.map(([id, label], i) => ({ id, label, col: i * 2, row: 0, cols: 2, rows: 2 })),
+    nodes: [{ ...built.report.namesAProduct.find((x) => x.node === 'db').replace, parent: 'mgmt' }, { ...spec.nodes[7], col: 0, row: 4 }],
+  });
+  writeFileSync(file, fixed.xml);
+  eq(validator.validateFile(file).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', 'boundaries and the icon clear it');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.drawio'))) {
+    eq(validator.validateFile(join(SKILL, 'assets', 'templates', f)).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', f);
+  }
 });
 
 // A box of product names drew as text while the report said nothing, and the

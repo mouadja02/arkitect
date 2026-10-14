@@ -9,17 +9,25 @@ arkitect                     # every command, one screen
 arkitect doctor              # what is installed, what is optional
 arkitect where               # the install path
 arkitect install --all       # agent adapters for this project
+arkitect report report.md    # check a saved diagram report
 arkitect test                # the offline suite (clone only)
 arkitect version
 ```
 
 A command's own help is one level down: `arkitect drawio icon --help`.
 
-`doctor` exits 1 when Node is older than 20 or a bundled asset is missing or
+`doctor` exits 1 when Node is older than 22 or a bundled asset is missing or
 does not parse, and 0 otherwise: a missing renderer, browser or Docker, an
 ignored style override or an adapter pointing at another install is a
 warning. It reads files and asks programs their version; it never starts a
 renderer, a browser or a container, and never contacts a remote Docker engine.
+
+`report <file|->` runs the check Claude Code's Stop hook makes, on any host: the
+seven headings, a Render section that describes only a picture someone looked
+at, no validate warning called intentional, no hosted-editor link. It sees only
+the text, so `--png-viewed` is the agent's word that it opened the PNG, never an
+observed fact. Exit 0 clean, 1 with problems, each named, 2 on a usage error
+(#302).
 
 ## Draw.io
 
@@ -101,10 +109,10 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground` |
 | `placeholders` | Excalidraw: each empty slot drawn, and why |
 | `logos` | Draw.io: the fetched logos a build embedded |
-| `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Excalidraw `validate` warns on each such shape until it is replaced (#326). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
-| `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203) |
+| `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
+| `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341) |
 | `crossings` | Excalidraw: an edge through a node it doesn't connect |
-| `notes` | an icon no edge touches, and similar things worth a look |
+| `notes` | an icon no edge touches, and similar things worth a look. First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
 
 `validate` ends its warnings with the rule: each is a defect to fix, or to
 quote in a report with every id it names (#248). Excalidraw names the spec
@@ -134,7 +142,7 @@ the builder stamps on everything it draws (#353).
 | spec | `title`, `subtitle`, `context.packs`, `layout`, `pages`, `legend`, `legendX`, `legendY` |
 | node `kind` | `icon` (a bundled mark, by name or id), `logo` (a fetched logo), `aws4` (a built-in shape), `box`, `note`, `text` |
 | node | `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line) |
-| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `cols`, `rows`, `labelAlign` |
+| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
 | edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used |
 | edge | `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
 
@@ -263,7 +271,7 @@ Scene format notes for hand-editing:
 ```
 bin/arkitect.mjs               the dispatcher; bin/lib/install-agent.mjs writes adapters
 .claude-plugin/                plugin and marketplace manifests
-hooks/                         the two Claude Code hooks
+hooks/                         the four Claude Code hooks
 docker/                        the local Excalidraw app
 skills/arkitect-drawio/        SKILL.md, references/, assets/ (packs, templates), scripts/
 skills/arkitect-excalidraw/    SKILL.md, references/, assets/ (36 libraries, templates), scripts/

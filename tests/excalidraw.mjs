@@ -433,6 +433,36 @@ test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate
   eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
 });
 
+// "router" drew Google's Cloud Router, "agent" AWS's Agent, "region" an AWS
+// glyph: a vendor mark for a component the spec never put on that vendor
+// (#347). `cloud` was stripped as a vendor word, and native vendor libraries
+// were asked before the neutral shared packs.
+test('a generic noun draws a neutral mark or a placeholder, never a vendor\'s, and a deliberate ref still draws (#347)', () => {
+  const entries = finder.catalog();
+  const vendorRef = /^(aws|amazon|azure|microsoft-azure|gcp|google)[-:]|^drawio:(aws|azure|gcp)\//;
+  for (const q of ['router', 'agent', 'agents', 'etl', 'object storage', 'block storage', 'directory', 'translation', 'vision', 'region',
+    'model', 'notebook', 'chatbot', 'iam', 'waf', 'nat gateway', 'virtual machine', 'sql database', 'key vault', 'billing',
+    'artifact registry', 'secret manager', 'text to speech', 'subnet', 'state machine']) {
+    const ref = finder.unattended(q, { entries }).entry?.ref ?? '';
+    assert(!vendorRef.test(ref), `"${q}" drew ${ref}`);
+    assert(!/^db-eng:9$/.test(ref), `"${q}" drew Oracle's Directory`);
+  }
+  eq(finder.unattended('router', { entries }).entry?.name, 'Router', 'a neutral router');
+  eq(finder.unattended('agent', { entries }).entry?.ref, 'drawio:agents/agent', 'the neutral agent beats AWS\'s tie');
+  for (const q of ['lambda', 's3', 'bigquery', 'cloud storage', 'cloud router', 'azure key vault']) {
+    assert(vendorRef.test(finder.unattended(q, { entries }).entry?.ref ?? ''), `the product "${q}" still draws its vendor's mark`);
+  }
+  eq(finder.resolveIcon('google-icons:57')?.name, 'Cloud Router', 'a deliberate ref draws Cloud Router');
+  const out = JSON.parse(node('find-icon.mjs', ['router', '--compact']));
+  assert(!vendorRef.test(out.draws ?? ''), `compact router draws ${out.draws}`);
+
+  const spec = { nodes: [{ id: 'edge', label: 'Router', kind: 'icon' }, { id: 'app', label: 'App', col: 3 }], edges: [{ from: 'edge', to: 'app' }] };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  assert(!built.report.icons.some((i) => vendorRef.test(i.ref)), `the build drew ${JSON.stringify(built.report.icons)}`);
+  const boxed = builder.buildDiagram({ ...spec, nodes: [{ id: 'edge', label: 'Router' }, spec.nodes[1]] }, { seed: 1 });
+  assert(!validator.validateScene(boxed.scene).warnings.some((w) => /google-icons/.test(w)), 'validate recommends no Google mark');
+});
+
 // Both engines share the Draw.io resolver for shared marks, so both inherit
 // the vendor-named product (#285) and the product before a generic word (#283).
 test('"HashiCorp Vault" draws Vault and "Redis cache" draws Redis (#285, #283)', () => {
@@ -476,7 +506,17 @@ test('shared fallback preserves every existing choice and uses the reviewed prod
   for (const [query] of nativeKey.queries) {
     const before = finder.unattended(query, { entries: oldEntries });
     const after = finder.unattended(query, { entries });
-    if (before.entry) {
+    // A native vendor mark the query does not name gives way to a neutral
+    // shared mark of the same product: "opensearch" is OpenSearch's own mark,
+    // not Amazon OpenSearch Service (#347).
+    const vendor = /^(aws|amazon|azure|microsoft-azure|gcp|google)(-|$)/;
+    const gaveWay = before.entry && vendor.test(before.entry.library ?? '') && after.entry?.provider === 'drawio'
+      && !/^drawio:(aws|azure|gcp)\//.test(after.entry.ref);
+    if (gaveWay) {
+      const accept = [].concat(expected.get(query));
+      assert(accept.some((id) => id && after.entry.ref === `drawio:${id}`), `${query} gave way to a product the key does not accept: ${after.entry.ref}`);
+      added++;
+    } else if (before.entry) {
       eq(after.entry?.ref, before.entry.ref, `existing choice for ${query}`);
       preserved++;
     } else if (after.entry) {
@@ -1152,6 +1192,52 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.excalidraw'))) {
     const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', f), 'utf8'));
     eq(validator.validateScene(scene).warnings.filter((w) => w.includes('labels a plain shape')).join(), '', `${f}: icons, boundaries and notes`);
+  }
+});
+
+// A build over a scene drawn in the app replaced it with a backup and an
+// empty `notes` (#339). The app writes the same `source` the builder does, so
+// the sign is the customData.arkitect the builder stamps (#353).
+test('a build over a scene Arkitect did not draw says so in its notes, naming the backup (#339)', () => {
+  const dir = join(TMP, 'p339');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'hand.excalidraw');
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  writeFileSync(out, JSON.stringify({ type: 'excalidraw', version: 2, source: 'https://excalidraw.com',
+    elements: [{ id: 'hand', type: 'rectangle', strokeColor: '#e03131' }], appState: {}, files: {} }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  const first = build();
+  eq(first.notes.length, 1, 'one note');
+  assert(first.notes[0].startsWith(`${out} carries no sign of an Arkitect build`) && first.notes[0].includes(first.backup), first.notes[0]);
+  assert(readFileSync(first.backup, 'utf8').includes('#e03131'), 'the backup is the hand-drawn scene');
+  eq(build().notes.join(), '', 'rebuilding its own output says nothing');
+  writeFileSync(out, 'not json');
+  eq(build().notes.length, 1, 'a file that is not a scene is not ours either');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// The Draw.io run that shipped five accounts as boxes passed validate silent
+// (#341); the same spec in this engine got no warning either.
+test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {
+  const spec = { nodes: [
+    { id: 'mgmt', kind: 'box', label: 'Management Account', col: 0, row: 0 },
+    { id: 'w2', kind: 'box', label: 'Workload Account 2', col: 2, row: 0 },
+    { id: 'vpc', label: 'Prod VPC', col: 4, row: 0 },
+    { id: 'svc', kind: 'box', label: 'Account service', col: 6, row: 0 },
+  ], edges: [{ from: 'svc', to: 'vpc' }] };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  const warned = validator.validateScene(built.scene).warnings.filter((w) => w.includes('named like a boundary'));
+  eq(warned.map((w) => w.match(/\(node "([^"]+)"\)/)?.[1]).join(), 'mgmt,w2,vpc', 'the build\'s own list, by spec node');
+  eq(built.report.looksLikeBoundary.map((x) => x.node).join(), 'mgmt,w2,vpc', 'which the build listed');
+  assert(!warned.join().includes('Account 2'), 'prints ids, never a label');
+  const fixed = builder.buildDiagram({ boundaries: [{ id: 'mgmt', label: 'Management Account', cols: 2 }],
+    nodes: [{ id: 'svc', kind: 'box', label: 'Account service', parent: 'mgmt' }] }, { seed: 1 });
+  eq(validator.validateScene(fixed.scene).warnings.filter((w) => w.includes('named like a boundary')).join(), '', 'a boundary is not one');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.excalidraw'))) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', f), 'utf8'));
+    eq(validator.validateScene(scene).warnings.filter((w) => w.includes('named like a boundary')).join(), '', f);
   }
 });
 

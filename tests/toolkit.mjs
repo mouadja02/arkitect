@@ -1044,8 +1044,8 @@ test('the licence and attribution files are present and name their sources', () 
   // The Draw.io packs carry their own generated attribution, one row per source.
   const packs = readFileSync(
     join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'libraries', 'ATTRIBUTION.md'), 'utf8');
-  for (const source of ['simple-icons@16.30.0', 'devicon@2.17.0', 'lucide-static@1.45.0',
-    '@primer/octicons@19.36.0', 'azure-v24', 'gcp-legacy']) {
+  for (const source of ['simple-icons@16.35.0', 'devicon@2.17.0', 'lucide-static@1.57.0',
+    '@primer/octicons@19.40.0', 'azure-v24', 'gcp-legacy']) {
     assert(packs.includes(source), `pack attribution does not name ${source}`);
   }
   assert(packs.includes('nominative use'), 'pack attribution must state the trademark position');
@@ -1809,8 +1809,8 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
   const kinesis = ask('drawio', 'kinesis');
   eq(kinesis.confident, false, 'drawio: an ambiguous search is not settled');
   assert(!('node' in kinesis) && kinesis.needsAChoice && kinesis.choices.length === 4 && kinesis.more > 0, 'drawio: choices, not a node');
-  const queue = ask('excalidraw', 'queue');
-  assert(!('draws' in queue) && !('node' in queue) && queue.placeholder && queue.choices.length <= 4, 'excalidraw: choices, not a node');
+  const doubtful = ask('excalidraw', 'tempo');
+  assert(!('draws' in doubtful) && !('node' in doubtful) && doubtful.placeholder && doubtful.choices.length <= 4, 'excalidraw: choices, not a node');
 
   // A lifecycle caveat and an on-demand next step survive compaction.
   const census = ask('drawio', 'census');
@@ -1838,8 +1838,8 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
 const styleHook = await import(pathToFileURL(join(ROOT, 'hooks', 'style-question.mjs')).href);
 test('the style-question hook speaks only for a prompt about a diagram\'s style, and never fails one (#265)', () => {
   const hooks = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
-  eq(Object.keys(hooks).join(), 'UserPromptSubmit,Stop', 'two events');
-  for (const event of Object.values(hooks)) {
+  eq(Object.keys(hooks).join(), 'PreToolUse,UserPromptSubmit,Stop', 'three events');
+  for (const event of [hooks.UserPromptSubmit, hooks.Stop]) {
     eq(event[0].hooks[0].command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs"', 'runs the script from the plugin');
   }
   const { ruleFor, RULE, SEND_BACK, promisesToRemember, respond, lastReply } = styleHook;
@@ -1937,7 +1937,7 @@ test('the report check sends back a report missing headings, or one describing a
     const transcript = join(dir, 't.jsonl');
     const use = (name, input) => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', name, input }] } });
     const bad = report('Layout is clean.');
-    writeFileSync(transcript, [use('Bash', { command: 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs s.json --out o.excalidraw' }),
+    writeFileSync(transcript, [use('Bash', { command: 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs s.json --out ./eval-output/orders.excalidraw' }),
       use('Read', { file_path: 'o.svg' })].join('\n'));
     const sent = JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }));
     eq(sent.decision, 'block', 'sent back');
@@ -1983,6 +1983,146 @@ test('the report check counts a build by the installed, npx or script command, u
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
     assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent?.reason), 'the installed build is checked like the script one');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A closing summary hours after a build run to reproduce a bug mentioned "an
+// existing `.drawio`" and was sent back for six headings (#345). Only a reply
+// naming a file the session built is a report of it.
+test('the report check reads only a reply naming a file the session built (#345)', () => {
+  const { outOf, namesABuiltFile, respond } = reportHook;
+  eq(outOf('node bin/arkitect.mjs drawio build p329.json --out C:\\tmp\\p329.drawio'), 'p329.drawio', 'a Windows path');
+  eq(outOf('arkitect excalidraw build a.json --out="docs/my arch.excalidraw"'), 'my arch.excalidraw', 'quoted, with =');
+  eq(outOf('arkitect drawio build a.json --out "$OUT"'), '*', 'a shell variable stands for any file');
+  eq(outOf('arkitect drawio build a.json'), null, 'no --out');
+  assert(namesABuiltFile('Saved `./docs/p329.drawio`.', ['p329.drawio']), 'by path');
+  assert(namesABuiltFile('**File** P329.drawio', ['p329.drawio']), 'any case');
+  for (const reply of ['#339 is about an existing `.drawio`.', 'See xp329.drawio.', 'See p329.drawio.bak']) {
+    assert(!namesABuiltFile(reply, ['p329.drawio']), reply);
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Bash',
+      input: { command: 'node bin/arkitect.mjs drawio build p329.json --out /tmp/repro/p329.drawio' } }] } }));
+    const stop = (reply) => respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: reply });
+    eq(stop('Opened three PRs. #339: an agent rebuilt an existing `.drawio` from a new spec.'), null, 'a summary naming no built file');
+    assert(/no File, Assumptions/.test(JSON.parse(stop('Done: /tmp/repro/p329.drawio') ?? '{}').reason), 'the built file is still checked');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A report linked "Draw.io Desktop" to https://www.draw.io, the hosted editor
+// (#340). The check uses the eval cases' own pattern, so the two can't drift.
+test('the report check sends back a link to the hosted editor, once, with the pattern the evals grade (#340)', () => {
+  const { problems, HOSTED, DESKTOP } = reportHook;
+  for (const name of ['edit-existing-diagram', 'engine-choice-is-explained', 'generate-architecture']) {
+    const yaml = readFileSync(join(ROOT, 'evals', 'drawio', name, 'case.yaml'), 'utf8');
+    const pattern = yaml.match(/name: no-hosted-editor[\s\S]*?pattern: '([^']+)'/)[1];
+    eq(pattern, HOSTED.source.replaceAll('\\/', '/'), `${name}'s no-hosted-editor pattern`);
+  }
+  const report = (file) => ['**File** `./eval-output/landing-zone.drawio`', '**Assumptions** none', '**Icons** none',
+    '**Validation** PASS, no warnings', '**Render** PNG opened and looked at.', '**Deviations** none', `**To see it:** ${file}`].join('\n');
+  const sent = problems(report('open `./eval-output/landing-zone.drawio` in [Draw.io Desktop](https://www.draw.io) or the VS Code extension'), { viewed: true });
+  eq(sent.length, 1, 'sent back');
+  assert(sent[0].includes('//www.draw.io') && sent[0].includes(DESKTOP), sent[0]);
+  for (const link of ['https://app.diagrams.net/?src=about', 'https://viewer.diagrams.net/#R', 'https://draw.io']) {
+    eq(problems(report(link), { viewed: true }).length, 1, link);
+  }
+  for (const fine of ['open it in Draw.io Desktop or the VS Code extension', `[Draw.io Desktop](${DESKTOP})`]) {
+    eq(problems(report(fine), { viewed: true }).length, 0, fine);
+  }
+});
+
+// Editing a .drawio, an agent read the whole file instead of analyzing it
+// (#342). A diagram with embedded art fills the window in one Read.
+const readHook = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
+test('a whole Read of a diagram is refused until it is analyzed, and always when it is large (#342)', () => {
+  const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  eq(JSON.stringify(pre), JSON.stringify([{ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }]), 'a Read hook');
+  const { refusalFor, respond, LARGE } = readHook;
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-read-'));
+  try {
+    const small = join(dir, 'checkout.drawio');
+    const large = join(dir, 'big.excalidraw');
+    const notes = join(dir, 'notes.md');
+    writeFileSync(small, '<mxfile agent="x"><diagram/></mxfile>');
+    writeFileSync(large, JSON.stringify({ type: 'excalidraw', files: { a: { dataURL: 'x'.repeat(LARGE) } } }));
+    writeFileSync(notes, 'x'.repeat(LARGE * 2));
+    const transcript = join(dir, 't.jsonl');
+    const ran = (...commands) => writeFileSync(transcript, commands.map((command) => JSON.stringify({ message: { role: 'assistant',
+      content: [{ type: 'tool_use', name: 'Bash', input: { command } }] } })).join('\n'));
+    const read = (file_path, extra = {}) => refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Read', transcript_path: transcript,
+      tool_input: { file_path, ...extra } });
+
+    ran('ls');
+    const first = read(small);
+    assert(/analyze checkout\.drawio before reading it/.test(first ?? '') && first.includes('analyze-drawio.mjs') && first.includes('--page 0 --cells'),
+      `names the analyzer the eval grades: ${first}`);
+    ran(`node skills/arkitect-drawio/scripts/analyze-drawio.mjs ${small} --page 0 --cells`);
+    eq(read(small), null, 'a small file, once analyzed');
+    ran('arkitect drawio analyze other.drawio --cells');
+    assert(read(small), 'an analysis of another file does not count');
+    ran(`npx arkitect excalidraw analyze ${large} --cells`);
+    const big = read(large);
+    assert(/big\.excalidraw is \d+ KB/.test(big ?? '') && big.includes('analyze-excalidraw.mjs') && !big.includes('--page'), `large: ${big}`);
+    eq(read(large, { offset: 1, limit: 40 }), null, 'a line range passes');
+    for (const pass of [notes, join(dir, 'missing.drawio')]) eq(read(pass), null, pass);
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: large } }), null, 'only Read');
+    const said = JSON.parse(respond({ hook_event_name: 'PreToolUse', tool_name: 'Read', transcript_path: transcript, tool_input: { file_path: large } }));
+    eq(said.hookSpecificOutput.permissionDecision, 'deny', 'denied');
+    const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'diagram-read.mjs')], { input, encoding: 'utf8' });
+    assert(/"deny"/.test(run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: large } })).stdout), 'from the CLI');
+    for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: notes } })]) {
+      const quiet = run(input);
+      eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${input.slice(0, 40)}`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// The report check ran only as a Claude Code hook; no other host had a route
+// to it (#302). `arkitect report` runs the same checks on a saved report, and
+// every adapter names it.
+const reportCli = await import(pathToFileURL(join(ROOT, 'bin', 'lib', 'report.mjs')).href);
+test('arkitect report checks a saved report like the Stop hook, and every adapter names it (#302)', () => {
+  const { ADAPTERS } = adapters;
+  for (const [name, adapter] of Object.entries(ADAPTERS)) {
+    const text = adapter.render('/opt/arkitect');
+    assert(/arkitect\.mjs"? report /.test(text), `${name} has no route to the report check`);
+  }
+  assert(/node bin\/arkitect\.mjs report <file>`\s+\(`--png-viewed`/.test(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8')), 'AGENTS.md step 8 names it');
+
+  const good = ['**File** `docs/orders.drawio`', '**Assumptions** none', '**Icons** aws/aws-lambda', '**Validation** PASS, no warnings',
+    '**Render** PNG opened; the flow reads left to right.', '**Deviations** none'].join('\n');
+  const bad = 'Done: docs/orders.drawio. Layout is clean. Open it in [Draw.io Desktop](https://app.diagrams.net).';
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-cli-'));
+  try {
+    const say = (args, stdin = '') => {
+      const lines = [];
+      const code = reportCli.report(args, { stdin: () => stdin, log: (l) => lines.push(l), error: (l) => lines.push(l) });
+      return { code, out: lines.join('\n') };
+    };
+    writeFileSync(join(dir, 'good.md'), good);
+    writeFileSync(join(dir, 'bad.md'), bad);
+    eq(say([join(dir, 'good.md'), '--png-viewed']).code, 0, 'a whole report, PNG looked at');
+    const unseen = say([join(dir, 'good.md')]);
+    eq(unseen.code, 1, 'the same report without --png-viewed describes a picture');
+    assert(/not told a PNG was looked at \(--png-viewed\)/.test(unseen.out), unseen.out);
+    const sent = say(['-', '--png-viewed'], bad);
+    eq(sent.code, 1, 'from stdin');
+    assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent.out) && /app\.diagrams\.net/.test(sent.out), sent.out);
+    // The hook and the command agree on what is wrong with a report.
+    const strip = (ps) => ps.map((p) => p.replace(/^.*?, so nothing has seen/, 'unseen'));
+    eq(JSON.stringify(strip(reportCli.checkReport(bad, { viewed: false }))), JSON.stringify(strip(reportHook.problems(bad, { viewed: false }))), 'one check');
+    for (const args of [[], ['a.md', 'b.md'], ['--viewed', 'a.md'], [join(dir, 'missing.md')]]) eq(say(args).code, 2, args.join(' '));
+    const cli = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', join(dir, 'bad.md')], { encoding: 'utf8' });
+    eq(cli.status, 1, 'through the dispatcher');
+    assert(/hosted editor/.test(cli.stdout), cli.stdout);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -2103,13 +2243,17 @@ const quietDoctor = async (opts) => {
   return { code, out: lines.join('\n') };
 };
 const oldNode = await settle(quietDoctor({ node: '18.0.0' }));
+const eolNode = await settle(quietDoctor({ node: '20.20.2' }));
 const nothingOnPath = await settle(quietDoctor({ env: { PATH: join(TMP, 'nothing-here') } }));
 
 // Node below 20 was a warning and exit 0, so a script could not tell (#308).
 test('doctor exits 1 when a core requirement fails, and 0 when only optional tools are missing (#308)', () => {
   const old = oldNode.value;
   eq(old.code, 1, 'node 18');
-  assert(/^fail\s+node >= 20\s+found v18\.0\.0/m.test(old.out) && /1 failed: exit 1/.test(old.out), old.out);
+  assert(/^fail\s+node >= 22\s+found v18\.0\.0/m.test(old.out) && /1 failed: exit 1/.test(old.out), old.out);
+  // Node 20 reached end of life on 2026-04-30; 22 is the floor (#346).
+  eq(eolNode.value.code, 1, 'node 20');
+  assert(/^fail\s+node >= 22\s+found v20\.20\.2/m.test(eolNode.value.out), eolNode.value.out);
   eq(nothingOnPath.value.code, 0, `no renderer, browser or docker: exit 0\n${nothingOnPath.value.out}`);
   const broken = doc.assetRows(ROOT, { exists: (p) => !p.endsWith('index.json') && existsSync(p) });
   eq(broken.filter((r) => r[0] === 'fail').map((r) => r[1]).join(), 'excalidraw libraries', 'a missing asset is a fail row');

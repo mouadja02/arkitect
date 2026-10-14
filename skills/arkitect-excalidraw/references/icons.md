@@ -23,7 +23,7 @@ placeholder. The search says which up front: `"draws": "<ref>"`, or
 `"placeholder": "<why>"`. With `--compact` it prints only that, a spec `node` or
 at most four `choices`, and a few `others` (#117).
 
-**Shared packs** fill coverage gaps with 4,843 original SVG/PNG marks from the
+**Shared packs** fill coverage gaps with 4,850 original SVG/PNG marks from the
 sibling Draw.io skill. Existing successful resolutions keep their artwork; use
 `"icon": "drawio:databases/postgresql"` to choose a shared mark exactly. Search
 and build reports identify these as **embedded**, with source and licence

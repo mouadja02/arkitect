@@ -20,7 +20,7 @@ can reproduce costs more than either.
 
 ---
 
-You are auditing **Arkitect**, a zero-dependency Node 20+ plugin that makes a
+You are auditing **Arkitect**, a zero-dependency Node 22+ plugin that makes a
 coding agent draw editable `.drawio` and `.excalidraw` architecture diagrams.
 Everything runs locally. The repository and its issue tracker are public.
 
