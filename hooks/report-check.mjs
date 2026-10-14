@@ -6,12 +6,13 @@
 // 3.0.0 batch. SKILL.md step 9 says both things already; wording has not moved
 // either, as it did not for #265.
 //
-// So on Stop, in a session that ran an Arkitect build, the reply is checked
-// for the six headings the report needs (Engine is asked for only when the
-// user named no engine); when no PNG was opened, for a Render section that
-// describes the picture anyway or doesn't say nothing saw it; and for a
-// validate warning explained away. Any of them sends the reply back once,
-// saying what to fix. Any other session is not read past its last reply.
+// So on Stop, in a session that ran an Arkitect build, a reply naming the file
+// that build wrote is checked for the six headings the report needs (Engine is
+// asked for only when the user named no engine); when no PNG was opened, for a
+// Render section that describes the picture anyway or doesn't say nothing saw
+// it; and for a validate warning explained away. Any of them sends the reply
+// back once, saying what to fix. Any other session is not read past its last
+// reply.
 
 import { readFileSync } from 'node:fs';
 import { lastReply } from './style-question.mjs';
@@ -60,9 +61,20 @@ export function excusesAWarning(reply) {
     .map((s) => s.match(EXCUSE)?.[0]).find(Boolean) ?? null;
 }
 
-// What the session did, from its transcript: a build, and a PNG opened.
+// The file a build command wrote, by basename, from `--out x` or `--out=x`.
+// A path the shell expands (`$OUT`, `%OUT%`) can't be read here, so it stands
+// for any file, as every build did before #345.
+export function outOf(command) {
+  const m = String(command).match(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|(\S+))/);
+  if (!m) return null;
+  const path = m[1] ?? m[2] ?? m[3];
+  return /[$%]/.test(path) ? '*' : path.split(/[\\/]/).pop();
+}
+
+// What the session did, from its transcript: a build, the files it wrote, and
+// a PNG opened.
 export function sessionOf(transcriptPath) {
-  const seen = { built: false, viewed: false };
+  const seen = { built: false, viewed: false, outs: [] };
   try {
     for (const line of readFileSync(transcriptPath, 'utf8').split('\n')) {
       if (!line.includes('"tool_use"')) continue;
@@ -70,7 +82,12 @@ export function sessionOf(transcriptPath) {
         const e = JSON.parse(line);
         for (const part of (e.message ?? e).content ?? []) {
           if (part?.type !== 'tool_use') continue;
-          if (SHELLS.includes(part.name) && BUILD.test(String(part.input?.command ?? ''))) seen.built = true;
+          const command = String(part.input?.command ?? '');
+          if (SHELLS.includes(part.name) && BUILD.test(command)) {
+            seen.built = true;
+            const out = outOf(command);
+            if (out && !seen.outs.includes(out)) seen.outs.push(out);
+          }
           if (part.name === 'Read' && /\.png$/i.test(String(part.input?.file_path ?? ''))) seen.viewed = true;
         }
       } catch { /* one bad line is not ours to fail */ }
@@ -117,12 +134,23 @@ export function problems(reply, { viewed }) {
   return out;
 }
 
+// A reply is a report of a build only when it names a file that build wrote: a
+// status message that mentions "an existing `.drawio`" hours after a build run
+// to reproduce a bug is not one, and no honest rewrite could satisfy the check
+// (#345).
+const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function namesABuiltFile(reply, outs) {
+  const text = String(reply ?? '');
+  return outs.some((out) => (out === '*' ? /\.(drawio|excalidraw)\b/.test(text)
+    : new RegExp(`(^|[^\\w.-])${escape(out)}(?![\\w.-]*\\w)`, 'i').test(text)));
+}
+
 export function respond(input) {
   if (input.hook_event_name !== 'Stop' || input.stop_hook_active) return null;
   const reply = input.last_assistant_message ?? lastReply(input.transcript_path);
-  if (!/\.(drawio|excalidraw)\b/.test(String(reply ?? ''))) return null;
+  if (!/\.(drawio|excalidraw|json)\b/.test(String(reply ?? ''))) return null;
   const session = sessionOf(input.transcript_path);
-  if (!session.built) return null;
+  if (!session.built || !namesABuiltFile(reply, session.outs)) return null;
   const found = problems(reply, session);
   if (!found.length) return null;
   return JSON.stringify({ decision: 'block', reason: `Arkitect: ${found.join('; and ')}. Write the whole report again.` });

@@ -1937,7 +1937,7 @@ test('the report check sends back a report missing headings, or one describing a
     const transcript = join(dir, 't.jsonl');
     const use = (name, input) => JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', name, input }] } });
     const bad = report('Layout is clean.');
-    writeFileSync(transcript, [use('Bash', { command: 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs s.json --out o.excalidraw' }),
+    writeFileSync(transcript, [use('Bash', { command: 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs s.json --out ./eval-output/orders.excalidraw' }),
       use('Read', { file_path: 'o.svg' })].join('\n'));
     const sent = JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: bad }));
     eq(sent.decision, 'block', 'sent back');
@@ -1983,6 +1983,33 @@ test('the report check counts a build by the installed, npx or script command, u
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
     assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent?.reason), 'the installed build is checked like the script one');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A closing summary hours after a build run to reproduce a bug mentioned "an
+// existing `.drawio`" and was sent back for six headings (#345). Only a reply
+// naming a file the session built is a report of it.
+test('the report check reads only a reply naming a file the session built (#345)', () => {
+  const { outOf, namesABuiltFile, respond } = reportHook;
+  eq(outOf('node bin/arkitect.mjs drawio build p329.json --out C:\\tmp\\p329.drawio'), 'p329.drawio', 'a Windows path');
+  eq(outOf('arkitect excalidraw build a.json --out="docs/my arch.excalidraw"'), 'my arch.excalidraw', 'quoted, with =');
+  eq(outOf('arkitect drawio build a.json --out "$OUT"'), '*', 'a shell variable stands for any file');
+  eq(outOf('arkitect drawio build a.json'), null, 'no --out');
+  assert(namesABuiltFile('Saved `./docs/p329.drawio`.', ['p329.drawio']), 'by path');
+  assert(namesABuiltFile('**File** P329.drawio', ['p329.drawio']), 'any case');
+  for (const reply of ['#339 is about an existing `.drawio`.', 'See xp329.drawio.', 'See p329.drawio.bak']) {
+    assert(!namesABuiltFile(reply, ['p329.drawio']), reply);
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Bash',
+      input: { command: 'node bin/arkitect.mjs drawio build p329.json --out /tmp/repro/p329.drawio' } }] } }));
+    const stop = (reply) => respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: reply });
+    eq(stop('Opened three PRs. #339: an agent rebuilt an existing `.drawio` from a new spec.'), null, 'a summary naming no built file');
+    assert(/no File, Assumptions/.test(JSON.parse(stop('Done: /tmp/repro/p329.drawio') ?? '{}').reason), 'the built file is still checked');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
