@@ -2085,6 +2085,49 @@ test('a whole Read of a diagram is refused until it is analyzed, and always when
   }
 });
 
+// The report check ran only as a Claude Code hook; no other host had a route
+// to it (#302). `arkitect report` runs the same checks on a saved report, and
+// every adapter names it.
+const reportCli = await import(pathToFileURL(join(ROOT, 'bin', 'lib', 'report.mjs')).href);
+test('arkitect report checks a saved report like the Stop hook, and every adapter names it (#302)', () => {
+  const { ADAPTERS } = adapters;
+  for (const [name, adapter] of Object.entries(ADAPTERS)) {
+    const text = adapter.render('/opt/arkitect');
+    assert(/arkitect\.mjs"? report /.test(text), `${name} has no route to the report check`);
+  }
+  assert(/node bin\/arkitect\.mjs report <file>`\s+\(`--png-viewed`/.test(readFileSync(join(ROOT, 'AGENTS.md'), 'utf8')), 'AGENTS.md step 8 names it');
+
+  const good = ['**File** `docs/orders.drawio`', '**Assumptions** none', '**Icons** aws/aws-lambda', '**Validation** PASS, no warnings',
+    '**Render** PNG opened; the flow reads left to right.', '**Deviations** none'].join('\n');
+  const bad = 'Done: docs/orders.drawio. Layout is clean. Open it in [Draw.io Desktop](https://app.diagrams.net).';
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-cli-'));
+  try {
+    const say = (args, stdin = '') => {
+      const lines = [];
+      const code = reportCli.report(args, { stdin: () => stdin, log: (l) => lines.push(l), error: (l) => lines.push(l) });
+      return { code, out: lines.join('\n') };
+    };
+    writeFileSync(join(dir, 'good.md'), good);
+    writeFileSync(join(dir, 'bad.md'), bad);
+    eq(say([join(dir, 'good.md'), '--png-viewed']).code, 0, 'a whole report, PNG looked at');
+    const unseen = say([join(dir, 'good.md')]);
+    eq(unseen.code, 1, 'the same report without --png-viewed describes a picture');
+    assert(/not told a PNG was looked at \(--png-viewed\)/.test(unseen.out), unseen.out);
+    const sent = say(['-', '--png-viewed'], bad);
+    eq(sent.code, 1, 'from stdin');
+    assert(/no File, Assumptions, Icons, Validation, Render, Deviations headings/.test(sent.out) && /app\.diagrams\.net/.test(sent.out), sent.out);
+    // The hook and the command agree on what is wrong with a report.
+    const strip = (ps) => ps.map((p) => p.replace(/^.*?, so nothing has seen/, 'unseen'));
+    eq(JSON.stringify(strip(reportCli.checkReport(bad, { viewed: false }))), JSON.stringify(strip(reportHook.problems(bad, { viewed: false }))), 'one check');
+    for (const args of [[], ['a.md', 'b.md'], ['--viewed', 'a.md'], [join(dir, 'missing.md')]]) eq(say(args).code, 2, args.join(' '));
+    const cli = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', join(dir, 'bad.md')], { encoding: 'utf8' });
+    eq(cli.status, 1, 'through the dispatcher');
+    assert(/hosted editor/.test(cli.stdout), cli.stdout);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // Asked to build a spec into a diagram file, the agent loaded no skill and
 // wrote its own builder (#327). A prompt naming a diagram file or a spec gets
 // one line naming the skill; any other prompt gets nothing.

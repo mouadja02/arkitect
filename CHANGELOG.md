@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Added
 
 - A fourth hook, `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or `.excalidraw`, it refuses one the session has not analyzed, and one over 64 KB at all, naming the analyze command to run. A line range with `limit` passes. Editing a diagram, an agent read the whole file straight after `references/editing.md` told it to analyze; on a file with embedded icons one Read fills the context (#342).
+- `arkitect report <file|->` runs the report check on any host: the seven headings, a Render section that describes only a picture someone looked at (`--png-viewed` declares it), no validate warning explained away, no hosted-editor link. Exit 1 names each problem. Every agent adapter and AGENTS.md step 8 name it; step 8 now lists the report's headings and is 4 bytes shorter. The check ran only as Claude Code's Stop hook before (#302).
 
 ### Fixed
 

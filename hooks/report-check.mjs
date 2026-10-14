@@ -113,8 +113,10 @@ export function sectionOf(reply, name) {
 }
 export const renderSection = (reply) => sectionOf(reply, 'Render');
 
-// Each problem with a report, as a sentence to send back.
-export function problems(reply, { viewed }) {
+// Each problem with a report, as a sentence to send back. `unseen` says how
+// the check knows no PNG was looked at: the hook reads the session, the
+// portable command takes the agent's word (#302).
+export function problems(reply, { viewed, unseen = 'no PNG was opened in this session' }) {
   const out = [];
   const missing = HEADINGS.filter((h) => !heading(h).test(String(reply ?? '')));
   if (missing.length) {
@@ -125,10 +127,10 @@ export function problems(reply, { viewed }) {
   const render = renderSection(reply);
   const said = describesThePicture(render);
   if (!viewed && said) {
-    out.push(`no PNG was opened in this session, so nothing has seen the diagram, but Render says "${said}": say what `
+    out.push(`${unseen}, so nothing has seen the diagram, but Render says "${said}": say what `
       + "was rendered and that you haven't seen it, and give spacing and crossings only as validate's findings");
   } else if (!viewed && render.trim() && !admitsUnseen(render)) {
-    out.push("no PNG was opened in this session, so nothing has seen the diagram, and Render doesn't say so: say what "
+    out.push(`${unseen}, so nothing has seen the diagram, and Render doesn't say so: say what `
       + "was rendered and that you haven't seen it, and give spacing and crossings only as validate's findings");
   }
   const excuse = excusesAWarning(reply);

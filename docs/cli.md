@@ -9,6 +9,7 @@ arkitect                     # every command, one screen
 arkitect doctor              # what is installed, what is optional
 arkitect where               # the install path
 arkitect install --all       # agent adapters for this project
+arkitect report report.md    # check a saved diagram report
 arkitect test                # the offline suite (clone only)
 arkitect version
 ```
@@ -20,6 +21,13 @@ does not parse, and 0 otherwise: a missing renderer, browser or Docker, an
 ignored style override or an adapter pointing at another install is a
 warning. It reads files and asks programs their version; it never starts a
 renderer, a browser or a container, and never contacts a remote Docker engine.
+
+`report <file|->` runs the check Claude Code's Stop hook makes, on any host: the
+seven headings, a Render section that describes only a picture someone looked
+at, no validate warning called intentional, no hosted-editor link. It sees only
+the text, so `--png-viewed` is the agent's word that it opened the PNG, never an
+observed fact. Exit 0 clean, 1 with problems, each named, 2 on a usage error
+(#302).
 
 ## Draw.io
 

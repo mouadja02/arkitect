@@ -108,13 +108,13 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
 7. **Render it and actually look at the PNG.** Read the image back. Iterate on
    spacing, hierarchy, routing and label legibility. A diagram that validates
    but reads badly is not done.
-8. **Report.** File path, assumptions, validation and render results, which
-   icons came from where, anything unresolved, and any deliberate deviation
-   from the style guide. When the user named no engine, which one you chose and
-   why it over the other — §1 asks for the reason, and the report is where it
-   goes. Each validate warning still printed is named with every id it gives,
-   as a defect still there, and each defect seen in the render and left by
-   page — never "minor" or "a few".
+8. **Report** under **File**, **Engine** (if none was named: why it
+   over the other, §1), **Assumptions**, **Icons** (sources, gaps),
+   **Validation**, **Render**, **Deviations** from the style guide. Each
+   validate warning still printed is named with every id it gives, as a defect
+   still there, and each defect seen in the render and left by page — never
+   "minor" or "a few". Save it, run `node bin/arkitect.mjs report <file>`
+   (`--png-viewed` once you looked) and fix what it names.
 
 ## 3. Commands
 
