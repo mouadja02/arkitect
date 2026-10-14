@@ -4448,6 +4448,74 @@ test('a box named like an account or a VPC is listed with the boundary to paste 
   assert(/id="mgmt"[^>]*container=1/.test(fixed.xml), 'a container');
 });
 
+// A boundary was sized from its grid span alone: a default 190px box crossed
+// both sides of a one-cell scope, and one given no col or row sat at the page
+// origin while its children were drawn far to the right. Validate passed both
+// (#295).
+test('a Draw.io boundary grows to hold its children, nested ones and captions included, and validate names one that does not (#295)', () => {
+  mkdirSync(TMP, { recursive: true });
+  const geometry = (xml) => {
+    const cells = new Map();
+    for (const m of xml.matchAll(/<mxCell id="([^"]+)"[^>]*?parent="([^"]+)"[^>]*>\s*<mxGeometry x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)"/g)) {
+      cells.set(m[1], { parent: m[2], x: Number(m[3]), y: Number(m[4]), w: Number(m[5]), h: Number(m[6]) });
+    }
+    const abs = (id) => {
+      const c = cells.get(id);
+      const p = cells.has(c.parent) ? abs(c.parent) : { x: 0, y: 0 };
+      return { x: c.x + p.x, y: c.y + p.y, w: c.w, h: c.h };
+    };
+    return abs;
+  };
+  const inside = (abs, child, parent, gap = 0) => {
+    const c = abs(child); const p = abs(parent);
+    return c.x >= p.x + gap && c.y >= p.y + gap && c.x + c.w <= p.x + p.w - gap && c.y + c.h <= p.y + p.h - gap;
+  };
+  const clean = (xml, name) => {
+    const file = join(TMP, `${name}.drawio`);
+    writeFileSync(file, xml);
+    return validator.validateFile(file).warnings.filter((w) => /outside its container|container "/.test(w));
+  };
+
+  const one = builder.buildDiagram({ boundaries: [{ id: 'group', kind: 'scope', label: 'Service' }], nodes: [{ id: 'worker', parent: 'group', label: 'Worker' }] });
+  assert(inside(geometry(one.xml), 'worker', 'group', 25), 'the issue\'s worker sits inside its scope with the default padding');
+  eq(clean(one.xml, 'p295-one').join(), '', 'validates clean');
+
+  const spec = {
+    boundaries: [
+      { id: 'cloud', kind: 'aws-cloud', label: 'AWS Cloud', col: 0, row: 0 },
+      { id: 'core', kind: 'scope', label: 'Core services', parent: 'cloud' },
+      { id: 'edge', kind: 'scope', label: 'Edge', parent: 'cloud', col: 0, row: 0 },
+    ],
+    nodes: [
+      { id: 'cdn', kind: 'icon', icon: 'aws/amazon-cloudfront', label: 'CDN', parent: 'edge', col: 0, row: 0 },
+      { id: 'wide', label: 'A box wider than its cell', parent: 'edge', col: 0, row: 1, width: 320 },
+      { id: 'fn', kind: 'icon', icon: 'aws/aws-lambda', label: 'An orders function with a caption far wider than its icon', parent: 'core', col: 4, row: 0 },
+      { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', parent: 'core', col: 5, row: 2 },
+    ],
+    edges: [{ from: 'cdn', to: 'fn' }, { from: 'fn', to: 'q' }, { from: 'wide', to: 'q' }],
+  };
+  const built = builder.buildDiagram(spec);
+  const abs = geometry(built.xml);
+  for (const [child, parent] of [['cdn', 'edge'], ['wide', 'edge'], ['fn', 'core'], ['q', 'core'], ['edge', 'cloud'], ['core', 'cloud']]) {
+    assert(inside(abs, child, parent, 10), `${child} inside ${parent}`);
+  }
+  assert(abs('core').y - abs('cloud').y >= 30, 'a nested boundary sits under its parent\'s name');
+  eq(clean(built.xml, 'p295-nested').join(' | '), '', 'no child outside, no caption across a border');
+  for (const e of ['e0', 'e1', 'e2'].map((_, i) => spec.edges[i])) {
+    assert(new RegExp(`source="${e.from}" target="${e.to}"`).test(built.xml), `edge ${e.from} -> ${e.to} still bound to its nodes`);
+  }
+  // A span asked for is a minimum: a child inside it changes nothing.
+  const asked = builder.buildDiagram({ boundaries: [{ id: 'b', label: 'B', col: 0, row: 0, cols: 4, rows: 2 }], nodes: [{ id: 'i', kind: 'icon', icon: 'aws/aws-lambda', label: 'L', parent: 'b', col: 1, row: 0 }] });
+  const grid = builder.buildDiagram({ boundaries: [{ id: 'b', label: 'B', col: 0, row: 0, cols: 4, rows: 2 }], nodes: [] });
+  eq(asked.xml.match(/<mxCell id="b"[\s\S]*?<\/mxCell>/)[0], grid.xml.match(/<mxCell id="b"[\s\S]*?<\/mxCell>/)[0], 'the grid span holds');
+
+  // A file built before this, read back: validate names the child and its container.
+  const old = one.xml.replace(/(<mxCell id="group"[^>]*>\s*<mxGeometry x=")-?\d+(" y="\d+" width=")\d+/, '$140$2158')
+    .replace(/(<mxCell id="worker"[^>]*>\s*<mxGeometry x=")-?\d+/, '$1-16');
+  eq(clean(old, 'p295-old').join(), 'page 0: cell "worker" is drawn 16px outside its container "group"; widen the container, '
+    + 'or rebuild from the spec, which sizes a boundary to hold what names it as parent', 'both ids, and by how much');
+});
+
 // Asked to add one node, an agent rebuilt a hand-drawn .drawio from a new spec
 // and reported it had followed the file; the build said nothing (#339).
 test('a build over a .drawio Arkitect did not write says so in its notes, naming the backup (#339)', () => {

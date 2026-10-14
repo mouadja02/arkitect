@@ -53,6 +53,13 @@ export { T, EDGE_KINDS, resolveStyle, loadStyle, validateOverrides } from './lib
 
 // Icon captions render below the cell; boundaries must leave room for them.
 const CAPTION_ROOM = 34;
+// A child boundary sits at least this far inside its parent's sides and
+// bottom, and NEST_HEAD below its top, clear of the parent's name: an AWS
+// group draws a 25px icon in that corner with its label beside it. The
+// starter template's pipeline sat 18px down and its top line ran under the
+// "AWS Cloud" label (#295).
+const NEST_GAP = 10;
+const NEST_HEAD = 30;
 // Height of one caption line at the body font size, for captions that wrap onto
 // several lines (#45).
 const CAPTION_LINE = 15;
@@ -478,30 +485,25 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
 
     // A boundary spans whole grid cells. Its box runs from the left edge of its
     // first column to the right edge of its last, with room under the bottom row
-    // for the icon captions that hang below their cells.
+    // for the icon captions that hang below their cells. That is a minimum: the
+    // box then grows to hold what names it as `parent` (#295).
     const boundaries = spec.boundaries ?? [];
     const byBoundaryId = new Map(boundaries.map((b) => [b.id, b]));
+    const padOf = (b) => ({ left: b.padLeft ?? 40, top: b.padTop ?? 55, right: b.padRight ?? 40, bottom: b.padBottom ?? 25 });
     // A missing col or row is 0, as in Excalidraw (#115).
-    const boxOf = (b) => {
+    const gridBox = (b) => {
       const col = b.col ?? 0;
       const row = b.row ?? 0;
-      const left = colX(col) - (b.padLeft ?? 40);
-      const top = rowY(row) - (b.padTop ?? 55);
-      const right = colX(col + (b.cols ?? 1) - 1) + T.iconSize + (b.padRight ?? 40);
-      const bottom = rowY(row + (b.rows ?? 1) - 1) + T.iconSize + CAPTION_ROOM + (b.padBottom ?? 25);
+      const pad = padOf(b);
+      const left = colX(col) - pad.left;
+      const top = rowY(row) - pad.top;
+      const right = colX(col + (b.cols ?? 1) - 1) + T.iconSize + pad.right;
+      const bottom = rowY(row + (b.rows ?? 1) - 1) + T.iconSize + CAPTION_ROOM + pad.bottom;
       return { x: left, y: top, width: right - left, height: bottom - top };
     };
-    // Origin a child's coordinates are relative to. boxOf already returns
-    // absolute page coordinates, so this is the parent's own box - not a sum up
-    // the chain, which would count every ancestor twice.
-    const originOf = (parentId) => {
-      const b = byBoundaryId.get(parentId);
-      return b ? boxOf(b) : { x: 0, y: 0 };
-    };
 
+    const boundaryStyles = new Map();
     for (const [i, b] of boundaries.entries()) {
-      const abs = boxOf(b);
-      const origin = originOf(b.parent);
       if (b.kind != null && !BOUNDARY_KINDS.includes(b.kind)) {
         report.unknownKinds.push({ field: `${at}boundaries[${i}].kind`, value: b.kind, drawnAs: 'scope', valid: BOUNDARY_KINDS });
       }
@@ -514,16 +516,16 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
         if (LABEL_ALIGNS.includes(b.labelAlign)) style = `${style.replace(/(^|;)align=\w+;/, '$1')}align=${b.labelAlign};${b.labelAlign === 'right' ? 'spacingRight=8;' : ''}`;
         else report.unknownKinds.push({ field: `${at}boundaries[${i}].labelAlign`, value: b.labelAlign, drawnAs: 'the default', valid: LABEL_ALIGNS });
       }
-      push(`<mxCell id="${esc(b.id)}" value="${labelValue(b.label)}" style="${style}" vertex="1" parent="${esc(b.parent ?? '1')}">`
-        + `<mxGeometry x="${Math.round(abs.x - origin.x)}" y="${Math.round(abs.y - origin.y)}" `
-        + `width="${Math.round(abs.width)}" height="${Math.round(abs.height)}" as="geometry" /></mxCell>`);
-      track(abs.x, abs.y, abs.width, abs.height);
+      boundaryStyles.set(b.id, style);
     }
 
+    // Every node's style and box, on the page. Written after the boundaries,
+    // whose size depends on them.
     const nodeBox = new Map();
     // Where each node landed on the page, and whether a caption hangs below it.
     const placed = new Map();
     const footprints = [];
+    const pending = [];
     for (const [i, node] of (spec.nodes ?? []).entries()) {
       const n = iconKind(node);
       const unused = unusedIcon(node, `${at}nodes[${i}]`, ['icon']);
@@ -534,7 +536,6 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       }
       const w = n.width ?? (n.kind === 'icon' ? T.iconSize : 190);
       const h = n.height ?? (n.kind === 'icon' ? T.iconSize : 60);
-      const origin = originOf(parent);
 
       let style;
       if (n.kind === 'note') style = STYLE.note;
@@ -572,22 +573,83 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       // drawn at, so a box, a wordmark and an icon on one row share a centre line
       // and connectors between them run straight. Centring on the asked-for size
       // hung a wordmark from the top of its cell and put a logo 63px left (#255).
-      const x = colX(n.col ?? 0) + (T.iconSize - box.w) / 2 - origin.x;
-      const y = rowY(n.row ?? 0) + (T.iconSize - box.h) / 2 - origin.y;
-      placed.set(n.id, {
-        x: x + origin.x, y: y + origin.y, w: box.w, h: box.h,
-        caption: Boolean(n.label) && style.includes('verticalLabelPosition=bottom'),
-        lines: linesOf(n.label).length,
-        leaf: n.kind !== 'text',
-      });
+      const x = colX(n.col ?? 0) + (T.iconSize - box.w) / 2;
+      const y = rowY(n.row ?? 0) + (T.iconSize - box.h) / 2;
+      const caption = Boolean(n.label) && style.includes('verticalLabelPosition=bottom');
+      placed.set(n.id, { x, y, w: box.w, h: box.h, caption, lines: linesOf(n.label).length, leaf: n.kind !== 'text' });
       footprints.push({
         field: `${at}nodes[${i}]`, id: n.id, width: n.width, height: n.height, label: n.label, col: n.col, row: n.row,
         plain: n.kind == null || n.kind === 'box' || !NODE_KINDS.includes(n.kind),
-        box: { x: x + origin.x, y: y + origin.y, width: box.w, height: box.h },
+        box: { x, y, width: box.w, height: box.h },
       });
+      pending.push({ n, parent, style, x, y, box, caption });
+    }
+
+    // A box grown to hold its children, bottom up (#295). The grid span was
+    // the only input, so a default 190px box crossed both sides of a one-cell
+    // scope, and a boundary given no col or row sat at the page origin while
+    // its children were drawn hundreds of pixels away; validate passed both.
+    // Now each child node is held with the boundary's own padding (its caption
+    // included), each child boundary with NEST_GAP on three sides and NEST_HEAD
+    // above, under the parent's name. A boundary that asks for a col, row,
+    // cols or rows keeps that span as its minimum; one that asks for none is
+    // as big as what it holds.
+    const sized = new Map();
+    const boxOf = (b, seen = new Set()) => {
+      if (sized.has(b.id)) return sized.get(b.id);
+      if (seen.has(b.id)) return gridBox(b);
+      seen.add(b.id);
+      const pad = padOf(b);
+      const need = [];
+      for (const d of pending) {
+        if (d.parent !== b.id) continue;
+        const bottom = d.y + d.box.h + (d.caption ? CAPTION_ROOM : 0);
+        need.push({ x: d.x - pad.left, y: d.y - pad.top, r: d.x + d.box.w + pad.right, b: bottom + pad.bottom });
+        if (d.caption) {
+          const c = captionBox({ x: d.x, y: d.y, width: d.box.w, height: d.box.h }, linesOf(d.n.label), T.fontBody);
+          need.push({ x: c.x - NEST_GAP, y: d.y, r: c.x + c.width + NEST_GAP, b: c.y + c.height + pad.bottom });
+        }
+      }
+      for (const k of boundaries) {
+        if (k.parent !== b.id) continue;
+        const g = boxOf(k, seen);
+        need.push({ x: g.x - NEST_GAP, y: g.y - NEST_HEAD, r: g.x + g.width + NEST_GAP, b: g.y + g.height + NEST_GAP });
+      }
+      const asked = ['col', 'row', 'cols', 'rows'].some((key) => b[key] !== undefined);
+      let edges = null;
+      if (asked || !need.length) {
+        const g = gridBox(b);
+        edges = { x: g.x, y: g.y, r: g.x + g.width, b: g.y + g.height };
+      }
+      for (const e of need) {
+        edges = edges ? { x: Math.min(edges.x, e.x), y: Math.min(edges.y, e.y), r: Math.max(edges.r, e.r), b: Math.max(edges.b, e.b) } : e;
+      }
+      const box = { x: edges.x, y: edges.y, width: edges.r - edges.x, height: edges.b - edges.y };
+      sized.set(b.id, box);
+      return box;
+    };
+    // Origin a child's coordinates are relative to. boxOf already returns
+    // absolute page coordinates, so this is the parent's own box - not a sum up
+    // the chain, which would count every ancestor twice.
+    const originOf = (parentId) => {
+      const b = byBoundaryId.get(parentId);
+      return b ? boxOf(b) : { x: 0, y: 0 };
+    };
+
+    for (const b of boundaries) {
+      const abs = boxOf(b);
+      const origin = originOf(b.parent);
+      push(`<mxCell id="${esc(b.id)}" value="${labelValue(b.label)}" style="${boundaryStyles.get(b.id)}" vertex="1" parent="${esc(b.parent ?? '1')}">`
+        + `<mxGeometry x="${Math.round(abs.x - origin.x)}" y="${Math.round(abs.y - origin.y)}" `
+        + `width="${Math.round(abs.width)}" height="${Math.round(abs.height)}" as="geometry" /></mxCell>`);
+      track(abs.x, abs.y, abs.width, abs.height);
+    }
+
+    for (const { n, parent, style, x, y, box } of pending) {
+      const origin = originOf(parent);
       push(`<mxCell id="${esc(n.id)}" value="${labelValue(n.label)}" style="${style}" vertex="1" parent="${esc(parent)}">`
-        + `<mxGeometry x="${Math.round(x)}" y="${Math.round(y)}" width="${box.w}" height="${box.h}" as="geometry" /></mxCell>`);
-      if (parent === '1') track(x, y, box.w, box.h);
+        + `<mxGeometry x="${Math.round(x - origin.x)}" y="${Math.round(y - origin.y)}" width="${box.w}" height="${box.h}" as="geometry" /></mxCell>`);
+      if (parent === '1') track(x - origin.x, y - origin.y, box.w, box.h);
     }
 
     // The title sat at a fixed 70px above the origin, across the header of any

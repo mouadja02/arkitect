@@ -35,6 +35,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- **Changes what existing specs draw.** A Draw.io boundary grows to hold the nodes and boundaries that name it as `parent`, with its own padding, captions included, and a nested boundary sits 30px under its parent's name. Its `col`/`row`/`cols`/`rows` span is now a minimum, and a boundary that gives none is as big as what it holds instead of one cell at the page origin. A default 190px box crossed both sides of a one-cell scope, and validate passed it. The starter template's pipeline moves 12px down, off the "AWS Cloud" label it touched; it is rebuilt and re-rendered. `validate` warns on a cell drawn outside its container, naming both (#295).
 - The `/diagram` command for Cursor and OpenCode points at AGENTS.md §2 instead of restating the workflow in four steps that left out the engine reason, validation, render and icons from the report (#354).
 - Maintainer-only text moved off agents' reading paths into `docs/maintenance.md`: AGENTS.md's render-helper internals and pull-request ritual, and both learning skills' instructions for rebuilding the shipped house style, which pointed a write into the plugin. AGENTS.md is held at 14,800 bytes (#356).
 

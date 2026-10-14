@@ -142,7 +142,7 @@ the builder stamps on everything it draws (#353).
 | spec | `title`, `subtitle`, `context.packs`, `layout`, `pages`, `legend`, `legendX`, `legendY` |
 | node `kind` | `icon` (a bundled mark, by name or id), `logo` (a fetched logo), `aws4` (a built-in shape), `box`, `note`, `text` |
 | node | `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line) |
-| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `cols`, `rows`, `labelAlign` |
+| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
 | edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used |
 | edge | `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
 

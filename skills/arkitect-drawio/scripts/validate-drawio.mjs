@@ -494,6 +494,27 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
       }
     }
 
+    // A cell that names a container as its parent but is drawn past its
+    // border: the boundary claims to hold it, and the picture says it does
+    // not. A default box crossed both sides of a one-cell scope and this
+    // passed (#295). A group sizes itself, and a turned container is skipped.
+    const styleOf = new Map(cells.map((c) => [c.id, parseStyle(c.style)]));
+    let outsideContainers = 0;
+    for (const c of cells) {
+      if (!c.vertex || !containers.has(c.parent) || !abs.has(c.id) || !abs.has(c.parent)) continue;
+      const s = styleOf.get(c.parent);
+      if (!bordered(s) || Number(s.rotation ?? 0)) continue;
+      const g = abs.get(c.parent);
+      const b = abs.get(c.id);
+      const by = Math.max(g.x - b.x, g.y - b.y, b.x + b.width - g.x - g.width, b.y + b.height - g.y - g.height);
+      if (by <= 1) continue;
+      outsideContainers++;
+      if (outsideContainers <= 10) {
+        warnings.push(`${label}: cell "${c.id}" is drawn ${Math.round(by)}px outside its container "${c.parent}"; widen `
+          + 'the container, or rebuild from the spec, which sizes a boundary to hold what names it as parent');
+      }
+    }
+
     // Density (#247). A page wider than a slide is shrunk to fit it, and its
     // text with it. The size most labels use stands for the page, so one small
     // footnote does not. SLIDE_WIDTH and TEXT_FLOOR are in maintenance.md.
@@ -524,7 +545,7 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, fakeBoundaries, productBoxes, density, labels,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, outsideContainers, fakeBoundaries, productBoxes, density, labels,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
@@ -563,6 +584,7 @@ function main(argv) {
           + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`
           + `${p.sharedTrunks ? `, ${p.sharedTrunks} shared trunks` : ''}`
           + `${p.textOnContainers ? `, ${p.textOnContainers} texts on containers` : ''}`
+          + `${p.outsideContainers ? `, ${p.outsideContainers} cells outside their containers` : ''}`
           + `${p.fakeBoundaries ? `, ${p.fakeBoundaries} boxes named like boundaries` : ''}`
           + `${p.productBoxes ? `, ${p.productBoxes} plain product boxes` : ''}`
           + `, ${p.density.icons} icons`
