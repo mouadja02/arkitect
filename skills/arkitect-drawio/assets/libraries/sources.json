@@ -1019,8 +1019,7 @@
       "abbreviations": {
         "amazon-simple-storage-service": [
           "s3",
-          "amazon s3",
-          "object storage"
+          "amazon s3"
         ],
         "amazon-simple-storage-service-glacier": [
           "glacier",
@@ -1042,8 +1041,7 @@
         ],
         "amazon-elastic-block-store": [
           "ebs",
-          "amazon ebs",
-          "block storage"
+          "amazon ebs"
         ],
         "amazon-virtual-private-cloud": [
           "vpc",
@@ -1057,7 +1055,6 @@
         "amazon-simple-notification-service": [
           "sns",
           "amazon sns",
-          "pub sub",
           "notifications"
         ],
         "aws-identity-and-access-management": [
@@ -1088,7 +1085,6 @@
           "elb",
           "alb",
           "nlb",
-          "load balancer",
           "application load balancer"
         ],
         "amazon-managed-streaming-for-apache-kafka": [
@@ -1097,8 +1093,7 @@
           "managed kafka"
         ],
         "amazon-managed-workflows-for-apache-airflow": [
-          "mwaa",
-          "managed airflow"
+          "mwaa"
         ],
         "amazon-managed-service-for-apache-flink": [
           "managed flink",
@@ -1114,8 +1109,7 @@
         ],
         "amazon-route-53": [
           "route53",
-          "route 53",
-          "dns"
+          "route 53"
         ],
         "amazon-api-gateway": [
           "api gateway",
@@ -1139,9 +1133,7 @@
         ],
         "amazon-ec2": [
           "ec2",
-          "elastic compute cloud",
-          "virtual machine",
-          "instance"
+          "elastic compute cloud"
         ],
         "amazon-dynamodb": [
           "dynamodb",
@@ -1153,13 +1145,10 @@
           "memcached cache"
         ],
         "amazon-cloudwatch": [
-          "cloudwatch",
-          "metrics",
-          "logs"
+          "cloudwatch"
         ],
         "aws-lambda": [
-          "lambda",
-          "serverless function"
+          "lambda"
         ],
         "amazon-sagemaker-ai": [
           "sagemaker"
@@ -1171,12 +1160,10 @@
           "aurora"
         ],
         "aws-step-functions": [
-          "step functions",
-          "state machine"
+          "step functions"
         ],
         "amazon-eventbridge": [
-          "eventbridge",
-          "event bus"
+          "eventbridge"
         ],
         "amazon-kinesis-data-streams": [
           "kinesis",
@@ -1187,19 +1174,16 @@
           "kinesis firehose"
         ],
         "aws-glue": [
-          "glue",
-          "etl"
+          "glue"
         ],
         "amazon-redshift": [
-          "redshift",
-          "data warehouse"
+          "redshift"
         ],
         "amazon-athena": [
           "athena"
         ],
         "amazon-cloudfront": [
-          "cloudfront",
-          "cdn"
+          "cloudfront"
         ]
       }
     },
@@ -1235,9 +1219,7 @@
           "azure monitor prometheus"
         ],
         "storage-accounts": [
-          "blob storage",
           "azure blob",
-          "blob",
           "azure storage"
         ],
         "azure-cosmos-db": [
@@ -1246,8 +1228,7 @@
         ],
         "function-apps": [
           "azure functions",
-          "function app",
-          "serverless function"
+          "function app"
         ],
         "kubernetes-services": [
           "aks",
@@ -1255,7 +1236,6 @@
         ],
         "app-services": [
           "app service",
-          "web app",
           "azure web app"
         ],
         "entra-id-protection": [
@@ -1394,8 +1374,7 @@
       "aliasExtras": {
         "cloud-storage": [
           "gcs",
-          "google cloud storage",
-          "bucket"
+          "google cloud storage"
         ],
         "bigquery": [
           "bq"
@@ -1423,8 +1402,7 @@
           "google pubsub"
         ],
         "cloud-composer": [
-          "composer",
-          "managed airflow"
+          "composer"
         ],
         "vertex-ai": [
           "vertex"

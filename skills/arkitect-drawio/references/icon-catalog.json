@@ -1,10 +1,10 @@
 {
-  "generated": "2026-09-24T08:12:45.672Z",
+  "generated": "2026-10-14T20:48:25.005Z",
   "version": 2,
   "note": "Metadata only. Image payloads live in assets/libraries/<pack>.drawio and are read by libraryIndex, so a search never pulls base64 into the caller context.",
   "manifest": {
     "file": "assets/libraries/sources.json",
-    "sha256": "7f7dbeec429bddc1d26ff57dddf9d93aee2d0c01a16307c2b1adaf4f951968af"
+    "sha256": "7c13b8d8056ed53894091e356437e211d44362aca3cf6ab71db1e7e6f8e3f18a"
   },
   "sources": {
     "aws-icons-2026-07": {
@@ -1185,19 +1185,16 @@
         "arch amazon cloudfront 64",
         "archamazoncloudfront64",
         "cloud front",
-        "cdn",
         "amazon cloudfronts",
         "amazoncloudfronts",
         "cloudfronts",
-        "cloud fronts",
-        "cdns"
+        "cloud fronts"
       ],
       "generatedAliases": [
         "amazon cloudfronts",
         "amazoncloudfronts",
         "cloudfronts",
-        "cloud fronts",
-        "cdns"
+        "cloud fronts"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Amazon-CloudFront_64.svg",
@@ -1254,20 +1251,16 @@
         "arch amazon cloudwatch 64",
         "archamazoncloudwatch64",
         "cloud watch",
-        "metrics",
-        "logs",
         "amazon cloudwatchs",
         "amazoncloudwatchs",
         "cloudwatchs",
-        "cloud watchs",
-        "metric"
+        "cloud watchs"
       ],
       "generatedAliases": [
         "amazon cloudwatchs",
         "amazoncloudwatchs",
         "cloudwatchs",
-        "cloud watchs",
-        "metric"
+        "cloud watchs"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Management-Tools/64/Arch_Amazon-CloudWatch_64.svg",
@@ -1782,21 +1775,12 @@
         "archamazonec264",
         "elastic compute cloud",
         "elasticcomputecloud",
-        "virtual machine",
-        "virtualmachine",
-        "instance",
         "elastic compute clouds",
-        "elasticcomputeclouds",
-        "virtual machines",
-        "virtualmachines",
-        "instances"
+        "elasticcomputeclouds"
       ],
       "generatedAliases": [
         "elastic compute clouds",
-        "elasticcomputeclouds",
-        "virtual machines",
-        "virtualmachines",
-        "instances"
+        "elasticcomputeclouds"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Compute/64/Arch_Amazon-EC2_64.svg",
@@ -2020,24 +2004,18 @@
         "ebs",
         "amazon ebs",
         "amazonebs",
-        "block storage",
-        "blockstorage",
         "amazon elastic block stores",
         "amazonelasticblockstores",
         "elastic block stores",
         "elasticblockstores",
-        "amazoneb",
-        "block storages",
-        "blockstorages"
+        "amazoneb"
       ],
       "generatedAliases": [
         "amazon elastic block stores",
         "amazonelasticblockstores",
         "elastic block stores",
         "elasticblockstores",
-        "amazoneb",
-        "block storages",
-        "blockstorages"
+        "amazoneb"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Storage/64/Arch_Amazon-Elastic-Block-Store_64.svg",
@@ -2335,20 +2313,16 @@
         "arch amazon eventbridge 64",
         "archamazoneventbridge64",
         "event bridge",
-        "event bus",
-        "eventbus",
         "amazon eventbridges",
         "amazoneventbridges",
         "eventbridges",
-        "event bridges",
-        "eventbu"
+        "event bridges"
       ],
       "generatedAliases": [
         "amazon eventbridges",
         "amazoneventbridges",
         "eventbridges",
-        "event bridges",
-        "eventbu"
+        "event bridges"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_Amazon-EventBridge_64.svg",
@@ -3456,24 +3430,18 @@
         "arch amazon managed workflows for apache airflow 64",
         "archamazonmanagedworkflowsforapacheairflow64",
         "mwaa",
-        "managed airflow",
-        "managedairflow",
         "amazon managed workflows for apache airflows",
         "amazonmanagedworkflowsforapacheairflows",
         "managed workflows for apache airflows",
         "managedworkflowsforapacheairflows",
-        "mwaas",
-        "managed airflows",
-        "managedairflows"
+        "mwaas"
       ],
       "generatedAliases": [
         "amazon managed workflows for apache airflows",
         "amazonmanagedworkflowsforapacheairflows",
         "managed workflows for apache airflows",
         "managedworkflowsforapacheairflows",
-        "mwaas",
-        "managed airflows",
-        "managedairflows"
+        "mwaas"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_Amazon-Managed-Workflows-for-Apache-Airflow_64.svg",
@@ -3923,20 +3891,14 @@
         "redshift",
         "arch amazon redshift 64",
         "archamazonredshift64",
-        "data warehouse",
-        "datawarehouse",
         "amazon redshifts",
         "amazonredshifts",
-        "redshifts",
-        "data warehouses",
-        "datawarehouses"
+        "redshifts"
       ],
       "generatedAliases": [
         "amazon redshifts",
         "amazonredshifts",
-        "redshifts",
-        "data warehouses",
-        "datawarehouses"
+        "redshifts"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Analytics/64/Arch_Amazon-Redshift_64.svg",
@@ -3989,8 +3951,7 @@
         "route 53",
         "route53",
         "arch amazon route 53 64",
-        "archamazonroute5364",
-        "dns"
+        "archamazonroute5364"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Amazon-Route-53_64.svg",
@@ -4258,16 +4219,12 @@
         "sns",
         "amazon sns",
         "amazonsns",
-        "pub sub",
-        "pubsub",
         "notifications",
         "amazon simple notification services",
         "amazonsimplenotificationservices",
         "simple notification services",
         "simplenotificationservices",
         "amazonsn",
-        "pub subs",
-        "pubsubs",
         "notification"
       ],
       "generatedAliases": [
@@ -4276,8 +4233,6 @@
         "simple notification services",
         "simplenotificationservices",
         "amazonsn",
-        "pub subs",
-        "pubsubs",
         "notification"
       ],
       "source": "aws-icons-2026-07",
@@ -4346,22 +4301,16 @@
         "s3",
         "amazon s3",
         "amazons3",
-        "object storage",
-        "objectstorage",
         "amazon simple storage services",
         "amazonsimplestorageservices",
         "simple storage services",
-        "simplestorageservices",
-        "object storages",
-        "objectstorages"
+        "simplestorageservices"
       ],
       "generatedAliases": [
         "amazon simple storage services",
         "amazonsimplestorageservices",
         "simple storage services",
-        "simplestorageservices",
-        "object storages",
-        "objectstorages"
+        "simplestorageservices"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Storage/64/Arch_Amazon-Simple-Storage-Service_64.svg",
@@ -7468,17 +7417,14 @@
         "glue",
         "arch aws glue 64",
         "archawsglue64",
-        "etl",
         "aws glues",
         "awsglues",
-        "glues",
-        "etls"
+        "glues"
       ],
       "generatedAliases": [
         "aws glues",
         "awsglues",
-        "glues",
-        "etls"
+        "glues"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Analytics/64/Arch_AWS-Glue_64.svg",
@@ -8239,20 +8185,14 @@
         "lambda",
         "arch aws lambda 64",
         "archawslambda64",
-        "serverless function",
-        "serverlessfunction",
         "aws lambdas",
         "awslambdas",
-        "lambdas",
-        "serverless functions",
-        "serverlessfunctions"
+        "lambdas"
       ],
       "generatedAliases": [
         "aws lambdas",
         "awslambdas",
-        "lambdas",
-        "serverless functions",
-        "serverlessfunctions"
+        "lambdas"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Compute/64/Arch_AWS-Lambda_64.svg",
@@ -9718,22 +9658,16 @@
         "stepfunctions",
         "arch aws step functions 64",
         "archawsstepfunctions64",
-        "state machine",
-        "statemachine",
         "aws step function",
         "awsstepfunction",
         "step function",
-        "stepfunction",
-        "state machines",
-        "statemachines"
+        "stepfunction"
       ],
       "generatedAliases": [
         "aws step function",
         "awsstepfunction",
         "step function",
-        "stepfunction",
-        "state machines",
-        "statemachines"
+        "stepfunction"
       ],
       "source": "aws-icons-2026-07",
       "upstreamId": "Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_AWS-Step-Functions_64.svg",
@@ -10568,8 +10502,6 @@
         "elb",
         "alb",
         "nlb",
-        "load balancer",
-        "loadbalancer",
         "application load balancer",
         "applicationloadbalancer",
         "elastic load balancings",
@@ -10577,8 +10509,6 @@
         "elbs",
         "albs",
         "nlbs",
-        "load balancers",
-        "loadbalancers",
         "application load balancers",
         "applicationloadbalancers"
       ],
@@ -10588,8 +10518,6 @@
         "elbs",
         "albs",
         "nlbs",
-        "load balancers",
-        "loadbalancers",
         "application load balancers",
         "applicationloadbalancers"
       ],
@@ -11563,18 +11491,12 @@
         "appservices",
         "app service",
         "appservice",
-        "web app",
-        "webapp",
         "azure web app",
         "azurewebapp",
-        "web apps",
-        "webapps",
         "azure web apps",
         "azurewebapps"
       ],
       "generatedAliases": [
-        "web apps",
-        "webapps",
         "azure web apps",
         "azurewebapps"
       ],
@@ -19693,18 +19615,12 @@
         "azurefunctions",
         "function app",
         "functionapp",
-        "serverless function",
-        "serverlessfunction",
         "azure function",
-        "azurefunction",
-        "serverless functions",
-        "serverlessfunctions"
+        "azurefunction"
       ],
       "generatedAliases": [
         "azure function",
-        "azurefunction",
-        "serverless functions",
-        "serverlessfunctions"
+        "azurefunction"
       ],
       "source": "azure-v24",
       "upstreamId": "Azure_Public_Service_Icons/Icons/compute/10029-icon-service-Function-Apps.svg",
@@ -25206,31 +25122,22 @@
       "aliases": [
         "storage accounts",
         "storageaccounts",
-        "blob storage",
-        "blobstorage",
         "azure blob",
         "azureblob",
-        "blob",
         "azure storage",
         "azurestorage",
         "storage account",
         "storageaccount",
-        "blob storages",
-        "blobstorages",
         "azure blobs",
         "azureblobs",
-        "blobs",
         "azure storages",
         "azurestorages"
       ],
       "generatedAliases": [
         "storage account",
         "storageaccount",
-        "blob storages",
-        "blobstorages",
         "azure blobs",
         "azureblobs",
-        "blobs",
         "azure storages",
         "azurestorages"
       ],
@@ -28474,20 +28381,14 @@
         "cloud composer",
         "cloudcomposer",
         "composer",
-        "managed airflow",
-        "managedairflow",
         "cloud composers",
         "cloudcomposers",
-        "composers",
-        "managed airflows",
-        "managedairflows"
+        "composers"
       ],
       "generatedAliases": [
         "cloud composers",
         "cloudcomposers",
-        "composers",
-        "managed airflows",
-        "managedairflows"
+        "composers"
       ],
       "source": "gcp-legacy",
       "upstreamId": "cloud_composer/cloud_composer.svg",
@@ -29668,13 +29569,11 @@
         "gcs",
         "google cloud storage",
         "googlecloudstorage",
-        "bucket",
         "storage",
         "cloud storages",
         "cloudstorages",
         "google cloud storages",
         "googlecloudstorages",
-        "buckets",
         "storages"
       ],
       "generatedAliases": [
@@ -29682,7 +29581,6 @@
         "cloudstorages",
         "google cloud storages",
         "googlecloudstorages",
-        "buckets",
         "storages"
       ],
       "source": "gcp-core",

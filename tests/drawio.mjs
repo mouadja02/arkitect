@@ -2018,7 +2018,7 @@ test('a name that only starts a different product flags itself instead of resolv
   }
   // A prefix that only drops a generic tail still names the product.
   for (const [q, id] of [['postgres', 'databases/postgresql'], ['rabbit', 'streaming-orchestration/rabbitmq'],
-    ['envoy', 'devops/envoyproxy'], ['key vault', 'azure/key-vaults'], ['storage account', 'azure/storage-accounts']]) {
+    ['envoy', 'devops/envoyproxy'], ['azure key vault', 'azure/key-vaults'], ['azure storage account', 'azure/storage-accounts']]) {
     const r = finder.resolve(q);
     assert(r.confident, `"${q}" lost confidence: ${r.reason}`);
     eq(r.icon.id, id, `"${q}"`);
@@ -2109,7 +2109,9 @@ test('a product name before generic words draws the product, not a vendor mark c
     ['activity log', 'azure/activity-log'], ['amazon elasticache', 'aws/amazon-elasticache']]) {
     eq(drawn(q), id, `"${q}"`);
   }
-  for (const q of ['oracle database', 'billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
+  // Oracle's own mark wins the tie with Azure's tile of the same name (#347).
+  eq(drawn('oracle database'), 'databases/oracle', 'Oracle Database');
+  for (const q of ['billing service', 's3 bucket', 'managed airflow']) assert(!finder.resolve(q).confident, `"${q}" drew ${drawn(q)}`);
 
   // Every alias a vendor mark carries that names another bundled product,
   // not through the vendor's own title or name, must not draw the vendor.
@@ -2139,7 +2141,7 @@ test('a product name before generic words draws the product, not a vendor mark c
     }
   }
   eq(borrowed.map(([id, a]) => `${id} "${a}"`).join(', '), 'aws/amazon-elasticache "redis cache", aws/amazon-elasticache "memcached cache", '
-    + 'aws/amazon-opensearch-service "elasticsearch service", gcp/cloud-composer "managed airflow"', 'the aliases that name another product');
+    + 'aws/amazon-opensearch-service "elasticsearch service"', 'the aliases that name another product (Composer\'s "managed airflow" names a concept, gone with #347)');
   for (const [id, a, got] of borrowed) assert(got !== id, `"${a}" still draws ${id} unattended`);
 });
 
@@ -2164,6 +2166,50 @@ test('icon resolution corpus: never confidently wrong, and precision at rank 1 h
   assert(!wrong.length, `confident and wrong: ${wrong.join('; ')}`);
   assert(m.top1 / m.answerable >= key.precisionFloor,
     `precision@1 ${pct(m.top1, m.answerable)} fell below the ${key.precisionFloor * 100}% floor`);
+});
+
+// "router" drew Google's Cloud Router, "etl" AWS Glue, "state machine" Step
+// Functions, "object storage" S3: 24 of 63 common architecture nouns drew a
+// vendor's mark with no vendor in the spec (#347).
+const vendorAliases = await import(`file://${join(SCRIPTS, 'lib', 'vendor-aliases.mjs').replace(/\\/g, '/')}`);
+test('a generic noun draws no cloud vendor\'s mark unless the spec or the query names the vendor (#347)', () => {
+  const { aliasNamesItsProduct } = vendorAliases;
+  for (const [alias, title] of [['etl', 'AWS Glue'], ['state machine', 'AWS Step Functions'], ['object storage', 'Amazon Simple Storage Service'],
+    ['blob', 'Storage Accounts'], ['web app', 'App Services'], ['serverless function', 'AWS Lambda'], ['managed airflow', 'Cloud Composer']]) {
+    assert(!aliasNamesItsProduct(alias, title), `"${alias}" names a concept, not ${title}`);
+  }
+  for (const [alias, title] of [['s3', 'Amazon Simple Storage Service'], ['aks', 'Kubernetes Services'], ['iam', 'Identity and Access Management'],
+    ['key vault', 'Key Vaults'], ['relational database service', 'Amazon RDS'], ['dynamo', 'Amazon DynamoDB'], ['google redis', 'Memorystore']]) {
+    assert(aliasNamesItsProduct(alias, title), `"${alias}" names ${title}`);
+  }
+  const sources = JSON.parse(readFileSync(join(SKILL, 'assets', 'libraries', 'sources.json'), 'utf8'));
+  const cat = finder.loadCatalog();
+  const bad = [];
+  for (const pack of sources.packs.filter((p) => ['aws', 'azure', 'gcp'].includes(p.id))) {
+    for (const map of [pack.aliasExtras ?? {}, pack.abbreviations ?? {}]) {
+      for (const [slug, aliases] of Object.entries(map)) {
+        const title = cat.icons.find((i) => i.id === `${pack.id}/${slug}`)?.title ?? slug;
+        for (const a of aliases) if (!aliasNamesItsProduct(a, title)) bad.push(`${pack.id}/${slug} "${a}"`);
+      }
+    }
+  }
+  eq(bad.join(', '), '', 'every vendor alias names its own product');
+
+  const drawn = (q, opts) => { const r = finder.resolve(q, opts); return r.confident ? r.icon.id : null; };
+  const vendor = /^(aws|azure|gcp)\//;
+  for (const q of ['router', 'agent', 'agents', 'etl', 'object storage', 'block storage', 'directory', 'translation', 'vision', 'region',
+    'model', 'notebook', 'chatbot', 'iam', 'waf', 'nat gateway', 'virtual machine', 'sql database', 'key vault', 'billing',
+    'artifact registry', 'secret manager', 'text to speech', 'subnet', 'state machine']) {
+    assert(!vendor.test(drawn(q) ?? ''), `"${q}" drew ${drawn(q)}`);
+    assert(!/^brands\//.test(drawn(q) ?? ''), `"${q}" drew a company's logo, ${drawn(q)}`);
+  }
+  eq(drawn('router'), 'agents/router', 'a neutral router');
+  eq(drawn('router', { packs: ['gcp'] }), 'gcp/cloud-router', 'a GCP spec\'s router is Cloud Router');
+  for (const [q, id] of [['azure key vault', 'azure/key-vaults'], ['google cloud router', 'gcp/cloud-router'], ['aws glue', 'aws/aws-glue'],
+    ['google text-to-speech', 'gcp/text-to-speech'], ['lambda', 'aws/aws-lambda'], ['s3', 'aws/amazon-simple-storage-service']]) {
+    eq(drawn(q), id, `"${q}" names its product or its vendor`);
+  }
+  eq(drawn('azure lambda'), null, 'naming one vendor never takes another\'s mark');
 });
 
 // Two packs can ship marks with exactly the same title, and both then score 105,
@@ -2192,7 +2238,21 @@ test('every exact-title tie is judged, and naming the stack settles it (#75)', (
     if (!judged.has(title)) {
       problems.push(`"${title}" ties ${group.map((i) => i.id).join(' and ')}, with no row in icon-queries.json`);
     }
-    if (finder.resolve(title).confident) {
+    // A cloud vendor's mark loses a tie to the one vendor-neutral mark that
+    // shares its title, so the neutral one draws with no stack named (#347).
+    // Any other tie still needs the stack.
+    const vendors = new Set(['aws', 'azure', 'gcp']);
+    const neutral = group.filter((i) => !vendors.has(i.pack));
+    const plain = finder.resolve(title);
+    if (neutral.length === 1 && neutral.length < group.length) {
+      // Unless a neutral runner-up is as close: primitives ships Desktop
+      // beside Monitor, agents Orchestrator beside GitHub's Workflow.
+      const rest = finder.search(title, { skip: (pack) => vendors.has(pack) || pack === 'brands' });
+      const crowded = rest[1] && rest[0].best - rest[1].best < 15;
+      if (crowded ? plain.confident : (!plain.confident || plain.icon.id !== neutral[0].id)) {
+        problems.push(`"${title}" should draw the neutral ${neutral[0].id} with no stack named: ${plain.confident ? plain.icon.id : plain.reason}`);
+      }
+    } else if (plain.confident) {
       problems.push(`"${title}" is confident with no stack named, although ${group.length} packs share the title`);
     }
     for (const icon of group) {
@@ -2594,8 +2654,11 @@ test('AWS and Google Cloud captions their file names mangled are corrected, and 
     ['gcp/beyondcorp', 'BeyondCorp', 'beyondcorp'], ['gcp/speech-to-text', 'Speech-to-Text', 'speech to text'],
   ]) {
     eq(title(id), caption, id);
+    // "Speech-to-Text" is all generic words, which draw Google's mark only
+    // with Google's stack named (#347).
+    const opts = id === 'gcp/speech-to-text' ? { packs: ['gcp'] } : {};
     for (const q of [caption, upstream]) {
-      const r = finder.resolve(q);
+      const r = finder.resolve(q, opts);
       assert(r.confident && r.icon.id === id, `"${q}" should resolve to ${id}, got ${r.icon?.id} (${r.reason})`);
     }
   }

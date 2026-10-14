@@ -49,19 +49,26 @@ drawn unattended. A result that isn't confident is a question, not an answer.
   RabbitMQ. `tempo` doesn't name Grafana Tempo, so it comes back flagged.
 - **A generic word isn't a vendor's product.** `service`, `storage`, `function`
   never take an AWS, Azure or GCP mark unattended; the node gets a labelled box
-  or a placeholder (#231). Azure's App Service is named entirely in generic
-  words, so it needs `context.packs` or its exact id.
+  or a placeholder (#231). The same holds for every architecture noun a vendor
+  titles a product with, `router`, `etl`, `region`, `key vault`, `iam`, and for
+  a company named for the idea: a vendor-neutral mark draws instead, if one
+  matches (#347). Azure's Key Vault is named entirely in generic words, so it
+  needs `context.packs`, the vendor in the name ("Azure Key Vault"), or its
+  exact id. A vendor alias names its product, never the idea: AWS Glue no
+  longer answers to `etl`.
 - **The product before the vendor.** "HashiCorp Vault" draws Vault, not
   HashiCorp's company logo (#285). "Redis cache" draws Redis, and ElastiCache
   only when the spec names AWS (#283).
 - **Ties stay open.** Two packs with the same exact title, Azure and
   `primitives` both calling one mark **Monitor**, both come back flagged until
-  `context.packs` names one (#75).
+  `context.packs` names one (#75). A cloud vendor's mark against a single
+  vendor-neutral one is not a tie: "Oracle Database" draws Oracle's own mark,
+  not Azure's tile, unless the spec names Azure (#347).
 
 Searches never print image payloads. `--compact` prints one line: the verdict
 and a spec node to paste. The rules are held to account by answer keys: for
-Draw.io, `tests/icon-queries.json` is an answer key of 471
-queries, plus 43 that must
+Draw.io, `tests/icon-queries.json` is an answer key of 489
+queries, plus 53 that must
 come back flagged, and the suite fails on any confident wrong answer.
 
 Search results also carry:

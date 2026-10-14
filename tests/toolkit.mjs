@@ -1809,8 +1809,8 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
   const kinesis = ask('drawio', 'kinesis');
   eq(kinesis.confident, false, 'drawio: an ambiguous search is not settled');
   assert(!('node' in kinesis) && kinesis.needsAChoice && kinesis.choices.length === 4 && kinesis.more > 0, 'drawio: choices, not a node');
-  const queue = ask('excalidraw', 'queue');
-  assert(!('draws' in queue) && !('node' in queue) && queue.placeholder && queue.choices.length <= 4, 'excalidraw: choices, not a node');
+  const doubtful = ask('excalidraw', 'tempo');
+  assert(!('draws' in doubtful) && !('node' in doubtful) && doubtful.placeholder && doubtful.choices.length <= 4, 'excalidraw: choices, not a node');
 
   // A lifecycle caveat and an on-demand next step survive compaction.
   const census = ask('drawio', 'census');

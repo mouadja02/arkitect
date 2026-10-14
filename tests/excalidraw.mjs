@@ -433,6 +433,36 @@ test('a generic word never draws a cloud vendor\'s mark unattended; a deliberate
   eq(report.missingIcons.join(','), 'Storage', 'a node named Storage gets the placeholder');
 });
 
+// "router" drew Google's Cloud Router, "agent" AWS's Agent, "region" an AWS
+// glyph: a vendor mark for a component the spec never put on that vendor
+// (#347). `cloud` was stripped as a vendor word, and native vendor libraries
+// were asked before the neutral shared packs.
+test('a generic noun draws a neutral mark or a placeholder, never a vendor\'s, and a deliberate ref still draws (#347)', () => {
+  const entries = finder.catalog();
+  const vendorRef = /^(aws|amazon|azure|microsoft-azure|gcp|google)[-:]|^drawio:(aws|azure|gcp)\//;
+  for (const q of ['router', 'agent', 'agents', 'etl', 'object storage', 'block storage', 'directory', 'translation', 'vision', 'region',
+    'model', 'notebook', 'chatbot', 'iam', 'waf', 'nat gateway', 'virtual machine', 'sql database', 'key vault', 'billing',
+    'artifact registry', 'secret manager', 'text to speech', 'subnet', 'state machine']) {
+    const ref = finder.unattended(q, { entries }).entry?.ref ?? '';
+    assert(!vendorRef.test(ref), `"${q}" drew ${ref}`);
+    assert(!/^db-eng:9$/.test(ref), `"${q}" drew Oracle's Directory`);
+  }
+  eq(finder.unattended('router', { entries }).entry?.name, 'Router', 'a neutral router');
+  eq(finder.unattended('agent', { entries }).entry?.ref, 'drawio:agents/agent', 'the neutral agent beats AWS\'s tie');
+  for (const q of ['lambda', 's3', 'bigquery', 'cloud storage', 'cloud router', 'azure key vault']) {
+    assert(vendorRef.test(finder.unattended(q, { entries }).entry?.ref ?? ''), `the product "${q}" still draws its vendor's mark`);
+  }
+  eq(finder.resolveIcon('google-icons:57')?.name, 'Cloud Router', 'a deliberate ref draws Cloud Router');
+  const out = JSON.parse(node('find-icon.mjs', ['router', '--compact']));
+  assert(!vendorRef.test(out.draws ?? ''), `compact router draws ${out.draws}`);
+
+  const spec = { nodes: [{ id: 'edge', label: 'Router', kind: 'icon' }, { id: 'app', label: 'App', col: 3 }], edges: [{ from: 'edge', to: 'app' }] };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  assert(!built.report.icons.some((i) => vendorRef.test(i.ref)), `the build drew ${JSON.stringify(built.report.icons)}`);
+  const boxed = builder.buildDiagram({ ...spec, nodes: [{ id: 'edge', label: 'Router' }, spec.nodes[1]] }, { seed: 1 });
+  assert(!validator.validateScene(boxed.scene).warnings.some((w) => /google-icons/.test(w)), 'validate recommends no Google mark');
+});
+
 // Both engines share the Draw.io resolver for shared marks, so both inherit
 // the vendor-named product (#285) and the product before a generic word (#283).
 test('"HashiCorp Vault" draws Vault and "Redis cache" draws Redis (#285, #283)', () => {
@@ -476,7 +506,17 @@ test('shared fallback preserves every existing choice and uses the reviewed prod
   for (const [query] of nativeKey.queries) {
     const before = finder.unattended(query, { entries: oldEntries });
     const after = finder.unattended(query, { entries });
-    if (before.entry) {
+    // A native vendor mark the query does not name gives way to a neutral
+    // shared mark of the same product: "opensearch" is OpenSearch's own mark,
+    // not Amazon OpenSearch Service (#347).
+    const vendor = /^(aws|amazon|azure|microsoft-azure|gcp|google)(-|$)/;
+    const gaveWay = before.entry && vendor.test(before.entry.library ?? '') && after.entry?.provider === 'drawio'
+      && !/^drawio:(aws|azure|gcp)\//.test(after.entry.ref);
+    if (gaveWay) {
+      const accept = [].concat(expected.get(query));
+      assert(accept.some((id) => id && after.entry.ref === `drawio:${id}`), `${query} gave way to a product the key does not accept: ${after.entry.ref}`);
+      added++;
+    } else if (before.entry) {
       eq(after.entry?.ref, before.entry.ref, `existing choice for ${query}`);
       preserved++;
     } else if (after.entry) {

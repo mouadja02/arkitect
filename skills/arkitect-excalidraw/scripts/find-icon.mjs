@@ -119,7 +119,9 @@ export function score(entry, query) {
 // name ("data factory" is "Azure Data Factory"); a prefix counts only when the
 // rest is a generic tail ("dynamo" is DynamoDB); and a query that is merely part
 // of a longer name never does - "postgres" is not "Azure Database for Postgres".
-const VENDOR_WORD = /^(azure|amazon|aws|google|gcp|cloud|apache|microsoft|oracle|ibm) /;
+// `cloud` is a word of product names, not a vendor: read as one, Google's
+// "Cloud Router" was simply "Router" and drew for a neutral router (#347).
+const VENDOR_WORD = /^(azure|amazon|aws|google|gcp|apache|microsoft|oracle|ibm) /;
 const GENERIC_TAILS = new Set(['db', 'ql', 'sql', 'mq', 'ai', 'labs', 'proxy', 'services', 'service', 'file',
   'js', 'dotjs', 'io', 'dotio', 'hq', 'app', 'apps', 'server', 'platform', 'cloud', 'lang', 'hub']);
 const CLEAR_MARGIN = 15;
@@ -155,12 +157,16 @@ function unattendedExisting(query, entries) {
     if (m.strength) judged.push({ entry, ...m });
   }
   if (!judged.length) return { entry: null, reason: 'nothing matches' };
-  // A stable sort: at equal strength the bundled set wins, then house icons, then the cache.
-  judged.sort((a, b) => b.strength - a.strength);
+  // A stable sort: at equal strength the bundled set wins, then house icons,
+  // then the cache. A vendor's mark the query does not name loses a tie to a
+  // neutral one, and is no rival to it (#347).
+  const barred = (e) => Boolean(vendorOf(e)) && !namesVendor(query, vendorOf(e));
+  judged.sort((a, b) => b.strength - a.strength || barred(a.entry) - barred(b.entry));
   const [top] = judged;
   if (top.doubt) return { entry: null, candidate: top.entry, reason: top.doubt };
   // The same product often sits in several libraries; a runner-up of the same name is not a rival.
-  const rival = judged.find((r) => nameKey(r.entry.name) !== nameKey(top.entry.name));
+  const rival = judged.find((r) => nameKey(r.entry.name) !== nameKey(top.entry.name)
+    && !(barred(r.entry) && !barred(top.entry) && r.strength <= top.strength));
   if (rival && top.strength - rival.strength < CLEAR_MARGIN) {
     return { entry: null, candidate: top.entry, ambiguous: true, reason: `"${rival.entry.name}" matches about as well` };
   }
@@ -170,15 +176,34 @@ function unattendedExisting(query, entries) {
 export function unattended(query, { entries = catalog() } = {}) {
   const verdict = unattendedAny(query, entries);
   // A generic word never draws a cloud vendor's own mark unattended; a
-  // deliberate ref still does (#231).
-  if (verdict.entry && vendorOf(verdict.entry) && onlyGenericWords(query)) {
+  // deliberate ref still does (#231). It may draw a neutral one: "router" is
+  // a router, not Google's Cloud Router (#347).
+  if (verdict.entry && branded(verdict.entry) && onlyGenericWords(query)) {
+    const neutral = unattendedAny(query, entries.filter((e) => !branded(e)));
+    if (neutral.entry) return neutral;
     return { entry: null, candidate: verdict.entry, reason: GENERIC_VENDOR };
   }
   return verdict;
 }
 
+// A cloud vendor's library, or an item named for a vendor in any library:
+// "directory" drew db-eng's "Oracle Directory" once the vendor word was
+// stripped to match (#347).
+const branded = (e) => Boolean(vendorOf(e)) || VENDOR_WORD.test(`${normalizeName(e.name).replace(/-/g, ' ')} `);
+
+const VENDOR_NAMED = { aws: /\b(aws|amazon)\b/i, azure: /\b(azure|microsoft)\b/i, gcp: /\b(google|gcp)\b/i };
+const namesVendor = (query, vendor) => VENDOR_NAMED[vendor]?.test(String(query)) ?? false;
+
 function unattendedAny(query, entries) {
   const existing = unattendedExisting(query, entries.filter((e) => e.provider !== 'drawio'));
+  // A native vendor mark the query does not name waits for the shared packs:
+  // AWS's "Agent" tied the neutral agents/agent there, and was taken first
+  // only because native libraries were asked first (#347).
+  if (existing.entry && vendorOf(existing.entry) && !namesVendor(query, vendorOf(existing.entry))) {
+    const shared = entries.filter((e) => e.provider === 'drawio');
+    const other = shared.length ? sharedUnattended(query, shared) : null;
+    if (other?.entry && !vendorOf(other.entry)) return other;
+  }
   if (existing.entry || existing.ambiguous) return existing;
   const shared = entries.filter((e) => e.provider === 'drawio');
   if (!shared.length) return existing;

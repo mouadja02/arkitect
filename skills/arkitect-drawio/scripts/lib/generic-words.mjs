@@ -20,6 +20,17 @@ export const GENERIC_WORDS = new Set([
   'mail', 'message', 'messages', 'messaging', 'broker', 'endpoint', 'endpoints',
   'integration', 'portal', 'dashboard', 'admin', 'internal', 'external', 'private',
   'public', 'bus', 'schema', 'media',
+  // Architecture nouns a vendor also uses as its product's title or alias:
+  // "router" drew Google's Cloud Router, "etl" AWS Glue, "region" an AWS
+  // glyph; 24 of 63 such nouns drew a vendor mark unattended (#347).
+  'router', 'routers', 'agent', 'agents', 'etl', 'elt', 'object', 'objects', 'block', 'blob', 'blobs',
+  'directory', 'translation', 'translate', 'vision', 'region', 'regions', 'zone', 'zones', 'model', 'models',
+  'notebook', 'notebooks', 'chatbot', 'chatbots', 'bot', 'bots', 'iam', 'waf', 'nat', 'virtual', 'machine',
+  'machines', 'vm', 'vms', 'sql', 'nosql', 'key', 'keys', 'vault', 'vaults', 'billing', 'artifact', 'artifacts',
+  'manager', 'management', 'text', 'speech', 'voice', 'subnet', 'subnets', 'state', 'workflow', 'workflows',
+  'metrics', 'metric', 'serverless', 'managed', 'account', 'accounts', 'policy', 'policies', 'certificate',
+  'certificates', 'vpc', 'peering', 'connection', 'transfer', 'migration', 'orchestration',
+  'to', 'and', 'of', 'for',
 ]);
 
 // The packs whose marks are a cloud vendor's own.

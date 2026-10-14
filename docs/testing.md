@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner. It needs a clone; the npm
 package doesn't carry it.
 
-On a fresh clone expect `446 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `448 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -46,7 +46,7 @@ Every test is named for the case it covers, with the issue it came from, so
 | releases | version bumps, changelog rolling, the release workflows gated on a merged `release/v*` PR, npm only after the Release (#88, #126) |
 | evals | each case's graders pass a good report and fail the known bad ones (#248, #251) |
 
-The Excalidraw answer key is the 359-query answer key in `tests/excalidraw-icon-queries.json`:
+The Excalidraw answer key is the 378-query answer key in `tests/excalidraw-icon-queries.json`:
 no different product drawn unattended, and at least 80% of drawable answers
 drawn.
 
