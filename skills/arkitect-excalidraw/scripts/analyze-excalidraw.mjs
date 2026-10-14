@@ -17,6 +17,7 @@ import { basename } from 'node:path';
 import {
   readScene, elementBox, bbox, decodeDataUrl, sha256, parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
+import { outProblem, DIAGRAM_EXTS } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 
 function tally(values) {
   const counts = new Map();
@@ -247,6 +248,8 @@ function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
     { values: { '--out': null, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .excalidraw file', USAGE);
+  const outBad = options.out && outProblem(options.out, { inputs: files, refuse: DIAGRAM_EXTS });
+  if (outBad) exitUsage(outBad, USAGE);
   if (options.find !== undefined) {
     if (files.length > 1 || options.cells || options.images) exitUsage('--find reads one file, on its own', USAGE);
     console.log(JSON.stringify(findLabel(load(files[0]), options.find), null, 2));

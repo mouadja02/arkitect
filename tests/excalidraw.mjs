@@ -210,6 +210,29 @@ test('a character the width table lacks is measured by its base letter, or as a 
   assert(core.measureLine('Ω', 20) >= core.measureLine('O', 20) * 0.8, 'anything else is about a capital');
 });
 
+// Wrapping split on spaces only, and Chinese and Japanese have none between
+// words: a Japanese label drew as one 272px line in a 180px box (#357).
+test('a Chinese or Japanese label wraps between characters and fits its box (#357)', () => {
+  const ja = '注文管理サービスとバックエンド連携';
+  const zh = '订单服务（核心）与库存管理系统';
+  const { scene } = builder.buildDiagram({
+    nodes: [{ id: 'a', label: ja }, { id: 'b', label: zh, col: 3 }],
+    edges: [{ from: 'a', to: 'b' }],
+  });
+  for (const label of [ja, zh]) {
+    const t = scene.elements.find((e) => e.type === 'text' && e.text.replace(/\n/g, '') === label);
+    assert(t, `"${label}" is drawn whole`);
+    assert(t.text.includes('\n'), `"${label}" wraps`);
+    assert(!/\n[、。，）」』】〉》ー]/.test(t.text) && !/[（「『【〈《]\n/.test(t.text), `"${t.text}" breaks beside a bracket`);
+  }
+  const r = validator.validateScene(scene);
+  assert(r.ok && !r.warnings.length, `the scene validates clean: ${r.warnings.join('; ')}`);
+  for (const spaced of ['Payment gateway and order processing', '결제 게이트웨이와 주문관리서비스']) {
+    const wrapped = core.wrapText(spaced, 150, 20);
+    assert(wrapped.includes('\n') && wrapped.replace(/\n/g, ' ') === spaced, `"${spaced}" wraps at its spaces only`);
+  }
+});
+
 test('cloning rewrites internal references and drops external ones', () => {
   const r = core.rectangle({ x: 0, y: 0, width: 100, height: 50 });
   const t = core.bindLabel(r, 'label');
@@ -4252,6 +4275,33 @@ test('the unknown-product eval case accepts "PostgreSQL" and "Postgres", and fai
   assert(grader.test('React: react mark. Quillrose Ledger: placeholder. PostgreSQL: databases/postgresql.'), 'PostgreSQL passes');
   assert(grader.test('React app, Quillrose placeholder, Postgres cylinder'), 'Postgres passes');
   assert(!grader.test('React app, Quillrose placeholder, a database'), 'a reply naming neither fails');
+});
+
+// `analyze a.excalidraw --out a.excalidraw` wrote its summary over the scene,
+// with no backup and exit 0, and `build` wrote over its own spec (#349).
+test('Excalidraw analyze and build refuse an --out that names their input or the wrong kind of file (#349)', () => {
+  const dir = join(TMP, 'out-guard');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const scene = join(dir, 'a.excalidraw');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(scene, readFileSync(STARTER));
+  writeFileSync(spec, readFileSync(STARTER_SPEC));
+  const before = { [scene]: readFileSync(scene, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const [args, message] of [
+    [['analyze', scene, '--out', scene], /is the file this reads/],
+    [['analyze', scene, '--out', join(dir, 'x.drawio')], /is a \.drawio diagram/],
+    [['build', spec, '--out', spec], /is the file this reads/],
+    [['build', spec, '--out', join(dir, 'x.drawio')], /--out must end in \.excalidraw or \.json, got "\.drawio"/],
+  ]) {
+    const r = arkitect(...args);
+    eq(r.status, 2, `${args.join(' ')}: usage status`);
+    assert(message.test(r.stderr) && !hasStack(r), `${args[0]}: said "${r.stderr.trim().split('\n')[0]}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).length, 2, 'no backup and no stray file');
+  eq(arkitect('build', spec, '--out', join(dir, 'b.excalidraw'), '--defaults').status, 0, 'a .excalidraw still builds');
+  eq(arkitect('analyze', scene, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
 });
 
 cleanTestIcons();

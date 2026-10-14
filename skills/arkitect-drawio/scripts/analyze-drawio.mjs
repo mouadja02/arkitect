@@ -13,6 +13,7 @@ import {
   styleShape, styleSignature, parseDataUri,
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
+import { outProblem, DIAGRAM_EXTS } from './lib/backups.mjs';
 
 const USAGE = 'usage: analyze-drawio.mjs <file...> [--out out.json]\n'
   + '       analyze-drawio.mjs <file> [--page N] (--cells | --images | --find <label>)';
@@ -34,7 +35,8 @@ function topN(map, n = 20) {
 // Labels are confidential. Only shape statistics leave this function.
 function labelStats(value) {
   const html = /<[^>]+>/.test(value);
-  const text = value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+  const text = value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
   if (!text) return null;
   const lines = text.split(/\n/).filter((l) => l.trim());
   const words = text.split(/\s+/).filter(Boolean);
@@ -281,6 +283,8 @@ function main(argv) {
   const { options: opts, positionals: files } = parseCliOrExit(argv,
     { values: { '--out': null, '--page': pageIndexArg, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  const outBad = opts.out && outProblem(opts.out, { inputs: files, refuse: DIAGRAM_EXTS });
+  if (outBad) exitUsage(outBad, USAGE);
   if (opts.find !== undefined) {
     if (files.length > 1 || opts.cells || opts.images) exitUsage('--find reads one file, on its own', USAGE);
     const mx = readMxfile(files[0]);

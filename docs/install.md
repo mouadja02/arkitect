@@ -56,15 +56,16 @@ The plugin also carries three hooks:
   which records it, and `/apply-*-style`, which changes the build. It sends a
   reply that promises to remember the style back once (#265, #331).
 - `hooks/build-route.mjs`: when a prompt names a `.drawio` or `.excalidraw`
-  file or a `*.spec.json`, it adds one sentence naming the skill to load
-  first (#327).
+  file or an Arkitect `*.spec.json`, it adds one sentence naming the skill to
+  load first. A spec is Arkitect's when the file holds `nodes` or `pages`, or,
+  before it exists, when the prompt calls it a diagram (#327, #355).
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
   a validate warning intentional (#215, #328, #330).
 
-None reads anything but the prompt, the last reply and, after a build, the
-session's tool calls. None blocks a prompt.
+None reads anything but the prompt, a `*.spec.json` it names, the last reply
+and, after a build, the session's tool calls. None blocks a prompt.
 
 ## npm
 

@@ -334,15 +334,36 @@ export function measureText(s, fontSize, fontFamily = FONT_FAMILY.hand) {
   };
 }
 
+// Chinese and Japanese put no spaces between words, so a line may break beside
+// any of their characters, though not before a closing mark or after an opening
+// one: a Japanese label drew as one line past its box (#357). Korean spaces its
+// words, and wraps at those spaces like Latin.
+const CJK = /[⺀-鿿豈-﫿＀-￯]/u;
+const NO_BREAK_BEFORE = /[、。，．！？：；）」』】〕〉》ー々ぁぃぅぇぉっゃゅょァィゥェォッャュョ]/u;
+const NO_BREAK_AFTER = /[（「『【〔〈《]/u;
+
+function pieces(word) {
+  const out = [];
+  let prev = '';
+  for (const ch of word) {
+    const breaks = prev && (CJK.test(prev) || CJK.test(ch)) && !NO_BREAK_BEFORE.test(ch) && !NO_BREAK_AFTER.test(prev);
+    if (breaks || !out.length) out.push(ch); else out[out.length - 1] += ch;
+    prev = ch;
+  }
+  return out;
+}
+
 // Greedy word wrap to a pixel width, matching how Excalidraw wraps bound text.
 export function wrapText(s, maxWidth, fontSize, fontFamily = FONT_FAMILY.hand) {
   const out = [];
   for (const para of String(s).split('\n')) {
     let cur = '';
     for (const word of para.split(/\s+/).filter(Boolean)) {
-      const probe = cur ? `${cur} ${word}` : word;
-      if (cur && measureLine(probe, fontSize, fontFamily) > maxWidth) { out.push(cur); cur = word; }
-      else cur = probe;
+      pieces(word).forEach((piece, i) => {
+        const probe = cur ? `${cur}${i ? '' : ' '}${piece}` : piece;
+        if (cur && measureLine(probe, fontSize, fontFamily) > maxWidth) { out.push(cur); cur = piece; }
+        else cur = probe;
+      });
     }
     out.push(cur);
   }

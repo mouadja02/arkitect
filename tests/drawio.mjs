@@ -3840,6 +3840,33 @@ test('analyze --page is checked the same way, and a missing page exits 1 instead
   assert(existsSync(summary), 'summary written');
 });
 
+// `analyze a.drawio --out a.drawio` wrote its summary over the diagram, with no
+// backup and exit 0, and `build` wrote a diagram over its own spec (#349).
+test('analyze and build refuse an --out that names their input or the wrong kind of file (#349)', () => {
+  const dir = join(TMP, 'out-guard');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const diagram = join(dir, 'a.drawio');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(diagram, readFileSync(ARGS_STARTER));
+  writeFileSync(spec, readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json')));
+  const before = { [diagram]: readFileSync(diagram, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const [args, message] of [
+    [['analyze', diagram, '--out', diagram], /is the file this reads/],
+    [['analyze', diagram, '--out', join(dir, 'x.excalidraw')], /is a \.excalidraw diagram/],
+    [['build', spec, '--out', spec], /is the file this reads/],
+    [['build', spec, '--out', join(dir, 'x.excalidraw')], /--out must end in \.drawio or \.dio or \.xml, got "\.excalidraw"/],
+  ]) {
+    const r = drawioCli(...args);
+    eq(r.status, 2, `${args.join(' ')}: usage status`);
+    assert(message.test(r.stderr) && !hasStack(r), `${args[0]}: said "${stderrLine(r)}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).length, 2, 'no backup and no stray file');
+  eq(drawioCli('build', spec, '--out', join(dir, 'b.drawio'), '--defaults').status, 0, 'a .drawio still builds');
+  eq(drawioCli('analyze', diagram, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
+});
+
 // ------------------------------------------------------------- spec checks (#36)
 
 test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {
@@ -5070,6 +5097,24 @@ test('a newline in any label is written as <br>, and a <br> already there stays 
   assert(/exitDy=49;/.test(down), 'three lines push the exit to 49px');
   const starter = readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json'), 'utf8');
   assert(/"label": "[^"]*\\n[^"]*"/.test(starter), 'the starter template shows a two-line label');
+});
+
+// Draw.io reads an html=1 label as XML and then as HTML, so text escaped once
+// lost anything tag-shaped: "List<String>" drew as "List" (#350).
+test('a label with angle brackets or an ampersand reads back as written, decoded as Draw.io does (#350)', () => {
+  const typed = 'a<b>c & <<x>>';
+  const { xml } = builder.buildDiagram({
+    title: typed,
+    boundaries: [{ id: 'g', label: typed, col: 0, row: 0 }],
+    nodes: [{ id: 'a', label: `${typed}\nline two`, col: 0, row: 0, parent: 'g' }, { id: 'b', label: 'B', col: 2, row: 0 }],
+    edges: [{ from: 'a', to: 'b', label: typed }],
+  });
+  const fromXml = (v) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const fromHtml = (v) => v.split(/<br\s*\/?>/i).map((l) => l.replace(/<[^>]*>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')).join('\n');
+  const drawn = (id) => fromHtml(fromXml(new RegExp(`<mxCell id="${id}" value="([^"]*)"`).exec(xml)[1]));
+  for (const id of ['title', 'g', 'e1-lbl']) eq(drawn(id), typed, `${id} draws as typed`);
+  eq(drawn('a'), `${typed}\nline two`, 'a newline is still one break');
 });
 
 // The title sat 70px above the origin in a 900px box, across the header of a
