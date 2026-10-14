@@ -7,10 +7,15 @@ page by page.
 ## Excalidraw container
 
 The official `excalidraw/excalidraw` image: the static app that runs
-excalidraw.com, served by nginx, with no backend.
+excalidraw.com, served by nginx on 127.0.0.1 only. The app is excalidraw.com's
+unchanged, so Share, Live collaboration and its AI tools would post to
+Excalidraw's servers. `docker/nginx.conf` serves it under a
+Content-Security-Policy that lets the page connect to this container and
+nothing else: the browser refuses those requests, and the fonts and analytics
+the app fetches on load. The fonts it needs are in the image (#348).
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d     # http://localhost:3000
+docker compose -f docker/docker-compose.yml up -d     # http://127.0.0.1:3000
 docker compose -f docker/docker-compose.yml down
 EXCALIDRAW_PORT=8080 docker compose -f docker/docker-compose.yml up -d
 ```
@@ -25,18 +30,18 @@ $S = "skills/arkitect-excalidraw/scripts"
 & $S/excalidraw-docker.ps1 -Status         # also -Up, -Down, -Logs, -Port 8080
 ```
 
-It runs read-only with `no-new-privileges`. The compose file replaces the
+It runs read-only with `no-new-privileges`, its nginx config mounted read-only. The compose file replaces the
 image's healthcheck, which asks `localhost`, gets `::1`, and reports
 `unhealthy` forever against an nginx that listens on IPv4 only.
 
-**What having no backend means:**
+**What a static app means:**
 
 - The file on disk is the source of truth. Closing the tab saves nothing;
   export back over the original (File → Save to disk).
 - The app can't open a file off your disk by itself, so drag it onto the
   canvas. A `.excalidraw` file replaces the canvas; a `.excalidrawlib` joins
   the library sidebar.
-- Live collaboration needs `excalidraw-room`, which is left out on purpose.
+- Live collaboration, Share and the AI tools need Excalidraw's servers, which the policy keeps out of reach. "Browse libraries" can't reach its catalogue either; `arkitect excalidraw browse` covers it.
 
 **The app or the preview.** `arkitect excalidraw render` answers "does the
 layout work?": instant, and an agent can read the PNG back. The app answers

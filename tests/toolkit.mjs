@@ -265,6 +265,20 @@ test('this repository ships the adapters it advertises', () => {
   }
 });
 
+// /diagram restated the workflow in four steps that contradicted it: an
+// engine with no reason, a report with no validation, render or icons. A
+// small model follows the short list it reads first (#354).
+test('the /diagram command points at AGENTS.md §2 and restates no step of it (#354)', () => {
+  const bodies = ['cursor-command', 'opencode'].map((k) => [k, adapters.ADAPTERS[k].render('/opt/arkitect')])
+    .concat(['.cursor/commands/diagram.md', '.opencode/command/diagram.md'].map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
+  for (const [name, body] of bodies) {
+    assert(body.includes('AGENTS.md') && body.includes('§2') && body.includes('step 8'), `${name}: does not point at AGENTS.md §2`);
+    assert(!/^\s*\d+\.\s/m.test(body), `${name}: restates numbered steps`);
+    assert(!/\b(report the|choose the engine|say which you chose)\b/i.test(body), `${name}: restates a rule of its own`);
+    assert(Buffer.byteLength(body) < 400, `${name}: ${Buffer.byteLength(body)} bytes; the pointer alone is about 300`);
+  }
+});
+
 
 // Invalid CLI requests must fail before changing the user's project.
 test('prototype names are usage errors at each dispatcher level', () => {
@@ -837,6 +851,29 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
     for (const rule of mustKeep) assert(skill.includes(rule), `${engine}: SKILL.md no longer says "${rule}"`);
   }
   console.log(`      (context budget: ${measured.join('; ')})`);
+});
+
+// AGENTS.md is the whole route on every non-Claude host, and a learning
+// skill runs on the user's own diagrams; neither carried anything that changes
+// what gets drawn or learned in its render internals, PR ritual or shipped-
+// record rebuild, and the learning skills pointed a write into the plugin (#356).
+const AGENTS_BUDGET = 14800;
+test('AGENTS.md stays under its ceiling, and maintainer work lives in docs/maintenance.md (#356)', () => {
+  const agents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8');
+  assert(Buffer.byteLength(agents) <= AGENTS_BUDGET, `AGENTS.md is ${Buffer.byteLength(agents)} bytes, over ${AGENTS_BUDGET}`);
+  for (const gone of ['--page-index-passthrough', 'render-drawio.ps1', 'attached to or referenced from a PR']) {
+    assert(!agents.includes(gone), `AGENTS.md still carries maintainer detail: ${gone}`);
+  }
+  assert(agents.includes('validate-only') && agents.includes('Read `docs/maintenance.md` first'), 'AGENTS.md lost its render fallback or its pointer');
+  for (const engine of ['drawio', 'excalidraw']) {
+    const skill = readFileSync(join(ROOT, 'skills', `learn-${engine}-style`, 'SKILL.md'), 'utf8');
+    assert(!/maintaining the shipped|--out references\//i.test(skill), `learn-${engine}-style still tells an agent to rebuild the shipped record`);
+  }
+  const maintenance = readFileSync(join(ROOT, 'docs', 'maintenance.md'), 'utf8');
+  assert(maintenance.includes('### Rebuilding the shipped house style') && maintenance.includes('build-knowledge.mjs'),
+    'docs/maintenance.md does not say how the shipped record is rebuilt');
+  assert(maintenance.includes('never attach it to a pull request'), 'docs/maintenance.md does not hold the render rule for pull requests');
+  assert(maintenance.includes(`${AGENTS_BUDGET.toLocaleString('en-US')} bytes`), 'docs/maintenance.md does not state the AGENTS.md ceiling');
 });
 
 // "Offer nothing Arkitect cannot do" (#183) has to be true itself: the Draw.io

@@ -4234,6 +4234,32 @@ test('the docker compose file pins the official image and a port', () => {
   assert(/:80"/.test(compose), 'container port 80 is published');
 });
 
+// The container served excalidraw.com's app as it came: Share, Live
+// collaboration and the AI tools post to Excalidraw's servers, and the docs
+// said it had no backend. A policy closes those exits in the browser, and the
+// port is not offered to the network (#348).
+test('the Excalidraw container serves the app under a policy that reaches only itself, on 127.0.0.1 (#348)', () => {
+  const compose = readFileSync(join(ROOT, 'docker', 'docker-compose.yml'), 'utf8');
+  assert(/^\s*- "127\.0\.0\.1:\$\{EXCALIDRAW_PORT:-3000\}:80"/m.test(compose), 'the port is published on 127.0.0.1 only');
+  assert(/^\s*- \.\/nginx\.conf:\/etc\/nginx\/conf\.d\/default\.conf:ro$/m.test(compose), 'the nginx config is mounted, read-only');
+  assert(/^\s*read_only: true$/m.test(compose), 'the container stays read-only');
+
+  const conf = readFileSync(join(ROOT, 'docker', 'nginx.conf'), 'utf8');
+  const header = /add_header Content-Security-Policy "([^"]+)" always;/.exec(conf);
+  assert(header, 'nginx.conf sets the policy on every response');
+  const policy = Object.fromEntries(header[1].split(';').map((d) => d.trim().split(/\s+/)).filter((d) => d[0]).map(([k, ...v]) => [k, v]));
+  eq(policy['default-src']?.join(' '), "'self'", 'default-src');
+  for (const directive of ['connect-src', 'font-src', 'script-src', 'img-src', 'worker-src']) {
+    assert(policy[directive]?.includes("'self'") && policy[directive].every((s) => s.startsWith("'") || ['data:', 'blob:'].includes(s)),
+      `${directive} names no host: ${policy[directive]?.join(' ')}`);
+  }
+  eq(policy['frame-src']?.join(' '), "'none'", 'frame-src');
+
+  for (const file of ['docs/privacy.md', 'docs/apps.md', 'skills/arkitect-excalidraw/references/rendering.md', 'skills/arkitect-excalidraw/SKILL.md', 'docker/docker-compose.yml']) {
+    assert(!/no backend/i.test(readFileSync(join(ROOT, file), 'utf8')), `${file} still says the container has no backend`);
+  }
+});
+
 // -------------------------------------------------------------
 
 // A plugin update replaces the plugin folder, and made icons and installed

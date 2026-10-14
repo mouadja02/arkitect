@@ -4,26 +4,31 @@
 #   docker compose -f docker/docker-compose.yml down
 #
 # The official image is the same static app as excalidraw.com, served by nginx
-# on container port 80. It has no backend: scenes live in the browser's local
-# storage and in the files you open, so nothing you draw is uploaded anywhere.
+# on container port 80. Scenes live in the browser's local storage and in the
+# files you open. The app itself can upload: Share, Live collaboration and its
+# AI tools post to Excalidraw's servers. nginx.conf serves it under a
+# Content-Security-Policy that lets the page connect to this container only, so
+# the browser refuses those requests, and the esm.sh fonts it would fetch on
+# load (#348). The port is published on 127.0.0.1 only.
 #
 # Two consequences worth knowing:
 #   - There is no server-side save. The .excalidraw file on disk is the source
 #     of truth; the browser tab is a viewer and editor for it.
-#   - "Browse libraries" in the app reaches out to libraries.excalidraw.com.
-#     That is a public catalogue and sends nothing about your scene, but if the
-#     machine is offline the button simply does nothing. Installing libraries
-#     through `browse-libraries.mjs` gives the same catalogue with a local cache.
+#   - "Browse libraries" in the app cannot reach libraries.excalidraw.com.
+#     `arkitect excalidraw browse` gives the same public catalogue, with a
+#     local cache.
 
 services:
   excalidraw:
     image: excalidraw/excalidraw:latest
     container_name: arkitect-excalidraw
     ports:
-      - "${EXCALIDRAW_PORT:-3000}:80"
+      - "127.0.0.1:${EXCALIDRAW_PORT:-3000}:80"
     restart: unless-stopped
     # The app is entirely client-side; it needs no writable filesystem.
     read_only: true
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     tmpfs:
       - /var/cache/nginx
       - /var/run

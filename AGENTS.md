@@ -147,30 +147,16 @@ Rendering a `.drawio` to PNG uses local Draw.io Desktop on Linux/macOS/Windows:
 node bin/arkitect.mjs drawio render docs/arch.drawio --all --out-dir .analysis/renders
 ```
 
-The Node helper discovers the app and uses Xvfb on headless Linux when available.
-Page numbers are always 0-based. The portable Node helper validates the page
-number, copies that page verbatim into a temporary single-page file with the
-original mxfile attributes, exports without Desktop's unstable `--page-index`,
-and deletes the temporary file. Compressed page bytes stay unchanged; no
-platform/version guesses or probing. `--page-index-passthrough` is an explicit
-debugging escape hatch, not the normal rendering path.
-The Windows original `skills/arkitect-drawio/scripts/render-drawio.ps1`
-remains supported, with its parameters unchanged, as a thin adapter over the
-Node renderer, so a failed export can never be reported as a render (#157). See `docs/cli.md` for overrides and troubleshooting.
+Page numbers are always 0-based. See `docs/cli.md` for overrides and troubleshooting.
 Excalidraw renders with `arkitect excalidraw render`, no app required: `--out-dir DIR`
 writes `<name>.png` using a local Edge, Chrome or Chromium (pin one with
 `--browser` or `ARKITECT_BROWSER`), `--out FILE.svg|FILE.png` picks the format
 by extension, and `--format svg` needs no browser at all.
 
-Draw.io generator changes must be built, validated, rendered and visually
-inspected before a PR. A render of a real or user diagram stays local — never
-commit it, never attach it to a PR; real architecture stays local, full stop.
-The deliberate exception is the committed template PNGs and contact sheets
-under `skills/*/assets/` — refresh those in the same PR whenever generator
-output changes, and only those public, template-derived renders may be
-attached to or referenced from a PR (see `docs/maintenance.md`). If a host
-update breaks rendering, report 🔴 and explicitly fall back to validate-only
-until repaired; do not silently omit visual verification.
+If a host update breaks rendering, report 🔴 and explicitly fall back to
+validate-only until repaired; do not silently omit visual verification.
+
+Changing this repository? Read `docs/maintenance.md` first.
 
 Every script also runs directly out of `skills/*/scripts/` if you prefer.
 Full reference: `docs/cli.md`.
