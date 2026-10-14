@@ -29,11 +29,29 @@ const BOX_ONLY = new Set(['kind', 'width', 'height', 'icon']);
 const lineOf = (label, text) => String(label).split('\n')
   .some((l) => l.trim().replace(/^\((.*)\)$/, '$1').trim().toLowerCase() === text.toLowerCase());
 
+// Packs and libraries that draw ideas, not products: an agent's "Memory", a
+// "Process" glyph. Either resolves unattended, and a plain box named for one
+// was listed as a product missing its mark, in two shipped patterns (#352).
+// A library mixing the two, Slack beside "User" or Python beside "notes",
+// stays a product source.
+const CONCEPT_PACKS = new Set(['agents', 'primitives', 'file-types']);
+const CONCEPT_LIBRARIES = new Set([
+  'artem-s-icons', 'awesome-icons', 'cloud-design-patterns', 'data-viz', 'forms', 'github-icons',
+  'network-topology-icons', 'some-handdrawn-signs', 'system-design', 'system-design-template',
+]);
+
+// A Draw.io id ("agents/memory"), or an Excalidraw ref ("drawio:agents/memory", "artem-s-icons:1").
+export function productMark(ref) {
+  const r = String(ref ?? '').replace(/^drawio:/, '');
+  if (r.includes('/')) return !CONCEPT_PACKS.has(r.split('/')[0]);
+  return !CONCEPT_LIBRARIES.has(r.split(':')[0]);
+}
+
 // resolveOne(text) returns the ref it would draw unattended, or null.
 export function namedProducts(boxes, resolveOne) {
   const found = [];
   for (const box of boxes) {
-    const named = labelParts(box.label).map((text) => ({ text, icon: resolveOne(text) })).filter((n) => n.icon);
+    const named = labelParts(box.label).map((text) => ({ text, icon: resolveOne(text) })).filter((n) => n.icon && productMark(n.icon));
     const kept = Object.fromEntries(Object.entries(box).filter(([k]) => !BOX_ONLY.has(k)));
     for (const { text, icon } of named) {
       const one = named.length === 1 && lineOf(box.label, text);

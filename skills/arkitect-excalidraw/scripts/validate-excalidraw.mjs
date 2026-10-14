@@ -117,6 +117,15 @@ export function shapeErrors(elements, files) {
   return out;
 }
 
+// The spec entry the builder drew an element from, after its id: the id alone
+// is random, appears in no spec, and sent the agent off to map it back (#353).
+const SPEC_PARTS = ['node', 'boundary', 'edge'];
+function specName(el) {
+  const tag = isObject(el?.customData) ? el.customData.arkitect : null;
+  const part = isObject(tag) && SPEC_PARTS.find((p) => typeof tag[p] === 'string' && tag[p] && tag[p].length <= 100);
+  return part ? ` (${part} ${JSON.stringify(tag[part])})` : '';
+}
+
 export function validateScene(scene, { path = '<scene>', products = true } = {}) {
   const errors = [];
   const warnings = [];
@@ -146,16 +155,17 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     byId.set(el.id, el);
     if (!KNOWN_TYPES.has(el.type)) warnings.push(`element "${el.id}" has unfamiliar type "${el.type}"`);
   }
+  const who = (id) => `"${id}"${specName(byId.get(id))}`;
 
   // ------------------------------------------------------------ geometry
 
   for (const el of live) {
     if (!LINEAR.has(el.type) && el.type !== 'text') {
-      if (!(el.width > 0) || !(el.height > 0)) warnings.push(`element "${el.id}" has zero or negative size`);
+      if (!(el.width > 0) || !(el.height > 0)) warnings.push(`element ${who(el.id)} has zero or negative size`);
     }
     const b = elementBox(el);
     if (Math.abs(b.x) > MAX_COORD || Math.abs(b.y) > MAX_COORD) {
-      warnings.push(`element "${el.id}" sits outside +/-${MAX_COORD}px`);
+      warnings.push(`element ${who(el.id)} sits outside +/-${MAX_COORD}px`);
     }
   }
 
@@ -168,7 +178,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
       for (const b of el.boundElements) {
         const target = byId.get(b.id);
         if (!target) { errors.push(`element "${el.id}" lists bound element "${b.id}" which does not exist`); continue; }
-        if (target.isDeleted) warnings.push(`element "${el.id}" is bound to deleted element "${b.id}"`);
+        if (target.isDeleted) warnings.push(`element ${who(el.id)} is bound to deleted element "${b.id}"`);
         if (b.type === 'text') {
           boundText++;
           if (target.containerId !== el.id) {
@@ -219,16 +229,20 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     const decorative = (el.groupIds ?? []).length > 0;
     if (!el.startBinding && !el.endBinding) {
       floating++;
-      if (!decorative) warnings.push(`arrow "${el.id}" is bound at neither end; it will not follow the shapes it connects`);
+      if (!decorative) warnings.push(`arrow ${who(el.id)} is bound at neither end; it will not follow the shapes it connects`);
     } else if ((!el.startBinding || !el.endBinding) && !decorative) {
-      warnings.push(`arrow "${el.id}" is bound at only one end`);
+      warnings.push(`arrow ${who(el.id)} is bound at only one end`);
     }
     // Every point in one place draws a bare arrowhead. Builds before 2.0.0 made
-    // one for each edge from a node to itself (#159).
+    // one for each edge from a node to itself (#159). Between two shapes it is
+    // the shapes that sit on top of each other, and a rebuild changes nothing:
+    // a spec that leaves col and row out stacks every node at 0,0 (#351).
     const pts = el.points ?? [];
     if (!decorative && pts.length > 1 && pts.every(([x, y]) => x === pts[0][0] && y === pts[0][1])) {
-      warnings.push(`arrow "${el.id}" has zero length and draws as a bare arrowhead; `
-        + 'a loop built before 2.0.0 does this, and a rebuild draws it over a corner');
+      const [from, to] = [el.startBinding?.elementId, el.endBinding?.elementId];
+      warnings.push(from && to && from !== to
+        ? `arrow ${who(el.id)} has zero length and draws as a bare arrowhead: ${who(from)} and ${who(to)} sit on top of each other; give each node its own col and row`
+        : `arrow ${who(el.id)} has zero length and draws as a bare arrowhead; a loop built before 2.0.0 does this, and a rebuild draws it over a corner`);
     }
   }
 
@@ -271,7 +285,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   for (const fr of live.filter((el) => el.type === 'frame' || el.type === 'magicframe')) {
     const late = live.filter((el) => el.frameId === fr.id && at.get(el.id) > at.get(fr.id)).length;
     if (late) {
-      warnings.push(`frame "${fr.id}" comes before ${late} of its children; Excalidraw expects children first. `
+      warnings.push(`frame ${who(fr.id)} comes before ${late} of its children; Excalidraw expects children first. `
         + 'A scene built before 2.0.0 does this: rebuild it from its spec');
     }
   }
@@ -286,11 +300,17 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     && !live.some((k) => k.frameId === el.id)
     && !(el.boundElements ?? []).some((b) => b.type !== 'text' && byId.get(b.id)?.frameId === el.id);
 
+  // Two shapes in the same place each enclose the other and its label, so both
+  // were taken for scopes and the worst overlap of all passed (#351). A box
+  // the same as this one, within a pixel, is a peer, not something it holds,
+  // and nor is a peer's label.
+  const sameBox = (p, q) => ['x', 'y', 'width', 'height'].every((k) => Math.abs(p[k] - q[k]) <= 1);
   const scopeLike = new Set();
   for (const el of live) {
     if (el.type !== 'rectangle' && el.type !== 'ellipse') continue;
     const box = elementBox(el);
-    const encloses = live.filter((o) => o !== el && o.type !== 'arrow' && o.type !== 'line' && o.containerId !== el.id).filter((o) => {
+    const peer = (o) => sameBox(elementBox(o), box) || (o.containerId && byId.has(o.containerId) && sameBox(elementBox(byId.get(o.containerId)), box));
+    const encloses = live.filter((o) => o !== el && o.type !== 'arrow' && o.type !== 'line' && o.containerId !== el.id && !peer(o)).filter((o) => {
       const b = elementBox(o);
       return b.x >= box.x && b.y >= box.y && b.x + b.width <= box.x + box.width && b.y + b.height <= box.y + box.height;
     });
@@ -312,7 +332,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
       if (ox > 1 && oy > 1) {
         overlaps++;
         if (overlaps <= 10) {
-          warnings.push(`elements "${leaves[i].id}" and "${leaves[j].id}" overlap by ${Math.round(ox)}x${Math.round(oy)}px`);
+          warnings.push(`elements ${who(leaves[i].id)} and ${who(leaves[j].id)} overlap by ${Math.round(ox)}x${Math.round(oy)}px`);
         }
       }
     }
@@ -330,7 +350,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     if (m.width > container.width * factor - 8 || m.height > container.height * factor - 4) {
       tight++;
       if (tight <= 10) {
-        warnings.push(`label in ${container.type} "${container.id}" needs about ${Math.round(m.width)}x${Math.round(m.height)}px `
+        warnings.push(`label in ${container.type} ${who(container.id)} needs about ${Math.round(m.width)}x${Math.round(m.height)}px `
           + `but only ${Math.round(container.width * factor)}x${Math.round(container.height * factor)}px is usable`);
       }
     }
@@ -338,18 +358,18 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
 
   const crossings = connectorCrossings(live);
   for (const c of crossings.slice(0, 10)) {
-    warnings.push(`arrow "${c.arrow}" crosses "${c.node}", which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
+    warnings.push(`arrow ${who(c.arrow)} crosses ${who(c.node)}, which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
   }
 
   const through = textCrossings(live);
   for (const c of through.slice(0, 10)) {
-    warnings.push(`arrow "${c.arrow}" runs through text "${c.text}"; move that text off the line, `
+    warnings.push(`arrow ${who(c.arrow)} runs through text ${who(c.text)}; move that text off the line, `
       + 'or the shapes so the line misses it');
   }
 
   const trunks = sharedRuns(live);
   for (const r of trunks.slice(0, 10)) {
-    warnings.push(`arrows "${r.arrows[0]}" and "${r.arrows[1]}" share ${r.length}px of one line and read as one flow; `
+    warnings.push(`arrows ${who(r.arrows[0])} and ${who(r.arrows[1])} share ${r.length}px of one line and read as one flow; `
       + 'move one end along its side, or rebuild from the spec, which spreads ends that share a side');
   }
 
@@ -359,7 +379,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   // report. Only the mark's ref is printed, never the label.
   const named = products ? plainProducts(live) : [];
   for (const p of named.slice(0, 10)) {
-    warnings.push(`text "${p.text}" labels a plain shape, but its product has a bundled mark, ${p.icon}; `
+    warnings.push(`text ${who(p.text)} labels a plain shape, but its product has a bundled mark, ${p.icon}; `
       + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
   }
 

@@ -4475,6 +4475,26 @@ test('a plain box naming bundled products is listed under namesAProduct; a gener
   eq(out.namesAProduct.length, 3, 'the CLI prints them');
 });
 
+// The agents pack's "Memory" is an idea, not a product, and a shipped pattern
+// listed it (#352). An edge into the page around a fragment gets a stand-in.
+test('a plain box named for a concept mark is no product, and no pattern fragment lists one (#352)', () => {
+  const fragments = Object.entries(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'patterns.json'), 'utf8')))
+    .filter(([, v]) => v && typeof v === 'object' && !Array.isArray(v));
+  assert(fragments.length >= 8, `only ${fragments.length} fragments`);
+  for (const [name, { pattern, ...frag }] of fragments) {
+    const ids = new Set((frag.nodes ?? []).map((n) => n.id));
+    const outside = [...new Set((frag.edges ?? []).flatMap((e) => [e.from, e.to]).filter((id) => !ids.has(id)))];
+    const spec = { ...frag, nodes: [...(frag.nodes ?? []), ...outside.map((id, i) => ({ id, label: 'Stand-in', col: 9, row: i }))] };
+    eq(JSON.stringify(builder.buildDiagram(spec).report.namesAProduct), '[]', name);
+  }
+  const listed = builder.buildDiagram({ nodes: [
+    { id: 'mem', kind: 'box', label: 'Memory', col: 0, row: 0 },
+    { id: 'rag', kind: 'box', label: 'RAG', col: 1, row: 0 },
+    { id: 'db', kind: 'box', label: 'PostgreSQL', col: 2, row: 0 },
+  ] }).report.namesAProduct;
+  eq(listed.map((x) => `${x.node}:${x.icon}`).join(), 'db:databases/postgresql', 'only the product');
+});
+
 // Listed and then ignored: the agent kept a plain shape labelled PostgreSQL
 // and reported it as fine (#287). A box that is only the product's name now
 // carries the node to paste over it.

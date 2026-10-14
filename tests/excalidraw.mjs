@@ -1155,6 +1155,98 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   }
 });
 
+// A pattern fragment as a spec: an edge into the page around it, like
+// "<first-node>", gets a stand-in node far to the right.
+const fragmentSpecs = (file) => Object.entries(JSON.parse(readFileSync(file, 'utf8')))
+  .filter(([, v]) => v && typeof v === 'object' && !Array.isArray(v)).map(([name, { pattern, ...frag }]) => {
+    const ids = new Set((frag.nodes ?? []).map((n) => n.id));
+    const outside = [...new Set((frag.edges ?? []).flatMap((e) => [e.from, e.to]).filter((id) => !ids.has(id)))];
+    return [name, { ...frag, nodes: [...(frag.nodes ?? []), ...outside.map((id, i) => ({ id, label: 'Stand-in', col: 9, row: i }))] }];
+  });
+
+// "Process" and "Memory" resolve to a glyph, not a product, and two shipped
+// patterns warned on them (#352).
+test('a plain shape named for a concept glyph is no product, and every pattern fragment validates clean (#352)', () => {
+  const fragments = fragmentSpecs(join(SKILL, 'assets', 'templates', 'patterns.json'));
+  assert(fragments.length >= 9, `only ${fragments.length} fragments`);
+  for (const [name, spec] of fragments) {
+    const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+    eq(JSON.stringify(report.namesAProduct), '[]', `${name}: namesAProduct`);
+    const r = validator.validateScene(scene);
+    assert(r.ok && !r.warnings.length, `${name}: ${r.errors.concat(r.warnings).join(' | ')}`);
+  }
+  const spec = { nodes: [
+    { id: 'p', kind: 'box', label: 'Process', col: 0, row: 0 },
+    { id: 'm', kind: 'box', label: 'Memory', col: 1, row: 0 },
+    { id: 'db', kind: 'box', label: 'PostgreSQL', col: 2, row: 0 },
+  ] };
+  const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+  eq(report.namesAProduct.map((x) => x.node).join(), 'db', 'only the product is listed');
+  const warned = validator.validateScene(scene).warnings.filter((w) => w.includes('labels a plain shape'));
+  assert(warned.length === 1 && warned[0].includes('(node "db")'), `only the product is warned: ${warned.join(' | ')}`);
+});
+
+// Two shapes in one place each enclosed the other, both were taken for
+// scopes, and the stack passed; with an edge between, validate blamed a loop
+// built before 2.0.0 (#351).
+test('nodes stacked in one place are an overlap, and an arrow between them blames the stack, not a loop (#351)', () => {
+  const two = validator.validateScene(builder.buildDiagram({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] }, { seed: 1 }).scene);
+  eq(two.warnings.length, 1, `one warning: ${two.warnings.join(' | ')}`);
+  assert(/overlap by 180x90px$/.test(two.warnings[0]) && two.warnings[0].includes('(node "a")') && two.warnings[0].includes('(node "b")'),
+    `names both: ${two.warnings[0]}`);
+
+  const three = validator.validateScene(builder.buildDiagram({
+    nodes: [{ id: 'a', label: 'Web' }, { id: 'b', label: 'API' }, { id: 'c', label: 'Worker' }],
+    edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }],
+  }, { seed: 1 }).scene).warnings;
+  eq(three.filter((w) => w.includes(' overlap by ')).length, 3, `every pair: ${three.join(' | ')}`);
+  const bare = three.filter((w) => w.includes('zero length'));
+  eq(bare.length, 2, 'both arrows are bare arrowheads');
+  assert(bare.every((w) => w.includes('sit on top of each other; give each node its own col and row')), bare.join(' | '));
+  assert(!three.join().includes('2.0.0'), 'no loop is blamed');
+
+  // A boundary round one node still holds it: its node and label are two things inside it.
+  const scoped = validator.validateScene(builder.buildDiagram({
+    boundaries: [{ id: 's', label: 'Scope' }], nodes: [{ id: 'a', label: 'A', parent: 's' }],
+  }, { seed: 1 }).scene);
+  eq(scoped.warnings.join(), '', 'a scope round its one node is no overlap');
+});
+
+// The builder's ids are random and appear in no spec, so an agent had to map
+// each warning back to a node before it could fix anything (#353).
+test('every built element names its spec entry, and validate names it after the id (#353)', () => {
+  const spec = {
+    boundaries: [{ id: 'vpc', label: 'VPC' }, { id: 'fr', kind: 'frame', label: 'Frame' }],
+    nodes: [
+      { id: 'a', label: 'Alpha service', parent: 'vpc' },
+      { id: 'b', label: 'Beta', col: 0.5, parent: 'vpc' },
+      { id: 'db', kind: 'cylinder', label: 'PostgreSQL', col: 2, parent: 'fr' },
+      { id: 'q', kind: 'icon', icon: 'drawio:databases/redis', label: 'Cache', col: 3 },
+    ],
+    edges: [{ from: 'a', to: 'db', label: 'reads' }, { id: 'warm', from: 'db', to: 'q', kind: 'async' }],
+  };
+  const { scene } = builder.buildDiagram(spec, { seed: 1 });
+  const tags = (part, id) => scene.elements.filter((el) => el.customData?.arkitect?.[part] === id);
+  for (const id of ['a', 'b', 'db', 'q']) assert(tags('node', id).length, `node ${id} is stamped`);
+  eq(tags('boundary', 'vpc').length, 2, 'a scope and its name');
+  eq(tags('boundary', 'fr').map((el) => el.type).join(), 'frame', 'a frame');
+  eq(tags('edge', 'a->db').map((el) => el.type).sort().join(), 'arrow,text', 'an edge and its label, by its ends');
+  eq(tags('edge', 'warm').map((el) => el.type).join(), 'arrow', 'or by its own id');
+  const legend = scene.elements.find((el) => el.type === 'text' && el.text === 'Legend');
+  assert(legend && !legend.customData, 'the legend is no spec entry');
+
+  const w = validator.validateScene(scene).warnings;
+  const overlap = w.find((x) => x.includes(' overlap by '));
+  assert(/^elements "[^"]+" \(node "a"\) and "[^"]+" \(node "b"\) overlap by \d+x\d+px$/.test(overlap ?? ''), `overlap: ${w.join(' | ')}`);
+  assert(w.some((x) => /^text "[^"]+" \(node "db"\) labels a plain shape/.test(x)), `product: ${w.join(' | ')}`);
+
+  // A scene drawn by hand carries no stamp, and reads as it always did.
+  const bare = JSON.parse(JSON.stringify(scene));
+  for (const el of bare.elements) delete el.customData;
+  const plain = validator.validateScene(bare).warnings.find((x) => x.includes(' overlap by '));
+  assert(/^elements "[^"]+" and "[^"]+" overlap by/.test(plain ?? ''), `unstamped: ${plain}`);
+});
+
 // The names-a-product case passes either honest outcome (#326); the replies
 // are the bf67c76 batch's, all three reporting the cylinder as still plain.
 test('the names-a-product eval case passes a report of the cylinder as still plain, and leaves the claim to its judge (#326)', () => {
@@ -1895,7 +1987,7 @@ test('a frame drawn before its children is a warning, never an error (#192)', ()
   core.reindex(scene.elements);
   const v = validator.validateScene(scene);
   assert(v.ok, `the old order still validates: ${v.errors.join('; ')}`);
-  assert(v.warnings.includes(`frame "${fr.id}" comes before ${children} of its children; Excalidraw expects children first. `
+  assert(v.warnings.includes(`frame "${fr.id}" (boundary "f1") comes before ${children} of its children; Excalidraw expects children first. `
     + 'A scene built before 2.0.0 does this: rebuild it from its spec'), `warned: ${v.warnings.join('; ')}`);
 });
 

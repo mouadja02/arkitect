@@ -697,6 +697,7 @@ function assemble(spec, style) {
   // outside the box they belong to.
   const boundaryOf = new Map();    // element id -> boundary id
   const edgeEnds = new Map();      // element id -> [from node id, to node id]
+  const edgeName = new Map();      // element id -> the edge's id, or "from->to"
   const footprints = [];          // for looksLikeBoundary (#204)
   const dropOf = new Map();        // node id -> height of the caption and sublabel under it
   const extentOf = new Map();      // node id -> box, caption and sublabel together
@@ -1188,6 +1189,7 @@ function assemble(spec, style) {
     edgeLayer.push(a);
     edgeOf.set(a.id, `${e.from}->${e.to}`);
     edgeEnds.set(a.id, [e.from, e.to]);
+    edgeName.set(a.id, e.id ?? `${e.from}->${e.to}`);
 
     if (e.label) {
       // Free text alongside the line, not a bound label: that is what the
@@ -1257,6 +1259,7 @@ function assemble(spec, style) {
       if (bound) a.boundElements = [...(a.boundElements ?? []), { id: t.id, type: 'text' }];
       edgeLayer.push(t);
       edgeEnds.set(t.id, [e.from, e.to]);
+      edgeName.set(t.id, edgeName.get(a.id));
     }
   }
 
@@ -1367,6 +1370,17 @@ function assemble(spec, style) {
     ...unframed(nodeLayer), ...unframed(edgeLayer), ...chrome,
   ];
   reindex(scene.elements);
+  // Each element names the spec entry that drew it, so validate can say node
+  // "db" and not only a random id that appears in no spec (#353). The app
+  // keeps customData through an edit and a save.
+  const frameBoundary = new Map([...frameIdFor].map(([b, fid]) => [fid, b]));
+  for (const el of scene.elements) {
+    const tag = nodeOf.has(el.id) ? { node: nodeOf.get(el.id) }
+      : boundaryOf.has(el.id) ? { boundary: boundaryOf.get(el.id) }
+        : frameBoundary.has(el.id) ? { boundary: frameBoundary.get(el.id) }
+          : edgeName.has(el.id) ? { edge: edgeName.get(el.id) } : null;
+    if (tag) el.customData = { ...el.customData, arkitect: tag };
+  }
   // Reported, not rerouted unless the edge asked for "avoid" (#124): the fix is
   // the spec author's to choose (#125).
   for (const c of connectorCrossings(scene.elements)) {
