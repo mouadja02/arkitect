@@ -1155,6 +1155,29 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   }
 });
 
+// The Draw.io run that shipped five accounts as boxes passed validate silent
+// (#341); the same spec in this engine got no warning either.
+test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {
+  const spec = { nodes: [
+    { id: 'mgmt', kind: 'box', label: 'Management Account', col: 0, row: 0 },
+    { id: 'w2', kind: 'box', label: 'Workload Account 2', col: 2, row: 0 },
+    { id: 'vpc', label: 'Prod VPC', col: 4, row: 0 },
+    { id: 'svc', kind: 'box', label: 'Account service', col: 6, row: 0 },
+  ], edges: [{ from: 'svc', to: 'vpc' }] };
+  const built = builder.buildDiagram(spec, { seed: 1 });
+  const warned = validator.validateScene(built.scene).warnings.filter((w) => w.includes('named like a boundary'));
+  eq(warned.map((w) => w.match(/\(node "([^"]+)"\)/)?.[1]).join(), 'mgmt,w2,vpc', 'the build\'s own list, by spec node');
+  eq(built.report.looksLikeBoundary.map((x) => x.node).join(), 'mgmt,w2,vpc', 'which the build listed');
+  assert(!warned.join().includes('Account 2'), 'prints ids, never a label');
+  const fixed = builder.buildDiagram({ boundaries: [{ id: 'mgmt', label: 'Management Account', cols: 2 }],
+    nodes: [{ id: 'svc', kind: 'box', label: 'Account service', parent: 'mgmt' }] }, { seed: 1 });
+  eq(validator.validateScene(fixed.scene).warnings.filter((w) => w.includes('named like a boundary')).join(), '', 'a boundary is not one');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.excalidraw'))) {
+    const scene = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', f), 'utf8'));
+    eq(validator.validateScene(scene).warnings.filter((w) => w.includes('named like a boundary')).join(), '', f);
+  }
+});
+
 // A pattern fragment as a spec: an edge into the page around it, like
 // "<first-node>", gets a stand-in node far to the right.
 const fragmentSpecs = (file) => Object.entries(JSON.parse(readFileSync(file, 'utf8')))

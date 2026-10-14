@@ -30,6 +30,7 @@ separate file, no naming scheme, no required format beyond that.
 - The report check reads a reply only when it names a file the session's build wrote, by its `--out` basename. A status message mentioning "an existing `.drawio`" hours after a build run to reproduce a bug was sent back for six report headings it could not honestly carry (#345).
 - The report check sends back, once, a reply that links the hosted editor (`app.diagrams.net`, `viewer.diagrams.net`, `draw.io`), naming Draw.io Desktop's releases page as the link to give. A report linked "Draw.io Desktop" to www.draw.io. The check uses the eval cases' `no-hosted-editor` pattern, and a test keeps them identical (#340).
 - Draw.io `validate` warns on a plain box named like a boundary (an account, VPC, subnet, region...), naming the cell and pointing it at `boundaries`, and on a plain box named for one product with a bundled mark, naming the icon to draw. The build listed both under `looksLikeBoundary` and `namesAProduct`, five AWS accounts shipped as flat boxes, and validate passed silent (#341).
+- Excalidraw `validate` warns on a plain shape named like a boundary, by the same rule, naming the spec node (#341).
 
 ### Changed
 
