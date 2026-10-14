@@ -18,6 +18,9 @@ separate file, no naming scheme, no required format beyond that.
 - The build-route hook routes a `*.spec.json` only when it is an Arkitect spec: the file holds `nodes` or `pages` or, before it exists, the prompt calls it a diagram. An OpenAPI or Vega spec in any project was sent to a diagram skill (#355).
 - The Excalidraw builder wraps Chinese and Japanese labels between characters, never before a closing mark or after an opening one. They drew as one line past their box. Korean and Latin wrap at spaces as before (#357).
 - The Codex route budget test measures the adapter blocks at a fixed root, so the suite passes from a checkout path longer than 85 characters (#358).
+- Excalidraw `validate` warns when nodes sit on top of each other. Two shapes in one place, the likeliest result of a spec that leaves out `col` and `row`, passed with no warning, and an arrow between them blamed a loop built before 2.0.0 (#351).
+- `namesAProduct` and Excalidraw `validate` list only products. A plain "Process" or "Memory" box matched a concept glyph and was reported as a product missing its mark, in two shipped patterns (#352).
+- Excalidraw `validate` names the spec node, boundary or edge after each element id it prints. The builder stamps `customData.arkitect` on everything it draws, so the committed example scenes are rebuilt; a scene without it reads as before (#353).
 
 ## [2.3.0] — 2026-10-03
 
