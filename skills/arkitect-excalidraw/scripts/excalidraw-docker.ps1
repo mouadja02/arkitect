@@ -8,10 +8,11 @@
   kit - the SVG preview, the validator - exists so you do not have to open it
   for every small check.
 
-  The app has no backend. It cannot fetch a file off your disk, so -Open starts
-  the container, opens the browser, and reveals the file in Explorer ready to
-  drag onto the canvas. Dropping a .excalidraw file replaces the canvas;
-  dropping a .excalidrawlib file adds it to the library sidebar.
+  The app is static, and served so it can reach only the container. It cannot
+  fetch a file off your disk, so -Open starts the container, opens the browser,
+  and reveals the file in Explorer ready to drag onto the canvas. Dropping a
+  .excalidraw file replaces the canvas; dropping a .excalidrawlib file adds it
+  to the library sidebar.
 
 .EXAMPLE
   ./excalidraw-docker.ps1 -Up
@@ -36,7 +37,7 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
 $compose = Join-Path $repoRoot 'docker\docker-compose.yml'
-$url = "http://localhost:$Port"
+$url = "http://127.0.0.1:$Port"
 
 function Test-Docker {
   & docker version --format '{{.Server.Version}}' | Out-Null

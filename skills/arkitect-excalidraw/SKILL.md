@@ -171,8 +171,8 @@ the answers down; they are the report's assumptions and the canvas note.
 
 ## Safety — always
 
-- The user's scenes stay on the machine. Nothing is uploaded; the local
-  Excalidraw container has no backend.
+- The user's scenes stay on the machine. Nothing is uploaded, and the local
+  container blocks the app's own uploads.
 - The only network requests are public logos and the public library catalogue,
   and only when asked. Search the product name alone — never a customer,
   codename, hostname or anything else from the diagram.

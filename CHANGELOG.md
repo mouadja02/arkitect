@@ -21,6 +21,12 @@ separate file, no naming scheme, no required format beyond that.
 - Excalidraw `validate` warns when nodes sit on top of each other. Two shapes in one place, the likeliest result of a spec that leaves out `col` and `row`, passed with no warning, and an arrow between them blamed a loop built before 2.0.0 (#351).
 - `namesAProduct` and Excalidraw `validate` list only products. A plain "Process" or "Memory" box matched a concept glyph and was reported as a product missing its mark, in two shipped patterns (#352).
 - Excalidraw `validate` names the spec node, boundary or edge after each element id it prints. The builder stamps `customData.arkitect` on everything it draws, so the committed example scenes are rebuilt; a scene without it reads as before (#353).
+- The local Excalidraw container serves the app under a Content-Security-Policy that lets the page reach only the container, published on 127.0.0.1 only. The app is excalidraw.com's, and its Share, Live collaboration and AI tools would post a scene to Excalidraw's servers while the docs said it had no backend. "Browse libraries" in the app no longer reaches its catalogue; `arkitect excalidraw browse` does (#348).
+
+### Changed
+
+- The `/diagram` command for Cursor and OpenCode points at AGENTS.md §2 instead of restating the workflow in four steps that left out the engine reason, validation, render and icons from the report (#354).
+- Maintainer-only text moved off agents' reading paths into `docs/maintenance.md`: AGENTS.md's render-helper internals and pull-request ritual, and both learning skills' instructions for rebuilding the shipped house style, which pointed a write into the plugin. AGENTS.md is held at 14,800 bytes (#356).
 
 ## [2.3.0] — 2026-10-03
 

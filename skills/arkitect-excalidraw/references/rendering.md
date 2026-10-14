@@ -39,15 +39,17 @@ Open it when the user wants to see or edit the real thing, and before claiming a
 scene looks right in Excalidraw itself.
 
 ```powershell
-./scripts/excalidraw-docker.ps1 -Up        # http://localhost:3000
+./scripts/excalidraw-docker.ps1 -Up        # http://127.0.0.1:3000
 ./scripts/excalidraw-docker.ps1 -Open -Path scene.excalidraw
 ./scripts/excalidraw-docker.ps1 -Library   # reveal the house icon library to drag in
 ./scripts/excalidraw-docker.ps1 -Status
 ./scripts/excalidraw-docker.ps1 -Down
 ```
 
-It is the same static app as excalidraw.com with **no backend** — scenes live in
-the browser and in the files on disk, so nothing drawn is uploaded. Two
+It is the same static app as excalidraw.com, served on 127.0.0.1 under a policy
+that lets the page reach the container only, so the app's Share, collaboration
+and AI tools cannot upload anything drawn. Scenes live in the browser and in
+the files on disk. Two
 consequences: there is no server-side save (the `.excalidraw` file is the source
 of truth), and the app cannot open a file off the disk by itself, which is why
 `-Open` starts the container, opens the browser and reveals the file in Explorer

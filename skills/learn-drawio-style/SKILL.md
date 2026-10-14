@@ -109,18 +109,3 @@ them, never edits a script, and never rebuilds a committed example.
 8. Report: what was learned, which conventions changed confidence, which contradicted
    the house style or earlier evidence — and that none of it changes a diagram until the
    user runs `/apply-drawio-style`.
-
-## Maintaining the shipped house style
-
-Only for a maintainer changing this repository in a reviewed pull request — never part
-of a user's learning run. The shipped record is rebuilt from the maintainer's corpus,
-listed in the checkout's gitignored `.analysis/sources.local.json`, with an explicit
-`--out`:
-
-```bash
-node scripts/build-knowledge.mjs --sources <files> --merge --out references/source-analysis.json
-```
-
-Then follow `docs/maintenance.md`: update `references/style-guide.md`, move the
-convention in `build-diagram.mjs` too (invariant 9), rebuild the committed example with
-`--defaults`, look at its PNG, and run `node tests/run-tests.mjs`.

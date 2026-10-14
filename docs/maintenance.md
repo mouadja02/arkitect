@@ -80,10 +80,14 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
 | `arkitect-drawio` | 11,153 | 735 | 11,888 |
-| `arkitect-excalidraw` | 11,098 | 882 | 11,980 |
+| `arkitect-excalidraw` | 11,105 | 882 | 11,987 |
 
 The worked example an agent copies comes on top. A rule that holds on every
 drawing stays in `SKILL.md`; a rule for one situation moves beside it.
+
+`AGENTS.md` is the whole route on every non-Claude host, so it stays at or
+under 14,800 bytes, and maintainer work, here or in a learning skill, lives in
+this file instead (#356).
 
 **2b. A rule lands in the step that performs it, or in code.** A rule about
 what the agent does doesn't govern what it writes: #186's hosted-editor rule
@@ -169,6 +173,12 @@ A number a check compares against says here how it was chosen.
   example no longer matches its spec (#50). Rebuild examples with
   `--defaults`, in either engine, so a personal style override on your machine
   never reaches them (#89, #90).
+- **Rendered and looked at.** A Draw.io generator change is built, validated,
+  rendered and inspected before its pull request. A render of a real or user
+  diagram stays local: never commit it, never attach it to a pull request. The
+  committed template PNGs and contact sheets under `skills/*/assets/` are the
+  one exception, and only those public, template-derived renders may be
+  attached to or referenced from a pull request.
 - **Reversible.** Say how to undo it in one line.
 
 ## Areas, and how much care each needs
@@ -217,6 +227,49 @@ What one install learns is kept apart from what the repository ships (#89, #90):
   through the API, and both are tested with a personal override present.
 - The suite points `ARKITECT_HOME` into `tests/output/`, so it never reads or
   writes the store of the person running it.
+
+### Rebuilding the shipped house style
+
+Never part of a user's learning run; the learning skills say nothing of it, so
+an agent learning from a user's diagrams has no route into the shipped record
+(#356). Each engine's record is rebuilt from the maintainer's corpus, listed in
+the checkout's gitignored `.analysis/sources.local.json`, with an explicit
+`--out`:
+
+```bash
+node skills/arkitect-<engine>/scripts/build-knowledge.mjs --sources <every example path> --merge \
+  --out skills/arkitect-<engine>/references/source-analysis.json
+```
+
+Then:
+
+1. **Change the generator, not just the prose** (invariant 9). A convention
+   that moved and is not reflected in `STYLE` / `edgeKindsFor` in the engine's
+   `scripts/lib/style-tokens.mjs` has been noted and not learned; the next
+   diagram still comes out in the old style. Where the Excalidraw corpus needs a
+   field the core does not emit, add it, and verify the field set against an
+   element the app itself wrote, which the corpus is full of. That is the only
+   in-repo check available for a format detail.
+2. Update `references/style-guide.md` with the new counts (remove the "these
+   are defaults" banner once there is a real corpus, and replace each `default`
+   basis with its evidence), `references/pattern-catalog.md` for a new layout,
+   and the engine's `SKILL.md` only for findings that change what the agent
+   must do.
+3. Rebuild every committed worked example with `--defaults` and re-render it,
+   so the shipped examples are in the learned style:
+   ```bash
+   for n in starter-architecture aws-data-platform; do
+     node skills/arkitect-excalidraw/scripts/build-diagram.mjs skills/arkitect-excalidraw/assets/templates/$n.spec.json --out skills/arkitect-excalidraw/assets/templates/$n.excalidraw --defaults
+     node bin/arkitect.mjs excalidraw render skills/arkitect-excalidraw/assets/templates/$n.excalidraw --out-dir skills/arkitect-excalidraw/assets/templates
+   done
+   ```
+   Draw.io's examples rebuild the same way from
+   `skills/arkitect-drawio/assets/templates/`. Delete the `*.backup-*` siblings
+   the builds leave. Look at every PNG: a style change that makes the small
+   example look fine can still break the large one, where regions are narrow and
+   edges are crowded.
+4. Run `node tests/run-tests.mjs`; the redaction check regenerates from the
+   corpus.
 
 ## Adding an icon library
 
