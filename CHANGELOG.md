@@ -29,6 +29,7 @@ separate file, no naming scheme, no required format beyond that.
 - The local Excalidraw container serves the app under a Content-Security-Policy that lets the page reach only the container, published on 127.0.0.1 only. The app is excalidraw.com's, and its Share, Live collaboration and AI tools would post a scene to Excalidraw's servers while the docs said it had no backend. "Browse libraries" in the app no longer reaches its catalogue; `arkitect excalidraw browse` does (#348).
 - The report check reads a reply only when it names a file the session's build wrote, by its `--out` basename. A status message mentioning "an existing `.drawio`" hours after a build run to reproduce a bug was sent back for six report headings it could not honestly carry (#345).
 - The report check sends back, once, a reply that links the hosted editor (`app.diagrams.net`, `viewer.diagrams.net`, `draw.io`), naming Draw.io Desktop's releases page as the link to give. A report linked "Draw.io Desktop" to www.draw.io. The check uses the eval cases' `no-hosted-editor` pattern, and a test keeps them identical (#340).
+- Draw.io `validate` warns on a plain box named like a boundary (an account, VPC, subnet, region...), naming the cell and pointing it at `boundaries`, and on a plain box named for one product with a bundled mark, naming the icon to draw. The build listed both under `looksLikeBoundary` and `namesAProduct`, five AWS accounts shipped as flat boxes, and validate passed silent (#341).
 
 ### Changed
 

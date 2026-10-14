@@ -14,6 +14,9 @@ import {
 import { checkXml } from './lib/xml-check.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/routes.mjs';
+import { boundaryWord } from './lib/fake-boundaries.mjs';
+import { namedProducts } from './lib/named-products.mjs';
+import { resolve as resolveIcon, loadCatalog } from './find-icon.mjs';
 
 const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
 
@@ -57,7 +60,7 @@ const isContainerish = (style) => {
     || String(s.shape ?? '').includes('group') || s.childLayout !== undefined;
 };
 
-export function validateFile(path, { pageIndex = null } = {}) {
+export function validateFile(path, { pageIndex = null, products = true } = {}) {
   // A malformed index is the caller's bug; a page the file lacks is the file's.
   if (pageIndex !== null && !(Number.isSafeInteger(pageIndex) && pageIndex >= 0)) {
     const shown = typeof pageIndex === 'string' ? JSON.stringify(pageIndex) : String(pageIndex);
@@ -68,6 +71,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
   // Neither a warning nor a failure: what the page claims, for a person to check.
   const notes = [];
   const info = {};
+  let catalog = null;
   const text = readFileSync(path, 'utf8');
 
   // A forgiving tag scanner is what extractCells needs - it has to keep going
@@ -357,6 +361,41 @@ export function validateFile(path, { pageIndex = null } = {}) {
       notes.push(`${label}: ${alone.length} icon${alone.length > 1 ? 's have' : ' has'} no edge: ${alone.join(', ')}`);
     }
 
+    // The build lists a plain box named like a boundary under
+    // looksLikeBoundary, and one named for a product under namesAProduct, each
+    // with the entry to paste. Both lists were read and not acted on: five AWS
+    // accounts shipped as flat boxes, and validate said nothing (#341, #326).
+    // Here they are warnings, the last thing read before the report. Only ids
+    // and refs are printed, never a label.
+    const plainBoxes = leaves.filter((c) => !isIcon(c.style) && parseStyle(c.style).shape === undefined)
+      .map((c) => ({ id: c.id, label: textLines(c.value).filter(Boolean).join('\n') }))
+      .filter((b) => b.label && b.label.split('\n').length <= 3);
+    let fakeBoundaries = 0;
+    for (const b of plainBoxes) {
+      const word = boundaryWord(b.label.replace(/\n/g, ' '));
+      if (!word) continue;
+      fakeBoundaries++;
+      if (fakeBoundaries <= 10) {
+        warnings.push(`${label}: cell "${b.id}" is a plain box named like a boundary (${word.toLowerCase()}) and owns nothing; `
+          + 'move it to `boundaries` in the spec and give each node inside it `parent`, so it draws as a container');
+      }
+    }
+    let productBoxes = 0;
+    if (products && plainBoxes.length) {
+      catalog ??= loadCatalog();
+      const named = namedProducts(plainBoxes, (t) => {
+        const r = resolveIcon(t, { catalog, limit: 3 });
+        return r.confident ? r.icon.id : null;
+      }).filter((p) => p.replace);
+      for (const p of named) {
+        productBoxes++;
+        if (productBoxes <= 10) {
+          warnings.push(`${label}: cell "${p.node}" is a plain box, but its product has a bundled mark, ${p.icon}; `
+            + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
+        }
+      }
+    }
+
     // An edge that ends on a container is drawn to its border, where it reads
     // as the call of whichever child sits nearest (#245). Sometimes meant.
     const containers = new Set(cells.filter((c) => c.vertex && isContainerish(c.style)).map((c) => c.id));
@@ -485,7 +524,7 @@ export function validateFile(path, { pageIndex = null } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, density, labels,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, fakeBoundaries, productBoxes, density, labels,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
@@ -524,6 +563,8 @@ function main(argv) {
           + `${p.captionCrossings ? `, ${p.captionCrossings} caption crossings` : ''}`
           + `${p.sharedTrunks ? `, ${p.sharedTrunks} shared trunks` : ''}`
           + `${p.textOnContainers ? `, ${p.textOnContainers} texts on containers` : ''}`
+          + `${p.fakeBoundaries ? `, ${p.fakeBoundaries} boxes named like boundaries` : ''}`
+          + `${p.productBoxes ? `, ${p.productBoxes} plain product boxes` : ''}`
           + `, ${p.density.icons} icons`
           + `${p.density.fittedPx ? `, ${p.density.textPx}px labels at ${p.density.fittedPx}px on a ${SLIDE_WIDTH}px slide` : ''}`);
       }

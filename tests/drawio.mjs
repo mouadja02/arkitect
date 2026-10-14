@@ -4448,6 +4448,43 @@ test('a box named like an account or a VPC is listed with the boundary to paste 
   assert(/id="mgmt"[^>]*container=1/.test(fixed.xml), 'a container');
 });
 
+// Five AWS accounts shipped as plain boxes with every one listed under
+// looksLikeBoundary, and validate passed silent (#341); a PostgreSQL box
+// listed under namesAProduct did the same, where Excalidraw's validate warns
+// (#326). Validate, read last, now names both.
+test('validate warns on a plain box named like a boundary, and on one named for a bundled product (#341)', () => {
+  const accounts = [['mgmt', 'Management Account'], ['shared', 'Shared Services Account'], ['security', 'Security Account'],
+    ['workload1', 'Workload Account 1'], ['workload2', 'Workload Account 2']];
+  const spec = { nodes: [
+    ...accounts.map(([id, label], i) => ({ id, kind: 'box', label, col: i * 2, row: 0 })),
+    { id: 'db', label: 'PostgreSQL', col: 0, row: 2 }, { id: 'mem', label: 'Memory', col: 2, row: 2 },
+    { id: 'svc', label: 'Account service', col: 4, row: 2 },
+  ], edges: [{ from: 'svc', to: 'db' }] };
+  mkdirSync(TMP, { recursive: true });
+  const file = join(TMP, 'p341.drawio');
+  const built = builder.buildDiagram(spec);
+  writeFileSync(file, built.xml);
+  const r = validator.validateFile(file);
+  const named = r.warnings.filter((w) => w.includes('named like a boundary'));
+  eq(named.map((w) => w.match(/cell "([^"]+)"/)[1]).join(), built.report.looksLikeBoundary.map((x) => x.node).join(), 'one per entry the build listed');
+  eq(named.length, 5, 'once per account box');
+  const products = r.warnings.filter((w) => w.includes('its product has a bundled mark'));
+  eq(products.join(' | '), 'page 0: cell "db" is a plain box, but its product has a bundled mark, databases/postgresql; '
+    + 'give that node "kind": "icon", "icon": "databases/postgresql" in the spec and rebuild', 'the replace the build gave');
+  assert(!r.warnings.join().includes('PostgreSQL') && !r.warnings.join().includes('Account 1'), 'prints ids, never a label');
+  eq(r.info.pages[0].fakeBoundaries, 5, 'counted');
+
+  const fixed = builder.buildDiagram({
+    boundaries: accounts.map(([id, label], i) => ({ id, label, col: i * 2, row: 0, cols: 2, rows: 2 })),
+    nodes: [{ ...built.report.namesAProduct.find((x) => x.node === 'db').replace, parent: 'mgmt' }, { ...spec.nodes[7], col: 0, row: 4 }],
+  });
+  writeFileSync(file, fixed.xml);
+  eq(validator.validateFile(file).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', 'boundaries and the icon clear it');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.drawio'))) {
+    eq(validator.validateFile(join(SKILL, 'assets', 'templates', f)).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', f);
+  }
+});
+
 // A box of product names drew as text while the report said nothing, and the
 // agent reported the products had no icon (#240).
 test('a plain box naming bundled products is listed under namesAProduct; a generic word and a note are not (#240)', () => {
