@@ -759,6 +759,28 @@ test('an eval case reads a render the run produced (#136)', () => {
     'evals/README.md no longer names the failure that rules a PNG out of an eval run');
 });
 
+// The edit case's validation grader failed accurate reports three times, each
+// worded a new way (#368). Every wording seen passes; a report that gives no
+// result, or a failing one, does not.
+test('the edit case recognises every accurate validation report it has failed (#368)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8');
+  const pattern = yaml.match(/name: reports-the-validation[\s\S]*?pattern: '([^']+)'/)?.[1];
+  assert(pattern, 'the reports-the-validation grader is gone');
+  const re = new RegExp(pattern.replace(/''/g, "'"));
+  for (const reply of [
+    '**Validation**: `validate-drawio.mjs --page 0` passes with 0 warnings and 0 errors.',
+    '**Validation**: `validate-drawio.mjs --page 0` returns PASS with 4 vertices, 3 edges.',
+    'The diagram validates successfully.',
+    '**Validation** ✓ Passes',
+    'Validation passes with no warnings.',
+  ]) assert(re.test(reply), `fails an accurate report: ${reply}`);
+  for (const reply of [
+    '**Validation**: not run.',
+    '**Validation**: `validate-drawio.mjs --page 0` failed with 2 errors.',
+    '**Validation**: `validate-drawio.mjs` bypassed; see below.',
+  ]) assert(!re.test(reply), `passes a report with no passing result: ${reply}`);
+});
+
 // evals/README.md counts the cases in prose and lists every one of them. Both
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).
