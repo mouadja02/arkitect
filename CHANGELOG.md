@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.3.1] — 2026-10-14
+
 ### Added
 
 - A fourth hook, `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or `.excalidraw`, it refuses one the session has not analyzed, and one over 64 KB at all, naming the analyze command to run. A line range with `limit` passes. Editing a diagram, an agent read the whole file straight after `references/editing.md` told it to analyze; on a file with embedded icons one Read fills the context (#342).
