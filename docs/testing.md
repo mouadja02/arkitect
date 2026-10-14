@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner. It needs a clone; the npm
 package doesn't carry it.
 
-On a fresh clone expect `439 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `440 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -42,7 +42,7 @@ Every test is named for the case it covers, with the issue it came from, so
 | safety | backups before every overwrite and retention of six (#35, #49); the style record carries no labels; the redaction check |
 | CLI | strict arguments, one-line errors, every documented command dispatchable, rendering failures never reported as renders (#37, #116, #157) |
 | packaging | the real `npm pack` tarball ships every bundled asset and no cache, and its CLI runs from outside the checkout (#38) |
-| plugin | manifests agree, six skills, the learning and apply skills user-invoked only, each `SKILL.md` plus its pattern section within 12,000 bytes (#113), both hooks |
+| plugin | manifests agree, six skills, the learning and apply skills user-invoked only, each `SKILL.md` plus its pattern section within 12,000 bytes (#113), the hooks |
 | releases | version bumps, changelog rolling, the release workflows gated on a merged `release/v*` PR, npm only after the Release (#88, #126) |
 | evals | each case's graders pass a good report and fail the known bad ones (#248, #251) |
 

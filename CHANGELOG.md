@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- A fourth hook, `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or `.excalidraw`, it refuses one the session has not analyzed, and one over 64 KB at all, naming the analyze command to run. A line range with `limit` passes. Editing a diagram, an agent read the whole file straight after `references/editing.md` told it to analyze; on a file with embedded icons one Read fills the context (#342).
+
 ### Fixed
 
 - `analyze` and `build` refuse an `--out` that names the file they read, exit 2. `analyze a.drawio --out a.drawio` wrote its JSON summary over the diagram, with no backup and exit 0. `analyze` no longer writes over a `.drawio`, `.dio`, `.excalidraw` or `.excalidrawlib`, and `build` writes only its own engine's files: `.drawio`, `.dio` or `.xml`, and `.excalidraw` or `.json`. A build to any other extension, which used to succeed, is now refused (#349).

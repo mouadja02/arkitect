@@ -1838,8 +1838,8 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
 const styleHook = await import(pathToFileURL(join(ROOT, 'hooks', 'style-question.mjs')).href);
 test('the style-question hook speaks only for a prompt about a diagram\'s style, and never fails one (#265)', () => {
   const hooks = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
-  eq(Object.keys(hooks).join(), 'UserPromptSubmit,Stop', 'two events');
-  for (const event of Object.values(hooks)) {
+  eq(Object.keys(hooks).join(), 'PreToolUse,UserPromptSubmit,Stop', 'three events');
+  for (const event of [hooks.UserPromptSubmit, hooks.Stop]) {
     eq(event[0].hooks[0].command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/style-question.mjs"', 'runs the script from the plugin');
   }
   const { ruleFor, RULE, SEND_BACK, promisesToRemember, respond, lastReply } = styleHook;
@@ -2034,6 +2034,54 @@ test('the report check sends back a link to the hosted editor, once, with the pa
   }
   for (const fine of ['open it in Draw.io Desktop or the VS Code extension', `[Draw.io Desktop](${DESKTOP})`]) {
     eq(problems(report(fine), { viewed: true }).length, 0, fine);
+  }
+});
+
+// Editing a .drawio, an agent read the whole file instead of analyzing it
+// (#342). A diagram with embedded art fills the window in one Read.
+const readHook = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
+test('a whole Read of a diagram is refused until it is analyzed, and always when it is large (#342)', () => {
+  const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  eq(JSON.stringify(pre), JSON.stringify([{ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }]), 'a Read hook');
+  const { refusalFor, respond, LARGE } = readHook;
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-read-'));
+  try {
+    const small = join(dir, 'checkout.drawio');
+    const large = join(dir, 'big.excalidraw');
+    const notes = join(dir, 'notes.md');
+    writeFileSync(small, '<mxfile agent="x"><diagram/></mxfile>');
+    writeFileSync(large, JSON.stringify({ type: 'excalidraw', files: { a: { dataURL: 'x'.repeat(LARGE) } } }));
+    writeFileSync(notes, 'x'.repeat(LARGE * 2));
+    const transcript = join(dir, 't.jsonl');
+    const ran = (...commands) => writeFileSync(transcript, commands.map((command) => JSON.stringify({ message: { role: 'assistant',
+      content: [{ type: 'tool_use', name: 'Bash', input: { command } }] } })).join('\n'));
+    const read = (file_path, extra = {}) => refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Read', transcript_path: transcript,
+      tool_input: { file_path, ...extra } });
+
+    ran('ls');
+    const first = read(small);
+    assert(/analyze checkout\.drawio before reading it/.test(first ?? '') && first.includes('analyze-drawio.mjs') && first.includes('--page 0 --cells'),
+      `names the analyzer the eval grades: ${first}`);
+    ran(`node skills/arkitect-drawio/scripts/analyze-drawio.mjs ${small} --page 0 --cells`);
+    eq(read(small), null, 'a small file, once analyzed');
+    ran('arkitect drawio analyze other.drawio --cells');
+    assert(read(small), 'an analysis of another file does not count');
+    ran(`npx arkitect excalidraw analyze ${large} --cells`);
+    const big = read(large);
+    assert(/big\.excalidraw is \d+ KB/.test(big ?? '') && big.includes('analyze-excalidraw.mjs') && !big.includes('--page'), `large: ${big}`);
+    eq(read(large, { offset: 1, limit: 40 }), null, 'a line range passes');
+    for (const pass of [notes, join(dir, 'missing.drawio')]) eq(read(pass), null, pass);
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: large } }), null, 'only Read');
+    const said = JSON.parse(respond({ hook_event_name: 'PreToolUse', tool_name: 'Read', transcript_path: transcript, tool_input: { file_path: large } }));
+    eq(said.hookSpecificOutput.permissionDecision, 'deny', 'denied');
+    const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'diagram-read.mjs')], { input, encoding: 'utf8' });
+    assert(/"deny"/.test(run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: large } })).stdout), 'from the CLI');
+    for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: notes } })]) {
+      const quiet = run(input);
+      eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${input.slice(0, 40)}`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 

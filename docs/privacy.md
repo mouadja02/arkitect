@@ -20,7 +20,7 @@ customer. Using an agent to draw one shouldn't mean shipping it anywhere.
 | rendering | Draw.io Desktop, or a headless local browser | none |
 | the Excalidraw container | your machine, on 127.0.0.1; excalidraw.com's app, served under a policy that lets the page reach this container only | none: Share, Live collaboration, the AI tools and the app's font and analytics fetches are refused by the browser (#348) |
 | the Draw.io MCP server, as Arkitect uses it | your machine, over stdio | none |
-| the three hooks | your machine; they read the prompt, the last reply, the session's tool calls and a `*.spec.json` the prompt names | none |
+| the four hooks | your machine; they read the prompt, the last reply, the session's tool calls, a `*.spec.json` the prompt names and the size of a diagram about to be read | none |
 | fetching a logo | your machine | one HTTPS GET to the URL you named |
 | the library catalogue | your machine | HTTPS GET to `libraries.excalidraw.com` |
 

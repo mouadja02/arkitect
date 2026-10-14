@@ -263,7 +263,7 @@ Scene format notes for hand-editing:
 ```
 bin/arkitect.mjs               the dispatcher; bin/lib/install-agent.mjs writes adapters
 .claude-plugin/                plugin and marketplace manifests
-hooks/                         the two Claude Code hooks
+hooks/                         the four Claude Code hooks
 docker/                        the local Excalidraw app
 skills/arkitect-drawio/        SKILL.md, references/, assets/ (packs, templates), scripts/
 skills/arkitect-excalidraw/    SKILL.md, references/, assets/ (36 libraries, templates), scripts/
