@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Fixed
 
 - The #150 check that no element able to carry behaviour reaches the Excalidraw preview could never fail: its `\b` was a literal backspace. It now reads `\b`, and a new test fails on any raw control character in a committed text file; the two fixtures that need one write it as `\u0001` (#365).
+- Draw.io `validate` warns on a plain box named for a bundled product only on a page that already draws an icon. On a page of plain boxes it is a note naming each box and its mark, saying a new diagram uses the mark and an edit keeps the box. Editing a plain-box file, the warning made the agent swap its matching box for the mark in 6 eval runs of 6 (#366).
 
 ## [2.3.1] — 2026-10-14
 

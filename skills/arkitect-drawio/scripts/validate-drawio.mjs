@@ -380,6 +380,11 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
           + 'move it to `boundaries` in the spec and give each node inside it `parent`, so it draws as a container');
       }
     }
+    // A page that draws no icon at all is drawn in plain boxes on purpose, and
+    // an edit follows the file. Warned there, an agent adding Redis to three
+    // plain boxes swapped its own matching box for the mark in 6 runs of 6,
+    // "because the validator requires an icon" (#366). So the warning needs a
+    // page that already draws icons; on a plain page it is a note saying both.
     let productBoxes = 0;
     if (products && plainBoxes.length) {
       catalog ??= loadCatalog();
@@ -387,12 +392,18 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
         const r = resolveIcon(t, { catalog, limit: 3 });
         return r.confident ? r.icon.id : null;
       }).filter((p) => p.replace);
-      for (const p of named) {
-        productBoxes++;
-        if (productBoxes <= 10) {
-          warnings.push(`${label}: cell "${p.node}" is a plain box, but its product has a bundled mark, ${p.icon}; `
-            + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
+      if (leaves.some((c) => isIcon(c.style))) {
+        for (const p of named) {
+          productBoxes++;
+          if (productBoxes <= 10) {
+            warnings.push(`${label}: cell "${p.node}" is a plain box, but its product has a bundled mark, ${p.icon}; `
+              + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
+          }
         }
+      } else if (named.length) {
+        notes.push(`${label}: draws no icons; ${named.length} plain box${named.length > 1 ? 'es name products' : ' names a product'} `
+          + `with a bundled mark: ${named.slice(0, 10).map((p) => `${p.node} (${p.icon})`).join(', ')}. `
+          + 'Building it new, give each "kind": "icon"; editing it, keep them plain to match the file');
       }
     }
 

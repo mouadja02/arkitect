@@ -4611,7 +4611,9 @@ test('validate warns on a plain box named like a boundary, and on one named for 
     ...accounts.map(([id, label], i) => ({ id, kind: 'box', label, col: i * 2, row: 0 })),
     { id: 'db', label: 'PostgreSQL', col: 0, row: 2 }, { id: 'mem', label: 'Memory', col: 2, row: 2 },
     { id: 'svc', label: 'Account service', col: 4, row: 2 },
-  ], edges: [{ from: 'svc', to: 'db' }] };
+    // The product warning needs a page that already draws icons (#366).
+    { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 6, row: 2 },
+  ], edges: [{ from: 'svc', to: 'db' }, { from: 'svc', to: 'q' }] };
   mkdirSync(TMP, { recursive: true });
   const file = join(TMP, 'p341.drawio');
   const built = builder.buildDiagram(spec);
@@ -4635,6 +4637,32 @@ test('validate warns on a plain box named like a boundary, and on one named for 
   for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.drawio'))) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', f)).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', f);
   }
+});
+
+// The edit eval's fixture: three plain rounded boxes, no icon. The agent added
+// Redis as a matching plain box, the product warning fired, and it swapped in
+// the mark in 6 runs of 6 (#366). A plain page gets a note that says both.
+test('a page that draws no icon gets a note, not a warning, for a plain product box (#366)', () => {
+  const box = (id, label, x) => `<mxCell id="${id}" value="${label}" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#9E9E9E;" vertex="1" parent="1">`
+    + `<mxGeometry x="${x}" y="200" width="160" height="60" as="geometry"/></mxCell>`;
+  const page = (cells) => '<mxfile><diagram name="Checkout" id="p1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + `${cells}<mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="api" target="redis">`
+    + '<mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>';
+  mkdirSync(TMP, { recursive: true });
+  const file = join(TMP, 'p366.drawio');
+  writeFileSync(file, page(box('web', 'Web App', 80) + box('api', 'Checkout API', 400) + box('redis', 'Redis', 720)));
+  let r = validator.validateFile(file);
+  eq(r.warnings.filter((w) => w.includes('bundled mark')).join(), '', 'no warning on a page of plain boxes');
+  eq(r.notes.filter((n) => n.includes('bundled mark')).join(), 'page 0: draws no icons; 1 plain box names a product with a bundled mark: '
+    + 'redis (databases/redis). Building it new, give each "kind": "icon"; editing it, keep them plain to match the file', 'the note names both');
+  eq(r.info.pages[0].productBoxes, 0, 'not counted as a defect');
+
+  const icon = builder.buildDiagram({ nodes: [{ id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service' }] }).xml
+    .match(/<mxCell id="q"[\s\S]*?<\/mxCell>/)[0];
+  writeFileSync(file, page(box('web', 'Web App', 80) + box('api', 'Checkout API', 400) + box('redis', 'Redis', 720) + icon));
+  r = validator.validateFile(file);
+  eq(r.warnings.filter((w) => w.includes('bundled mark')).length, 1, 'a page that draws an icon still warns');
+  eq(r.notes.filter((n) => n.includes('bundled mark')).join(), '', 'and has no note');
 });
 
 // A box of product names drew as text while the report said nothing, and the
