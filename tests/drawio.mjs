@@ -4448,6 +4448,27 @@ test('a box named like an account or a VPC is listed with the boundary to paste 
   assert(/id="mgmt"[^>]*container=1/.test(fixed.xml), 'a container');
 });
 
+// Asked to add one node, an agent rebuilt a hand-drawn .drawio from a new spec
+// and reported it had followed the file; the build said nothing (#339).
+test('a build over a .drawio Arkitect did not write says so in its notes, naming the backup (#339)', () => {
+  const dir = join(TMP, 'p339');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'checkout.drawio');
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  writeFileSync(out, '<mxfile host="Electron" agent="Mozilla/5.0 draw.io/29.0.3" version="29.0.3"><diagram name="P" id="p">'
+    + '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>');
+  const first = JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  eq(first.notes.length, 1, 'one note');
+  assert(first.notes[0].startsWith(`${out} carries no sign of an Arkitect build`) && first.notes[0].includes(first.backup)
+    && first.notes[0].includes('references/editing.md'), first.notes[0]);
+  eq(readFileSync(first.backup, 'utf8').includes('draw.io/29.0.3'), true, 'the backup is the hand-drawn file');
+  eq(JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout).notes.join(), '', 'rebuilding its own output says nothing');
+  assert(builder.isArkitectDrawio(builder.buildDiagram({ nodes: [{ id: 'a' }] }).xml), 'the builder signs what it writes');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // Five AWS accounts shipped as plain boxes with every one listed under
 // looksLikeBoundary, and validate passed silent (#341); a PostgreSQL box
 // listed under namesAProduct did the same, where Excalidraw's validate warns

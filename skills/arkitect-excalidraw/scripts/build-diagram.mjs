@@ -33,7 +33,7 @@ import {
 import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
-import { outProblem } from '../../arkitect-drawio/scripts/lib/backups.mjs';
+import { outProblem, replacesForeign, foreignNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
@@ -1405,6 +1405,11 @@ function assemble(spec, style) {
   return { scene, report };
 }
 
+// The app writes the same `source` an Arkitect scene does, so the sign is the
+// customData.arkitect the builder stamps on what it draws (#353), which the
+// app keeps through an edit and a save (#339).
+export const isArkitectScene = (text) => (JSON.parse(text).elements ?? []).some((el) => el?.customData?.arkitect);
+
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
@@ -1459,8 +1464,10 @@ function main(argv) {
   const { scene, report } = built;
   // A missing output folder is created, not reported as a stack trace (#113).
   mkdirSync(dirname(out), { recursive: true });
+  const foreign = replacesForeign(out, isArkitectScene);
   const backup = backupExisting(out);
   writeScene(out, scene);
+  if (foreign) report.notes.unshift(foreignNote(out, backup));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

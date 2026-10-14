@@ -1155,6 +1155,29 @@ test('validate warns on a plain shape named for one product with a bundled mark,
   }
 });
 
+// A build over a scene drawn in the app replaced it with a backup and an
+// empty `notes` (#339). The app writes the same `source` the builder does, so
+// the sign is the customData.arkitect the builder stamps (#353).
+test('a build over a scene Arkitect did not draw says so in its notes, naming the backup (#339)', () => {
+  const dir = join(TMP, 'p339');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'hand.excalidraw');
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  writeFileSync(out, JSON.stringify({ type: 'excalidraw', version: 2, source: 'https://excalidraw.com',
+    elements: [{ id: 'hand', type: 'rectangle', strokeColor: '#e03131' }], appState: {}, files: {} }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  const first = build();
+  eq(first.notes.length, 1, 'one note');
+  assert(first.notes[0].startsWith(`${out} carries no sign of an Arkitect build`) && first.notes[0].includes(first.backup), first.notes[0]);
+  assert(readFileSync(first.backup, 'utf8').includes('#e03131'), 'the backup is the hand-drawn scene');
+  eq(build().notes.join(), '', 'rebuilding its own output says nothing');
+  writeFileSync(out, 'not json');
+  eq(build().notes.length, 1, 'a file that is not a scene is not ours either');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The Draw.io run that shipped five accounts as boxes passed validate silent
 // (#341); the same spec in this engine got no warning either.
 test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {

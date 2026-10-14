@@ -31,6 +31,7 @@ separate file, no naming scheme, no required format beyond that.
 - The report check sends back, once, a reply that links the hosted editor (`app.diagrams.net`, `viewer.diagrams.net`, `draw.io`), naming Draw.io Desktop's releases page as the link to give. A report linked "Draw.io Desktop" to www.draw.io. The check uses the eval cases' `no-hosted-editor` pattern, and a test keeps them identical (#340).
 - Draw.io `validate` warns on a plain box named like a boundary (an account, VPC, subnet, region...), naming the cell and pointing it at `boundaries`, and on a plain box named for one product with a bundled mark, naming the icon to draw. The build listed both under `looksLikeBoundary` and `namesAProduct`, five AWS accounts shipped as flat boxes, and validate passed silent (#341).
 - Excalidraw `validate` warns on a plain shape named like a boundary, by the same rule, naming the spec node (#341).
+- A build whose `--out` replaces a file with no sign of an Arkitect build says so first in its `notes`: the file's own styling, positions and hand-drawn parts are gone, the original is at the named backup, and an edit goes through `references/editing.md`. Draw.io reads `agent="arkitect-drawio"` on `<mxfile>`, which Desktop rewrites on save; Excalidraw reads the `customData.arkitect` the builder stamps, since the app writes the same `source`. An agent asked to add one node rebuilt a hand-drawn file in the house style, and the report was silent (#339).
 
 ### Changed
 

@@ -24,7 +24,7 @@
 
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { backupExisting, pruneBackups, outProblem, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
+import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
@@ -736,6 +736,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   return { xml, report };
 }
 
+// The builder writes agent="arkitect-drawio" on <mxfile>; Draw.io Desktop
+// rewrites it on save, so a file edited by hand since reads as not ours (#339).
+export const isArkitectDrawio = (text) => /<mxfile\b[^>]*\bagent="arkitect-drawio"/.test(text.slice(0, 4096));
+
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
@@ -789,8 +793,10 @@ function main(argv) {
   const { xml, report } = built;
   // A missing output folder is created, not reported as a stack trace (#113).
   mkdirSync(dirname(out), { recursive: true });
+  const foreign = replacesForeign(out, isArkitectDrawio);
   const backup = backupExisting(out);
   writeFileSync(out, xml);
+  if (foreign) report.notes.unshift(foreignNote(out, backup));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 
