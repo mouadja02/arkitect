@@ -46,8 +46,9 @@ function absoluteGeometry(cells) {
   return abs;
 }
 
-// A label's visible lines, with Draw.io's HTML taken out.
+// A label's visible lines, with Draw.io's HTML taken out and its entities read.
 const textLines = (value) => value.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
   .split('\n').map((l) => l.trim());
 
 const isContainerish = (style) => {

@@ -69,6 +69,10 @@ arkitect excalidraw apply --list
 - **Arguments are strict.** An unknown flag, a missing value, a repeated flag or
   a stray file exits `2` with one line, before anything is read or written.
   Flags may come before or after files.
+- **`--out` never names an input.** `build` and `analyze` refuse an `--out`
+  that is the file they read, exit `2`. `build` writes only `.drawio`, `.dio`
+  or `.xml` (Draw.io) and `.excalidraw` or `.json` (Excalidraw); `analyze`
+  writes its summary anywhere but over a diagram.
 - **A bad spec is refused whole.** An edge or `parent` naming something that
   doesn't exist, a missing, repeated or reserved id, a string where a number
   goes, a size of 0 or less: every problem is listed at once, exit `1`, nothing

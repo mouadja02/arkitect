@@ -1,7 +1,7 @@
 // Shared backup naming and retention for both diagram engines.
 
 import { existsSync, copyFileSync, readdirSync, statSync, unlinkSync, constants } from 'node:fs';
-import { dirname, join, basename, extname } from 'node:path';
+import { dirname, join, basename, extname, resolve } from 'node:path';
 
 // A backup is created exclusively and never replaces an earlier one. Two updates
 // inside the same second get `-1`, `-2`, ... instead of the second copy
@@ -69,6 +69,23 @@ export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
     }
   }
   return pruned;
+}
+
+// Why an --out may not be written, or null. `analyze x.drawio --out x.drawio`
+// put a JSON summary where the diagram was, with no backup, and `build` would
+// write a diagram over its own spec (#349). `exts` is what the file must end
+// in, `refuse` what it may not.
+export const DIAGRAM_EXTS = ['.drawio', '.dio', '.excalidraw', '.excalidrawlib'];
+const samePath =(a, b) => (process.platform === 'win32'
+  ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b));
+
+export function outProblem(out, { inputs = [], exts = null, refuse = [] } = {}) {
+  const input = inputs.find((file) => samePath(file, out));
+  if (input) return `--out ${out} is the file this reads, ${input}; write somewhere else`;
+  const ext = extname(out).toLowerCase();
+  if (exts && !exts.includes(ext)) return `--out must end in ${exts.join(' or ')}, got "${ext}"`;
+  if (refuse.includes(ext)) return `--out ${out} is a ${ext} diagram, not a place for this summary; write a .json`;
+  return null;
 }
 
 // The builders back up for you. A hand edit, a script or an MCP set_page does

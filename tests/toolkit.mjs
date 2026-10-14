@@ -348,10 +348,14 @@ test('the Codex reading route reaches one engine guide, not the full contract as
   const guides = ['arkitect-drawio', 'arkitect-excalidraw'].map((g) => join(ROOT, 'skills', g, 'SKILL.md'));
   for (const g of guides) assert(skill.includes(`\`${g}\``), `the Codex skill does not name ${g}`);
 
+  // The blocks name the install path 16 times, so they are measured at a fixed
+  // root as long as CI's checkout; the real one failed past 85 characters (#358).
   const bytes = (s) => Buffer.byteLength(s);
+  const fixed = `/${'r'.repeat(34)}`;
+  const entry = bytes(adapters.ADAPTERS.agents.render(fixed)) + bytes(adapters.ADAPTERS['codex-skill'].render(fixed));
   const guide = Math.max(...guides.map((g) => bytes(readFileSync(g, 'utf8'))));
-  const route = bytes(pointer) + bytes(skill) + guide;
-  assert(bytes(pointer) + bytes(skill) <= 5000, `the Codex entry blocks are ${bytes(pointer) + bytes(skill)} bytes`);
+  const route = entry + guide;
+  assert(entry <= 5000, `the Codex entry blocks are ${entry} bytes`);
   assert(route < guide + bytes(readFileSync(contract, 'utf8')),
     `the Codex route is ${route} bytes, more than a guide and the full contract`);
 });
@@ -1970,10 +1974,31 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
       else eq(said, null, `${engine}/${name} names no file`);
     }
   }
-  assert(/arkitect-drawio or arkitect-excalidraw skill/.test(routeFor('Build specs/a.spec.json and validate it.')), 'a spec alone names both');
   for (const prompt of ['Draw our AWS pipeline', 'What is a spec?', '/learn-drawio-style docs/a.drawio', 'Fix the bug in parser.json']) {
     eq(routeFor(prompt), null, prompt);
   }
+
+  // The plugin is installed per user, so an OpenAPI or Vega *.spec.json was
+  // routed to a diagram skill too (#355). Only an Arkitect spec is.
+  const project = join(TMP, 'build-route');
+  rmSync(project, { recursive: true, force: true });
+  mkdirSync(join(project, 'specs'), { recursive: true });
+  writeFileSync(join(project, 'specs', 'a.spec.json'), JSON.stringify({ nodes: [{ id: 'api', label: 'API' }] }));
+  writeFileSync(join(project, 'paged.spec.json'), JSON.stringify({ pages: [{ nodes: [] }] }));
+  writeFileSync(join(project, 'openapi.spec.json'), JSON.stringify({ openapi: '3.1.0', paths: {} }));
+  writeFileSync(join(project, 'revenue.spec.json'), '{ "$schema": "https://vega.github.io/schema/vega/v5.json", "marks": [');
+  const both = /arkitect-drawio or arkitect-excalidraw skill/;
+  assert(both.test(routeFor('Build specs/a.spec.json and validate it.', project)), 'a spec alone names both');
+  assert(both.test(routeFor('rebuild "paged.spec.json"', project)), 'a paged spec');
+  assert(both.test(routeFor('Write orders.spec.json for the checkout diagram', project)), 'a spec about to be written, for a diagram');
+  eq(skill(routeFor('Write orders.spec.json and build it into orders.excalidraw', project)), 'arkitect-excalidraw', 'a new spec and its output');
+  for (const prompt of ['add the /refunds endpoint to openapi.spec.json', 'the vega chart in revenue.spec.json renders blank',
+    'write tests/login.spec.json for the new fixture']) {
+    eq(routeFor(prompt, project), null, prompt);
+  }
+  const hookIn = (cwd) => ({ hook_event_name: 'UserPromptSubmit', prompt: 'Build specs/a.spec.json', cwd });
+  assert(both.test(routeHook.respond(hookIn(project)) ?? ''), 'the hook reads the spec from the session\'s cwd');
+  eq(routeHook.respond(hookIn(join(project, 'specs'))), null, 'and not from anywhere else');
   const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'build-route.mjs')], { input, encoding: 'utf8' });
   const said = run(JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt: 'Build a.spec.json into out/a.excalidraw' }));
   eq([said.status, skill(said.stdout)].join('|'), '0|arkitect-excalidraw', 'printed for Claude Code to add');

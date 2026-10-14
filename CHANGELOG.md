@@ -11,6 +11,14 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- `analyze` and `build` refuse an `--out` that names the file they read, exit 2. `analyze a.drawio --out a.drawio` wrote its JSON summary over the diagram, with no backup and exit 0. `analyze` no longer writes over a `.drawio`, `.dio`, `.excalidraw` or `.excalidrawlib`, and `build` writes only its own engine's files: `.drawio`, `.dio` or `.xml`, and `.excalidraw` or `.json`. A build to any other extension, which used to succeed, is now refused (#349).
+- Draw.io labels draw text in angle brackets and ampersands as typed: `List<String>` drew as "List" and `<<interface>>` as "<>". A spec that wrote `&lt;` to work around this now shows it literally. `validate` and `analyze` read a label's entities, so `&lt;` counts as one character (#350).
+- The build-route hook routes a `*.spec.json` only when it is an Arkitect spec: the file holds `nodes` or `pages` or, before it exists, the prompt calls it a diagram. An OpenAPI or Vega spec in any project was sent to a diagram skill (#355).
+- The Excalidraw builder wraps Chinese and Japanese labels between characters, never before a closing mark or after an opening one. They drew as one line past their box. Korean and Latin wrap at spaces as before (#357).
+- The Codex route budget test measures the adapter blocks at a fixed root, so the suite passes from a checkout path longer than 85 characters (#358).
+
 ## [2.3.0] — 2026-10-03
 
 ### Added

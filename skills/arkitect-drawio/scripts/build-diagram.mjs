@@ -24,7 +24,7 @@
 
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
+import { backupExisting, pruneBackups, outProblem, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
@@ -135,7 +135,10 @@ export const esc = (s) => String(s ?? '')
 // attribute into a space anyway: a two-line caption drew on one line (#238).
 // `<br>` is what Draw.io itself stores; one already written stays as it is.
 const BREAK = /\r?\n|<br\s*\/?>/gi;
-export const labelValue = (s) => esc(String(s ?? '').replace(/\r?\n/g, '<br>'));
+// html=1 also parses the text as HTML once XML is done with it, so the text
+// between breaks is escaped twice: "List<String>" drew as "List" (#350).
+const htmlText = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export const labelValue = (s) => esc(String(s ?? '').split(BREAK).map(htmlText).join('<br>'));
 const linesOf = (s) => String(s ?? '').split(BREAK);
 
 // Room a heading needs on one line, generous enough that Draw.io never wraps it.
@@ -694,7 +697,7 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
           + `<mxGeometry x="${Math.round(lx + 70)}" y="${Math.round(y)}" width="1" height="1" as="geometry" /></mxCell>`);
         push(`<mxCell id="legend-e${i}" style="${STYLE.edge(k)}" edge="1" parent="1" source="legend-a${i}" target="legend-b${i}">`
           + '<mxGeometry relative="1" as="geometry" /></mxCell>');
-        push(`<mxCell id="legend-t${i}" value="${esc(e.meaning)}" style="${STYLE.text(T.fontBody, T.text, false, 'left')}" vertex="1" parent="1">`
+        push(`<mxCell id="legend-t${i}" value="${esc(htmlText(e.meaning))}" style="${STYLE.text(T.fontBody, T.text, false, 'left')}" vertex="1" parent="1">`
           + `<mxGeometry x="${Math.round(lx + 86)}" y="${Math.round(y - 15)}" width="230" height="30" as="geometry" /></mxCell>`);
         track(lx + 86, y - 15, 230, 30);
       });
@@ -757,6 +760,8 @@ function main(argv) {
   if (!options.out) exitUsage('--out <file.drawio> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
+  const outBad = outProblem(out, { inputs: [specPath], exts: ['.drawio', '.dio', '.xml'] });
+  if (outBad) exitUsage(outBad, USAGE);
   const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
     exitUsage(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}`, USAGE);

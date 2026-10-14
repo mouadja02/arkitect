@@ -33,6 +33,7 @@ import {
 import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { outProblem } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
@@ -1412,6 +1413,8 @@ function main(argv) {
   if (!options.out) exitUsage('--out <file.excalidraw> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
+  const outBad = outProblem(out, { inputs: [specPath], exts: ['.excalidraw', '.json'] });
+  if (outBad) exitUsage(outBad, USAGE);
   const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
     exitUsage(`--keep-backups expects how many backups to keep, a whole number (0 keeps all), got ${keep}`, USAGE);
