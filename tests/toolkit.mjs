@@ -2239,7 +2239,8 @@ test('arkitect report checks a saved report like the Stop hook, and every adapte
 
 // Asked to build a spec into a diagram file, the agent loaded no skill and
 // wrote its own builder (#327). A prompt naming a diagram file or a spec gets
-// one line naming the skill; any other prompt gets nothing.
+// one line naming the skill, and so does a request for a diagram (#371); any
+// other prompt gets nothing.
 const routeHook = await import(pathToFileURL(join(ROOT, 'hooks', 'build-route.mjs')).href);
 test('a prompt naming a diagram file or spec is told which skill to load; any other prompt gets nothing (#327)', () => {
   const prompts = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.UserPromptSubmit[0].hooks;
@@ -2257,10 +2258,27 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
       const said = routeFor(prompt);
       if (styleHook.ruleFor(prompt)) eq(said, null, `${engine}/${name}: a style question gets the style rule instead`);
       else if (/\.(drawio|excalidraw)\b/.test(prompt)) assert(said?.includes(`arkitect-${engine}`), `${engine}/${name}: ${said}`);
+      else if (name === 'engine-choice-is-explained') assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
       else eq(said, null, `${engine}/${name} names no file`);
     }
   }
   for (const prompt of ['Draw our AWS pipeline', 'What is a spec?', '/learn-drawio-style docs/a.drawio', 'Fix the bug in parser.json']) {
+    eq(routeFor(prompt), null, prompt);
+  }
+
+  // A request that names no file: 2 runs of 3 of the README case loaded no
+  // skill and handed over SVG or Mermaid (#371). A request for a diagram is
+  // routed; a bug report about drawing, or one asking for another format, isn't.
+  for (const prompt of ['Draw a sequence diagram for the auth flow', 'make me a flowchart of the signup flow',
+    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.']) {
+    assert(/^Arkitect: this prompt asks for a diagram\. Load the arkitect-drawio or arkitect-excalidraw skill/.test(routeFor(prompt) ?? ''), prompt);
+  }
+  eq(skill(routeFor('Sketch the architecture of our payments service in Excalidraw')), 'arkitect-excalidraw', 'an engine named');
+  eq(skill(routeFor('Draw the system design in draw.io')), 'arkitect-drawio', 'the other engine named');
+  for (const prompt of ['Draw it as a Mermaid diagram in the README', 'Draw a diagram of the architecture and save it as docs/arch.svg',
+    'fix the bug where the canvas does not draw the architecture overlay', 'the diagram view does not draw edges after a resize',
+    "why doesn't the architecture page draw on mobile?", 'refactor the diagram renderer', 'generate the diagram types from the schema',
+    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
     eq(routeFor(prompt), null, prompt);
   }
 
