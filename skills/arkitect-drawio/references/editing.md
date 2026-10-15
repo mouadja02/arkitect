@@ -39,7 +39,8 @@ retention. In your own code, `backupExisting()` from `scripts/lib/backups.mjs`.
 ## Match the file, not the guide
 
 If the existing diagram uses rounded corners or a different palette, so does your
-addition. Say in the report that you followed the file.
+addition. Icons too: in a file of plain boxes a new product is a plain box, even
+one with a bundled mark (#366). Say in the report that you followed the file.
 
 ## Hand-written XML
 
