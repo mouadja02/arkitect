@@ -4020,6 +4020,21 @@ test('validate fails an image linked by URL, and passes Draw.io\'s own img/ artw
   assert(app.ok && !app.warnings.some((w) => /external image/.test(w)), `img/lib: ${app.errors} ${app.warnings}`);
 });
 
+// Every box wraps, and wrapping breaks at spaces and hyphens, so a code-style
+// name ran out of both sides of its box and passed (#381).
+test('validate warns on a word too wide to wrap inside its box (#381)', () => {
+  const check = (label) => {
+    const file = join(TMP, 'wide-word.drawio');
+    writeFileSync(file, builder.buildDiagram({ nodes: [{ id: 'a', label }, { id: 'b', label: 'B', col: 1 }] }).xml);
+    return validator.validateFile(file).warnings.filter((w) => /cannot wrap/.test(w));
+  };
+  for (const label of ['OrdersReconciliationNightlyBatchWorker', 'orders_reconciliation_nightly_batch_worker']) {
+    const w = check(label);
+    assert(w.length === 1 && /cell "a"/.test(w[0]) && !w[0].includes(label), `${label}: ${w}`);
+  }
+  for (const label of ['orders-reconciliation-nightly-batch-worker', 'Reconciliation worker']) eq(check(label).length, 0, `${label} wraps`);
+});
+
 // ------------------------------------------------------------- spec checks (#36)
 
 test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {
