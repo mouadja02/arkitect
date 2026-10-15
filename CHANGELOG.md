@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- Eval case `drawio-portable-report-check`: the agent is handed AGENTS.md as an AGENTS.md host would, and must run `arkitect report` on its saved report. Claude Code reads the skills, so no case reached the portable check before; it passed 3 runs of 3 on Haiku 5.5 (#302).
+
 ### Fixed
 
 - The #150 check that no element able to carry behaviour reaches the Excalidraw preview could never fail: its `\b` was a literal backspace. It now reads `\b`, and a new test fails on any raw control character in a committed text file; the two fixtures that need one write it as `\u0001` (#365).

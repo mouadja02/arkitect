@@ -785,7 +785,8 @@ test('the edit case recognises every accurate validation report it has failed (#
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
-  'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen'];
+  'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+  'eighteen', 'nineteen', 'twenty'];
 
 test('evals/README.md counts and lists exactly the cases that exist (#177)', () => {
   const cases = evalCases();

@@ -1,0 +1,56 @@
+schema_version: "1.1"
+name: drawio-portable-report-check
+description: >
+  The report check ran only as Claude Code's Stop hook, so Codex, Cursor and
+  every other AGENTS.md host had none (#302). AGENTS.md step 8 now has the agent
+  run `arkitect report` itself. Claude Code reads the skills, not AGENTS.md, so
+  the prompt hands the agent the contract the way such a host would, and the
+  case checks the agent ran the portable check on the file it saved.
+tags: [report, portable]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    We drive Arkitect from its AGENTS.md agent contract, as our other coding
+    agents do. Read the AGENTS.md at the Arkitect plugin's root, the directory
+    that holds its skills/ folder, and follow it to the end, step 8 included.
+    Draw a React web app calling an API Gateway that invokes two Lambda
+    functions, orders and payments, which both write to one DynamoDB table.
+    Save it to ./eval-output/orders.drawio.
+
+graders:
+  - type: regex
+    name: native-drawio-xml
+    target: { source: file, path: ./eval-output/orders.drawio }
+    pattern: '^(?=[\s\S]*<mxfile)(?=[\s\S]*vertex="1")(?=[\s\S]*edge="1")'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-drawio|arkitect\.mjs"?\s+drawio\s+validate'
+
+  # The portable check on the saved report, through the dispatcher as step 8
+  # names it. The report's file name is the agent's to pick, or `-` for stdin.
+  - type: tool_used
+    name: ran-the-portable-report-check
+    tool: Bash
+    input_match: 'arkitect(\.mjs)?"?\s+report(\s|$)'
+
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'orders\.drawio'
+
+  - type: regex
+    name: no-hosted-editor
+    target: last_message
+    pattern: 'app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net/\?|//(?:www\.)?draw\.io'
+    match: not_contains
