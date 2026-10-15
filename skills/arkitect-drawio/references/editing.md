@@ -39,7 +39,8 @@ retention. In your own code, `backupExisting()` from `scripts/lib/backups.mjs`.
 ## Match the file, not the guide
 
 If the existing diagram uses rounded corners or a different palette, so does your
-addition. Say in the report that you followed the file.
+addition. Icons too: in a file of plain boxes a new product is a plain box, even
+one with a bundled mark (#366). Say in the report that you followed the file.
 
 ## Hand-written XML
 
@@ -50,8 +51,9 @@ built.
 - Copy the exact style strings from `style-guide.md`.
 - Embedded icons must use the comma-only data URI form
   (`data:image/svg+xml,<base64>`), because `;` terminates a draw.io style.
-- Get an icon's cell, style or data URI with `find-icon.mjs --cell`, `--style`
-  or `--data`, redirected straight to a file (`> cell.xml`). Never read the
+- Get an icon's cell, style or data URI straight into a file:
+  `find-icon.mjs --cell databases/redis --label "Redis" --x 440 --y 340 > cell.xml`
+  (or `--style`, `--data`; an id or a confident product name). Never read the
   bytes into the conversation.
 - Embed, never link: a `remote-url` image breaks for everyone else and fails
   validation.

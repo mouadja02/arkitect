@@ -8,7 +8,7 @@
 // Offline and deterministic, like the others.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, mkdtempSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, chmodSync, mkdtempSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -759,11 +759,62 @@ test('an eval case reads a render the run produced (#136)', () => {
     'evals/README.md no longer names the failure that rules a PNG out of an eval run');
 });
 
+// The edit case's validation grader failed accurate reports three times, each
+// worded a new way (#368). Every wording seen passes; a report that gives no
+// result, or a failing one, does not.
+const diagramRead = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
+test('the edit case recognises every accurate report wording it has failed (#368)', () => {
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8');
+  const grader = (name) => {
+    const pattern = yaml.match(new RegExp(`name: ${name}[\\s\\S]*?pattern: '([^']+)'`))?.[1];
+    assert(pattern, `the ${name} grader is gone`);
+    return new RegExp(pattern.replace(/''/g, "'"));
+  };
+  const validation = grader('reports-the-validation');
+  for (const reply of [
+    '**Validation**: `validate-drawio.mjs --page 0` passes with 0 warnings and 0 errors.',
+    '**Validation**: `validate-drawio.mjs` on page 0 passed with no errors and no warnings.',
+    '**Validation**: `validate-drawio.mjs` on `eval-input/checkout.drawio` passed (exit 0): 4 vertices, 3 edges.',
+    '**Validation**: `validate-drawio.mjs --page 0` returns PASS with 4 vertices, 3 edges.',
+    'The diagram validates successfully.',
+    '**Validation** ✓ Passes',
+    'Validation passes with no warnings.',
+  ]) assert(validation.test(reply), `fails an accurate validation report: ${reply}`);
+  for (const reply of [
+    '**Validation**: not run.',
+    '**Validation**: `validate-drawio.mjs --page 0` failed with 2 errors.',
+    '**Validation**: `validate-drawio.mjs` bypassed; see below.',
+    '**Validation**: `validate-drawio.mjs` failed; once fixed, it should pass.',
+  ]) assert(!validation.test(reply), `passes a report with no passing result: ${reply}`);
+
+  // Analyzing through the dispatcher is analyzing: the hook lets the Read
+  // through after either form, so the grader takes the hook's own pattern.
+  const analyzed = yaml.match(/name: analyzed-instead-of-reading[\s\S]*?input_match: '(.+)'\r?$/m)?.[1];
+  assert(analyzed, 'the analyzed-instead-of-reading grader is gone');
+  eq(analyzed.replace(/''/g, "'"), diagramRead.ANALYZE.source, 'the grader and the read hook count the same commands as analyzing');
+
+  const matched = grader('says-it-matched-the-file');
+  for (const reply of [
+    '**Deviations**: The Redis box uses plain styling, not an icon, to match the rest of the file.',
+    '- Redis is drawn as a plain box, not the bundled Redis icon, to match the other three plain boxes.',
+    '- Redis is a plain box, not an icon, to match the file.',
+    'I followed the existing file\'s style instead.',
+    'The new vertex and edge use the file\'s existing style strings.',
+    '- The Redis box is a plain labelled box ("Redis Cache"), not the Redis logo. The existing three boxes are plain, so I matched them, as the editing guide asks.',
+    'The style guide\'s icon-first look is not applied, because the existing file uses plain boxes and I followed it.',
+  ]) assert(matched.test(reply), `fails a report that says it matched the file: ${reply}`);
+  for (const reply of [
+    'I added Redis with the bundled icon from the house style guide.',
+    'Redis uses the databases/redis mark.',
+  ]) assert(!matched.test(reply), `passes a report that never says it matched the file: ${reply}`);
+});
+
 // evals/README.md counts the cases in prose and lists every one of them. Both
 // go stale the moment a case is added, and a reader has no way to tell, so they
 // are checked the way every other count a doc quotes is (#78, #177).
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
-  'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen'];
+  'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+  'eighteen', 'nineteen', 'twenty'];
 
 test('evals/README.md counts and lists exactly the cases that exist (#177)', () => {
   const cases = evalCases();
@@ -987,6 +1038,24 @@ test('no file still refers to a pre-merge project name', () => {
     for (const name of legacy) if (s.includes(name)) hits.push(`${relative(ROOT, f)}: ${name}`);
   }
   assert(hits.length === 0, `stale names:\n        ${hits.slice(0, 10).join('\n        ')}`);
+});
+
+// A raw control character in source is invisible in review and in most
+// terminals. One sat in a regex as a backspace where `\b` was meant, so the
+// #150 preview-safety assertion could never fail (#365). A fixture that needs
+// one writes it as an escape.
+test('no committed text file holds a raw control character (#365)', () => {
+  const C0 = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
+  const scripts = repoFiles(ROOT, ({ name }) => /\.(sh|ya?ml)$/i.test(name));
+  const hits = [];
+  for (const f of new Set([...FILES, ...scripts])) {
+    const lines = readFileSync(f, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      const m = line.match(C0);
+      if (m) hits.push(`${relative(ROOT, f)}:${i + 1}: U+${m[0].charCodeAt(0).toString(16).padStart(4, '0').toUpperCase()}`);
+    });
+  }
+  assert(hits.length === 0, `raw control characters; write them as \\uXXXX escapes:\n        ${hits.slice(0, 10).join('\n        ')}`);
 });
 
 test('every relative link in the docs resolves', () => {
@@ -1363,6 +1432,46 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
   const bash = spawnSync('bash', ['-n', 'scripts/eval.sh'], { cwd: ROOT, encoding: 'utf8' });
   if (bash.error) { console.log('      (bash was not found, so the parse check was skipped)'); return 'skip'; }
   eq(bash.status, 0, `bash rejected scripts/eval.sh: ${(bash.stderr || '').trim().slice(0, 200)}`);
+});
+
+// It passed --threshold 0 and exited with the run's own status, so a batch
+// whose every run errored exited 0. Under WSL it took the Windows claude from
+// /mnt/c, and it still accepted Node 20 (#369). Run for real against stubs:
+// a `claude` that writes the result it is handed, and a `node` that says 20.
+test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () => {
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(/\/mnt\/\[a-zA-Z\]\/\*\)/.test(sh) && sh.includes('linux claude'), 'the WSL check for a Windows claude is gone');
+  // The script refuses Windows itself, so here only the text above is checked;
+  // a skip would count against the fresh-clone total (#47).
+  if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS; its run was checked there)'); return; }
+
+  const dir = join(TMP, 'eval-sh');
+  const bin = join(dir, 'bin');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(bin, { recursive: true });
+  const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
+  stub('claude', 'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$STUB_RESULT" "$2"; shift; done; exit 0');
+  stub('bwrap', 'exit 0');
+  stub('socat', 'exit 0');
+  const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin` };
+  const run = (result, args = []) => {
+    writeFileSync(join(dir, 'result.json'), JSON.stringify(result));
+    return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], {
+      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json') },
+    });
+  };
+  const errored = run({ cases: [{ name: 'c', arms: { with: [{ score: 0, error: 'scaffold failed (exit 127)' }] } }],
+    aggregates: { overallScore: 0, overallPassRate: 0 } });
+  eq(errored.status, 1, `every run errored, so the script fails:\n${errored.stdout.slice(-400)}`);
+  const clean = run({ cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }],
+    aggregates: { overallScore: 1, overallPassRate: 1 } });
+  eq(clean.status, 0, `a clean run passes:\n${clean.stdout.slice(-400)}`);
+
+  stub('node', 'echo 20');
+  const old = spawnSync('bash', ['scripts/eval.sh', '--check'], { cwd: ROOT, encoding: 'utf8', env });
+  eq(old.status, 2, 'Node 20 is refused');
+  assert(old.stdout.includes('node >= 22'), old.stdout);
+  rmSync(dir, { recursive: true, force: true });
 });
 
 // A .sh authored on Windows is recorded 0644 by default, and the working-tree

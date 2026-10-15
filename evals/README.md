@@ -1,10 +1,11 @@
 # Eval cases
 
-Seventeen cases, nine for Draw.io and eight for Excalidraw, covering what
+Eighteen cases, ten for Draw.io and eight for Excalidraw, covering what
 matters most: that a plain request fires the right skill and produces valid,
 styled, native output; that a missing product icon is reported or built honestly rather
 than substituted; that an edit follows the file in front of it; and that the
-learning and apply skills never fire on their own.
+learning and apply skills never fire on their own. One more runs the
+portable report check an AGENTS.md host relies on.
 
 ```
 evals/
@@ -15,6 +16,7 @@ evals/
     engine-choice-is-explained/     no engine named: pick one and say why
     as-is-to-be-two-pages/          two pages come from one spec with `pages`
     report-names-every-warning/     a warning it may not fix is named in the report
+    portable-report-check/          an AGENTS.md host runs `arkitect report` itself
     numbered-flow-one-sequence/     one path numbered from 1; entry points are not steps
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
@@ -81,6 +83,8 @@ Caveats:
   refused** - "the Windows sandbox is not active on this session" - so run the
   suite from WSL or macOS. From Windows: `wsl -d <distro>`, put the plugin on
   the Linux filesystem rather than under `/mnt/c`, then `scripts/eval.sh`.
+  Claude Code has to be installed inside WSL too: a Windows install is on
+  WSL's `PATH` from `/mnt/c`, cannot run the Linux sandbox, and is refused.
 - Prerequisites, all checked by `scripts/eval.sh --check`: Claude Code, logged
   in once; Node 22+; on Linux `bubblewrap` and `socat` for the sandbox.
   `xvfb`, Draw.io Desktop and a browser are checked too, because they matter

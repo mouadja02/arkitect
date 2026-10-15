@@ -19,7 +19,8 @@ const DIAGRAM = /\.(drawio|dio|excalidraw)$/i;
 // anything with one icon in it is past it.
 export const LARGE = 64 * 1024;
 const SHELLS = ['Bash', 'PowerShell'];
-const ANALYZE = /analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b/;
+// The edit eval's `analyzed-instead-of-reading` grader matches the same (#368).
+export const ANALYZE = /analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b/;
 
 export function analyzeCommand(file) {
   const engine = /\.excalidraw$/i.test(file) ? 'excalidraw' : 'drawio';

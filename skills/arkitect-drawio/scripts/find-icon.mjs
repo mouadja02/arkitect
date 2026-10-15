@@ -14,8 +14,10 @@
 //
 // --style/--cell/--data print the raw cell style, mxCell XML or data URI for one
 // icon - the hand-written-XML exception, not the normal search path. Redirect
-// their output to a file rather than reading it into an agent's context.
+// their output to a file rather than reading it into an agent's context. They
+// take an id or a confident product name, anywhere in the arguments.
 //   node find-icon.mjs --style <id> [--size 78] > style.txt
+//   node find-icon.mjs redis --cell > cell.xml
 //   node find-icon.mjs --cell <id> --label "X" --x 100 --y 100 > cell.xml
 //
 // Some products ship as catalogue entries without bytes, because their marks
@@ -456,28 +458,49 @@ function main(argv) {
     return;
   }
 
-  if (argv[0] === '--style' || argv[0] === '--data' || argv[0] === '--cell') {
-    const icon = byId(catalog, argv[1]);
-    if (!icon) { console.error(`no icon with id ${argv[1]}`); process.exit(1); }
-    const size = flag('--size') ? Number(flag('--size')) : null;
-    const dim = recommendedSize(icon, size);
-    if (argv[0] === '--data') { process.stdout.write(dataUriFor(icon)); return; }
-    if (argv[0] === '--style') { process.stdout.write(styleFor(icon)); return; }
-    const label = flag('--label') ?? icon.title;
-    const x = flag('--x') ?? 0;
-    const y = flag('--y') ?? 0;
-    const id = flag('--id') ?? `icon-${icon.id.replace(/\W+/g, '-')}`;
-    process.stdout.write(
-      `<mxCell id="${esc(id)}" value="${esc(label)}" style="${esc(styleFor(icon))}" vertex="1" parent="1">\n`
-      + `  <mxGeometry x="${x}" y="${y}" width="${dim.width}" height="${dim.height}" as="geometry" />\n`
-      + '</mxCell>');
-    return;
-  }
-
   const packs = (flag('--context') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const pack = flag('--pack');
   const skip = new Set(['--context', '--pack', '--size', '--label', '--x', '--y', '--id']);
   const query = argv.filter((a, i) => !a.startsWith('--') && !skip.has(argv[i - 1])).join(' ');
+
+  // The payload flags work anywhere, on an id or a product name. Only
+  // `--cell <id>` first used to: `redis --cell` dropped the flag and printed the
+  // search, and an agent mid-edit built a scratch spec to get the cell (#367).
+  // A name resolves as the search does; one that is not confident prints its
+  // choices on stderr and no bytes, since stdout is going to a file.
+  const payload = ['--cell', '--style', '--data'].find((f) => argv.includes(f));
+  if (payload) {
+    let icon = query ? byId(catalog, query) : null;
+    if (!icon && query) {
+      const r = resolve(query, { catalog, packs, pack });
+      if (r.confident) icon = r.icon;
+      else {
+        console.error(JSON.stringify(compactAnswer(r, catalog)));
+        console.error(`${payload} needs one icon; "${query}" is not a confident match. Pick an id above and pass it instead.`);
+        process.exit(1);
+      }
+    }
+    if (!icon) { console.error(`${payload} needs an icon id or a product name`); process.exit(2); }
+    const size = flag('--size') ? Number(flag('--size')) : null;
+    const dim = recommendedSize(icon, size);
+    try {
+      if (payload === '--data') { process.stdout.write(dataUriFor(icon)); return; }
+      if (payload === '--style') { process.stdout.write(styleFor(icon)); return; }
+      const label = flag('--label') ?? icon.title;
+      const x = flag('--x') ?? 0;
+      const y = flag('--y') ?? 0;
+      const id = flag('--id') ?? `icon-${icon.id.replace(/\W+/g, '-')}`;
+      process.stdout.write(
+        `<mxCell id="${esc(id)}" value="${esc(label)}" style="${esc(styleFor(icon))}" vertex="1" parent="1">\n`
+        + `  <mxGeometry x="${x}" y="${y}" width="${dim.width}" height="${dim.height}" as="geometry" />\n`
+        + '</mxCell>');
+    } catch (e) {
+      // An on-demand mark has no bytes to print; say why, without a stack.
+      console.error(e.message);
+      process.exit(1);
+    }
+    return;
+  }
 
   if (!query) {
     console.error('usage: find-icon.mjs <product name> [--pack <id>] [--context <id,id>] [--compact]');

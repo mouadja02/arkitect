@@ -84,10 +84,18 @@ esac
 
 echo "prerequisites"
 need claude "install Claude Code, and log in once"
+# Under WSL a Windows install of Claude Code is on PATH from /mnt/c, and a shell
+# that has not read ~/.profile finds it before ~/.local/bin. It cannot run a
+# Linux sandbox: every scaffold failed on a \\wsl.localhost path (#369).
+case "$(command -v claude 2>/dev/null)" in
+  /mnt/[a-zA-Z]/*)
+    printf 'MISSING %-20s %s\n' "linux claude" "found the Windows one at $(command -v claude); install Claude Code inside WSL (curl -fsSL https://claude.ai/install.sh | bash) and put ~/.local/bin first on PATH"
+    missing=1 ;;
+esac
 need node "Node 22 or newer"
 if have node; then
   major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
-  [ "${major:-0}" -ge 20 ] || { printf 'MISSING %-20s %s\n' "node >= 20" "found $(node --version)"; missing=1; }
+  [ "${major:-0}" -ge 22 ] || { printf 'MISSING %-20s %s\n' "node >= 22" "found $(node --version)"; missing=1; }
 fi
 if [ "$(uname -s)" = "Linux" ]; then
   need bwrap "the sandbox backend: apt install bubblewrap"
@@ -153,12 +161,19 @@ status=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------------- summary
 
+# The run is passed --threshold 0, so its own status says only whether it ran.
+# Whether it passed is the summary's: 1 for any case below 1 or any errored run,
+# 2 for a result it cannot read. Exiting with the run's status reported 0 for a
+# batch whose every run errored (#369).
 if [ -f "$OUT/result.json" ]; then
   node "$HERE/eval-summary.mjs" "$OUT/result.json" | tee "$OUT/summary.txt"
+  verdict=${PIPESTATUS[0]}
 else
   echo "no result.json was written; see $OUT/run.log" >&2
+  verdict=2
 fi
+[ "$verdict" -ne 0 ] || verdict=$status
 
 echo
-echo "eval exit status: $status"
-exit $status
+echo "eval exit status: $verdict (claude plugin eval exited $status)"
+exit $verdict

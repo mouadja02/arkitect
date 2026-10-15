@@ -823,7 +823,7 @@ test('the Draw.io-strict loader round-trips awkward titles and rejects a mis-esc
     'a raw ampersand': good.replace('"ok"', '"A & B"'),
     'a raw angle bracket': good.replace('"ok"', '"<b>"'),
     'an entity only HTML defines': good.replace('"ok"', '"A&nbsp;B"'),
-    'a control character': good.replace('"ok"', '"AB"'),
+    'a control character': good.replace('"ok"', '"A\u0001B"'),
     'the wrong root': good.replace(/mxlibrary/g, 'mxfile'),
     'a second element': `${good}<extra/>`,
     'a truncated payload': good.replace(/base64,[^"]+/, (s) => s.slice(0, -3)),
@@ -860,7 +860,7 @@ test('an SVG payload must be well-formed XML with an <svg> root in the SVG names
     'a second root': `<svg ${NS}/><svg ${NS}/>`,
     'an XML declaration after a comment': `<!-- c --><?xml version="1.0"?><svg ${NS}/>`,
     'a reference to a character XML forbids': `<svg ${NS}><text>&#0;</text></svg>`,
-    'a control character': `<svg ${NS}></svg>`,
+    'a control character': `<svg ${NS}>\u0001</svg>`,
     'no SVG namespace': '<svg/>',
     'a root that is not <svg>': '<html xmlns="http://www.w3.org/1999/xhtml"/>',
     'a parameter entity': `<!DOCTYPE svg [<!ENTITY % p "x">]><svg ${NS}/>`,
@@ -1658,6 +1658,33 @@ test('recommendedSize is the library cell of every committed mark (#80)', () => 
   assert(node('find-icon.mjs', ['--cell', restate.id]).includes('width="78" height="69"'), '--cell places Restate at its cell');
   const hit = JSON.parse(node('find-icon.mjs', ['restate'])).matches[0].variants[0];
   eq(hit.recommended, '78x69', 'a search recommends Restate at its cell');
+});
+
+// `redis --cell` dropped the flag and printed the search: the payload flags
+// worked only first, on an exact id, and an agent mid-edit built a scratch spec
+// to get the cell (#367).
+test('--cell, --style and --data work anywhere, on an id or a confident name (#367)', () => {
+  const run = (args) => spawnSync(process.execPath, [join(SCRIPTS, 'find-icon.mjs'), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const byId = run(['--cell', 'databases/redis']);
+  eq(byId.status, 0, 'by id');
+  assert(byId.stdout.startsWith('<mxCell id="icon-databases-redis"'), byId.stdout.slice(0, 80));
+  eq(run(['redis', '--cell']).stdout, byId.stdout, 'a name after the flag gives the same cell');
+  eq(run(['--cell', 'redis']).stdout, byId.stdout, 'and a name after it');
+  const placed = run(['Redis', '--cell', '--label', 'Redis Cache', '--x', '441', '--y', '340']).stdout;
+  assert(placed.includes('value="Redis Cache"') && placed.includes('x="441" y="340"'), 'value flags are not read as the name');
+  eq(run(['kafka', '--style']).stdout, run(['--style', 'streaming-orchestration/apachekafka']).stdout, 'style by name');
+  assert(run(['redis', '--data']).stdout.startsWith('data:image/'), 'data by name');
+
+  const tie = run(['monitor', '--cell']);
+  eq(tie.status, 1, 'an open tie is refused');
+  eq(tie.stdout, '', 'with no bytes on stdout');
+  const choices = JSON.parse(tie.stderr.split('\n')[0]).choices.map((c) => c.id);
+  assert(choices.includes('primitives/monitor') && choices.includes('azure/monitor'), `and its choices on stderr: ${choices}`);
+
+  const none = run(['--data', 'data-platforms/deltalake']);
+  eq(none.status, 1, 'an on-demand mark has no bytes to print');
+  assert(none.stderr.includes('ships no bytes') && !none.stderr.includes('    at '), 'and says why, without a stack');
+  eq(run(['--cell']).status, 2, 'nothing to print');
 });
 
 test('both SVG and PNG entries decode with real dimensions', () => {
@@ -4611,7 +4638,9 @@ test('validate warns on a plain box named like a boundary, and on one named for 
     ...accounts.map(([id, label], i) => ({ id, kind: 'box', label, col: i * 2, row: 0 })),
     { id: 'db', label: 'PostgreSQL', col: 0, row: 2 }, { id: 'mem', label: 'Memory', col: 2, row: 2 },
     { id: 'svc', label: 'Account service', col: 4, row: 2 },
-  ], edges: [{ from: 'svc', to: 'db' }] };
+    // The product warning needs a page that already draws icons (#366).
+    { id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service', label: 'Queue', col: 6, row: 2 },
+  ], edges: [{ from: 'svc', to: 'db' }, { from: 'svc', to: 'q' }] };
   mkdirSync(TMP, { recursive: true });
   const file = join(TMP, 'p341.drawio');
   const built = builder.buildDiagram(spec);
@@ -4635,6 +4664,32 @@ test('validate warns on a plain box named like a boundary, and on one named for 
   for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.drawio'))) {
     eq(validator.validateFile(join(SKILL, 'assets', 'templates', f)).warnings.filter((w) => /named like a boundary|bundled mark/.test(w)).join(), '', f);
   }
+});
+
+// The edit eval's fixture: three plain rounded boxes, no icon. The agent added
+// Redis as a matching plain box, the product warning fired, and it swapped in
+// the mark in 6 runs of 6 (#366). A plain page gets a note that says both.
+test('a page that draws no icon gets a note, not a warning, for a plain product box (#366)', () => {
+  const box = (id, label, x) => `<mxCell id="${id}" value="${label}" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#9E9E9E;" vertex="1" parent="1">`
+    + `<mxGeometry x="${x}" y="200" width="160" height="60" as="geometry"/></mxCell>`;
+  const page = (cells) => '<mxfile><diagram name="Checkout" id="p1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + `${cells}<mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="api" target="redis">`
+    + '<mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>';
+  mkdirSync(TMP, { recursive: true });
+  const file = join(TMP, 'p366.drawio');
+  writeFileSync(file, page(box('web', 'Web App', 80) + box('api', 'Checkout API', 400) + box('redis', 'Redis', 720)));
+  let r = validator.validateFile(file);
+  eq(r.warnings.filter((w) => w.includes('bundled mark')).join(), '', 'no warning on a page of plain boxes');
+  eq(r.notes.filter((n) => n.includes('bundled mark')).join(), 'page 0: draws no icons; 1 plain box names a product with a bundled mark: '
+    + 'redis (databases/redis). Building it new, give each "kind": "icon"; editing it, keep them plain to match the file', 'the note names both');
+  eq(r.info.pages[0].productBoxes, 0, 'not counted as a defect');
+
+  const icon = builder.buildDiagram({ nodes: [{ id: 'q', kind: 'icon', icon: 'aws/amazon-simple-queue-service' }] }).xml
+    .match(/<mxCell id="q"[\s\S]*?<\/mxCell>/)[0];
+  writeFileSync(file, page(box('web', 'Web App', 80) + box('api', 'Checkout API', 400) + box('redis', 'Redis', 720) + icon));
+  r = validator.validateFile(file);
+  eq(r.warnings.filter((w) => w.includes('bundled mark')).length, 1, 'a page that draws an icon still warns');
+  eq(r.notes.filter((n) => n.includes('bundled mark')).join(), '', 'and has no note');
 });
 
 // A box of product names drew as text while the report said nothing, and the

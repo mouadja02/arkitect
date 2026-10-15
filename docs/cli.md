@@ -109,7 +109,7 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground` |
 | `placeholders` | Excalidraw: each empty slot drawn, and why |
 | `logos` | Draw.io: the fetched logos a build embedded |
-| `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
+| `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
 | `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341) |
 | `crossings` | Excalidraw: an edge through a node it doesn't connect |
 | `notes` | an icon no edge touches, and similar things worth a look. First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |

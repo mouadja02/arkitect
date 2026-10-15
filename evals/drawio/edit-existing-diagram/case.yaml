@@ -29,11 +29,13 @@ graders:
     arm: with-only
 
   # A diagram can run to megabytes of embedded base64; the analyzer exists so
-  # the whole file never has to enter the context window.
+  # the whole file never has to enter the context window. Through the script or
+  # the dispatcher: the pattern is hooks/diagram-read.mjs's own, which counts
+  # both as analyzed, and a test keeps the two identical (#368).
   - type: tool_used
     name: analyzed-instead-of-reading
     tool: Bash
-    input_match: analyze-drawio
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
 
   # The edit lands in the same file, keeping everything that was there.
   - type: regex
@@ -48,6 +50,15 @@ graders:
     name: followed-the-file-not-the-style-guide
     target: { source: file, path: ./eval-input/checkout.drawio }
     pattern: 'rounded=0;whiteSpace=wrap'
+    match: not_contains
+
+  # The file draws no icon, so neither does the edit. On 2.3.1 the product-box
+  # warning made the agent swap its matching Redis box for the mark in 6 runs
+  # of 6, and the wording a report uses cannot tell that apart (#366).
+  - type: regex
+    name: no-icon-in-a-file-of-plain-boxes
+    target: { source: file, path: ./eval-input/checkout.drawio }
+    pattern: 'shape=image|image=data:'
     match: not_contains
 
   # Never overwrite blind: a timestamped sibling backup is written first.
@@ -70,18 +81,28 @@ graders:
     target: last_message
     pattern: '[Rr]edis'
 
+  # Once the agent kept Redis plain (#366), its reports said so as "to match
+  # the file", "to match the rest of the file" and "to match the other three
+  # plain boxes", and only "existing ... style" passed: 1 run of 4. Then "the
+  # existing three boxes are plain, so I matched them" and "the existing file
+  # uses plain boxes and I followed it". Whether it did is the file graders'
+  # question; this one asks only that the report says so (#368).
   - type: regex
     name: says-it-matched-the-file
     target: last_message
-    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)'
+    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)|\b[Mm]atch\w*\s+(the\s+)?(rest\s+of\s+the\s+)?(file|existing|original|other)\b|\b[Ff]ollow\w*\s+(the\s+)?(existing\s+)?file\b|\b(file|existing|original)\b[^.\n]{0,60}\b(match|follow)\w*'
 
   # "validates successfully" is a result as much as PASS is; the a1bc464 batch
   # failed an accurate report on it, and the def24b8 batch one that read
-  # "**Validation** ✓ Passes".
+  # "**Validation** ✓ Passes". The 2.3.1 full suite failed one that named the
+  # script between the two: "`validate-drawio.mjs --page 0` passes", and the
+  # rerun ones with words after it: "`validate-drawio.mjs` on page 0 passed",
+  # "... on `eval-input/checkout.drawio` passed". So: a pass on the line that
+  # names validation, unless that line also says something failed (#368).
   - type: regex
     name: reports-the-validation
     target: last_message
-    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b'
+    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b|[Vv]alidat(?![^\n]{0,80}?\bfail)[^\n]{0,80}?\b(pass(es|ed)?|succeed\w*)\b'
 
   - type: llm
     name: reports-the-edit-honestly
