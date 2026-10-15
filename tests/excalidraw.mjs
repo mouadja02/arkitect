@@ -13,7 +13,7 @@
 // would stop testing the thing that actually breaks.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync, linkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -4506,6 +4506,102 @@ test('Excalidraw analyze and build refuse an --out that names their input or the
   eq(readdirSync(dir).length, 2, 'no backup and no stray file');
   eq(arkitect('build', spec, '--out', join(dir, 'b.excalidraw'), '--defaults').status, 0, 'a .excalidraw still builds');
   eq(arkitect('analyze', scene, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
+});
+
+// A hard link to the input has a path of its own, so the #349 guard let
+// `analyze a.excalidraw --out summary.json` replace the scene through it (#391).
+test('Excalidraw analyze and build refuse an --out that is another name for their input (#391)', () => {
+  const dir = join(TMP, 'out-alias');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const scene = join(dir, 'a.excalidraw');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(scene, readFileSync(STARTER));
+  writeFileSync(spec, readFileSync(STARTER_SPEC));
+  linkSync(scene, join(dir, 'summary.json'));
+  linkSync(spec, join(dir, 'spec-alias.excalidraw'));
+  const before = { [scene]: readFileSync(scene, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const args of [['analyze', scene, '--out', join(dir, 'summary.json')], ['build', spec, '--out', join(dir, 'spec-alias.excalidraw')]]) {
+    const r = arkitect(...args);
+    eq(r.status, 2, `${args[0]} through a hard link: usage status`);
+    assert(/is the file this reads/.test(r.stderr) && !hasStack(r), `${args[0]}: said "${r.stderr.trim().split('\n')[0]}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup');
+  eq(arkitect('analyze', scene, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
+});
+
+// Run from the skill folder, as the Codex skill used to say, a relative --out
+// wrote the user's scene inside the install an update replaces (#377).
+test('Excalidraw build refuses an --out inside the Arkitect install, unless --defaults (#377)', () => {
+  const name = 'zz-install-guard';
+  const spec = join(TMP, `${name}.spec.json`);
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  const run = (...extra) => spawnSync(process.execPath, ['scripts/build-diagram.mjs', spec, '--out', `${name}.excalidraw`, ...extra],
+    { cwd: SKILL, encoding: 'utf8' });
+  const strays = () => readdirSync(SKILL).filter((f) => f.startsWith(name));
+  try {
+    const r = run();
+    eq(r.status, 2, 'usage status');
+    assert(/inside the Arkitect install/.test(r.stderr) && !hasStack(r), `said "${r.stderr.trim().split('\n')[0]}"`);
+    eq(strays().length, 0, 'nothing written');
+    eq(run('--defaults').status, 0, 'the template rebuild, with --defaults, still writes');
+  } finally {
+    for (const f of strays()) rmSync(join(SKILL, f), { force: true });
+  }
+  eq(arkitect('build', spec, '--out', join(TMP, `${name}.excalidraw`)).status, 0, 'the suite\'s own scratch folder still builds');
+});
+
+// An unknown accent, route or routing was drawn as the default in silence, and
+// an unknown strokeStyle or fillStyle went straight into the scene (#380).
+test('an unknown style or route value is listed under unknownKinds and drawn as the default (#380)', () => {
+  const base = () => ({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b' }] });
+  const plain = builder.buildDiagram(base(), { seed: 1 }).scene;
+  for (const [part, key, value, drawnAs] of [
+    ['nodes', 'strokeStyle', 'wavy', 'solid'], ['nodes', 'fillStyle', 'polka', 'solid'], ['nodes', 'accent', 'purple', 'black'],
+    ['edges', 'strokeStyle', 'wavy', 'solid'], ['edges', 'route', 'orthogonal', 'auto'], ['edges', 'routing', 'curvy', 'elbow'],
+    ['boundaries', 'color', 'purple', 'grey'], ['boundaries', 'strokeStyle', 'wavy', 'dashed'],
+  ]) {
+    const spec = base();
+    spec.boundaries = [{ id: 'g', label: 'G' }];
+    spec.nodes[0].parent = 'g';
+    spec[part][0][key] = value;
+    const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+    const entry = report.unknownKinds.find((u) => u.field === `${part}[0].${key}`);
+    assert(entry && entry.value === value && entry.drawnAs === drawnAs && entry.valid.length, `${part}[0].${key}: ${JSON.stringify(report.unknownKinds)}`);
+    assert(!scene.elements.some((el) => el.strokeStyle === value || el.fillStyle === value), `${key}: "${value}" written into the scene`);
+    eq(validator.validateScene(scene).ok, true, `${part}[0].${key}: still validates`);
+  }
+  eq(JSON.stringify(builder.buildDiagram({ ...base(), layout: { route: 'orthogonal' } }, { seed: 1 }).report.unknownKinds.map((u) => u.field)),
+    '["layout.route"]', 'layout.route too');
+  eq(builder.buildDiagram({ ...base(), nodes: base().nodes.map((n) => ({ ...n, accent: '#123abc', strokeStyle: 'dashed', fillStyle: 'hachure' })) },
+    { seed: 1 }).report.unknownKinds.length, 0, 'known values report nothing');
+
+  plain.elements[0].strokeStyle = 'wavy';
+  assert(validator.validateScene(plain).warnings.some((w) => /strokeStyle "wavy"/.test(w)), 'validate warns on strokeStyle "wavy"');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const template = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'));
+    eq(JSON.stringify(builder.buildDiagram(template, { seed: 1 }).report.unknownKinds), '[]', `${file} has no unknown value`);
+  }
+});
+
+// `layout.colPich` moved nothing and was named nowhere (#393).
+test('unknownFields names an unknown key inside layout and style (#393)', () => {
+  const typo = builder.buildDiagram({ layout: { colPich: 1000 }, style: { nodeWidht: 3 }, nodes: [{ id: 'a', col: 1 }] }, { seed: 1 }).report.unknownFields;
+  eq(JSON.stringify(typo.map(({ field, value }) => [field, value])), '[["layout.colPich",1000],["style.nodeWidht",3]]', 'each typo, with its value');
+  assert(typo[0].valid.includes('colPitch') && typo[1].valid.includes('nodeWidth'), 'with the keys each takes');
+  eq(builder.buildDiagram({ layout: { colPitch: 1000, route: 'avoid' }, style: { nodeWidth: 200, _note: 'x' }, nodes: [{ id: 'a' }] }, { seed: 1 })
+    .report.unknownFields.length, 0, 'the right keys, and a comment, report nothing');
+});
+
+// A remote file was reported twice, as unreadable and as remote (#379).
+test('validate reports a remote image file once (#379)', () => {
+  const { scene } = builder.buildDiagram({ nodes: [{ id: 'a', icon: 'postgres' }] }, { seed: 1 });
+  const id = Object.keys(scene.files)[0];
+  assert(id, 'the icon embeds a file');
+  scene.files[id].dataURL = 'https://example.com/a.svg';
+  const r = validator.validateScene(scene);
+  eq(JSON.stringify(r.errors.filter((e) => e.includes(id))), JSON.stringify([`file "${id}" is a remote URL; the scene will not be portable`]), 'one error');
 });
 
 cleanTestIcons();

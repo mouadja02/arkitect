@@ -9,7 +9,7 @@
 // skip rather than fail, so the suite still runs on a clean checkout.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync, linkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -3955,6 +3955,99 @@ test('analyze and build refuse an --out that names their input or the wrong kind
   eq(readdirSync(dir).length, 2, 'no backup and no stray file');
   eq(drawioCli('build', spec, '--out', join(dir, 'b.drawio'), '--defaults').status, 0, 'a .drawio still builds');
   eq(drawioCli('analyze', diagram, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
+});
+
+// A hard link to the input has a path of its own, so the #349 guard let
+// `analyze a.drawio --out summary.json` replace the diagram through it (#391).
+test('analyze and build refuse an --out that is another name for their input (#391)', () => {
+  const dir = join(TMP, 'out-alias');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const diagram = join(dir, 'a.drawio');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(diagram, readFileSync(ARGS_STARTER));
+  writeFileSync(spec, readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json')));
+  linkSync(diagram, join(dir, 'summary.json'));
+  linkSync(spec, join(dir, 'spec-alias.drawio'));
+  const before = { [diagram]: readFileSync(diagram, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const args of [['analyze', diagram, '--out', join(dir, 'summary.json')], ['build', spec, '--out', join(dir, 'spec-alias.drawio')]]) {
+    const r = drawioCli(...args);
+    eq(r.status, 2, `${args[0]} through a hard link: usage status`);
+    assert(/is the file this reads/.test(r.stderr) && !hasStack(r), `${args[0]}: said "${stderrLine(r)}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup');
+  eq(drawioCli('analyze', diagram, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
+});
+
+// Run from the skill folder, as the Codex skill used to say, a relative --out
+// wrote the user's diagram inside the install an update replaces (#377).
+test('build refuses an --out inside the Arkitect install, unless --defaults (#377)', () => {
+  const name = 'zz-install-guard';
+  const spec = join(TMP, `${name}.spec.json`);
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  const run = (...extra) => spawnSync(process.execPath, ['scripts/build-diagram.mjs', spec, '--out', `${name}.drawio`, ...extra],
+    { cwd: SKILL, encoding: 'utf8' });
+  const strays = () => readdirSync(SKILL).filter((f) => f.startsWith(name));
+  try {
+    const r = run();
+    eq(r.status, 2, 'usage status');
+    assert(/inside the Arkitect install/.test(r.stderr) && !hasStack(r), `said "${stderrLine(r)}"`);
+    eq(strays().length, 0, 'nothing written');
+    eq(run('--defaults').status, 0, 'the template rebuild, with --defaults, still writes');
+  } finally {
+    for (const f of strays()) rmSync(join(SKILL, f), { force: true });
+  }
+  eq(drawioCli('build', spec, '--out', join(TMP, `${name}.drawio`)).status, 0, 'the suite\'s own scratch folder still builds');
+});
+
+// A hand edit or MCP set_page that links an image passed with a warning, while
+// editing.md says it fails validation, as Excalidraw's does (#379).
+test('validate fails an image linked by URL, and passes Draw.io\'s own img/ artwork (#379)', () => {
+  const built = builder.buildDiagram({ nodes: [{ id: 'fn', icon: 'lambda' }] }).xml;
+  const check = (name, image) => {
+    const file = join(TMP, `linked-${name}.drawio`);
+    writeFileSync(file, image ? built.replace(/image=data:[^;"]*/, `image=${image}`) : built);
+    return validator.validateFile(file);
+  };
+  const embedded = check('embedded', null);
+  assert(embedded.ok && !embedded.warnings.length, `embedded: ${embedded.errors} ${embedded.warnings}`);
+  for (const url of ['https://example.com/worker.svg', 'http://example.com/a.png', '//example.com/a.png', 'file:///C:/a.png']) {
+    const r = check('url', url);
+    assert(!r.ok && r.errors.some((e) => /cell "fn" links its image to a URL/.test(e)), `${url}: ${r.errors}`);
+  }
+  const app = check('app', 'img/lib/aws/compute/lambda.svg');
+  assert(app.ok && !app.warnings.some((w) => /external image/.test(w)), `img/lib: ${app.errors} ${app.warnings}`);
+});
+
+// Every box wraps, and wrapping breaks at spaces and hyphens, so a code-style
+// name ran out of both sides of its box and passed (#381).
+test('validate warns on a word too wide to wrap inside its box (#381)', () => {
+  const check = (label) => {
+    const file = join(TMP, 'wide-word.drawio');
+    writeFileSync(file, builder.buildDiagram({ nodes: [{ id: 'a', label }, { id: 'b', label: 'B', col: 1 }] }).xml);
+    return validator.validateFile(file).warnings.filter((w) => /cannot wrap/.test(w));
+  };
+  for (const label of ['OrdersReconciliationNightlyBatchWorker', 'orders_reconciliation_nightly_batch_worker']) {
+    const w = check(label);
+    assert(w.length === 1 && /cell "a"/.test(w[0]) && !w[0].includes(label), `${label}: ${w}`);
+  }
+  for (const label of ['orders-reconciliation-nightly-batch-worker', 'Reconciliation worker']) eq(check(label).length, 0, `${label} wraps`);
+});
+
+// `layout.colPich` moved nothing and was named nowhere (#393).
+test('unknownFields names an unknown key inside layout and context, and nothing a template uses (#393)', () => {
+  const typo = builder.buildDiagram({ layout: { colPich: 1000 }, nodes: [{ id: 'a', col: 1 }] }).report.unknownFields;
+  eq(JSON.stringify(typo.map(({ field, value }) => [field, value])), '[["layout.colPich",1000]]', 'the typo, with its value');
+  assert(typo[0].valid.includes('colPitch'), 'with the keys layout takes');
+  eq(builder.buildDiagram({ layout: { colPitch: 1000, _comment: 'x' }, nodes: [{ id: 'a' }] }).report.unknownFields.length, 0,
+    'the right key, and a comment, report nothing');
+  const pages = builder.unknownFields({ context: { pakcs: ['aws'] }, layout: { rowPitch: 200 }, pages: [{ name: 'A', nodes: [] }] });
+  eq(JSON.stringify(pages.map((f) => f.field)), '["context.pakcs"]', 'a multi-page spec\'s shared context');
+  const specPath = join(TMP, 'unknown-layout.spec.json');
+  writeFileSync(specPath, JSON.stringify({ layout: { colPich: 1000 }, nodes: [{ id: 'a' }] }));
+  const out = JSON.parse(drawioCli('build', specPath, '--out', join(TMP, 'unknown-layout.drawio')).stdout);
+  eq(out.unknownFields[0]?.field, 'layout.colPich', 'the CLI report names it');
 });
 
 // ------------------------------------------------------------- spec checks (#36)

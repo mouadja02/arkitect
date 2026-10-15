@@ -11,6 +11,15 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- `analyze --out` and `build --out` refuse a hard link or symlink to the file they read, as they already refused the same path. `analyze a.drawio --out summary.json`, through a hard link, replaced the diagram with its summary, exit 0 and no backup (#391).
+- Both builders refuse, exit 2 and nothing written, an `--out` inside the Arkitect install, which the next plugin or npm update replaces; `--defaults`, which every template rebuild passes, still writes there. The Codex skill said to run a guide's commands from the skill folder, where a relative `--out` landed inside the install; it now says to run them from the project folder. A build that wrote into the install now exits 2 (#377).
+- Draw.io `validate` fails an image linked by URL (`http:`, `https:`, `//`, `file:`) instead of warning, as `references/editing.md` already said and Excalidraw's validator already did; Draw.io's own `img/…` artwork passes. Excalidraw's validator names a remote image file once, not also as unreadable. A file that passed with that warning now fails (#379).
+- Draw.io `validate` warns when a wrapped label holds a word wider than its box. Wrapping breaks at spaces and hyphens, so a CamelCase or snake_case name ran out of both sides of the box and passed (#381).
+- Both build reports list an unknown key inside `layout` under `unknownFields`, and Draw.io's inside `context` and Excalidraw's inside `style` too. `layout.colPich` changed no spacing and was named nowhere (#393).
+- The Excalidraw build report lists an unknown `accent`, boundary `color`, `strokeStyle`, `fillStyle`, `route`, `layout.route` or `routing` under `unknownKinds`, with what it was drawn as. An unknown `strokeStyle` or `fillStyle` used to be written into the scene as it was; the default is written now. `validate` warns on an element whose `strokeStyle` or `fillStyle` Excalidraw does not know. A spec whose `route` was unknown now draws the `auto` route in place of an elbow (#380).
+
 ## [2.3.2] — 2026-10-15
 
 ### Added

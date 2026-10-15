@@ -20,6 +20,9 @@ import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.
 import { boundaryWord } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 
 const MAX_COORD = 200000;
+// The values Excalidraw draws; the builder reports anything else (#380).
+export const STROKE_STYLES = ['solid', 'dashed', 'dotted'];
+export const FILL_STYLES = ['hachure', 'cross-hatch', 'solid', 'zigzag'];
 
 const KNOWN_TYPES = new Set([
   'rectangle', 'ellipse', 'diamond', 'arrow', 'line', 'text', 'image',
@@ -168,6 +171,13 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     if (Math.abs(b.x) > MAX_COORD || Math.abs(b.y) > MAX_COORD) {
       warnings.push(`element ${who(el.id)} sits outside +/-${MAX_COORD}px`);
     }
+    // A value outside the format's own sets, written by hand or by a builder
+    // that copied it through (#380).
+    for (const [key, valid] of [['strokeStyle', STROKE_STYLES], ['fillStyle', FILL_STYLES]]) {
+      if (el[key] != null && !valid.includes(el[key])) {
+        warnings.push(`element ${who(el.id)} has ${key} "${el[key]}", which Excalidraw does not know; use ${valid.join(', ')}`);
+      }
+    }
   }
 
   // ------------------------------------------------------------ bindings
@@ -258,11 +268,13 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     referenced.add(el.fileId);
     const file = files[el.fileId];
     if (!file) { errors.push(`image "${el.id}" references file "${el.fileId}" which is not in files`); continue; }
-    const decoded = decodeDataUrl(file.dataURL);
-    if (!decoded || !decoded.bytes.length) errors.push(`file "${el.fileId}" has an unreadable dataURL`);
+    // A remote URL is said once, as what it is, not also as unreadable (#379).
     if (typeof file.dataURL === 'string' && !file.dataURL.startsWith('data:')) {
       errors.push(`file "${el.fileId}" is a remote URL; the scene will not be portable`);
+      continue;
     }
+    const decoded = decodeDataUrl(file.dataURL);
+    if (!decoded || !decoded.bytes.length) errors.push(`file "${el.fileId}" has an unreadable dataURL`);
   }
   for (const id of Object.keys(files)) {
     if (!referenced.has(id)) warnings.push(`file "${id}" is embedded but no element uses it`);

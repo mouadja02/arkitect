@@ -359,6 +359,9 @@ test('the Codex reading route reaches one engine guide, not the full contract as
     'run only when the user asks', '`${CLAUDE_PLUGIN_ROOT}`']) {
     assert(skill.includes(rule), `the Codex skill dropped: ${rule}`);
   }
+  // Run from the guide's folder, a relative --out lands inside the install (#377).
+  assert(!/commands from that\s+folder/.test(skill) && /from the project folder/.test(skill),
+    'the Codex skill tells the agent to run commands from the install folder');
   const guides = ['arkitect-drawio', 'arkitect-excalidraw'].map((g) => join(ROOT, 'skills', g, 'SKILL.md'));
   for (const g of guides) assert(skill.includes(`\`${g}\``), `the Codex skill does not name ${g}`);
 

@@ -90,6 +90,9 @@ const PAGE_FIELDS = ['name', 'id', 'title', 'subtitle', 'titleColor', 'boundarie
 // templates use `_comment`, and agents copy them.
 const SPEC_FIELDS = ['pages', 'layout', 'context', 'page', 'pageId', 'title', 'subtitle', 'titleColor',
   'boundaries', 'nodes', 'edges', 'legend', 'legendX', 'legendY'];
+// What the spec's shared `layout` and `context` may carry (#393).
+const LAYOUT_FIELDS = ['originX', 'originY', 'colPitch', 'rowPitch'];
+const CONTEXT_FIELDS = ['packs'];
 const SPEC_HINTS = {
   edge: 'not a field: connectors go in `edges`',
   node: 'not a field: nodes go in `nodes`',
@@ -121,6 +124,10 @@ export function unknownFields(spec) {
       field: key, value: spec[key], valid: SPEC_FIELDS,
       ...(SPEC_HINTS[key] ? { hint: SPEC_HINTS[key] } : {}),
     }));
+  // `layout.colPich` moved nothing and was named nowhere (#393).
+  for (const [part, valid] of [['layout', LAYOUT_FIELDS], ['context', CONTEXT_FIELDS]]) {
+    if (isObject(spec[part])) out.push(...unknownKeys(spec[part], part, valid).filter(({ field }) => !field.startsWith(`${part}._`)));
+  }
   for (const [page, at] of pages) {
     if (!isObject(page)) continue;
     if (at) out.push(...unknownKeys(page, at, PAGE_FIELDS));
@@ -826,7 +833,7 @@ function main(argv) {
   if (!options.out) exitUsage('--out <file.drawio> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
-  const outBad = outProblem(out, { inputs: [specPath], exts: ['.drawio', '.dio', '.xml'] });
+  const outBad = outProblem(out, { inputs: [specPath], exts: ['.drawio', '.dio', '.xml'], install: !options.defaults });
   if (outBad) exitUsage(outBad, USAGE);
   const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {
