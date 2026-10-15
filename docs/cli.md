@@ -65,7 +65,7 @@ arkitect excalidraw build spec.json --out docs/arch.excalidraw --seed 7   # same
 arkitect excalidraw build --print-style
 arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders
-arkitect excalidraw analyze docs/arch.excalidraw --cells
+arkitect excalidraw analyze docs/arch.excalidraw --cells   # a row per spec entry; --all, per element
 arkitect excalidraw backup docs/arch.excalidraw
 arkitect excalidraw learn --sources <files> --merge
 arkitect excalidraw findings --derive

@@ -4458,6 +4458,45 @@ test('a made icon and an installed library live in the store, and ones from the 
   }
 });
 
+// One object per element, every stroke of a library icon included, made
+// --cells 140 KB on the 48-node template: the route the read hook names in
+// place of reading the file (#385).
+test('analyze --cells prints one row per spec entry, every element only with --all (#385)', () => {
+  const template = join(SKILL, 'assets', 'templates', 'aws-data-platform.excalidraw');
+  const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8'));
+  const run = (file, ...args) => spawnSync(process.execPath, [join(SCRIPTS, 'analyze-excalidraw.mjs'), file, ...args], { encoding: 'utf8' });
+  const cells = run(template, '--cells');
+  eq(cells.status, 0, cells.stderr);
+  assert(cells.stdout.length < 8192, `the table is ${cells.stdout.length} B`);
+  const rows = cells.stdout.trim().split('\n').filter((line) => !line.startsWith('#'));
+  const named = (part, id) => rows.filter((r) => r.startsWith(`${part}:${id} `)).length;
+  for (const n of spec.nodes) eq(named('node', n.id), 1, `one row for node ${n.id}`);
+  for (const b of spec.boundaries ?? []) eq(named('boundary', b.id), 1, `one row for boundary ${b.id}`);
+  const scene = JSON.parse(readFileSync(template, 'utf8'));
+  const edges = new Set(scene.elements.map((el) => el.customData?.arkitect?.edge).filter(Boolean));
+  eq(rows.filter((r) => r.startsWith('edge:')).length, edges.size, 'one row per edge');
+  const oltp = scene.elements.filter((el) => el.customData?.arkitect?.node === 'oltp' && !el.isDeleted);
+  const row = rows.find((r) => r.startsWith('node:oltp '));
+  assert(row.endsWith(` (${oltp.length})`), `the row counts its elements: ${row}`);
+  assert(/^node:oltp \w+ [\w-]{8} -?\d+,-?\d+ \d+x\d+ \(\d+\)$/.test(row), `type, short id, box, count: ${row}`);
+  const all = run(template, '--cells', '--all');
+  eq(JSON.parse(all.stdout).length, scene.elements.filter((el) => !el.isDeleted).length, '--all keeps a row per element');
+  const bare = run(template, '--all');
+  eq(bare.status, 2, '--all needs --cells');
+
+  // A scene no spec drew: one row per outermost group, else per element.
+  const foreign = { type: 'excalidraw', version: 2, elements: [
+    { ...core.rectangle({ x: 0, y: 0, width: 100, height: 50 }), groupIds: ['inner', 'outer'] },
+    { ...core.rectangle({ x: 120, y: 0, width: 40, height: 40 }), groupIds: ['outer'] },
+    core.rectangle({ x: 300, y: 0, width: 60, height: 60 }),
+  ], files: {} };
+  const file = join(TMP, 'foreign-cells.excalidraw');
+  writeFileSync(file, JSON.stringify(foreign));
+  const lines = run(file, '--cells').stdout.trim().split('\n').slice(1);
+  eq(lines.length, 2, `one row for the group, one for the loose shape: ${lines.join(' | ')}`);
+  assert(lines[0].startsWith('- rectangle ') && lines[0].endsWith(' 0,0 160x50 (2)'), lines[0]);
+});
+
 // --cells prints no text and shortens ids to eight characters, so a named
 // component had no route to the id an edit needs (#266).
 test('analyze --find returns the full id of the shape a label names, and an edit can bind to it (#266)', () => {
