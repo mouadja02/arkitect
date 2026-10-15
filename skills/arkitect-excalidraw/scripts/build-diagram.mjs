@@ -1432,7 +1432,7 @@ function main(argv) {
   if (!options.out) exitUsage('--out <file.excalidraw> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
-  const outBad = outProblem(out, { inputs: [specPath], exts: ['.excalidraw', '.json'] });
+  const outBad = outProblem(out, { inputs: [specPath], exts: ['.excalidraw', '.json'], install: !defaults });
   if (outBad) exitUsage(outBad, USAGE);
   const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {

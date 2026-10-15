@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Fixed
 
 - `analyze --out` and `build --out` refuse a hard link or symlink to the file they read, as they already refused the same path. `analyze a.drawio --out summary.json`, through a hard link, replaced the diagram with its summary, exit 0 and no backup (#391).
+- Both builders refuse, exit 2 and nothing written, an `--out` inside the Arkitect install, which the next plugin or npm update replaces; `--defaults`, which every template rebuild passes, still writes there. The Codex skill said to run a guide's commands from the skill folder, where a relative `--out` landed inside the install; it now says to run them from the project folder. A build that wrote into the install now exits 2 (#377).
 
 ## [2.3.2] — 2026-10-15
 

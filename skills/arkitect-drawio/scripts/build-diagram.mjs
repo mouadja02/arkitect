@@ -826,7 +826,7 @@ function main(argv) {
   if (!options.out) exitUsage('--out <file.drawio> is required', USAGE);
   const [specPath] = positionals;
   const { out } = options;
-  const outBad = outProblem(out, { inputs: [specPath], exts: ['.drawio', '.dio', '.xml'] });
+  const outBad = outProblem(out, { inputs: [specPath], exts: ['.drawio', '.dio', '.xml'], install: !options.defaults });
   if (outBad) exitUsage(outBad, USAGE);
   const keep = options['keep-backups'] ?? String(DEFAULT_KEEP_BACKUPS);
   if (!/^\d+$/.test(keep) || !Number.isSafeInteger(Number(keep))) {

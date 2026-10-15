@@ -4531,6 +4531,27 @@ test('Excalidraw analyze and build refuse an --out that is another name for thei
   eq(arkitect('analyze', scene, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
 });
 
+// Run from the skill folder, as the Codex skill used to say, a relative --out
+// wrote the user's scene inside the install an update replaces (#377).
+test('Excalidraw build refuses an --out inside the Arkitect install, unless --defaults (#377)', () => {
+  const name = 'zz-install-guard';
+  const spec = join(TMP, `${name}.spec.json`);
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'a', label: 'A' }] }));
+  const run = (...extra) => spawnSync(process.execPath, ['scripts/build-diagram.mjs', spec, '--out', `${name}.excalidraw`, ...extra],
+    { cwd: SKILL, encoding: 'utf8' });
+  const strays = () => readdirSync(SKILL).filter((f) => f.startsWith(name));
+  try {
+    const r = run();
+    eq(r.status, 2, 'usage status');
+    assert(/inside the Arkitect install/.test(r.stderr) && !hasStack(r), `said "${r.stderr.trim().split('\n')[0]}"`);
+    eq(strays().length, 0, 'nothing written');
+    eq(run('--defaults').status, 0, 'the template rebuild, with --defaults, still writes');
+  } finally {
+    for (const f of strays()) rmSync(join(SKILL, f), { force: true });
+  }
+  eq(arkitect('build', spec, '--out', join(TMP, `${name}.excalidraw`)).status, 0, 'the suite\'s own scratch folder still builds');
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');

@@ -95,8 +95,9 @@ workflow, so read nothing else first.`)}
 - Excalidraw: \`${join(root, 'skills', 'arkitect-excalidraw', 'SKILL.md')}\`
 
 Every path in a guide is relative to its own folder, and \`\${CLAUDE_PLUGIN_ROOT}\`
-in a guide means \`${root}\`. Run its \`node scripts/...\` commands from that
-folder, or use the dispatcher above from anywhere.
+in a guide means \`${root}\`. Run its commands from the project folder, with
+the dispatcher above or the script's full path; never from the guide's folder,
+where a relative \`--out\` lands inside the install and an update replaces it.
 
 The learning and apply skills (\`learn-drawio-style\`, \`learn-excalidraw-style\`,
 \`apply-drawio-style\`, \`apply-excalidraw-style\`) run only when the user asks

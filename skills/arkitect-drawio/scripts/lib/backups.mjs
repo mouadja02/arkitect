@@ -1,7 +1,8 @@
 // Shared backup naming and retention for both diagram engines.
 
-import { existsSync, copyFileSync, readFileSync, readdirSync, statSync, unlinkSync, constants } from 'node:fs';
-import { dirname, join, basename, extname, resolve } from 'node:path';
+import { existsSync, copyFileSync, readFileSync, readdirSync, realpathSync, statSync, unlinkSync, constants } from 'node:fs';
+import { dirname, join, basename, extname, isAbsolute, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // A backup is created exclusively and never replaces an earlier one. Two updates
 // inside the same second get `-1`, `-2`, ... instead of the second copy
@@ -95,8 +96,8 @@ export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
 // write a diagram over its own spec (#349). `exts` is what the file must end
 // in, `refuse` what it may not.
 export const DIAGRAM_EXTS = ['.drawio', '.dio', '.excalidraw', '.excalidrawlib'];
-const samePath =(a, b) => (process.platform === 'win32'
-  ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b));
+const fold = (p) => (process.platform === 'win32' ? p.toLowerCase() : p);
+const samePath = (a, b) => fold(resolve(a)) === fold(resolve(b));
 
 // Two names for one file: a hard link, or a symlink, has its own path string,
 // and `analyze a.drawio --out summary.json` through one replaced the diagram
@@ -109,12 +110,46 @@ const sameFile = (a, b) => {
   } catch { return false; }
 };
 
-export function outProblem(out, { inputs = [], exts = null, refuse = [] } = {}) {
+// The real path of a file that may not exist yet: its nearest existing folder,
+// resolved through links, with the rest appended.
+const realish = (p) => {
+  const rest = [];
+  let dir = resolve(p);
+  for (;;) {
+    try { return join(realpathSync(dir), ...rest); } catch {}
+    const up = dirname(dir);
+    if (up === dir) return resolve(p);
+    rest.unshift(basename(dir));
+    dir = up;
+  }
+};
+const within = (dir, p) => {
+  const r = relative(fold(dir), fold(p));
+  return r === '' || (!r.startsWith('..') && !isAbsolute(r));
+};
+
+// A relative --out run from a skill folder wrote the user's diagram inside the
+// install, which the next plugin or npm update replaces (#377). The suite's own
+// scratch folder, gitignored, is the one place inside it a build may write.
+export const INSTALL = realish(fileURLToPath(new URL('../../../../', import.meta.url)));
+const SCRATCH = join(INSTALL, 'tests', 'output');
+export const insideInstall = (out) => {
+  const real = realish(out);
+  return within(INSTALL, real) && !within(SCRATCH, real);
+};
+
+// `install: true` refuses an --out inside the install. The builders pass it
+// unless --defaults is set, which the maintainer's template rebuild always is.
+export function outProblem(out, { inputs = [], exts = null, refuse = [], install = false } = {}) {
   const input = inputs.find((file) => samePath(file, out) || sameFile(file, out));
   if (input) return `--out ${out} is the file this reads, ${input}; write somewhere else`;
   const ext = extname(out).toLowerCase();
   if (exts && !exts.includes(ext)) return `--out must end in ${exts.join(' or ')}, got "${ext}"`;
   if (refuse.includes(ext)) return `--out ${out} is a ${ext} diagram, not a place for this summary; write a .json`;
+  if (install && insideInstall(out)) {
+    return `--out ${out} is inside the Arkitect install (${INSTALL}), which an update replaces; `
+      + 'write the diagram in the project, with a path from the project folder';
+  }
   return null;
 }
 
