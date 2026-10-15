@@ -602,7 +602,7 @@ test('shared example specs build valid scenes and the gallery covers every pack 
     eq(validation.info.overlaps, 0, `${name}: overlapping nodes`);
     eq(built.report.missingIcons.length, 0, `${name}: missing icons`);
     if (name === 'shared-icon-gallery') {
-      eq(new Set(built.report.icons.map((i) => i.provenance.pack)).size, 18, 'gallery pack coverage');
+      eq(new Set(built.report.icons.map((i) => i.pack)).size, 18, 'gallery pack coverage');
       eq(built.scene.elements.filter((e) => e.type === 'image').length, spec.nodes.length, 'every gallery icon embedded');
       const svg = renderer.sceneToSvg(built.scene);
       for (const file of Object.values(built.scene.files)) assert(svg.includes(file.dataURL), 'SVG keeps gallery payloads');
@@ -640,7 +640,7 @@ test('shared images deduplicate bytes, preserve aspect and bind connections on b
   for (const file of Object.values(built.scene.files)) {
     assert(svg.includes(file.dataURL), 'preview embeds original data URL');
   }
-  assert(built.report.icons.every((i) => i.provenance?.sha256), 'build reports shared provenance');
+  assert(built.report.icons.every((i) => i.pack && built.report.iconSources[i.ref]?.sha256), 'build reports shared provenance');
 });
 
 test('shared catalog corruption stops resolution instead of silently substituting (#17)', () => {
@@ -3469,6 +3469,25 @@ const PERSONAL = {
 };
 const convention = (id, observed, n, total) => ({ id, observed, evidence: { n, total, share: n / total }, confidence: 'recorded' });
 
+// Every shared mark's sha256, source pin and licence, once per node, made the
+// gallery's build report 10 KB in a build-look-fix loop; the report step asks
+// for the ref and pack only (#386).
+test('a build report names each shared mark by ref and pack, its source only with --verbose (#386)', () => {
+  const spec = join(SKILL, 'assets/templates/shared-icon-packs.spec.json');
+  const out = join(TMP, 'shared-icon-packs-386.excalidraw');
+  const gallery = buildCli(join(SKILL, 'assets/templates/shared-icon-gallery.spec.json'), '--out', out, '--defaults');
+  eq(gallery.status, 0, `build: ${gallery.stderr}`);
+  assert(gallery.stdout.length < 4096, `the gallery report is ${gallery.stdout.length} B`);
+  const report = JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  assert(!/sha256|licence/.test(JSON.stringify(report)), 'no hash or licence without --verbose');
+  eq(report.icons.embedded.find((i) => i.ref === 'drawio:databases/postgresql')?.pack, 'databases', 'each mark names its pack');
+  const verbose = JSON.parse(buildCli(spec, '--out', out, '--defaults', '--verbose').stdout);
+  const refs = [...new Set(verbose.icons.embedded.map((i) => i.ref))];
+  eq(Object.keys(verbose.icons.sources).sort().join(), refs.sort().join(), 'one source per distinct ref');
+  assert(Object.values(verbose.icons.sources).every((s) => /^[0-9a-f]{64}$/.test(s.sha256) && s.licence && s.source), 'with its hash, licence and source');
+  eq(verbose.icons.embedded.filter((i) => i.ref === 'drawio:databases/postgresql').length, 2, 'a mark two nodes draw is listed for both');
+});
+
 test('without an override a build draws the shipped Excalidraw house style (#90)', () => {
   clearStore();
   eq(styleTokens.overridesPath({ ARKITECT_HOME: TMP }), join(TMP, 'excalidraw', 'style-overrides.json'), 'the override sits in the excalidraw store');
@@ -3659,7 +3678,7 @@ test('Excalidraw build refuses a bad command line in one line, before reading or
     [[STARTER_SPEC], /--out <file.excalidraw> is required/],
     [[STARTER_SPEC, '--out'], /--out needs a value/],
     [[STARTER_SPEC, '--out', target, '--out', target], /--out given more than once/],
-    [[STARTER_SPEC, '--out', target, '--verbose'], /unknown option --verbose/],
+    [[STARTER_SPEC, '--out', target, '--force'], /unknown option --force/],
   ]) {
     const r = buildCli(...args);
     const shown = args.map((a) => a.split(/[\\/]/).pop()).join(' ');

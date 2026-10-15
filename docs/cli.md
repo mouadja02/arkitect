@@ -110,7 +110,7 @@ Both builders print a JSON report. Beyond the file written and its backup:
 
 | key | lists |
 |---|---|
-| `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground` |
+| `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground`. Each shared mark is named by `ref` and `pack`; `--verbose` adds `icons.sources`, its source, licence and hash once per ref (#386) |
 | `placeholders` | Excalidraw: each empty slot drawn, and why |
 | `logos` | Draw.io: the fetched logos a build embedded |
 | `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
