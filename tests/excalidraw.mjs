@@ -4471,6 +4471,32 @@ test('a frame inside a scope leaves the scope\'s label clear of the frame\'s nam
   eq(`${before.x},${before.y},${before.width}x${before.height}`, `${fr.x},${fr.y},${fr.width}x${fr.height}`, 'a frame on its own builds as before');
 });
 
+// A child scope's outside label stands clear of that scope, and crossed the
+// border of the frame it belongs to by 24px, with validate clean (#392).
+test('a parent boundary holds a child scope\'s outside label, with padding (#392)', () => {
+  const holds = (outer, inner, pad, what) => {
+    assert(inner.x - outer.x >= pad && inner.y - outer.y >= pad
+      && outer.x + outer.width - (inner.x + inner.width) >= pad && outer.y + outer.height - (inner.y + inner.height) >= pad,
+    `${what}: ${inner.x},${inner.y} ${inner.width}x${inner.height} is not ${pad}px inside ${outer.x},${outer.y} ${outer.width}x${outer.height}`);
+  };
+  const long = 'Order management and fulfilment';
+  for (const [parent, text] of [[{ id: 'f', kind: 'frame' }, 'Orders'], [{ id: 'f', kind: 'frame' }, long], [{ id: 'f', label: 'Account' }, long]]) {
+    const spec = { boundaries: [parent, { id: 's', parent: 'f', label: text, labelPlacement: 'outside' }] };
+    const { scene } = builder.buildDiagram(spec, { seed: 1 });
+    const label = scene.elements.find((el) => el.type === 'text' && el.text === text);
+    const outer = parent.kind === 'frame' ? scene.elements.find((el) => el.type === 'frame')
+      : scene.elements.filter((el) => el.type === 'rectangle').sort((a, b) => b.width * b.height - a.width * a.height)[0];
+    holds(outer, label, 20, `"${text}" in a ${parent.kind ?? 'scope'}`);
+    if (parent.kind === 'frame') eq(label.frameId, outer.id, 'the label belongs to the frame');
+    eq(validator.validateScene(scene).warnings.length, 0, 'validates clean');
+  }
+  // A top-level outside label still sits clear of its own box, which it does not size.
+  const { scene } = builder.buildDiagram({ boundaries: [{ id: 's', label: long, labelPlacement: 'outside' }] }, { seed: 1 });
+  const box = scene.elements.find((el) => el.type === 'rectangle');
+  const label = scene.elements.find((el) => el.type === 'text');
+  assert(label.y + label.height <= box.y && label.width > box.width, 'a top-level outside label stays above and wider than its box');
+});
+
 // A spelling grader is only fair if it passes the spelling the style guide
 // asks for: "PostgreSQL" is Postgre + SQL (#208, #286).
 test('the unknown-product eval case accepts "PostgreSQL" and "Postgres", and fails a reply naming neither (#286)', () => {

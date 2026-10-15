@@ -1009,6 +1009,14 @@ function assemble(spec, style) {
 
   const INSET = 14;                // an inside label's distance from the left edge
   const FRAME_NAME = 24;           // the strip the app draws a frame's name in, above it
+  // Where an `outside` label sits: above the box's top-left corner, at a large
+  // size unless the spec names one. Null for any other label.
+  const outsideLabel = (b, box) => {
+    if (!b.label || b.kind === 'frame' || (b.labelPlacement ?? 'inside') !== 'outside') return null;
+    const size = b.fontSize ?? 48;
+    const m = measureText(b.label, size, S.fontFamily);
+    return { size, x: Math.round(box.x), y: Math.round(box.y - m.height - 10), width: m.width, height: m.height };
+  };
   const boundaryBox = new Map();
   const resolveBoundary = (b, seen = new Set()) => {
     if (boundaryBox.has(b.id)) return boundaryBox.get(b.id);
@@ -1021,6 +1029,10 @@ function assemble(spec, style) {
       // The app draws a frame's name in a strip above its top edge, which is
       // where this scope's own label went: the two names overlapped (#236).
       kids.push(other.kind === 'frame' && other.label ? { ...kid, y: kid.y - FRAME_NAME, height: kid.height + FRAME_NAME } : kid);
+      // A child scope's outside label stands clear of that scope, but it is
+      // still inside this one, and it crossed a parent frame's border (#392).
+      const label = outsideLabel(other, kid);
+      if (label) kids.push(label);
     }
     const pad = {
       left: b.padLeft ?? 34, right: b.padRight ?? 34,
@@ -1093,15 +1105,15 @@ function assemble(spec, style) {
       // the box. Beside is what the corpus does, but only because the space
       // there happened to be empty; above the top edge is the one strip that
       // is empty by construction, since boundaries are sized from contents.
-      const outside = (b.labelPlacement ?? 'inside') === 'outside';
-      const size = b.fontSize ?? (outside ? 48 : FONT.M);
-      const m = measureText(b.label, size, S.fontFamily);
+      const outside = outsideLabel(b, box);
+      const size = outside?.size ?? b.fontSize ?? FONT.M;
+      const m = outside ?? measureText(b.label, size, S.fontFamily);
       scopes.push(text({
         text: b.label, fontSize: size, fontFamily: S.fontFamily,
         textAlign: 'left', strokeColor: look.stroke,
         width: m.width, height: m.height,
-        x: Math.round(box.x + (outside ? 0 : INSET)),
-        y: Math.round(outside ? box.y - m.height - 10 : box.y + 12),
+        x: outside ? outside.x : Math.round(box.x + INSET),
+        y: outside ? outside.y : Math.round(box.y + 12),
         groupIds: [group],
       }));
     }

@@ -23,6 +23,7 @@ separate file, no naming scheme, no required format beyond that.
 - The report check counts a build whose quoted script path holds a space, as an install under `/Users/Jane Doe` does. Since #373 such a build was not counted, and its report went unchecked (#382).
 - The report check keeps the folder of an `--out` whose name it cannot resolve: `--out out/$n.drawio`, with `n=$(basename …)`, now stands for a diagram in `out/`, not for any file. A later review that quoted `docs/arch.drawio` was sent back for the seven headings (#395).
 - `docs/status.md` no longer carries a release snapshot. Its 2.3.0 "Where it stands" named seven open issues, all closed, and a Node 20 floor since raised to 22; the audit prompt reads that page first. It keeps how work gets done and the decisions that can look unfinished. `evals/README.md` counted the portable report check as a nineteenth case; it is one of the ten Draw.io cases (#389).
+- An Excalidraw boundary is sized to hold a child scope's `outside` label. The label belonged to the parent frame but crossed its top border, and `validate` passed. This changes what a spec draws: a parent of an outside-labelled scope is now taller, and wider where the label is. A top-level outside label is unchanged (#392).
 
 ## [2.3.2] — 2026-10-15
 
