@@ -58,13 +58,16 @@ The plugin also carries four hooks:
 - `hooks/build-route.mjs`: when a prompt names a `.drawio` or `.excalidraw`
   file or an Arkitect `*.spec.json`, it adds one sentence naming the skill to
   load first. A spec is Arkitect's when the file holds `nodes` or `pages`, or,
-  before it exists, when the prompt calls it a diagram (#327, #355).
+  before it exists, when the prompt calls it a diagram (#327, #355). A prompt
+  that names no file but asks for a diagram ("draw ... architecture", "I want
+  a diagram of ...") gets one sentence naming both skills and the engine rule;
+  one asking for Mermaid, PlantUML, SVG or another format gets nothing (#371).
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
   a validate warning intentional (#215, #328, #330). It reads only a reply
-  naming a file the session built (#345), and sends back one linking the
-  hosted editor (#340).
+  naming a file the session built, by running a builder (#345, #373), and
+  sends back one linking the hosted editor (#340).
 - `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or
   `.excalidraw`, it refuses one the session has not analyzed, and one over
   64 KB at all, naming the analyze command to run. A line range passes (#342).

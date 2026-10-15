@@ -1441,6 +1441,8 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
 test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () => {
   const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
   assert(/\/mnt\/\[a-zA-Z\]\/\*\)/.test(sh) && sh.includes('linux claude'), 'the WSL check for a Windows claude is gone');
+  assert(sh.includes('args+=(--keep-temp)') && sh.includes('--traces "$OUT/traces"') && sh.includes('chmod -R u+rwx "$RUN_TMP"'),
+    'the traces are no longer kept, or their temp dirs no longer removed (#374)');
   // The script refuses Windows itself, so here only the text above is checked;
   // a skip would count against the fresh-clone total (#47).
   if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS; its run was checked there)'); return; }
@@ -1450,14 +1452,18 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(bin, { recursive: true });
   const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
-  stub('claude', 'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$STUB_RESULT" "$2"; shift; done; exit 0');
+  // Like the real one with --keep-temp: a read-only temp dir holding the trace.
+  stub('claude', ['keep=0; for a in "$@"; do [ "$a" = --keep-temp ] && keep=1; done',
+    'echo "$keep $TMPDIR" > "$STUB_SEEN"',
+    'if [ $keep = 1 ]; then k="$TMPDIR/claude-eval-stub"; mkdir -p "$k/out"; echo trace > "$k/out/trace.jsonl"; chmod 500 "$k/out" "$k"; fi',
+    'while [ $# -gt 0 ]; do [ "$1" = --json ] && sed "s|@TMP@|$TMPDIR|g" "$STUB_RESULT" > "$2"; shift; done; exit 0'].join('\n'));
   stub('bwrap', 'exit 0');
   stub('socat', 'exit 0');
   const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin` };
-  const run = (result, args = []) => {
+  const run = (result, args = [], more = {}) => {
     writeFileSync(join(dir, 'result.json'), JSON.stringify(result));
     return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], {
-      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json') },
+      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json'), STUB_SEEN: join(dir, 'seen'), ...more },
     });
   };
   const errored = run({ cases: [{ name: 'c', arms: { with: [{ score: 0, error: 'scaffold failed (exit 127)' }] } }],
@@ -1466,6 +1472,25 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   const clean = run({ cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }],
     aggregates: { overallScore: 1, overallPassRate: 1 } });
   eq(clean.status, 0, `a clean run passes:\n${clean.stdout.slice(-400)}`);
+
+  // Each run's trace is kept with the results, and the temp dir it came from,
+  // read-only and holding a copy of the Claude config, is gone (#374).
+  const failed = run({ cases: [{ name: 'c', arms: { with: [{ score: 0.5, tracePath: '@TMP@/claude-eval-stub/out/trace.jsonl',
+    graders: [{ name: 'g', passed: false }] }] } }], aggregates: { overallScore: 0.5, overallPassRate: 0 } });
+  eq(failed.status, 1, 'a failed grader fails the run');
+  const [keep, tmp] = readFileSync(join(dir, 'seen'), 'utf8').trim().split(' ');
+  eq(keep, '1', 'the run is told to keep its temp dirs');
+  assert(tmp.includes('arkitect-eval-home'), `in a TMPDIR of its own: ${tmp}`);
+  eq(readFileSync(join(dir, 'out', 'traces', 'c-run1.jsonl'), 'utf8').trim(), 'trace', 'the trace is copied');
+  assert(failed.stdout.includes('trace: traces/c-run1.jsonl'), `the failure names its trace:\n${failed.stdout.slice(-400)}`);
+  assert(!existsSync(tmp), `the kept temp dir is removed: ${tmp}`);
+  const own = join(dir, 'tmp');
+  mkdirSync(own, { recursive: true });
+  run({ cases: [], aggregates: {} }, ['--', '--keep-temp'], { TMPDIR: own });
+  eq(readFileSync(join(dir, 'seen'), 'utf8').trim(), `1 ${own}`, 'asked to keep them, they stay where they were');
+  assert(existsSync(join(own, 'claude-eval-stub', 'out', 'trace.jsonl')), 'and are not removed');
+  chmodSync(join(own, 'claude-eval-stub'), 0o755);
+  chmodSync(join(own, 'claude-eval-stub', 'out'), 0o755);
 
   stub('node', 'echo 20');
   const old = spawnSync('bash', ['scripts/eval.sh', '--check'], { cwd: ROOT, encoding: 'utf8', env });
@@ -1553,6 +1578,23 @@ test('the eval summary reports every case and gates on the low ones (#134)', () 
 
   const gone = spawnSync(process.execPath, [summary, join(TMP, 'no-such-result.json')], { encoding: 'utf8' });
   eq(gone.status, 2, 'a missing file should exit 2, not 1');
+
+  // --traces copies each run's trace out of the temp dir and names it under a
+  // failure; a run whose trace is gone is reported without one (#374).
+  const traceFile = join(TMP, 'eval-trace.jsonl');
+  writeFileSync(traceFile, '{"type":"assistant"}\n');
+  writeFileSync(join(TMP, 'eval-result.json'), JSON.stringify({
+    cases: [{ name: 'drawio-x', arms: { with: [{ score: 0.5, tracePath: traceFile, graders: [{ name: 'g', passed: false }] },
+      { score: 0.5, tracePath: join(TMP, 'gone.jsonl'), graders: [{ name: 'g', passed: false }] }] } }],
+    aggregates: {} }));
+  const kept = join(TMP, 'eval-traces');
+  rmSync(kept, { recursive: true, force: true });
+  const traced = spawnSync(process.execPath, [summary, '--traces', kept, join(TMP, 'eval-result.json')], { encoding: 'utf8' });
+  eq(traced.status, 1, 'still gates');
+  eq(readFileSync(join(kept, 'drawio-x-run1.jsonl'), 'utf8'), '{"type":"assistant"}\n', 'the trace is copied');
+  assert(traced.stdout.includes('trace (run 1): eval-traces/drawio-x-run1.jsonl'), traced.stdout);
+  assert(!traced.stdout.includes('trace (run 2)'), `a trace that is gone is not named:\n${traced.stdout}`);
+  eq(spawnSync(process.execPath, [summary, join(TMP, 'eval-result.json'), '--traces'], { encoding: 'utf8' }).status, 2, '--traces needs a folder');
 });
 
 test('the packed CLI works from outside the checkout (#38)', () => {
@@ -2088,6 +2130,15 @@ test('the report check counts a build by the installed, npx or script command, u
       assert(!built('Bash', command), `a build: ${command}`);
     }
     assert(!built('Read', 'arkitect drawio build a.json'), 'only a shell tool builds');
+    // Only a run of the script is a build; reading or committing it isn't (#373).
+    for (const command of ['for f in a b; do ./skills/arkitect-drawio/scripts/build-diagram.mjs $f.json; done',
+      'cd x && skills/arkitect-drawio/scripts/build-diagram.mjs a.json', 'node --no-warnings "C:\\a\\build-diagram.mjs" a.json']) {
+      assert(built('Bash', command), `not a build: ${command}`);
+    }
+    for (const command of ['git add skills/arkitect-drawio/scripts/build-diagram.mjs', 'grep -n "--out" skills/arkitect-drawio/scripts/build-diagram.mjs',
+      'sed -n 1405,1450p skills/arkitect-excalidraw/scripts/build-diagram.mjs', 'cd x && git diff skills/arkitect-drawio/scripts/build-diagram.mjs']) {
+      assert(!built('Bash', command), `a build: ${command}`);
+    }
 
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
@@ -2106,6 +2157,20 @@ test('the report check reads only a reply naming a file the session built (#345)
   eq(outOf('arkitect excalidraw build a.json --out="docs/my arch.excalidraw"'), 'my arch.excalidraw', 'quoted, with =');
   eq(outOf('arkitect drawio build a.json --out "$OUT"'), '*', 'a shell variable stands for any file');
   eq(outOf('arkitect drawio build a.json'), null, 'no --out');
+  // A variable in the folder leaves the name; one in the name is read from the
+  // same command, or stands for any file (#373).
+  const { outsOf } = reportHook;
+  eq(outOf('SP=C:/x/ritual && node bin/arkitect.mjs drawio build s.json --out $SP/a.drawio'), 'a.drawio', 'a variable folder');
+  eq(outsOf('for n in starter as-is; do arkitect drawio build $n.spec.json --out "$T/$n.drawio"; done').join(), 'starter.drawio,as-is.drawio', 'a loop');
+  eq(outOf('OUT=docs/arch.drawio; arkitect drawio build a.json --out "$OUT"'), 'arch.drawio', 'set in the command');
+  eq(outOf('$out = "docs/p.excalidraw"; arkitect excalidraw build a.json --out $out'), 'p.excalidraw', 'set in PowerShell');
+  eq(outOf("s = 'node b/build-diagram.mjs s.json --out o.excalidraw'"), 'o.excalidraw', 'no quote kept');
+  eq(outsOf('arkitect drawio build a.json --out a.drawio && arkitect drawio build b.json --out=b.drawio').join(), 'a.drawio,b.drawio', 'two builds');
+  eq(outsOf('arkitect drawio build a.json --out docs/').join(), '', 'a folder names no file');
+  assert(namesABuiltFile('Saved `docs/arch.drawio`.', ['*']), 'any file is still a file');
+  for (const reply of ['#339 is about an existing `.drawio`.', 'It mentioned `.drawio` and `.excalidraw` files in passing.']) {
+    assert(!namesABuiltFile(reply, ['*']), `no file named: ${reply}`);
+  }
   assert(namesABuiltFile('Saved `./docs/p329.drawio`.', ['p329.drawio']), 'by path');
   assert(namesABuiltFile('**File** P329.drawio', ['p329.drawio']), 'any case');
   for (const reply of ['#339 is about an existing `.drawio`.', 'See xp329.drawio.', 'See p329.drawio.bak']) {
@@ -2239,7 +2304,8 @@ test('arkitect report checks a saved report like the Stop hook, and every adapte
 
 // Asked to build a spec into a diagram file, the agent loaded no skill and
 // wrote its own builder (#327). A prompt naming a diagram file or a spec gets
-// one line naming the skill; any other prompt gets nothing.
+// one line naming the skill, and so does a request for a diagram (#371); any
+// other prompt gets nothing.
 const routeHook = await import(pathToFileURL(join(ROOT, 'hooks', 'build-route.mjs')).href);
 test('a prompt naming a diagram file or spec is told which skill to load; any other prompt gets nothing (#327)', () => {
   const prompts = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.UserPromptSubmit[0].hooks;
@@ -2257,10 +2323,27 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
       const said = routeFor(prompt);
       if (styleHook.ruleFor(prompt)) eq(said, null, `${engine}/${name}: a style question gets the style rule instead`);
       else if (/\.(drawio|excalidraw)\b/.test(prompt)) assert(said?.includes(`arkitect-${engine}`), `${engine}/${name}: ${said}`);
+      else if (name === 'engine-choice-is-explained') assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
       else eq(said, null, `${engine}/${name} names no file`);
     }
   }
   for (const prompt of ['Draw our AWS pipeline', 'What is a spec?', '/learn-drawio-style docs/a.drawio', 'Fix the bug in parser.json']) {
+    eq(routeFor(prompt), null, prompt);
+  }
+
+  // A request that names no file: 2 runs of 3 of the README case loaded no
+  // skill and handed over SVG or Mermaid (#371). A request for a diagram is
+  // routed; a bug report about drawing, or one asking for another format, isn't.
+  for (const prompt of ['Draw a sequence diagram for the auth flow', 'make me a flowchart of the signup flow',
+    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.']) {
+    assert(/^Arkitect: this prompt asks for a diagram\. Load the arkitect-drawio or arkitect-excalidraw skill/.test(routeFor(prompt) ?? ''), prompt);
+  }
+  eq(skill(routeFor('Sketch the architecture of our payments service in Excalidraw')), 'arkitect-excalidraw', 'an engine named');
+  eq(skill(routeFor('Draw the system design in draw.io')), 'arkitect-drawio', 'the other engine named');
+  for (const prompt of ['Draw it as a Mermaid diagram in the README', 'Draw a diagram of the architecture and save it as docs/arch.svg',
+    'fix the bug where the canvas does not draw the architecture overlay', 'the diagram view does not draw edges after a resize',
+    "why doesn't the architecture page draw on mobile?", 'refactor the diagram renderer', 'generate the diagram types from the schema',
+    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
     eq(routeFor(prompt), null, prompt);
   }
 
