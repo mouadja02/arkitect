@@ -2142,6 +2142,16 @@ test('the report check counts a build by the installed, npx or script command, u
       'sed -n 1405,1450p skills/arkitect-excalidraw/scripts/build-diagram.mjs', 'cd x && git diff skills/arkitect-drawio/scripts/build-diagram.mjs']) {
       assert(!built('Bash', command), `a build: ${command}`);
     }
+    // An install under a home folder with a space is quoted (#382).
+    const spaced = 'D:/Profiles/Jane Doe/.claude/plugins/cache/arkitect/arkitect/2.3.2/skills/arkitect-drawio/scripts/build-diagram.mjs';
+    for (const command of [`node "${spaced}" spec.json --out orders.drawio`, "node '/Users/Jane Doe/arkitect/skills/arkitect-excalidraw/scripts/build-diagram.mjs' a.json",
+      `cd x && "${spaced}" a.json`]) {
+      assert(built('Bash', command), `not a build: ${command}`);
+    }
+    eq(reportHook.outOf(`node "${spaced}" spec.json --out orders.drawio`), 'orders.drawio', 'the --out of a spaced build');
+    for (const command of [`grep -n x "${spaced}"`, `git add "${spaced}"`, `node -e "1" ; grep x "${spaced}"`]) {
+      assert(!built('Bash', command), `a build: ${command}`);
+    }
 
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');

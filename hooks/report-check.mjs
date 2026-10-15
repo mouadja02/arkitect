@@ -24,8 +24,9 @@ const heading = (name) => new RegExp(`\\*\\*${name}\\b|#+\\s*\\**${name}\\b`);
 // the check used to skip them (#301).
 // The script counts only when it is run: `git add`, `grep` or `sed -n` on
 // build-diagram.mjs counted as a build too, and a commit message's "--out" gave
-// a file named "replaces" (#373).
-const BUILD = /(\bnode(\.exe)?["']?\s+(-\S+\s+)*|(^|[;&|(]|\bdo\b|\bthen\b)\s*)["']?[^\s"';&|]*build-diagram\.mjs\b|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
+// a file named "replaces" (#373). A quoted path may hold a space, as a home
+// folder like "/Users/Jane Doe" does (#382).
+const BUILD = /(\bnode(\.exe)?["']?\s+(-\S+\s+)*|(^|[;&|(]|\bdo\b|\bthen\b)\s*)("[^"\n]*|'[^'\n]*|["']?[^\s"';&|]*)build-diagram\.mjs\b|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
 const SHELLS = ['Bash', 'PowerShell'];
 // What a reply says when it describes a picture: "Layout is clean", "SVG
 // confirms structure and spacing". A sentence that is validate's finding, or
