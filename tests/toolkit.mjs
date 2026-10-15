@@ -762,23 +762,40 @@ test('an eval case reads a render the run produced (#136)', () => {
 // The edit case's validation grader failed accurate reports three times, each
 // worded a new way (#368). Every wording seen passes; a report that gives no
 // result, or a failing one, does not.
-test('the edit case recognises every accurate validation report it has failed (#368)', () => {
+test('the edit case recognises every accurate report wording it has failed (#368)', () => {
   const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8');
-  const pattern = yaml.match(/name: reports-the-validation[\s\S]*?pattern: '([^']+)'/)?.[1];
-  assert(pattern, 'the reports-the-validation grader is gone');
-  const re = new RegExp(pattern.replace(/''/g, "'"));
+  const grader = (name) => {
+    const pattern = yaml.match(new RegExp(`name: ${name}[\\s\\S]*?pattern: '([^']+)'`))?.[1];
+    assert(pattern, `the ${name} grader is gone`);
+    return new RegExp(pattern.replace(/''/g, "'"));
+  };
+  const validation = grader('reports-the-validation');
   for (const reply of [
     '**Validation**: `validate-drawio.mjs --page 0` passes with 0 warnings and 0 errors.',
+    '**Validation**: `validate-drawio.mjs` on page 0 passed with no errors and no warnings.',
     '**Validation**: `validate-drawio.mjs --page 0` returns PASS with 4 vertices, 3 edges.',
     'The diagram validates successfully.',
     '**Validation** ✓ Passes',
     'Validation passes with no warnings.',
-  ]) assert(re.test(reply), `fails an accurate report: ${reply}`);
+  ]) assert(validation.test(reply), `fails an accurate validation report: ${reply}`);
   for (const reply of [
     '**Validation**: not run.',
     '**Validation**: `validate-drawio.mjs --page 0` failed with 2 errors.',
     '**Validation**: `validate-drawio.mjs` bypassed; see below.',
-  ]) assert(!re.test(reply), `passes a report with no passing result: ${reply}`);
+  ]) assert(!validation.test(reply), `passes a report with no passing result: ${reply}`);
+
+  const matched = grader('says-it-matched-the-file');
+  for (const reply of [
+    '**Deviations**: The Redis box uses plain styling, not an icon, to match the rest of the file.',
+    '- Redis is drawn as a plain box, not the bundled Redis icon, to match the other three plain boxes.',
+    '- Redis is a plain box, not an icon, to match the file.',
+    'I followed the existing file\'s style instead.',
+    'The new vertex and edge use the file\'s existing style strings.',
+  ]) assert(matched.test(reply), `fails a report that says it matched the file: ${reply}`);
+  for (const reply of [
+    'I added Redis with the bundled icon from the house style guide.',
+    'Redis uses the databases/redis mark.',
+  ]) assert(!matched.test(reply), `passes a report that never says it matched the file: ${reply}`);
 });
 
 // evals/README.md counts the cases in prose and lists every one of them. Both

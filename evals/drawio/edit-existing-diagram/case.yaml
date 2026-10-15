@@ -50,6 +50,15 @@ graders:
     pattern: 'rounded=0;whiteSpace=wrap'
     match: not_contains
 
+  # The file draws no icon, so neither does the edit. On 2.3.1 the product-box
+  # warning made the agent swap its matching Redis box for the mark in 6 runs
+  # of 6, and the wording a report uses cannot tell that apart (#366).
+  - type: regex
+    name: no-icon-in-a-file-of-plain-boxes
+    target: { source: file, path: ./eval-input/checkout.drawio }
+    pattern: 'shape=image|image=data:'
+    match: not_contains
+
   # Never overwrite blind: a timestamped sibling backup is written first.
   - type: regex
     name: wrote-a-backup
@@ -70,19 +79,23 @@ graders:
     target: last_message
     pattern: '[Rr]edis'
 
+  # Once the agent kept Redis plain (#366), its reports said so as "to match
+  # the file", "to match the rest of the file" and "to match the other three
+  # plain boxes", and only "existing ... style" passed: 1 run of 4 (#368).
   - type: regex
     name: says-it-matched-the-file
     target: last_message
-    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)'
+    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)|\b[Mm]atch\w*\s+(the\s+)?(rest\s+of\s+the\s+)?(file|existing|original|other)\b|\b[Ff]ollow\w*\s+(the\s+)?(existing\s+)?file\b'
 
   # "validates successfully" is a result as much as PASS is; the a1bc464 batch
   # failed an accurate report on it, and the def24b8 batch one that read
   # "**Validation** ✓ Passes". The 2.3.1 full suite failed one that named the
-  # script between the two: "`validate-drawio.mjs --page 0` passes" (#368).
+  # script between the two: "`validate-drawio.mjs --page 0` passes", and the
+  # rerun one with words after it: "`validate-drawio.mjs` on page 0 passed" (#368).
   - type: regex
     name: reports-the-validation
     target: last_message
-    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b|[Vv]alidat[^\n`]*`[^`\n]+`\s+(pass|succeed)'
+    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b|[Vv]alidat[^\n`]*`[^`\n]+`[^.\n`]{0,20}?\b(pass|succeed)'
 
   - type: llm
     name: reports-the-edit-honestly
