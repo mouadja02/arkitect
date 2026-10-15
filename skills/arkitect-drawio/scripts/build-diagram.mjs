@@ -779,6 +779,11 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
           + `<mxGeometry x="${Math.round(lx + 86)}" y="${Math.round(y - 15)}" width="230" height="30" as="geometry" /></mxCell>`);
         track(lx + 86, y - 15, 230, 30);
       });
+    } else if (kinds.length > 1) {
+      // Honoured, never reported: a reader of the diagram cannot tell what the
+      // dashed line means (#384).
+      report.notes.push(`${at}legend: false drew no legend for ${kinds.length} connector kinds (${kinds.join(', ')}): `
+        + 'a legend is a non-negotiable with more than one kind (pattern 8); remove the key, or say why in the report');
     }
 
     // The last word before anything is written. main() backs up and writes only
@@ -808,6 +813,13 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   // Draw.io writes the page count on a multi-page file. A single page leaves it
   // off, so a spec without `pages` builds exactly what it always did.
   const count = Array.isArray(spec.pages) ? ` pages="${diagrams.length}"` : '';
+  // Assumptions go on the canvas, not only in the reply; nothing checked it on
+  // any host (#384). A sheet of icons with no connector claims no flow.
+  const drawnPages = pagesOf(spec).map(({ page }) => page);
+  const allNodes = drawnPages.flatMap((page) => page.nodes ?? []);
+  if (allNodes.length > 3 && drawnPages.some((page) => page.edges?.length) && !allNodes.some((n) => n.kind === 'note')) {
+    report.notes.push('no note on the canvas: put the assumptions from your report on it, a `note` node (pattern 9)');
+  }
   const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count}>\n`
     + diagrams.join('\n') + '\n</mxfile>\n';
 

@@ -116,7 +116,7 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | `namesAProduct` | a plain box whose label names a bundled product; `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
 | `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341) |
 | `crossings` | Excalidraw: an edge through a node it doesn't connect |
-| `notes` | an icon no edge touches, and similar things worth a look. First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
+| `notes` | an icon no edge touches, and similar things worth a look: a diagram of more than three nodes with edges and no `note` to hold the assumptions, or a legend turned off over two or more connector kinds (#384). First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
 
 `validate` ends its warnings with the rule: each is a defect to fix, or to
 quote in a report with every id it names (#248). Excalidraw names the spec
@@ -147,7 +147,7 @@ the builder stamps on everything it draws (#353).
 | node `kind` | `icon` (a bundled mark, by name or id), `logo` (a fetched logo), `aws4` (a built-in shape), `box`, `note`, `text` |
 | node | `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line) |
 | boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
-| edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used |
+| edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used; `legend: false` turns it off, and the report notes it (#384) |
 | edge | `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
 
 The builder chooses every edge's sides from the grid: between columns an edge

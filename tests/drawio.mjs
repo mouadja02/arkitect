@@ -5689,6 +5689,32 @@ test('each label on a template ends at least 30px before its arrowhead (#241)', 
   assert(/"labelPos"/.test(catalog), 'labelPos is shown in the numbered-flow section');
 });
 
+// `legend: false` was honoured with nothing said, and nothing on any host
+// checked for a note holding the assumptions (#384).
+test('the build report notes a diagram with no canvas note, or a legend turned off (#384)', () => {
+  const nodes = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, kind: 'box', label: id.toUpperCase(), col: i }));
+  const edges = [{ from: 'a', to: 'b', kind: 'flow' }, { from: 'b', to: 'c', kind: 'error' }];
+  const note = { id: 'n', kind: 'note', label: 'Assumes one region', col: 0, row: 1 };
+  const notesOf = (spec) => builder.buildDiagram(spec).report.notes.filter((n) => /legend: false|no note on the canvas/.test(n));
+  const off = notesOf({ nodes, edges, legend: false });
+  assert(off.some((n) => n.startsWith('legend: false drew no legend for 2 connector kinds (flow, error)')), off.join(' | '));
+  assert(off.some((n) => n.startsWith('no note on the canvas') && n.includes('pattern 9')), off.join(' | '));
+  eq(notesOf({ nodes: [...nodes, note], edges }).length, 0, 'a note and a legend');
+  eq(notesOf({ nodes: [...nodes, note], edges: edges.slice(0, 1), legend: false }).length, 0, 'one kind needs no legend');
+  eq(notesOf({ nodes: nodes.slice(0, 3), edges }).length, 0, 'three boxes need no note');
+  eq(notesOf({ nodes }).length, 0, 'icons with no connector claim no flow');
+  const pages = notesOf({ pages: [{ name: 'As is', nodes: [...nodes, note], edges }, { name: 'To be', nodes, edges, legend: false }] });
+  eq(pages.join(' | ').replace(/:.*/, ''), 'pages[1].legend', 'a note on one page holds them; the legend is per page');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    eq(notesOf(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'))).length, 0, file);
+  }
+  // The eval case reads the file for the note, which nothing else did.
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'generate-architecture', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
+  assert(grader.test(builder.buildDiagram({ nodes: [...nodes, note], edges }).xml), 'the grader finds a note');
+  assert(!grader.test(builder.buildDiagram({ nodes, edges }).xml), 'and fails a diagram without one');
+});
+
 // -------------------------------------------------------------
 
 finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');
