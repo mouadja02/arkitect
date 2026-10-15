@@ -4471,6 +4471,40 @@ test('a frame inside a scope leaves the scope\'s label clear of the frame\'s nam
   eq(`${before.x},${before.y},${before.width}x${before.height}`, `${fr.x},${fr.y},${fr.width}x${fr.height}`, 'a frame on its own builds as before');
 });
 
+// A boundary covers every cell between its members, so a node the spec put
+// outside it, set between two members, was drawn inside it; validate passed
+// and the report said nothing (#378).
+test('an Excalidraw node drawn inside a boundary it is not a member of is noted by the build and warned by validate (#378)', () => {
+  const nodes = (outside) => [{ id: 'a', label: 'Orders', col: 0, parent: 'vpc' }, { id: 'w', label: 'Worker', col: outside === 1 ? 2 : 1, parent: 'vpc' },
+    { id: 'b', label: 'Outside', col: outside }];
+  const stray = (spec) => {
+    const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+    return { notes: report.notes.filter((n) => /is not its member/.test(n)), warned: validator.validateScene(scene).warnings.filter((w) => /is not its member/.test(w)), scene };
+  };
+  const said = 'node "b" is drawn inside or across boundary "vpc" but is not its member: move it past the members of "vpc", or make it a member (`parent`)';
+  const between = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(1) });
+  eq(between.notes.join(), said, 'the build names the node and the boundary');
+  eq(between.warned.join(), said, 'validate names both');
+  const control = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(2) });
+  eq([...control.notes, ...control.warned].join(), '', 'outside, past the members: nothing');
+  // Membership is stamped, so validate reads it off the scene.
+  const tags = between.scene.elements.map((el) => el.customData?.arkitect).filter((t) => t?.node === 'a' || t?.node === 'b');
+  assert(tags.some((t) => t.node === 'a' && t.parent === 'vpc') && tags.every((t) => t.node !== 'b' || !('parent' in t)), JSON.stringify(tags));
+  // A frame parent and a nested member are no strays.
+  const framed = stray({ boundaries: [{ id: 'vpc', kind: 'frame', label: 'VPC' }, { id: 'sub', label: 'Subnet', parent: 'vpc' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'sub' }, { id: 'c', label: 'C', parent: 'vpc', col: 1 }] });
+  eq([...framed.notes, ...framed.warned].join(), '', 'members at any depth');
+  // A scene built before the stamp has no membership to check against.
+  const old = structuredClone(between.scene);
+  for (const el of old.elements) if (el.customData?.arkitect) delete el.customData.arkitect.parent;
+  eq(validator.validateScene(old).warnings.filter((w) => /is not its member/.test(w)).join(), '', 'an unstamped scene is not checked');
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8'));
+    const t = stray(spec);
+    eq([...t.notes, ...t.warned].join(), '', `${name}: no new entry`);
+  }
+});
+
 // A child scope's outside label stands clear of that scope, and crossed the
 // border of the frame it belongs to by 24px, with validate clean (#392).
 test('a parent boundary holds a child scope\'s outside label, with padding (#392)', () => {

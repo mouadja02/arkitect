@@ -36,6 +36,7 @@ import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { outProblem, replacesForeign, foreignNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
+import { strayMembers, strayNote } from '../../arkitect-drawio/scripts/lib/stray-members.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
 import { fitCell } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
@@ -1120,6 +1121,14 @@ function assemble(spec, style) {
     for (const el of scopes.slice(drawnScopes)) boundaryOf.set(el.id, b.id);
   }
 
+  // A non-member set between two members is drawn inside the boundary (#378).
+  const strays = strayMembers([
+    ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boundaryBox.get(b.id), boundary: true })),
+    ...(spec.nodes ?? []).filter((n) => n.kind !== 'text' && geom.has(n.id))
+      .map((n) => ({ id: n.id, parent: n.parent, box: geom.get(n.id) })),
+  ]);
+  for (const stray of strays) report.notes.push(strayNote(stray));
+
   // ------------------------------------------------------------ edges
 
   const usedKinds = new Set();
@@ -1415,12 +1424,15 @@ function assemble(spec, style) {
   reindex(scene.elements);
   // Each element names the spec entry that drew it, so validate can say node
   // "db" and not only a random id that appears in no spec (#353). The app
-  // keeps customData through an edit and a save.
+  // keeps customData through an edit and a save. A member names its boundary
+  // too, so validate can tell a member from a node drawn inside one (#378).
   const frameBoundary = new Map([...frameIdFor].map(([b, fid]) => [fid, b]));
+  const memberOf = new Map([...boundaries, ...(spec.nodes ?? [])].filter((x) => x.parent != null).map((x) => [x.id, x.parent]));
+  const member = (key, id) => (memberOf.has(id) ? { [key]: id, parent: memberOf.get(id) } : { [key]: id });
   for (const el of scene.elements) {
-    const tag = nodeOf.has(el.id) ? { node: nodeOf.get(el.id) }
-      : boundaryOf.has(el.id) ? { boundary: boundaryOf.get(el.id) }
-        : frameBoundary.has(el.id) ? { boundary: frameBoundary.get(el.id) }
+    const tag = nodeOf.has(el.id) ? member('node', nodeOf.get(el.id))
+      : boundaryOf.has(el.id) ? member('boundary', boundaryOf.get(el.id))
+        : frameBoundary.has(el.id) ? member('boundary', frameBoundary.get(el.id))
           : edgeName.has(el.id) ? { edge: edgeName.get(el.id) } : null;
     if (tag) el.customData = { ...el.customData, arkitect: tag };
   }
