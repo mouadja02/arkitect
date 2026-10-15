@@ -21,6 +21,7 @@ separate file, no naming scheme, no required format beyond that.
 - The Excalidraw build report lists an unknown `accent`, boundary `color`, `strokeStyle`, `fillStyle`, `route`, `layout.route` or `routing` under `unknownKinds`, with what it was drawn as. An unknown `strokeStyle` or `fillStyle` used to be written into the scene as it was; the default is written now. `validate` warns on an element whose `strokeStyle` or `fillStyle` Excalidraw does not know. A spec whose `route` was unknown now draws the `auto` route in place of an elbow (#380).
 - The `build-route` hook routes a diagram request that names Draw.io or Excalidraw and also a PNG, an SVG or a canvas to that engine's skill. "Draw our AWS architecture in Draw.io and give me a PNG for the slides" got no line, because the format filter ran before the engine was read (#383).
 - The report check counts a build whose quoted script path holds a space, as an install under `/Users/Jane Doe` does. Since #373 such a build was not counted, and its report went unchecked (#382).
+- The report check keeps the folder of an `--out` whose name it cannot resolve: `--out out/$n.drawio`, with `n=$(basename …)`, now stands for a diagram in `out/`, not for any file. A later review that quoted `docs/arch.drawio` was sent back for the seven headings (#395).
 
 ## [2.3.2] — 2026-10-15
 
