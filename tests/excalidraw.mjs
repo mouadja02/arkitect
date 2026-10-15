@@ -3484,7 +3484,9 @@ test('without an override a build draws the shipped Excalidraw house style (#90)
   eq(driftFrom(STARTER, readScene(out)), null, 'the CLI with no override draws the committed example');
   const report = JSON.parse(r.stdout);
   eq(report.style.source, 'defaults', 'the report says the house style drew it');
-  eq(report.style.edgeKinds.flow, 'primary flow', 'and names each kind by its meaning');
+  // --print-style already gave the house style's kinds; a rebuild loop
+  // repeated them in every report (#386).
+  eq(report.style.edgeKinds, undefined, 'and leaves the kinds to --print-style');
 });
 
 // A committed example is shared: it must build the same on a maintainer's

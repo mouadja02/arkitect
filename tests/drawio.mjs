@@ -2787,7 +2787,9 @@ test('without an override every build is the shipped house style, byte for byte 
   eq(readFileSync(out, 'utf8'), committed, 'the CLI with no override draws the committed example');
   const report = JSON.parse(r.stdout);
   eq(report.style.source, 'defaults', 'the report says the house style drew it');
-  eq(report.style.edgeKinds.flow, 'primary data or control flow', 'and names each kind by its meaning');
+  // --print-style already gave the house style's kinds; a rebuild loop
+  // repeated them in every report (#386).
+  eq(report.style.edgeKinds, undefined, 'and leaves the kinds to --print-style');
 });
 
 // A committed example is shared: it must build the same on a maintainer's
@@ -2808,6 +2810,7 @@ test('the committed starter builds exactly even with a personal override on the 
   eq(p.status, 0, `personal build: ${p.stderr}`);
   assert(readFileSync(personal, 'utf8') !== committed, 'without --defaults the override is picked up automatically');
   eq(JSON.parse(p.stdout).style.source, 'override', 'and the report says so');
+  eq(JSON.parse(p.stdout).style.edgeKinds.flow, 'trigger', 'naming each kind by its meaning on this install (#386)');
   clearStore();
 });
 

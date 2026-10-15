@@ -97,7 +97,8 @@ arkitect excalidraw apply --list
   `.gitignore`, and `.$*.bkp`: the autosave Draw.io Desktop leaves beside a
   file it has open.
 - **Your style.** A build merges your override from `~/.arkitect/<engine>/`
-  and says so under `style`. `--defaults` ignores it; use it for anything
+  and says so under `style`, with what each edge kind means on this install.
+  `--defaults` ignores it; use it for anything
   committed. A broken override is ignored whole, with one warning.
 - **Pages are 0-based** everywhere: `--page`, the analyzer, renders' `.pN`
   names.

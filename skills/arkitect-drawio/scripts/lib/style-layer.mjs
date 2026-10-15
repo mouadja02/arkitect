@@ -75,9 +75,11 @@ export function sameValue(a, b) {
   return a === b;
 }
 
-// Where the style came from and what it changed. A build report carries each
-// active edge kind's meaning, so a kind is chosen by what it means on this
-// install; --print-style adds every token and kind in full.
+// Where the style came from and what it changed. A build with an override
+// carries each active edge kind's meaning, so a kind is chosen by what it means
+// on this install; with the house style --print-style already said it, and every
+// rebuild in a loop repeated it (#386). --print-style adds every token and kind
+// in full.
 export function styleSummary(style, { full = false } = {}) {
   return {
     source: style.source,
@@ -87,7 +89,9 @@ export function styleSummary(style, { full = false } = {}) {
     errors: style.errors,
     ...(full
       ? { tokens: style.tokens, edgeKinds: style.edgeKinds }
-      : { edgeKinds: Object.fromEntries(Object.entries(style.edgeKinds).map(([kind, e]) => [kind, e.meaning])) }),
+      : style.source === 'override'
+        ? { edgeKinds: Object.fromEntries(Object.entries(style.edgeKinds).map(([kind, e]) => [kind, e.meaning])) }
+        : {}),
   };
 }
 
