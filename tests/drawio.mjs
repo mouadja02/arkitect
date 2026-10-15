@@ -4001,6 +4001,25 @@ test('build refuses an --out inside the Arkitect install, unless --defaults (#37
   eq(drawioCli('build', spec, '--out', join(TMP, `${name}.drawio`)).status, 0, 'the suite\'s own scratch folder still builds');
 });
 
+// A hand edit or MCP set_page that links an image passed with a warning, while
+// editing.md says it fails validation, as Excalidraw's does (#379).
+test('validate fails an image linked by URL, and passes Draw.io\'s own img/ artwork (#379)', () => {
+  const built = builder.buildDiagram({ nodes: [{ id: 'fn', icon: 'lambda' }] }).xml;
+  const check = (name, image) => {
+    const file = join(TMP, `linked-${name}.drawio`);
+    writeFileSync(file, image ? built.replace(/image=data:[^;"]*/, `image=${image}`) : built);
+    return validator.validateFile(file);
+  };
+  const embedded = check('embedded', null);
+  assert(embedded.ok && !embedded.warnings.length, `embedded: ${embedded.errors} ${embedded.warnings}`);
+  for (const url of ['https://example.com/worker.svg', 'http://example.com/a.png', '//example.com/a.png', 'file:///C:/a.png']) {
+    const r = check('url', url);
+    assert(!r.ok && r.errors.some((e) => /cell "fn" links its image to a URL/.test(e)), `${url}: ${r.errors}`);
+  }
+  const app = check('app', 'img/lib/aws/compute/lambda.svg');
+  assert(app.ok && !app.warnings.some((w) => /external image/.test(w)), `img/lib: ${app.errors} ${app.warnings}`);
+});
+
 // ------------------------------------------------------------- spec checks (#36)
 
 test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {

@@ -180,7 +180,15 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
         const d = parseDataUri(v);
         if (!d || !d.bytes.length) errors.push(`${label}: cell "${c.id}" has an unreadable embedded image`);
         else embedded++;
-      } else {
+      } else if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) {
+        // Linked, not embedded: blank for everyone else, and fetched each time
+        // the file opens (#379). Excalidraw's validator already fails it.
+        remote++;
+        errors.push(`${label}: cell "${c.id}" links its image to a URL instead of embedding it; `
+          + 'the diagram opens blank for anyone else - embed it as a data: URI');
+      } else if (!v.startsWith('img/')) {
+        // Draw.io's own img/lib/... artwork ships with the app; any other
+        // relative path exists only on this machine.
         remote++;
         warnings.push(`${label}: cell "${c.id}" points at an external image; the diagram will not be portable`);
       }

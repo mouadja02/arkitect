@@ -4552,6 +4552,16 @@ test('Excalidraw build refuses an --out inside the Arkitect install, unless --de
   eq(arkitect('build', spec, '--out', join(TMP, `${name}.excalidraw`)).status, 0, 'the suite\'s own scratch folder still builds');
 });
 
+// A remote file was reported twice, as unreadable and as remote (#379).
+test('validate reports a remote image file once (#379)', () => {
+  const { scene } = builder.buildDiagram({ nodes: [{ id: 'a', icon: 'postgres' }] }, { seed: 1 });
+  const id = Object.keys(scene.files)[0];
+  assert(id, 'the icon embeds a file');
+  scene.files[id].dataURL = 'https://example.com/a.svg';
+  const r = validator.validateScene(scene);
+  eq(JSON.stringify(r.errors.filter((e) => e.includes(id))), JSON.stringify([`file "${id}" is a remote URL; the scene will not be portable`]), 'one error');
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');

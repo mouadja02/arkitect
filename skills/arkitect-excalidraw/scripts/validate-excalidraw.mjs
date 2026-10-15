@@ -258,11 +258,13 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     referenced.add(el.fileId);
     const file = files[el.fileId];
     if (!file) { errors.push(`image "${el.id}" references file "${el.fileId}" which is not in files`); continue; }
-    const decoded = decodeDataUrl(file.dataURL);
-    if (!decoded || !decoded.bytes.length) errors.push(`file "${el.fileId}" has an unreadable dataURL`);
+    // A remote URL is said once, as what it is, not also as unreadable (#379).
     if (typeof file.dataURL === 'string' && !file.dataURL.startsWith('data:')) {
       errors.push(`file "${el.fileId}" is a remote URL; the scene will not be portable`);
+      continue;
     }
+    const decoded = decodeDataUrl(file.dataURL);
+    if (!decoded || !decoded.bytes.length) errors.push(`file "${el.fileId}" has an unreadable dataURL`);
   }
   for (const id of Object.keys(files)) {
     if (!referenced.has(id)) warnings.push(`file "${id}" is embedded but no element uses it`);
