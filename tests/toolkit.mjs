@@ -2349,6 +2349,14 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
     'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
     eq(routeFor(prompt), null, prompt);
   }
+  // An engine named beside an export format asked for that engine; the
+  // format filter dropped it (#383). The engine's name is no drawing verb.
+  eq(skill(routeFor('Draw our AWS architecture in Draw.io and give me a PNG for the slides')), 'arkitect-drawio', 'Draw.io and a PNG');
+  eq(skill(routeFor('Sketch the system design in Excalidraw and export an SVG for the README')), 'arkitect-excalidraw', 'Excalidraw and an SVG');
+  for (const prompt of ['Convert our draw.io diagram to Mermaid', 'Export the Excalidraw canvas as a PNG',
+    'fix the bug where excalidraw does not draw the architecture on the canvas']) {
+    eq(routeFor(prompt), null, prompt);
+  }
 
   // The plugin is installed per user, so an OpenAPI or Vega *.spec.json was
   // routed to a diagram skill too (#355). Only an Arkitect spec is.

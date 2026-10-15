@@ -14,7 +14,8 @@
 // Mermaid (#371). So a prompt that asks for a diagram gets a line too, naming
 // both skills and the engine rule. Only a drawing verb with a diagram noun, or
 // "a diagram" asked for, counts; a prompt naming another format (Mermaid,
-// PlantUML, SVG ...) asked for that, and every other prompt gets nothing.
+// PlantUML, SVG ...) and no engine asked for that, and every other prompt gets
+// nothing.
 
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -34,8 +35,14 @@ const OTHER = /\b(mermaid|plantuml|graphviz|d2|ascii|tikz|svg|png|jpe?g|lucid(ch
 const NAMED = { drawio: /\bdraw\.?io\b|diagrams\.net/i, excalidraw: /\bexcalidraw\b/i };
 
 // A request for a new diagram, in a prompt that names no file (#371).
+const draws = (text) => (DRAW.test(text) && NOUN.test(text)) || ASK.test(text);
 export function asksForDiagram(text) {
-  return ((DRAW.test(text) && NOUN.test(text)) || ASK.test(text)) && !OTHER.test(text);
+  if (!draws(text)) return false;
+  if (!OTHER.test(text)) return true;
+  // "... in Draw.io and give me a PNG for the slides" asked for the engine it
+  // named; Arkitect renders the PNG and the SVG itself (#383). The engine's own
+  // name is no drawing verb: "convert our draw.io diagram to Mermaid" isn't one.
+  return Object.values(NAMED).some((re) => re.test(text)) && draws(text.replace(new RegExp(NAMED.drawio.source, 'gi'), ' '));
 }
 
 // The plugin is installed per user, not per project, so an OpenAPI or Vega
