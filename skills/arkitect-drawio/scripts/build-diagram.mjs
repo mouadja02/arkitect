@@ -36,6 +36,7 @@ import {
 } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
+import { strayMembers, strayNote } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
@@ -675,6 +676,14 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       }
       cells.unshift(...titleCells);
     }
+
+    // A non-member set between two members is drawn inside the boundary (#378).
+    const members = [
+      ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boxOf(b), boundary: true })),
+      ...pending.filter((d) => placed.get(d.n.id).leaf)
+        .map((d) => ({ id: d.n.id, parent: d.n.parent, box: { x: d.x, y: d.y, width: d.box.w, height: d.box.h } })),
+    ];
+    for (const stray of strayMembers(members)) report.notes.push(at + strayNote(stray));
 
     report.looksLikeBoundary.push(...looksLikeBoundary(footprints));
     // The same verdict an icon node would get, so what is listed would draw (#240).

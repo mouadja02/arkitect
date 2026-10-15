@@ -15,6 +15,7 @@ import { checkXml } from './lib/xml-check.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/routes.mjs';
 import { boundaryWord } from './lib/fake-boundaries.mjs';
+import { strayMembers } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
 import { resolve as resolveIcon, loadCatalog } from './find-icon.mjs';
 
@@ -235,6 +236,18 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
         }
       }
     }
+
+    // A vertex drawn inside or across a container that is not its parent, nor
+    // an ancestor of it: the box claims it, the file doesn't (#378). Free text
+    // and captions claim nothing.
+    const top = (id) => (id === '1' || id === '0' ? null : id);
+    const strays = strayMembers(cells.filter((c) => c.vertex && abs.has(c.id) && !isTransparentLabel(c.style))
+      .map((c) => ({ id: c.id, parent: top(c.parent), box: abs.get(c.id), boundary: isContainerish(c.style) })));
+    for (const s of strays.slice(0, 10)) {
+      warnings.push(`${label}: ${s.isBoundary ? 'container' : 'cell'} "${s.id}" is drawn inside or across container `
+        + `"${s.boundary}" but is not its child: move it clear, or make it a child of "${s.boundary}"`);
+    }
+    if (strays.length > 10) warnings.push(`${label}: ${strays.length - 10} more cells are drawn inside or across a container that is not their parent`);
 
     // Clipped-label heuristic. Captions rendered below an icon may legally
     // overflow the cell, so only in-box labels are checked.

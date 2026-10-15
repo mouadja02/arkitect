@@ -4699,6 +4699,41 @@ test('a Draw.io boundary grows to hold its children, nested ones and captions in
     + 'or rebuild from the spec, which sizes a boundary to hold what names it as parent', 'both ids, and by how much');
 });
 
+// A boundary covers every cell between its members, so a node the spec put
+// outside it, set between two members, was drawn inside it; validate passed
+// and the report said nothing (#378).
+test('a Draw.io node drawn inside a boundary it is not a member of is noted by the build and warned by validate (#378)', () => {
+  const stray = (spec, name) => {
+    const { xml, report } = builder.buildDiagram(spec);
+    const file = join(TMP, `${name}.drawio`);
+    writeFileSync(file, xml);
+    const warned = validator.validateFile(file).warnings.filter((w) => /is not its child/.test(w));
+    return { notes: report.notes.filter((n) => /is not its member/.test(n)), warned };
+  };
+  const nodes = (outside) => [{ id: 'a', label: 'Orders', col: 0, parent: 'vpc' }, { id: 'w', label: 'Worker', col: outside === 1 ? 2 : 1, parent: 'vpc' },
+    { id: 'b', label: 'Outside', col: outside }];
+  const between = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(1) }, 'p378-between');
+  eq(between.notes.join(), 'node "b" is drawn inside or across boundary "vpc" but is not its member: move it past the members of "vpc", '
+    + 'or make it a member (`parent`)', 'the build names the node and the boundary');
+  eq(between.warned.join(), 'page 0: cell "b" is drawn inside or across container "vpc" but is not its child: move it clear, '
+    + 'or make it a child of "vpc"', 'validate names both');
+  const control = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(2) }, 'p378-control');
+  eq([...control.notes, ...control.warned].join(), '', 'outside, past the members: nothing');
+  // A nested member is no stray, and two sibling scopes that overlap are named once.
+  const nested = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }, { id: 'sub', label: 'Subnet', parent: 'vpc' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'sub' }, { id: 'c', label: 'C', parent: 'vpc', col: 1 }] }, 'p378-nested');
+  eq([...nested.notes, ...nested.warned].join(), '', 'members at any depth');
+  const siblings = stray({ boundaries: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'x', col: 0 }, { id: 'b', label: 'B', parent: 'y', col: 1 }, { id: 'c', label: 'C', parent: 'x', col: 2 }] }, 'p378-siblings');
+  assert(siblings.notes.some((n) => /boundary "y" is drawn inside or across boundary "x"/.test(n)), siblings.notes.join(' | '));
+  eq(siblings.notes.filter((n) => /^boundary/.test(n)).length, 1, 'one pair, one note');
+  for (const name of ['starter-architecture', 'as-is-to-be']) {
+    const spec = JSON.parse(readFileSync(join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', `${name}.spec.json`), 'utf8'));
+    const t = stray(spec, `p378-${name}`);
+    eq([...t.notes, ...t.warned].join(), '', `${name}: no new entry`);
+  }
+});
+
 // Asked to add one node, an agent rebuilt a hand-drawn .drawio from a new spec
 // and reported it had followed the file; the build said nothing (#339).
 test('a build over a .drawio Arkitect did not write says so in its notes, naming the backup (#339)', () => {
