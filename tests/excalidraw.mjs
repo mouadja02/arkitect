@@ -1218,6 +1218,41 @@ test('a build over a scene Arkitect did not draw says so in its notes, naming th
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A scene Arkitect built and someone then added to passed as its own: a
+// rebuild dropped the added element with nothing said, and retention deleted
+// the one backup holding it a few rebuilds later (#376).
+test('a rebuild over a scene someone added to names the dropped elements, and retention keeps their backup (#376)', () => {
+  const dir = join(TMP, 'p376');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.excalidraw');
+  writeFileSync(spec, JSON.stringify({ title: 'Orders', nodes: [{ id: 'orders', label: 'Orders' }, { id: 'worker', label: 'Worker', col: 1 }],
+    edges: [{ from: 'orders', to: 'worker' }, { from: 'worker', to: 'orders', kind: 'async' }] }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  build();
+  eq(build().notes.join(), '', 'a rebuild over its own untouched output says nothing');
+  const scene = JSON.parse(readFileSync(out, 'utf8'));
+  scene.elements.push({ ...scene.elements.find((el) => el.type === 'rectangle'), id: 'added', x: 900, y: 900, customData: undefined,
+    boundElements: [{ type: 'text', id: 'added-label' }] },
+  { ...scene.elements.find((el) => el.type === 'text'), id: 'added-label', text: 'Audit log', containerId: 'added', customData: undefined });
+  writeFileSync(out, JSON.stringify(scene));
+  const dropped = build();
+  eq(dropped.notes.length, 1, 'one note');
+  assert(dropped.notes[0].includes('"added" (rectangle "Audit log")') && dropped.notes[0].includes(dropped.backup)
+    && !dropped.notes[0].includes('added-label') && dropped.notes[0].includes('references/editing.md'), dropped.notes[0]);
+  assert(/\.backup-\d{8}-\d{6}-kept(-\d+)?\.excalidraw$/.test(dropped.backup), dropped.backup);
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} drops nothing more`);
+  const holding = readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('"added"'));
+  eq(holding.length, 1, 'seven rebuilds later, a backup still holds the added element');
+  // A scene built before the title and legend were stamped: they sit where
+  // this build draws them, so they are no one's added work.
+  const before = JSON.parse(readFileSync(out, 'utf8'));
+  for (const el of before.elements) if (el.customData?.arkitect?.chrome) delete el.customData;
+  eq(builder.droppedElements(JSON.stringify(before), builder.buildDiagram(JSON.parse(readFileSync(spec, 'utf8'))).scene).length, 0, 'unstamped chrome in place');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The Draw.io run that shipped five accounts as boxes passed validate silent
 // (#341); the same spec in this engine got no warning either.
 test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {
@@ -1319,7 +1354,8 @@ test('every built element names its spec entry, and validate names it after the 
   eq(tags('edge', 'a->db').map((el) => el.type).sort().join(), 'arrow,text', 'an edge and its label, by its ends');
   eq(tags('edge', 'warm').map((el) => el.type).join(), 'arrow', 'or by its own id');
   const legend = scene.elements.find((el) => el.type === 'text' && el.text === 'Legend');
-  assert(legend && !legend.customData, 'the legend is no spec entry');
+  // Stamped as the builder's own chrome, so a rebuild knows it from added work (#376).
+  eq(JSON.stringify(legend?.customData), '{"arkitect":{"chrome":true}}', 'the legend is no spec entry');
 
   const w = validator.validateScene(scene).warnings;
   const overlap = w.find((x) => x.includes(' overlap by '));
