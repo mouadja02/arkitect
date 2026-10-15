@@ -29,11 +29,13 @@ graders:
     arm: with-only
 
   # A diagram can run to megabytes of embedded base64; the analyzer exists so
-  # the whole file never has to enter the context window.
+  # the whole file never has to enter the context window. Through the script or
+  # the dispatcher: the pattern is hooks/diagram-read.mjs's own, which counts
+  # both as analyzed, and a test keeps the two identical (#368).
   - type: tool_used
     name: analyzed-instead-of-reading
     tool: Bash
-    input_match: analyze-drawio
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
 
   # The edit lands in the same file, keeping everything that was there.
   - type: regex
@@ -91,11 +93,13 @@ graders:
   # failed an accurate report on it, and the def24b8 batch one that read
   # "**Validation** ✓ Passes". The 2.3.1 full suite failed one that named the
   # script between the two: "`validate-drawio.mjs --page 0` passes", and the
-  # rerun one with words after it: "`validate-drawio.mjs` on page 0 passed" (#368).
+  # rerun ones with words after it: "`validate-drawio.mjs` on page 0 passed",
+  # "... on `eval-input/checkout.drawio` passed". So: a pass on the line that
+  # names validation, unless that line also says something failed (#368).
   - type: regex
     name: reports-the-validation
     target: last_message
-    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b|[Vv]alidat[^\n`]*`[^`\n]+`[^.\n`]{0,20}?\b(pass|succeed)'
+    pattern: '\bPASS\b|[Vv]alidat\w*(\s+\w+)?\s+(pass|success|clean)|[Vv]alidat\w*\W{0,12}[Pp]ass(es|ed)?\b|[Vv]alidat(?![^\n]{0,80}?\bfail)[^\n]{0,80}?\b(pass(es|ed)?|succeed\w*)\b'
 
   - type: llm
     name: reports-the-edit-honestly

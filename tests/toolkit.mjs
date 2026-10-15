@@ -762,6 +762,7 @@ test('an eval case reads a render the run produced (#136)', () => {
 // The edit case's validation grader failed accurate reports three times, each
 // worded a new way (#368). Every wording seen passes; a report that gives no
 // result, or a failing one, does not.
+const diagramRead = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
 test('the edit case recognises every accurate report wording it has failed (#368)', () => {
   const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'edit-existing-diagram', 'case.yaml'), 'utf8');
   const grader = (name) => {
@@ -773,6 +774,7 @@ test('the edit case recognises every accurate report wording it has failed (#368
   for (const reply of [
     '**Validation**: `validate-drawio.mjs --page 0` passes with 0 warnings and 0 errors.',
     '**Validation**: `validate-drawio.mjs` on page 0 passed with no errors and no warnings.',
+    '**Validation**: `validate-drawio.mjs` on `eval-input/checkout.drawio` passed (exit 0): 4 vertices, 3 edges.',
     '**Validation**: `validate-drawio.mjs --page 0` returns PASS with 4 vertices, 3 edges.',
     'The diagram validates successfully.',
     '**Validation** ✓ Passes',
@@ -782,7 +784,14 @@ test('the edit case recognises every accurate report wording it has failed (#368
     '**Validation**: not run.',
     '**Validation**: `validate-drawio.mjs --page 0` failed with 2 errors.',
     '**Validation**: `validate-drawio.mjs` bypassed; see below.',
+    '**Validation**: `validate-drawio.mjs` failed; once fixed, it should pass.',
   ]) assert(!validation.test(reply), `passes a report with no passing result: ${reply}`);
+
+  // Analyzing through the dispatcher is analyzing: the hook lets the Read
+  // through after either form, so the grader takes the hook's own pattern.
+  const analyzed = yaml.match(/name: analyzed-instead-of-reading[\s\S]*?input_match: '(.+)'\r?$/m)?.[1];
+  assert(analyzed, 'the analyzed-instead-of-reading grader is gone');
+  eq(analyzed.replace(/''/g, "'"), diagramRead.ANALYZE.source, 'the grader and the read hook count the same commands as analyzing');
 
   const matched = grader('says-it-matched-the-file');
   for (const reply of [
