@@ -31,7 +31,7 @@ import {
   normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon, unattended } from './find-icon.mjs';
-import { connectorCrossings, segmentHitsBox } from './validate-excalidraw.mjs';
+import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { outProblem, replacesForeign, foreignNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
@@ -98,6 +98,10 @@ const SPEC_HINTS = {
 // What `layout` and `style` may carry. `layout.colPich` moved nothing and was
 // named nowhere (#393). `style` takes the tokens `--print-style` lists.
 const LAYOUT_FIELDS = ['originX', 'originY', 'colPitch', 'rowPitch', 'cell', 'route'];
+
+// The values the router knows (#380); the scene's own are the validator's.
+const ROUTES = ['auto', 'straight', 'elbow', 'avoid'];
+const ROUTINGS = ['elbow', 'points'];
 
 export function unknownFields(spec, styleFields = Object.keys(STYLE)) {
   const out = [];
@@ -684,6 +688,20 @@ function assemble(spec, style) {
     icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
+  // A known field with a value the format has no word for: written and drawn
+  // as the default, and said, as Draw.io does for exit and entry (#380).
+  const choose = (field, value, valid, fallback) => {
+    if (value == null || valid.includes(value)) return value ?? fallback;
+    report.unknownKinds.push({ field, value, drawnAs: fallback, valid });
+    return fallback;
+  };
+  const accentName = (field, value, fallback) => {
+    if (value == null || typeof value === 'object' || Object.hasOwn(PALETTE, value) || Object.hasOwn(HOUSE_ACCENTS, value)
+      || /^#[0-9a-fA-F]{6}$/.test(value)) return value ?? fallback;
+    report.unknownKinds.push({ field, value, drawnAs: fallback ?? 'black', valid: [...Object.keys(PALETTE), ...Object.keys(HOUSE_ACCENTS), '#rrggbb'] });
+    return fallback;
+  };
+  L.route = choose('layout.route', L.route, ROUTES, 'auto');
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
 
@@ -732,11 +750,13 @@ function assemble(spec, style) {
     if (n.kind != null && !NODE_KINDS.includes(n.kind)) {
       report.unknownKinds.push({ field: `nodes[${i}].kind`, value: n.kind, drawnAs: S.rounded ? 'round' : 'box', valid: NODE_KINDS });
     }
+    const accent = accentName(`nodes[${i}].accent`, n.accent, undefined);
+    const nodeStroke = choose(`nodes[${i}].strokeStyle`, n.strokeStyle, STROKE_STYLES, 'solid');
     const look = {
-      ...accentOf(n.accent),
+      ...accentOf(accent),
       strokeWidth: n.strokeWidth ?? S.strokeWidth,
       roughness: n.roughness ?? S.roughness,
-      fillStyle: n.fillStyle ?? S.fillStyle,
+      fillStyle: choose(`nodes[${i}].fillStyle`, n.fillStyle, FILL_STYLES, S.fillStyle),
     };
     if (n.fill === false) look.bg = 'transparent';
     if (n.fill && typeof n.fill === 'string') look.bg = n.fill;
@@ -853,7 +873,7 @@ function assemble(spec, style) {
       anchor = t;
       box = elementBox(t);
     } else if (n.kind === 'note') {
-      const look2 = { ...accentOf(n.accent ?? 'orange') };
+      const look2 = { ...accentOf(accent ?? 'orange') };
       const wrapped = wrapText(n.label ?? '', w - 24, FONT.S, S.fontFamily);
       const m = measureText(wrapped, FONT.S, S.fontFamily);
       const height = n.height ?? Math.max(h, m.height + 28);
@@ -908,7 +928,7 @@ function assemble(spec, style) {
         x, y, width: w, height: h,
         strokeColor: look.stroke, backgroundColor: look.bg, fillStyle: look.fillStyle,
         strokeWidth: look.strokeWidth, roughness: look.roughness,
-        strokeStyle: n.strokeStyle ?? 'solid',
+        strokeStyle: nodeStroke,
         roundness: n.kind === 'box' ? null : (n.kind === 'round' || S.rounded) && n.kind !== 'diamond' && n.kind !== 'ellipse' ? ROUND : null,
       });
       produced.push(shape);
@@ -1040,7 +1060,7 @@ function assemble(spec, style) {
   for (const [i, b] of boundaries.entries()) {
     const drawnScopes = scopes.length;
     const box = resolveBoundary(b);
-    const look = accentOf(b.color ?? b.accent ?? 'grey');
+    const look = accentOf(accentName(`boundaries[${i}].${b.color != null ? 'color' : 'accent'}`, b.color ?? b.accent, 'grey'));
     if (b.kind != null && !BOUNDARY_KINDS.includes(b.kind)) {
       report.unknownKinds.push({ field: `boundaries[${i}].kind`, value: b.kind, drawnAs: 'scope', valid: BOUNDARY_KINDS });
     }
@@ -1057,7 +1077,7 @@ function assemble(spec, style) {
       backgroundColor: b.fill ?? 'transparent',
       fillStyle: 'solid',
       strokeWidth: b.strokeWidth ?? S.boundaryStrokeWidth,
-      strokeStyle: b.dashed === false ? 'solid' : (b.strokeStyle ?? S.boundaryStroke),
+      strokeStyle: b.dashed === false ? 'solid' : choose(`boundaries[${i}].strokeStyle`, b.strokeStyle, STROKE_STYLES, S.boundaryStroke),
       roughness: b.roughness ?? S.roughness,
       roundness: S.rounded ? ROUND : null,
       groupIds: [group],
@@ -1111,7 +1131,7 @@ function assemble(spec, style) {
     const k = EDGE_KINDS[kind];
     const edgeStyle = {
       color: e.color ?? k.color,
-      strokeStyle: e.strokeStyle ?? k.strokeStyle,
+      strokeStyle: choose(`edges[${i}].strokeStyle`, e.strokeStyle, STROKE_STYLES, k.strokeStyle),
       strokeWidth: e.strokeWidth ?? k.width,
     };
     const differing = [
@@ -1128,7 +1148,7 @@ function assemble(spec, style) {
     // other edge's.
     const corner = e.from === e.to ? loopsOn.get(e.from) ?? 0 : null;
     if (corner !== null) loopsOn.set(e.from, corner + 1);
-    const route = e.route ?? L.route ?? 'auto';
+    const route = choose(`edges[${i}].route`, e.route, ROUTES, L.route);
     const unders = [e.from, e.to].map((id) => ({ drop: dropOf.get(id), width: extentOf.get(id).width }));
     let pts = corner === null
       ? routePoints(from, to, route === 'avoid' ? 'auto' : route, gap, unders)
@@ -1168,7 +1188,7 @@ function assemble(spec, style) {
     // end there is nothing to route between, so fall back to fixed points. A
     // loop is elbowed whatever the routing says: the app moves only the two
     // ends of any other arrow, which folds a loop over itself.
-    const routing = e.routing ?? S.edgeRouting;
+    const routing = choose(`edges[${i}].routing`, e.routing, ROUTINGS, S.edgeRouting);
     const elbowed = !!startAnchor && !!endAnchor
       && (corner !== null || (routing === 'elbow' && route !== 'straight'));
 

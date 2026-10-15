@@ -4552,6 +4552,39 @@ test('Excalidraw build refuses an --out inside the Arkitect install, unless --de
   eq(arkitect('build', spec, '--out', join(TMP, `${name}.excalidraw`)).status, 0, 'the suite\'s own scratch folder still builds');
 });
 
+// An unknown accent, route or routing was drawn as the default in silence, and
+// an unknown strokeStyle or fillStyle went straight into the scene (#380).
+test('an unknown style or route value is listed under unknownKinds and drawn as the default (#380)', () => {
+  const base = () => ({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b' }] });
+  const plain = builder.buildDiagram(base(), { seed: 1 }).scene;
+  for (const [part, key, value, drawnAs] of [
+    ['nodes', 'strokeStyle', 'wavy', 'solid'], ['nodes', 'fillStyle', 'polka', 'solid'], ['nodes', 'accent', 'purple', 'black'],
+    ['edges', 'strokeStyle', 'wavy', 'solid'], ['edges', 'route', 'orthogonal', 'auto'], ['edges', 'routing', 'curvy', 'elbow'],
+    ['boundaries', 'color', 'purple', 'grey'], ['boundaries', 'strokeStyle', 'wavy', 'dashed'],
+  ]) {
+    const spec = base();
+    spec.boundaries = [{ id: 'g', label: 'G' }];
+    spec.nodes[0].parent = 'g';
+    spec[part][0][key] = value;
+    const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+    const entry = report.unknownKinds.find((u) => u.field === `${part}[0].${key}`);
+    assert(entry && entry.value === value && entry.drawnAs === drawnAs && entry.valid.length, `${part}[0].${key}: ${JSON.stringify(report.unknownKinds)}`);
+    assert(!scene.elements.some((el) => el.strokeStyle === value || el.fillStyle === value), `${key}: "${value}" written into the scene`);
+    eq(validator.validateScene(scene).ok, true, `${part}[0].${key}: still validates`);
+  }
+  eq(JSON.stringify(builder.buildDiagram({ ...base(), layout: { route: 'orthogonal' } }, { seed: 1 }).report.unknownKinds.map((u) => u.field)),
+    '["layout.route"]', 'layout.route too');
+  eq(builder.buildDiagram({ ...base(), nodes: base().nodes.map((n) => ({ ...n, accent: '#123abc', strokeStyle: 'dashed', fillStyle: 'hachure' })) },
+    { seed: 1 }).report.unknownKinds.length, 0, 'known values report nothing');
+
+  plain.elements[0].strokeStyle = 'wavy';
+  assert(validator.validateScene(plain).warnings.some((w) => /strokeStyle "wavy"/.test(w)), 'validate warns on strokeStyle "wavy"');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const template = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'));
+    eq(JSON.stringify(builder.buildDiagram(template, { seed: 1 }).report.unknownKinds), '[]', `${file} has no unknown value`);
+  }
+});
+
 // `layout.colPich` moved nothing and was named nowhere (#393).
 test('unknownFields names an unknown key inside layout and style (#393)', () => {
   const typo = builder.buildDiagram({ layout: { colPich: 1000 }, style: { nodeWidht: 3 }, nodes: [{ id: 'a', col: 1 }] }, { seed: 1 }).report.unknownFields;

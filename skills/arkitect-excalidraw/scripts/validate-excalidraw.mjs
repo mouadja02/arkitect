@@ -20,6 +20,9 @@ import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.
 import { boundaryWord } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 
 const MAX_COORD = 200000;
+// The values Excalidraw draws; the builder reports anything else (#380).
+export const STROKE_STYLES = ['solid', 'dashed', 'dotted'];
+export const FILL_STYLES = ['hachure', 'cross-hatch', 'solid', 'zigzag'];
 
 const KNOWN_TYPES = new Set([
   'rectangle', 'ellipse', 'diamond', 'arrow', 'line', 'text', 'image',
@@ -167,6 +170,13 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     const b = elementBox(el);
     if (Math.abs(b.x) > MAX_COORD || Math.abs(b.y) > MAX_COORD) {
       warnings.push(`element ${who(el.id)} sits outside +/-${MAX_COORD}px`);
+    }
+    // A value outside the format's own sets, written by hand or by a builder
+    // that copied it through (#380).
+    for (const [key, valid] of [['strokeStyle', STROKE_STYLES], ['fillStyle', FILL_STYLES]]) {
+      if (el[key] != null && !valid.includes(el[key])) {
+        warnings.push(`element ${who(el.id)} has ${key} "${el[key]}", which Excalidraw does not know; use ${valid.join(', ')}`);
+      }
     }
   }
 
