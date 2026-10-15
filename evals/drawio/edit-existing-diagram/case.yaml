@@ -83,11 +83,14 @@ graders:
 
   # Once the agent kept Redis plain (#366), its reports said so as "to match
   # the file", "to match the rest of the file" and "to match the other three
-  # plain boxes", and only "existing ... style" passed: 1 run of 4 (#368).
+  # plain boxes", and only "existing ... style" passed: 1 run of 4. Then "the
+  # existing three boxes are plain, so I matched them" and "the existing file
+  # uses plain boxes and I followed it". Whether it did is the file graders'
+  # question; this one asks only that the report says so (#368).
   - type: regex
     name: says-it-matched-the-file
     target: last_message
-    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)|\b[Mm]atch\w*\s+(the\s+)?(rest\s+of\s+the\s+)?(file|existing|original|other)\b|\b[Ff]ollow\w*\s+(the\s+)?(existing\s+)?file\b'
+    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)|\b[Mm]atch\w*\s+(the\s+)?(rest\s+of\s+the\s+)?(file|existing|original|other)\b|\b[Ff]ollow\w*\s+(the\s+)?(existing\s+)?file\b|\b(file|existing|original)\b[^.\n]{0,60}\b(match|follow)\w*'
 
   # "validates successfully" is a result as much as PASS is; the a1bc464 batch
   # failed an accurate report on it, and the def24b8 batch one that read

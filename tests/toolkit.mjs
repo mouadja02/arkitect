@@ -800,6 +800,8 @@ test('the edit case recognises every accurate report wording it has failed (#368
     '- Redis is a plain box, not an icon, to match the file.',
     'I followed the existing file\'s style instead.',
     'The new vertex and edge use the file\'s existing style strings.',
+    '- The Redis box is a plain labelled box ("Redis Cache"), not the Redis logo. The existing three boxes are plain, so I matched them, as the editing guide asks.',
+    'The style guide\'s icon-first look is not applied, because the existing file uses plain boxes and I followed it.',
   ]) assert(matched.test(reply), `fails a report that says it matched the file: ${reply}`);
   for (const reply of [
     'I added Redis with the bundled icon from the house style guide.',
