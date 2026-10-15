@@ -4035,6 +4035,21 @@ test('validate warns on a word too wide to wrap inside its box (#381)', () => {
   for (const label of ['orders-reconciliation-nightly-batch-worker', 'Reconciliation worker']) eq(check(label).length, 0, `${label} wraps`);
 });
 
+// `layout.colPich` moved nothing and was named nowhere (#393).
+test('unknownFields names an unknown key inside layout and context, and nothing a template uses (#393)', () => {
+  const typo = builder.buildDiagram({ layout: { colPich: 1000 }, nodes: [{ id: 'a', col: 1 }] }).report.unknownFields;
+  eq(JSON.stringify(typo.map(({ field, value }) => [field, value])), '[["layout.colPich",1000]]', 'the typo, with its value');
+  assert(typo[0].valid.includes('colPitch'), 'with the keys layout takes');
+  eq(builder.buildDiagram({ layout: { colPitch: 1000, _comment: 'x' }, nodes: [{ id: 'a' }] }).report.unknownFields.length, 0,
+    'the right key, and a comment, report nothing');
+  const pages = builder.unknownFields({ context: { pakcs: ['aws'] }, layout: { rowPitch: 200 }, pages: [{ name: 'A', nodes: [] }] });
+  eq(JSON.stringify(pages.map((f) => f.field)), '["context.pakcs"]', 'a multi-page spec\'s shared context');
+  const specPath = join(TMP, 'unknown-layout.spec.json');
+  writeFileSync(specPath, JSON.stringify({ layout: { colPich: 1000 }, nodes: [{ id: 'a' }] }));
+  const out = JSON.parse(drawioCli('build', specPath, '--out', join(TMP, 'unknown-layout.drawio')).stdout);
+  eq(out.unknownFields[0]?.field, 'layout.colPich', 'the CLI report names it');
+});
+
 // ------------------------------------------------------------- spec checks (#36)
 
 test('a spec naming a missing node is refused before anything is backed up or written (#36)', () => {

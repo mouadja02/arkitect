@@ -44,7 +44,7 @@ import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
 } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
-import { HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
+import { STYLE, HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
 
@@ -95,13 +95,24 @@ const SPEC_HINTS = {
   context: 'not read here: pick an icon by its exact id, e.g. "drawio:aws/aws-lambda"',
 };
 
-export function unknownFields(spec) {
+// What `layout` and `style` may carry. `layout.colPich` moved nothing and was
+// named nowhere (#393). `style` takes the tokens `--print-style` lists.
+const LAYOUT_FIELDS = ['originX', 'originY', 'colPitch', 'rowPitch', 'cell', 'route'];
+
+export function unknownFields(spec, styleFields = Object.keys(STYLE)) {
   const out = [];
   const isObject = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
   if (isObject(spec)) {
     for (const key of Object.keys(spec)) {
       if (key.startsWith('_') || SPEC_FIELDS.includes(key)) continue;
       out.push({ field: key, value: spec[key], valid: SPEC_FIELDS, ...(SPEC_HINTS[key] ? { hint: SPEC_HINTS[key] } : {}) });
+    }
+    for (const [part, valid] of [['layout', LAYOUT_FIELDS], ['style', styleFields]]) {
+      if (!isObject(spec[part])) continue;
+      for (const key of Object.keys(spec[part])) {
+        if (key.startsWith('_') || valid.includes(key)) continue;
+        out.push({ field: `${part}.${key}`, value: spec[part][key], valid });
+      }
     }
   }
   for (const [part, valid] of [['boundaries', BOUNDARY_FIELDS], ['nodes', NODE_FIELDS], ['edges', EDGE_FIELDS]]) {
@@ -670,7 +681,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec), looksLikeBoundary: [], namesAProduct: [], crossings: [],
+    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   const colX = (c) => L.originX + c * L.colPitch;

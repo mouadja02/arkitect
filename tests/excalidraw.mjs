@@ -4552,6 +4552,15 @@ test('Excalidraw build refuses an --out inside the Arkitect install, unless --de
   eq(arkitect('build', spec, '--out', join(TMP, `${name}.excalidraw`)).status, 0, 'the suite\'s own scratch folder still builds');
 });
 
+// `layout.colPich` moved nothing and was named nowhere (#393).
+test('unknownFields names an unknown key inside layout and style (#393)', () => {
+  const typo = builder.buildDiagram({ layout: { colPich: 1000 }, style: { nodeWidht: 3 }, nodes: [{ id: 'a', col: 1 }] }, { seed: 1 }).report.unknownFields;
+  eq(JSON.stringify(typo.map(({ field, value }) => [field, value])), '[["layout.colPich",1000],["style.nodeWidht",3]]', 'each typo, with its value');
+  assert(typo[0].valid.includes('colPitch') && typo[1].valid.includes('nodeWidth'), 'with the keys each takes');
+  eq(builder.buildDiagram({ layout: { colPitch: 1000, route: 'avoid' }, style: { nodeWidth: 200, _note: 'x' }, nodes: [{ id: 'a' }] }, { seed: 1 })
+    .report.unknownFields.length, 0, 'the right keys, and a comment, report nothing');
+});
+
 // A remote file was reported twice, as unreadable and as remote (#379).
 test('validate reports a remote image file once (#379)', () => {
   const { scene } = builder.buildDiagram({ nodes: [{ id: 'a', icon: 'postgres' }] }, { seed: 1 });

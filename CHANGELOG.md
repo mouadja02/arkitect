@@ -17,6 +17,7 @@ separate file, no naming scheme, no required format beyond that.
 - Both builders refuse, exit 2 and nothing written, an `--out` inside the Arkitect install, which the next plugin or npm update replaces; `--defaults`, which every template rebuild passes, still writes there. The Codex skill said to run a guide's commands from the skill folder, where a relative `--out` landed inside the install; it now says to run them from the project folder. A build that wrote into the install now exits 2 (#377).
 - Draw.io `validate` fails an image linked by URL (`http:`, `https:`, `//`, `file:`) instead of warning, as `references/editing.md` already said and Excalidraw's validator already did; Draw.io's own `img/…` artwork passes. Excalidraw's validator names a remote image file once, not also as unreadable. A file that passed with that warning now fails (#379).
 - Draw.io `validate` warns when a wrapped label holds a word wider than its box. Wrapping breaks at spaces and hyphens, so a CamelCase or snake_case name ran out of both sides of the box and passed (#381).
+- Both build reports list an unknown key inside `layout` under `unknownFields`, and Draw.io's inside `context` and Excalidraw's inside `style` too. `layout.colPich` changed no spacing and was named nowhere (#393).
 
 ## [2.3.2] — 2026-10-15
 
