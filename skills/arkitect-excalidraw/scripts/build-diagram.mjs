@@ -686,7 +686,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
+    icons: [], iconSources: {}, missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   // A known field with a value the format has no word for: written and drawn
@@ -812,8 +812,11 @@ function assemble(spec, style) {
         produced.push(img);
         anchor = img;
         box = elementBox(img);
-        report.icons.push({ node: n.id, ref: resolved.source, kind: 'embedded',
-          ...(resolved.provenance ? { provenance: resolved.provenance } : {}) });
+        // A shared mark's source, licence and hash, once per ref: printed only
+        // with --verbose, since the report step asks for the ref and pack (#386).
+        const { pack, ...source } = resolved.provenance ?? {};
+        report.icons.push({ node: n.id, ref: resolved.source, kind: 'embedded', ...(pack ? { pack } : {}) });
+        if (pack) report.iconSources[resolved.source] = source;
         if (e.transparent === false) report.opaqueIcons.push(`${resolved.source} (${e.transparencyNote})`);
       } else {
         group = newId();
@@ -1329,6 +1332,17 @@ function assemble(spec, style) {
     }));
   }
 
+  // Two non-negotiables the builder can see and nothing checked on any host:
+  // assumptions on the canvas, and a legend for more than one kind (#384). A
+  // sheet of icons with no connector claims no flow.
+  const nodes = spec.nodes ?? [];
+  if (nodes.length > 3 && spec.edges?.length && !nodes.some((n) => n.kind === 'note')) {
+    report.notes.push('no note on the canvas: put the assumptions from your report on it, a `note` node (pattern 10)');
+  }
+  if (spec.legend === false && usedKinds.size > 1) {
+    report.notes.push(`legend: false drew no legend for ${usedKinds.size} connector kinds (${[...usedKinds].join(', ')}): `
+      + 'a legend is a non-negotiable with more than one kind (pattern 10); remove the key, or say why in the report');
+  }
   if (spec.legend !== false && usedKinds.size > 1) {
     for (const mismatch of legendMismatches) {
       report.notes.push(`edges[${mismatch.i}] ${mismatch.from} -> ${mismatch.to} (${mismatch.kind}) differs from its legend sample: ${mismatch.differing.join(', ')}`);
@@ -1485,14 +1499,15 @@ export function droppedElements(oldText, scene) {
     .map((el) => ({ id: String(el.id), label: `${el.type}${textOf(el) ? ` "${String(textOf(el)).replace(/\s+/g, ' ').trim().slice(0, 40)}"` : ''}` }));
 }
 
-const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults]\n'
+const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults] [--verbose]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
 function main(argv) {
   const { options, positionals } = parseCliOrExit(argv, {
-    values: { '--out': null, '--keep-backups': null, '--seed': null }, switches: ['--defaults', '--print-style'],
+    values: { '--out': null, '--keep-backups': null, '--seed': null }, switches: ['--defaults', '--print-style', '--verbose'],
   }, USAGE);
   const defaults = Boolean(options.defaults);
+  const verbose = Boolean(options.verbose);
   if (options['print-style']) {
     if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined || options.seed !== undefined) {
       exitUsage('--print-style builds nothing, so it takes no spec, --out, --seed or --keep-backups', USAGE);
@@ -1565,7 +1580,8 @@ function main(argv) {
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,
     icons: {
       resolved: report.icons.length,
-      embedded: report.icons.filter((icon) => icon.kind === 'embedded'),
+      embedded: report.icons.filter((icon) => icon.kind === 'embedded').map(({ kind, ...icon }) => icon),
+      ...(verbose ? { sources: report.iconSources } : {}),
       opaqueBackground: report.opaqueIcons,
       // Items that already draw their own name, so no caption was added.
       selfCaptioned: report.selfCaptioned,

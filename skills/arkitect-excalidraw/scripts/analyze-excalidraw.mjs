@@ -3,7 +3,8 @@
 //
 //   node analyze-excalidraw.mjs scene.excalidraw
 //   node analyze-excalidraw.mjs a.excalidraw b.excalidraw --out summary.json
-//   node analyze-excalidraw.mjs scene.excalidraw --cells     geometry table
+//   node analyze-excalidraw.mjs scene.excalidraw --cells     one row per spec entry
+//   node analyze-excalidraw.mjs scene.excalidraw --cells --all   every element
 //   node analyze-excalidraw.mjs scene.excalidraw --images    embedded image inventory
 //   node analyze-excalidraw.mjs scene.excalidraw --find "Checkout API"   what a label names
 //
@@ -203,7 +204,7 @@ export function analyzeScene(scene, { name = '<scene>' } = {}) {
   };
 }
 
-const USAGE = 'usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells] [--images] [--find <label>]';
+const USAGE = 'usage: analyze-excalidraw.mjs <file...> [--out summary.json] [--cells [--all]] [--images] [--find <label>]';
 
 // The text and frames whose words contain `query`, case-blind, each with the
 // full id of the shape an edit acts on (#266): the container a label is bound
@@ -235,6 +236,44 @@ export function findLabel(scene, query) {
   return out;
 }
 
+// One row per spec node, boundary and edge. An icon's artwork is dozens of
+// strokes, and one object per element made --cells 140 KB on the 48-node
+// template, handed over as the alternative to reading the file (#385). A row
+// gives the spec entry, its main shape's type and short id, the box around all
+// of it and its element count. Elements no spec drew go one row per outermost
+// group, else one each, named `-` (`chrome` for the title and legend).
+// `--all` keeps the element table.
+const SPEC_PARTS = ['node', 'boundary', 'edge'];
+export function cellRows(scene) {
+  const live = scene.elements.filter((el) => !el.isDeleted);
+  const byId = new Map(live.map((el) => [el.id, el]));
+  const keyOf = (el, depth = 0) => {
+    const tag = el.customData?.arkitect;
+    const part = tag && typeof tag === 'object' && SPEC_PARTS.find((p) => typeof tag[p] === 'string' && tag[p]);
+    if (part) return [`${part}:${tag[part]}`, `${part}:${tag[part]}`];
+    const host = el.containerId && byId.get(el.containerId);
+    if (host && host !== el && depth < 2) return keyOf(host, depth + 1);
+    const name = tag?.chrome ? 'chrome' : '-';
+    const group = (el.groupIds ?? []).at(-1);
+    return [group ? `group ${group}` : `element ${el.id}`, name];
+  };
+  const owners = new Map();
+  for (const el of live) {
+    const [key, name] = keyOf(el);
+    if (!owners.has(key)) owners.set(key, { name, elements: [] });
+    owners.get(key).elements.push(el);
+  }
+  const area = (el) => { const b = elementBox(el); return b.width * b.height; };
+  return [...owners.values()].map(({ name, elements }) => {
+    const shapes = elements.filter((el) => el.type !== 'text');
+    const main = (shapes.length ? shapes : elements).reduce((a, b) => (area(b) > area(a) ? b : a));
+    const b = bbox(elements);
+    return `${name} ${main.type} ${main.id.slice(0, 8)} ${Math.round(b.x)},${Math.round(b.y)} `
+      + `${Math.round(b.width)}x${Math.round(b.height)} (${elements.length})`;
+  });
+}
+export const CELLS_HEADER = '# entry type id x,y wxh (elements); --cells --all lists every element, --find "<label>" gives a full id';
+
 // An unreadable file is one line and exit 2, like a usage error (#116).
 function load(path) {
   try {
@@ -246,7 +285,7 @@ function load(path) {
 
 function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
-    { values: { '--out': null, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
+    { values: { '--out': null, '--find': null }, switches: ['--cells', '--images', '--all'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .excalidraw file', USAGE);
   const outBad = options.out && outProblem(options.out, { inputs: files, refuse: DIAGRAM_EXTS });
   if (outBad) exitUsage(outBad, USAGE);
@@ -256,6 +295,12 @@ function main(argv) {
     return;
   }
   if ((options.cells || options.images) && files.length > 1) exitUsage('--cells and --images read one file', USAGE);
+  if (options.all && !options.cells) exitUsage('--all goes with --cells', USAGE);
+
+  if (options.cells && !options.all) {
+    console.log([CELLS_HEADER, ...cellRows(load(files[0]))].join('\n'));
+    return;
+  }
 
   if (options.cells) {
     const scene = load(files[0]);

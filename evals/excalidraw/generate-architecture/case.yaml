@@ -40,6 +40,14 @@ graders:
     pattern: '"backgroundColor": "none"'
     match: not_contains
 
+  # Assumptions on the canvas, not only in chat: a non-negotiable whose only
+  # trace was the reply. A note is a rectangle in the note fill; an orange
+  # diamond shares the fill, so the type is part of the match (#384).
+  - type: regex
+    name: assumptions-on-the-canvas
+    target: { source: file, path: ./eval-output/orders.excalidraw }
+    pattern: '"backgroundColor": "#ffec99",(?:[^{}]|\{[^{}]*\})*?"type": "rectangle"'
+
   - type: tool_used
     name: ran-the-validator
     tool: Bash

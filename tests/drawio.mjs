@@ -2787,7 +2787,9 @@ test('without an override every build is the shipped house style, byte for byte 
   eq(readFileSync(out, 'utf8'), committed, 'the CLI with no override draws the committed example');
   const report = JSON.parse(r.stdout);
   eq(report.style.source, 'defaults', 'the report says the house style drew it');
-  eq(report.style.edgeKinds.flow, 'primary data or control flow', 'and names each kind by its meaning');
+  // --print-style already gave the house style's kinds; a rebuild loop
+  // repeated them in every report (#386).
+  eq(report.style.edgeKinds, undefined, 'and leaves the kinds to --print-style');
 });
 
 // A committed example is shared: it must build the same on a maintainer's
@@ -2808,6 +2810,7 @@ test('the committed starter builds exactly even with a personal override on the 
   eq(p.status, 0, `personal build: ${p.stderr}`);
   assert(readFileSync(personal, 'utf8') !== committed, 'without --defaults the override is picked up automatically');
   eq(JSON.parse(p.stdout).style.source, 'override', 'and the report says so');
+  eq(JSON.parse(p.stdout).style.edgeKinds.flow, 'trigger', 'naming each kind by its meaning on this install (#386)');
   clearStore();
 });
 
@@ -3906,10 +3909,30 @@ test('build reads the spec, not the --out value, and refuses a bad command line 
   eq(drawioCli('build', malformed, '--out', target).stderr.trim().split('\n').length, 1, 'a malformed spec is one line');
 });
 
+// Fifteen keys per cell, pretty-printed, made the starter's table 11 KB: the
+// route the read hook names in place of reading the file (#385).
+test('analyze --cells prints one compact row per cell, every key only with --all (#385)', () => {
+  const cells = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells');
+  eq(cells.status, 0, stderrLine(cells));
+  assert(cells.stdout.length < 6144, `the starter's table is ${cells.stdout.length} B`);
+  const rows = cells.stdout.trim().split('\n').map((line) => JSON.parse(line));
+  const all = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells', '--all');
+  eq(all.status, 0, stderrLine(all));
+  const full = JSON.parse(all.stdout);
+  eq(rows.map((r) => r.id).join(), full.map((r) => r.id).join(), 'a row for every cell --all lists');
+  assert(rows.every((r) => !Object.values(r).some((v) => v === null || v === false)), 'no empty keys');
+  const edge = full.find((r) => r.kind === 'edge');
+  eq(JSON.stringify(rows.find((r) => r.id === edge.id).src), JSON.stringify(edge.src), 'an edge keeps its ends');
+  assert(full.every((r) => 'fill' in r && 'src' in r), '--all keeps every key');
+  const bare = drawioCli('analyze', ARGS_STARTER, '--all');
+  eq(bare.status, 2, 'and needs --cells');
+  assert(/--all goes with --cells/.test(stderrLine(bare)), stderrLine(bare));
+});
+
 test('analyze --page is checked the same way, and a missing page exits 1 instead of crashing (#37)', () => {
   const cells = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells');
   eq(cells.status, 0, `--page 0 --cells (stderr: ${stderrLine(cells)})`);
-  assert(Array.isArray(JSON.parse(cells.stdout)), 'prints the geometry table');
+  assert(cells.stdout.trim().split('\n').every((line) => JSON.parse(line).id), 'prints the geometry table, a row per line');
 
   const range = drawioCli('analyze', ARGS_STARTER, '--page', '3', '--images');
   eq(range.status, 1, 'a page the file lacks');
@@ -5664,6 +5687,32 @@ test('each label on a template ends at least 30px before its arrowhead (#241)', 
   }
   const catalog = readFileSync(join(SKILL, 'references', 'pattern-catalog.md'), 'utf8');
   assert(/"labelPos"/.test(catalog), 'labelPos is shown in the numbered-flow section');
+});
+
+// `legend: false` was honoured with nothing said, and nothing on any host
+// checked for a note holding the assumptions (#384).
+test('the build report notes a diagram with no canvas note, or a legend turned off (#384)', () => {
+  const nodes = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, kind: 'box', label: id.toUpperCase(), col: i }));
+  const edges = [{ from: 'a', to: 'b', kind: 'flow' }, { from: 'b', to: 'c', kind: 'error' }];
+  const note = { id: 'n', kind: 'note', label: 'Assumes one region', col: 0, row: 1 };
+  const notesOf = (spec) => builder.buildDiagram(spec).report.notes.filter((n) => /legend: false|no note on the canvas/.test(n));
+  const off = notesOf({ nodes, edges, legend: false });
+  assert(off.some((n) => n.startsWith('legend: false drew no legend for 2 connector kinds (flow, error)')), off.join(' | '));
+  assert(off.some((n) => n.startsWith('no note on the canvas') && n.includes('pattern 9')), off.join(' | '));
+  eq(notesOf({ nodes: [...nodes, note], edges }).length, 0, 'a note and a legend');
+  eq(notesOf({ nodes: [...nodes, note], edges: edges.slice(0, 1), legend: false }).length, 0, 'one kind needs no legend');
+  eq(notesOf({ nodes: nodes.slice(0, 3), edges }).length, 0, 'three boxes need no note');
+  eq(notesOf({ nodes }).length, 0, 'icons with no connector claim no flow');
+  const pages = notesOf({ pages: [{ name: 'As is', nodes: [...nodes, note], edges }, { name: 'To be', nodes, edges, legend: false }] });
+  eq(pages.join(' | ').replace(/:.*/, ''), 'pages[1].legend', 'a note on one page holds them; the legend is per page');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    eq(notesOf(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'))).length, 0, file);
+  }
+  // The eval case reads the file for the note, which nothing else did.
+  const yaml = readFileSync(join(ROOT, 'evals', 'drawio', 'generate-architecture', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
+  assert(grader.test(builder.buildDiagram({ nodes: [...nodes, note], edges }).xml), 'the grader finds a note');
+  assert(!grader.test(builder.buildDiagram({ nodes, edges }).xml), 'and fails a diagram without one');
 });
 
 // -------------------------------------------------------------

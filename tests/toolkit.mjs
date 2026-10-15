@@ -2205,6 +2205,13 @@ test('the report check reads only a reply naming a file the session built (#345)
     assert(!namesABuiltFile(reply, ['out/*.drawio']), reply);
   }
   assert(namesABuiltFile('See out/a.excalidraw', ['out/*']), 'any diagram in out/');
+  // A folder held in a variable set in the same command is read too (#397).
+  const scratch = 'S="scratch/tpl"; mkdir -p "$S"; for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out "$S/$n.drawio" --defaults; done';
+  eq(outsOf(scratch).join(), 'tpl/*.drawio', 'a folder variable set in the command');
+  eq(outOf('S=out; arkitect drawio build a.json --out ${S}/$n.drawio'), 'out/*.drawio', 'braced');
+  eq(outOf('$S = "C:\\tmp\\tpl"; arkitect drawio build a.json --out $S\\$n.drawio'), 'tpl/*.drawio', 'set in PowerShell');
+  eq(outOf('S=.; arkitect drawio build a.json --out $S/$n.drawio'), '*', 'set to the current folder: any file');
+  eq(outOf('for S in a b; do arkitect drawio build x.json --out $S/$n.drawio; done'), '*', 'a folder with two values: any file');
   const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
   try {
     const transcript = join(dir, 't.jsonl');
@@ -2216,6 +2223,9 @@ test('the report check reads only a reply naming a file the session built (#345)
     writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Bash', input: { command: loop } }] } }));
     eq(stop('Reviewed the issues. AGENTS.md §3 shows `--out docs/arch.drawio`, which writes into the install.'), null, 'a review quoting another path (#395)');
     assert(/no File, Assumptions/.test(JSON.parse(stop('Done: out/starter.drawio') ?? '{}').reason), 'a file the loop built (#395)');
+    writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Bash', input: { command: scratch } }] } }));
+    eq(stop('Summary of the code changes: AGENTS.md §3 builds `docs/arch.drawio`.'), null, 'a summary after a scratch build (#397)');
+    assert(/no File, Assumptions/.test(JSON.parse(stop('Done: scratch/tpl/starter-architecture.drawio') ?? '{}').reason), 'a file the scratch loop built (#397)');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

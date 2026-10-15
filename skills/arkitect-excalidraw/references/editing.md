@@ -10,7 +10,7 @@ A scene with embedded images runs to megabytes of base64. Summarize it instead:
 
 ```bash
 node scripts/analyze-excalidraw.mjs "<file>"            # structure and style tokens
-node scripts/analyze-excalidraw.mjs "<file>" --cells    # geometry table, no text
+node scripts/analyze-excalidraw.mjs "<file>" --cells    # a geometry row per spec entry, no text
 node scripts/analyze-excalidraw.mjs "<file>" --images   # embedded image inventory
 node scripts/analyze-excalidraw.mjs "<file>" --find "Checkout API"   # the shape a name belongs to
 ```

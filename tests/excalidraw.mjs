@@ -602,7 +602,7 @@ test('shared example specs build valid scenes and the gallery covers every pack 
     eq(validation.info.overlaps, 0, `${name}: overlapping nodes`);
     eq(built.report.missingIcons.length, 0, `${name}: missing icons`);
     if (name === 'shared-icon-gallery') {
-      eq(new Set(built.report.icons.map((i) => i.provenance.pack)).size, 18, 'gallery pack coverage');
+      eq(new Set(built.report.icons.map((i) => i.pack)).size, 18, 'gallery pack coverage');
       eq(built.scene.elements.filter((e) => e.type === 'image').length, spec.nodes.length, 'every gallery icon embedded');
       const svg = renderer.sceneToSvg(built.scene);
       for (const file of Object.values(built.scene.files)) assert(svg.includes(file.dataURL), 'SVG keeps gallery payloads');
@@ -640,7 +640,7 @@ test('shared images deduplicate bytes, preserve aspect and bind connections on b
   for (const file of Object.values(built.scene.files)) {
     assert(svg.includes(file.dataURL), 'preview embeds original data URL');
   }
-  assert(built.report.icons.every((i) => i.provenance?.sha256), 'build reports shared provenance');
+  assert(built.report.icons.every((i) => i.pack && built.report.iconSources[i.ref]?.sha256), 'build reports shared provenance');
 });
 
 test('shared catalog corruption stops resolution instead of silently substituting (#17)', () => {
@@ -3469,6 +3469,25 @@ const PERSONAL = {
 };
 const convention = (id, observed, n, total) => ({ id, observed, evidence: { n, total, share: n / total }, confidence: 'recorded' });
 
+// Every shared mark's sha256, source pin and licence, once per node, made the
+// gallery's build report 10 KB in a build-look-fix loop; the report step asks
+// for the ref and pack only (#386).
+test('a build report names each shared mark by ref and pack, its source only with --verbose (#386)', () => {
+  const spec = join(SKILL, 'assets/templates/shared-icon-packs.spec.json');
+  const out = join(TMP, 'shared-icon-packs-386.excalidraw');
+  const gallery = buildCli(join(SKILL, 'assets/templates/shared-icon-gallery.spec.json'), '--out', out, '--defaults');
+  eq(gallery.status, 0, `build: ${gallery.stderr}`);
+  assert(gallery.stdout.length < 4096, `the gallery report is ${gallery.stdout.length} B`);
+  const report = JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  assert(!/sha256|licence/.test(JSON.stringify(report)), 'no hash or licence without --verbose');
+  eq(report.icons.embedded.find((i) => i.ref === 'drawio:databases/postgresql')?.pack, 'databases', 'each mark names its pack');
+  const verbose = JSON.parse(buildCli(spec, '--out', out, '--defaults', '--verbose').stdout);
+  const refs = [...new Set(verbose.icons.embedded.map((i) => i.ref))];
+  eq(Object.keys(verbose.icons.sources).sort().join(), refs.sort().join(), 'one source per distinct ref');
+  assert(Object.values(verbose.icons.sources).every((s) => /^[0-9a-f]{64}$/.test(s.sha256) && s.licence && s.source), 'with its hash, licence and source');
+  eq(verbose.icons.embedded.filter((i) => i.ref === 'drawio:databases/postgresql').length, 2, 'a mark two nodes draw is listed for both');
+});
+
 test('without an override a build draws the shipped Excalidraw house style (#90)', () => {
   clearStore();
   eq(styleTokens.overridesPath({ ARKITECT_HOME: TMP }), join(TMP, 'excalidraw', 'style-overrides.json'), 'the override sits in the excalidraw store');
@@ -3484,7 +3503,9 @@ test('without an override a build draws the shipped Excalidraw house style (#90)
   eq(driftFrom(STARTER, readScene(out)), null, 'the CLI with no override draws the committed example');
   const report = JSON.parse(r.stdout);
   eq(report.style.source, 'defaults', 'the report says the house style drew it');
-  eq(report.style.edgeKinds.flow, 'primary flow', 'and names each kind by its meaning');
+  // --print-style already gave the house style's kinds; a rebuild loop
+  // repeated them in every report (#386).
+  eq(report.style.edgeKinds, undefined, 'and leaves the kinds to --print-style');
 });
 
 // A committed example is shared: it must build the same on a maintainer's
@@ -3657,7 +3678,7 @@ test('Excalidraw build refuses a bad command line in one line, before reading or
     [[STARTER_SPEC], /--out <file.excalidraw> is required/],
     [[STARTER_SPEC, '--out'], /--out needs a value/],
     [[STARTER_SPEC, '--out', target, '--out', target], /--out given more than once/],
-    [[STARTER_SPEC, '--out', target, '--verbose'], /unknown option --verbose/],
+    [[STARTER_SPEC, '--out', target, '--force'], /unknown option --force/],
   ]) {
     const r = buildCli(...args);
     const shown = args.map((a) => a.split(/[\\/]/).pop()).join(' ');
@@ -4437,6 +4458,45 @@ test('a made icon and an installed library live in the store, and ones from the 
   }
 });
 
+// One object per element, every stroke of a library icon included, made
+// --cells 140 KB on the 48-node template: the route the read hook names in
+// place of reading the file (#385).
+test('analyze --cells prints one row per spec entry, every element only with --all (#385)', () => {
+  const template = join(SKILL, 'assets', 'templates', 'aws-data-platform.excalidraw');
+  const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', 'aws-data-platform.spec.json'), 'utf8'));
+  const run = (file, ...args) => spawnSync(process.execPath, [join(SCRIPTS, 'analyze-excalidraw.mjs'), file, ...args], { encoding: 'utf8' });
+  const cells = run(template, '--cells');
+  eq(cells.status, 0, cells.stderr);
+  assert(cells.stdout.length < 8192, `the table is ${cells.stdout.length} B`);
+  const rows = cells.stdout.trim().split('\n').filter((line) => !line.startsWith('#'));
+  const named = (part, id) => rows.filter((r) => r.startsWith(`${part}:${id} `)).length;
+  for (const n of spec.nodes) eq(named('node', n.id), 1, `one row for node ${n.id}`);
+  for (const b of spec.boundaries ?? []) eq(named('boundary', b.id), 1, `one row for boundary ${b.id}`);
+  const scene = JSON.parse(readFileSync(template, 'utf8'));
+  const edges = new Set(scene.elements.map((el) => el.customData?.arkitect?.edge).filter(Boolean));
+  eq(rows.filter((r) => r.startsWith('edge:')).length, edges.size, 'one row per edge');
+  const oltp = scene.elements.filter((el) => el.customData?.arkitect?.node === 'oltp' && !el.isDeleted);
+  const row = rows.find((r) => r.startsWith('node:oltp '));
+  assert(row.endsWith(` (${oltp.length})`), `the row counts its elements: ${row}`);
+  assert(/^node:oltp \w+ [\w-]{8} -?\d+,-?\d+ \d+x\d+ \(\d+\)$/.test(row), `type, short id, box, count: ${row}`);
+  const all = run(template, '--cells', '--all');
+  eq(JSON.parse(all.stdout).length, scene.elements.filter((el) => !el.isDeleted).length, '--all keeps a row per element');
+  const bare = run(template, '--all');
+  eq(bare.status, 2, '--all needs --cells');
+
+  // A scene no spec drew: one row per outermost group, else per element.
+  const foreign = { type: 'excalidraw', version: 2, elements: [
+    { ...core.rectangle({ x: 0, y: 0, width: 100, height: 50 }), groupIds: ['inner', 'outer'] },
+    { ...core.rectangle({ x: 120, y: 0, width: 40, height: 40 }), groupIds: ['outer'] },
+    core.rectangle({ x: 300, y: 0, width: 60, height: 60 }),
+  ], files: {} };
+  const file = join(TMP, 'foreign-cells.excalidraw');
+  writeFileSync(file, JSON.stringify(foreign));
+  const lines = run(file, '--cells').stdout.trim().split('\n').slice(1);
+  eq(lines.length, 2, `one row for the group, one for the loose shape: ${lines.join(' | ')}`);
+  assert(lines[0].startsWith('- rectangle ') && lines[0].endsWith(' 0,0 160x50 (2)'), lines[0]);
+});
+
 // --cells prints no text and shortens ids to eight characters, so a named
 // component had no route to the id an edit needs (#266).
 test('analyze --find returns the full id of the shape a label names, and an edit can bind to it (#266)', () => {
@@ -4698,6 +4758,33 @@ test('validate reports a remote image file once (#379)', () => {
   scene.files[id].dataURL = 'https://example.com/a.svg';
   const r = validator.validateScene(scene);
   eq(JSON.stringify(r.errors.filter((e) => e.includes(id))), JSON.stringify([`file "${id}" is a remote URL; the scene will not be portable`]), 'one error');
+});
+
+// `legend: false` was honoured with nothing said, and nothing on any host
+// checked for a note holding the assumptions (#384).
+test('the build report notes a scene with no canvas note, or a legend turned off (#384)', () => {
+  const nodes = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, kind: 'box', label: id.toUpperCase(), col: i }));
+  const edges = [{ from: 'a', to: 'b', kind: 'flow' }, { from: 'b', to: 'c', kind: 'error' }];
+  const note = { id: 'n', kind: 'note', label: 'Assumes one region', col: 0, row: 1 };
+  const notesOf = (spec) => builder.buildDiagram(spec, { seed: 1 }).report.notes.filter((n) => /legend: false|no note on the canvas/.test(n));
+  const off = notesOf({ nodes, edges, legend: false });
+  assert(off.some((n) => n.startsWith('legend: false drew no legend for 2 connector kinds (flow, error)')), off.join(' | '));
+  assert(off.some((n) => n.startsWith('no note on the canvas') && n.includes('pattern 10')), off.join(' | '));
+  eq(notesOf({ nodes: [...nodes, note], edges }).length, 0, 'a note and a legend');
+  eq(notesOf({ nodes: [...nodes, note], edges: edges.slice(0, 1), legend: false }).length, 0, 'one kind needs no legend');
+  eq(notesOf({ nodes: nodes.slice(0, 3), edges }).length, 0, 'three boxes need no note');
+  eq(notesOf({ nodes }).length, 0, 'icons with no connector claim no flow');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    eq(notesOf(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'))).length, 0, file);
+  }
+  // The eval case reads the file for the note, which nothing else did. The
+  // starter's orange decision diamond shares the note fill.
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'generate-architecture', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
+  const starter = JSON.parse(readFileSync(STARTER_SPEC, 'utf8'));
+  const written = (spec) => JSON.stringify(builder.buildDiagram(spec, { seed: 1 }).scene, null, 2);
+  assert(grader.test(written(starter)), 'the grader finds a note');
+  assert(!grader.test(written({ ...starter, nodes: starter.nodes.filter((n) => n.kind !== 'note') })), 'and fails a scene without one');
 });
 
 cleanTestIcons();

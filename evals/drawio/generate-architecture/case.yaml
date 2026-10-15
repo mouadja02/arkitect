@@ -44,6 +44,13 @@ graders:
     pattern: ';base64,'
     match: not_contains
 
+  # Assumptions on the canvas, not only in chat: a non-negotiable whose only
+  # trace was the reply. A note node is the only cell drawn in the note fill (#384).
+  - type: regex
+    name: assumptions-on-the-canvas
+    target: { source: file, path: ./eval-output/log-ingestion.drawio }
+    pattern: 'fillColor=#F7F7F7;strokeColor=#DFDFDF;'
+
   - type: tool_used
     name: ran-the-validator
     tool: Bash
