@@ -15,6 +15,10 @@ separate file, no naming scheme, no required format beyond that.
 
 - Eval case `drawio-portable-report-check`: the agent is handed AGENTS.md as an AGENTS.md host would, and must run `arkitect report` on its saved report. Claude Code reads the skills, so no case reached the portable check before; it passed 3 runs of 3 on Haiku 5.5 (#302).
 
+### Changed
+
+- The `build-route` hook also speaks to a prompt that asks for a diagram but names no file: a drawing verb with a diagram noun ("draw … architecture"), or "a diagram" asked for. It adds one line naming both skills and the engine rule, or the one engine the prompt names. Asked for a README diagram, 2 runs of 3 had loaded no skill and handed over hand-written SVG or Mermaid; with the line, `excalidraw-engine-choice-is-explained` loaded the skill in 6 runs of 6 and its Draw.io mirror in 6 of 6. A prompt asking for Mermaid, PlantUML, SVG or another format, or saying something does not draw, still gets nothing (#371).
+
 ### Fixed
 
 - The #150 check that no element able to carry behaviour reaches the Excalidraw preview could never fail: its `\b` was a literal backspace. It now reads `\b`, and a new test fails on any raw control character in a committed text file; the two fixtures that need one write it as `\u0001` (#365).
