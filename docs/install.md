@@ -66,8 +66,8 @@ The plugin also carries four hooks:
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
   a validate warning intentional (#215, #328, #330). It reads only a reply
-  naming a file the session built (#345), and sends back one linking the
-  hosted editor (#340).
+  naming a file the session built, by running a builder (#345, #373), and
+  sends back one linking the hosted editor (#340).
 - `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or
   `.excalidraw`, it refuses one the session has not analyzed, and one over
   64 KB at all, naming the analyze command to run. A line range passes (#342).

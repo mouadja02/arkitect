@@ -2088,6 +2088,15 @@ test('the report check counts a build by the installed, npx or script command, u
       assert(!built('Bash', command), `a build: ${command}`);
     }
     assert(!built('Read', 'arkitect drawio build a.json'), 'only a shell tool builds');
+    // Only a run of the script is a build; reading or committing it isn't (#373).
+    for (const command of ['for f in a b; do ./skills/arkitect-drawio/scripts/build-diagram.mjs $f.json; done',
+      'cd x && skills/arkitect-drawio/scripts/build-diagram.mjs a.json', 'node --no-warnings "C:\\a\\build-diagram.mjs" a.json']) {
+      assert(built('Bash', command), `not a build: ${command}`);
+    }
+    for (const command of ['git add skills/arkitect-drawio/scripts/build-diagram.mjs', 'grep -n "--out" skills/arkitect-drawio/scripts/build-diagram.mjs',
+      'sed -n 1405,1450p skills/arkitect-excalidraw/scripts/build-diagram.mjs', 'cd x && git diff skills/arkitect-drawio/scripts/build-diagram.mjs']) {
+      assert(!built('Bash', command), `a build: ${command}`);
+    }
 
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
@@ -2106,6 +2115,20 @@ test('the report check reads only a reply naming a file the session built (#345)
   eq(outOf('arkitect excalidraw build a.json --out="docs/my arch.excalidraw"'), 'my arch.excalidraw', 'quoted, with =');
   eq(outOf('arkitect drawio build a.json --out "$OUT"'), '*', 'a shell variable stands for any file');
   eq(outOf('arkitect drawio build a.json'), null, 'no --out');
+  // A variable in the folder leaves the name; one in the name is read from the
+  // same command, or stands for any file (#373).
+  const { outsOf } = reportHook;
+  eq(outOf('SP=C:/x/ritual && node bin/arkitect.mjs drawio build s.json --out $SP/a.drawio'), 'a.drawio', 'a variable folder');
+  eq(outsOf('for n in starter as-is; do arkitect drawio build $n.spec.json --out "$T/$n.drawio"; done').join(), 'starter.drawio,as-is.drawio', 'a loop');
+  eq(outOf('OUT=docs/arch.drawio; arkitect drawio build a.json --out "$OUT"'), 'arch.drawio', 'set in the command');
+  eq(outOf('$out = "docs/p.excalidraw"; arkitect excalidraw build a.json --out $out'), 'p.excalidraw', 'set in PowerShell');
+  eq(outOf("s = 'node b/build-diagram.mjs s.json --out o.excalidraw'"), 'o.excalidraw', 'no quote kept');
+  eq(outsOf('arkitect drawio build a.json --out a.drawio && arkitect drawio build b.json --out=b.drawio').join(), 'a.drawio,b.drawio', 'two builds');
+  eq(outsOf('arkitect drawio build a.json --out docs/').join(), '', 'a folder names no file');
+  assert(namesABuiltFile('Saved `docs/arch.drawio`.', ['*']), 'any file is still a file');
+  for (const reply of ['#339 is about an existing `.drawio`.', 'It mentioned `.drawio` and `.excalidraw` files in passing.']) {
+    assert(!namesABuiltFile(reply, ['*']), `no file named: ${reply}`);
+  }
   assert(namesABuiltFile('Saved `./docs/p329.drawio`.', ['p329.drawio']), 'by path');
   assert(namesABuiltFile('**File** P329.drawio', ['p329.drawio']), 'any case');
   for (const reply of ['#339 is about an existing `.drawio`.', 'See xp329.drawio.', 'See p329.drawio.bak']) {

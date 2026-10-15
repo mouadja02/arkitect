@@ -22,7 +22,10 @@ const heading = (name) => new RegExp(`\\*\\*${name}\\b|#+\\s*\\**${name}\\b`);
 // A build by script, by the dispatcher's path, or by the installed or npx
 // `arkitect` with any engine alias: docs/install.md teaches the last two, and
 // the check used to skip them (#301).
-const BUILD = /build-diagram\.mjs|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
+// The script counts only when it is run: `git add`, `grep` or `sed -n` on
+// build-diagram.mjs counted as a build too, and a commit message's "--out" gave
+// a file named "replaces" (#373).
+const BUILD = /(\bnode(\.exe)?["']?\s+(-\S+\s+)*|(^|[;&|(]|\bdo\b|\bthen\b)\s*)["']?[^\s"';&|]*build-diagram\.mjs\b|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
 const SHELLS = ['Bash', 'PowerShell'];
 // What a reply says when it describes a picture: "Layout is clean", "SVG
 // confirms structure and spacing". A sentence that is validate's finding, or
@@ -67,15 +70,35 @@ export function excusesAWarning(reply) {
     .map((s) => s.match(EXCUSE)?.[0]).find(Boolean) ?? null;
 }
 
-// The file a build command wrote, by basename, from `--out x` or `--out=x`.
-// A path the shell expands (`$OUT`, `%OUT%`) can't be read here, so it stands
-// for any file, as every build did before #345.
-export function outOf(command) {
-  const m = String(command).match(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|(\S+))/);
-  if (!m) return null;
-  const path = m[1] ?? m[2] ?? m[3];
-  return /[$%]/.test(path) ? '*' : path.split(/[\\/]/).pop();
+// The files a build command wrote, by basename, from `--out x` or `--out=x`.
+// A variable in the directory (`$SP/a.drawio`) leaves the name as it is. One
+// in the name is read from the same command, `OUT=docs/a.drawio; ...` or
+// `for n in a b; do ... --out $n.drawio`; one set elsewhere can't be read
+// here, so it stands for any file, as every build did before #345. Both made a
+// `*` that sent back a status message naming no built file (#373).
+const VAR = /\$\{?(\w+)\}?|%(\w+)%/g;
+function valuesOf(name, command) {
+  const loop = command.match(new RegExp(`\\bfor\\s+${name}\\s+in\\s+([^;\\n]+?)\\s*;?\\s*do\\b`));
+  if (loop) return loop[1].trim().split(/\s+/).map((w) => w.replace(/^["']|["']$/g, ''));
+  const set = command.match(new RegExp(`(?:^|[;&|\\s])\\$?${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s;&|]+))`));
+  return set ? [set[1] ?? set[2] ?? set[3]] : null;
 }
+export function outsOf(command) {
+  const text = String(command);
+  const outs = [];
+  for (const m of text.matchAll(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s"'`;&|)]+))/g)) {
+    let names = [(m[1] ?? m[2] ?? m[3]).split(/[\\/]/).pop()];
+    for (const [ref, a, b] of names[0].match(VAR) ? [...names[0].matchAll(VAR)] : []) {
+      const values = valuesOf(a ?? b, text)?.map((v) => v.split(/[\\/]/).pop());
+      if (!values || values.some((v) => /[$%]/.test(v))) { names = ['*']; break; }
+      names = names.flatMap((n) => values.map((v) => n.replace(ref, v)));
+    }
+    // `--out docs/` names a folder: no file to match, and '' matched every reply.
+    for (const n of names) if (n && !outs.includes(n)) outs.push(n);
+  }
+  return outs;
+}
+export const outOf = (command) => outsOf(command)[0] ?? null;
 
 // What the session did, from its transcript: a build, the files it wrote, and
 // a PNG opened.
@@ -91,8 +114,7 @@ export function sessionOf(transcriptPath) {
           const command = String(part.input?.command ?? '');
           if (SHELLS.includes(part.name) && BUILD.test(command)) {
             seen.built = true;
-            const out = outOf(command);
-            if (out && !seen.outs.includes(out)) seen.outs.push(out);
+            for (const out of outsOf(command)) if (!seen.outs.includes(out)) seen.outs.push(out);
           }
           if (part.name === 'Read' && /\.png$/i.test(String(part.input?.file_path ?? ''))) seen.viewed = true;
         }
@@ -154,7 +176,8 @@ export function problems(reply, { viewed, unseen = 'no PNG was opened in this se
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function namesABuiltFile(reply, outs) {
   const text = String(reply ?? '');
-  return outs.some((out) => (out === '*' ? /\.(drawio|excalidraw)\b/.test(text)
+  // Any file still means a file: "an existing `.drawio`" names none (#373).
+  return outs.some((out) => (out === '*' ? /[\w)-]\.(drawio|excalidraw)\b/.test(text)
     : new RegExp(`(^|[^\\w.-])${escape(out)}(?![\\w.-]*\\w)`, 'i').test(text)));
 }
 
