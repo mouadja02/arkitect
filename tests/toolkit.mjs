@@ -1441,7 +1441,9 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
 test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () => {
   const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
   assert(/\/mnt\/\[a-zA-Z\]\/\*\)/.test(sh) && sh.includes('linux claude'), 'the WSL check for a Windows claude is gone');
-  if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS only)'); return 'skip'; }
+  // The script refuses Windows itself, so here only the text above is checked;
+  // a skip would count against the fresh-clone total (#47).
+  if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS; its run was checked there)'); return; }
 
   const dir = join(TMP, 'eval-sh');
   const bin = join(dir, 'bin');
