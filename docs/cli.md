@@ -89,7 +89,10 @@ arkitect excalidraw apply --list
   `unknownKinds` or `unknownFields`. Treat a non-empty list as something to fix.
 - **Backups.** A build copies an existing target to
   `<name>.backup-YYYYMMDD-HHMMSS.<ext>` first, then keeps the oldest backup and
-  the newest five (`--keep-backups N`, `0` keeps all). `arkitect <engine>
+  the newest five (`--keep-backups N`, `0` keeps all). When the target holds
+  shapes the build does not draw, added by hand since it was built, `notes`
+  names them and the backup is `<name>.backup-YYYYMMDD-HHMMSS-kept.<ext>`,
+  which retention never deletes. `arkitect <engine>
   backup <file>` does the same for any other edit. Add `*.backup-*` to your
   `.gitignore`, and `.$*.bkp`: the autosave Draw.io Desktop leaves beside a
   file it has open.

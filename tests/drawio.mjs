@@ -4755,6 +4755,40 @@ test('a build over a .drawio Arkitect did not write says so in its notes, naming
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A file Arkitect built and someone then added to passed as its own: a
+// rebuild dropped the added cell with nothing said, and retention deleted the
+// one backup holding it a few rebuilds later (#376).
+test('a rebuild over a .drawio someone added to names the dropped cells, and retention keeps their backup (#376)', () => {
+  const dir = join(TMP, 'p376');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.drawio');
+  writeFileSync(spec, JSON.stringify({ nodes: [{ id: 'orders', label: 'Orders' }, { id: 'worker', label: 'Worker', col: 1 }],
+    edges: [{ from: 'orders', to: 'worker' }] }));
+  const build = () => JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  const addCell = () => writeFileSync(out, readFileSync(out, 'utf8').replace('</root>',
+    '<mxCell id="added" value="Audit &lt;b&gt;log&lt;/b&gt;" style="rounded=1;" vertex="1" parent="1"><mxGeometry x="80" y="400" width="190" height="60" as="geometry" /></mxCell></root>'));
+  build();
+  eq(build().notes.join(), '', 'a rebuild over its own untouched output says nothing');
+  addCell();
+  const dropped = build();
+  eq(dropped.notes.length, 1, 'one note');
+  assert(dropped.notes[0].includes('"added" (Audit log)') && dropped.notes[0].includes(dropped.backup)
+    && dropped.notes[0].includes('references/editing.md'), dropped.notes[0]);
+  assert(/\.backup-\d{8}-\d{6}-kept(-\d+)?\.drawio$/.test(dropped.backup), dropped.backup);
+  assert(readFileSync(dropped.backup, 'utf8').includes('id="added"'), 'the kept backup holds the cell');
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} drops nothing more`);
+  const holding = readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('id="added"'));
+  eq(holding.length, 1, 'seven rebuilds later, a backup still holds the added cell');
+  eq(readdirSync(dir).filter((f) => /\.backup-\d{8}-\d{6}(-\d+)?\.drawio$/.test(f)).length, 6, 'retention still keeps the oldest and the newest five');
+  // Ids the builder makes up are not someone's work, nor is a spec's edge renamed.
+  const ids = (text) => builder.droppedCells(text, builder.buildDiagram({ nodes: [{ id: 'orders', label: 'Orders' }] }).xml).map((d) => d.id).join();
+  eq(ids(builder.buildDiagram({ title: 'T', nodes: [{ id: 'orders' }, { id: 'w', col: 1 }], edges: [{ from: 'orders', to: 'w', label: 'x' }] }).xml), 'w',
+    'a node dropped from the spec is named; title, e1 and e1-lbl are not');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // Five AWS accounts shipped as plain boxes with every one listed under
 // looksLikeBoundary, and validate passed silent (#341); a PostgreSQL box
 // listed under namesAProduct did the same, where Excalidraw's validate warns

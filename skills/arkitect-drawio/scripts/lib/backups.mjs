@@ -14,11 +14,14 @@ import { fileURLToPath } from 'node:url';
 const MAX_BACKUPS_PER_SECOND = 1000;
 const quoteRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function backupExisting(path, { now = new Date() } = {}) {
+// `kept: true` names it `<stem>.backup-<stamp>-kept<ext>`, which retention
+// never matches: the builders pass it when the file holds work the build drops
+// (#376).
+export function backupExisting(path, { now = new Date(), kept = false } = {}) {
   if (!existsSync(path)) return null;
   const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
   const ext = extname(path);
-  const name = `${basename(path, ext)}.backup-${stamp}`;
+  const name = `${basename(path, ext)}.backup-${stamp}${kept ? '-kept' : ''}`;
   const sameSecond = new RegExp(`^${quoteRe(name)}(?:-([1-9]\\d*))?${quoteRe(ext)}$`);
   let first = 0;
   for (const entry of readdirSync(dirname(path))) {
@@ -56,12 +59,26 @@ export const foreignNote = (path, backup) => `${path} carries no sign of an Arki
   + `positions and anything drawn by hand were replaced by this build; the original is at ${backup}. To change a `
   + 'diagram someone drew, edit it in place instead, as references/editing.md says, and say so in the report';
 
+// A file Arkitect built and someone then added to passes as Arkitect's own, so
+// a rebuild dropped the added shapes with nothing said, and retention deleted
+// the one backup holding them a few rebuilds later (#376). Each builder lists
+// what the replaced file has that its build does not draw, `{ id, label }`,
+// and backs the file up under a name retention never deletes.
+export const droppedNote = (path, backup, dropped) => {
+  const shown = dropped.slice(0, 10).map((d) => `"${d.id}"${d.label ? ` (${d.label})` : ''}`).join(', ');
+  const more = dropped.length > 10 ? ` and ${dropped.length - 10} more` : '';
+  return `${path} held ${dropped.length} shape${dropped.length > 1 ? 's' : ''} this build does not draw, added since it `
+    + `was built or dropped from the spec: ${shown}${more}. The replaced file is kept at ${backup}, which retention never `
+    + 'deletes. To change a diagram someone touched, edit it in place as references/editing.md says, and say so in the report';
+};
+
 // Retention (#49). Every rebuild leaves a backup, so a build-look-fix loop used
 // to leave ten or twenty beside the user's diagram. After a successful write
 // the builder keeps the newest `keep` backups of that target plus the oldest -
 // usually the person's own version from before an agent started - and deletes
 // the rest. Only names backupExisting writes for this exact target count
-// (`<stem>.backup-YYYYMMDD-HHMMSS[-n]<ext>`); nothing else is ever touched.
+// (`<stem>.backup-YYYYMMDD-HHMMSS[-n]<ext>`); nothing else is ever touched,
+// a `-kept` backup holding work a build dropped included (#376).
 // `keep: 0` keeps everything. Returns the deleted paths.
 export const DEFAULT_KEEP_BACKUPS = 5;
 

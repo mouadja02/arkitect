@@ -205,8 +205,9 @@ export function decompressPage(b64) {
   return decodeURIComponent(raw);
 }
 
-export function readMxfile(path) {
-  const text = readFileSync(path, 'utf8');
+export const readMxfile = (path) => parseMxfile(readFileSync(path, 'utf8'), path);
+
+export function parseMxfile(text, path = null) {
   let opening = null;
   const pages = [];
   let page;
