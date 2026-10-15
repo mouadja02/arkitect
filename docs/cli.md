@@ -42,7 +42,7 @@ arkitect drawio build spec.json --out docs/arch.drawio --defaults   # house styl
 arkitect drawio build --print-style                    # the style a build would use
 arkitect drawio validate docs/arch.drawio              # --page N, --strict, --json
 arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
-arkitect drawio analyze docs/arch.drawio --page 0 --cells
+arkitect drawio analyze docs/arch.drawio --page 0 --cells   # a row per cell; --all, every key
 arkitect drawio analyze docs/arch.drawio --find "Checkout API"
 arkitect drawio backup docs/arch.drawio                # before an edit the builder doesn't make
 arkitect drawio packs --verify                         # committed packs against their pins

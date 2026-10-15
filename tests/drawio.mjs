@@ -3909,10 +3909,30 @@ test('build reads the spec, not the --out value, and refuses a bad command line 
   eq(drawioCli('build', malformed, '--out', target).stderr.trim().split('\n').length, 1, 'a malformed spec is one line');
 });
 
+// Fifteen keys per cell, pretty-printed, made the starter's table 11 KB: the
+// route the read hook names in place of reading the file (#385).
+test('analyze --cells prints one compact row per cell, every key only with --all (#385)', () => {
+  const cells = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells');
+  eq(cells.status, 0, stderrLine(cells));
+  assert(cells.stdout.length < 6144, `the starter's table is ${cells.stdout.length} B`);
+  const rows = cells.stdout.trim().split('\n').map((line) => JSON.parse(line));
+  const all = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells', '--all');
+  eq(all.status, 0, stderrLine(all));
+  const full = JSON.parse(all.stdout);
+  eq(rows.map((r) => r.id).join(), full.map((r) => r.id).join(), 'a row for every cell --all lists');
+  assert(rows.every((r) => !Object.values(r).some((v) => v === null || v === false)), 'no empty keys');
+  const edge = full.find((r) => r.kind === 'edge');
+  eq(JSON.stringify(rows.find((r) => r.id === edge.id).src), JSON.stringify(edge.src), 'an edge keeps its ends');
+  assert(full.every((r) => 'fill' in r && 'src' in r), '--all keeps every key');
+  const bare = drawioCli('analyze', ARGS_STARTER, '--all');
+  eq(bare.status, 2, 'and needs --cells');
+  assert(/--all goes with --cells/.test(stderrLine(bare)), stderrLine(bare));
+});
+
 test('analyze --page is checked the same way, and a missing page exits 1 instead of crashing (#37)', () => {
   const cells = drawioCli('analyze', '--page', '0', ARGS_STARTER, '--cells');
   eq(cells.status, 0, `--page 0 --cells (stderr: ${stderrLine(cells)})`);
-  assert(Array.isArray(JSON.parse(cells.stdout)), 'prints the geometry table');
+  assert(cells.stdout.trim().split('\n').every((line) => JSON.parse(line).id), 'prints the geometry table, a row per line');
 
   const range = drawioCli('analyze', ARGS_STARTER, '--page', '3', '--images');
   eq(range.status, 1, 'a page the file lacks');

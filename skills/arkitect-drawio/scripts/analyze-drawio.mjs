@@ -3,7 +3,8 @@
 // raw labels. Handles compressed and uncompressed pages.
 //
 //   node analyze-drawio.mjs <file...> [--out summary.json]
-//   node analyze-drawio.mjs <file> --page 0 --cells       (per-cell geometry table)
+//   node analyze-drawio.mjs <file> --page 0 --cells       (per-cell geometry, one row each)
+//   node analyze-drawio.mjs <file> --page 0 --cells --all (every key, empty ones too)
 //   node analyze-drawio.mjs <file> --page 0 --images      (embedded image inventory)
 //   node analyze-drawio.mjs <file> --find "Checkout API"  (the cells a label names)
 
@@ -16,9 +17,12 @@ import {
 import { outProblem, DIAGRAM_EXTS } from './lib/backups.mjs';
 
 const USAGE = 'usage: analyze-drawio.mjs <file...> [--out out.json]\n'
-  + '       analyze-drawio.mjs <file> [--page N] (--cells | --images | --find <label>)';
+  + '       analyze-drawio.mjs <file> [--page N] (--cells [--all] | --images | --find <label>)';
 
 const COLOR_KEYS = ['fillColor', 'strokeColor', 'fontColor', 'gradientColor', 'labelBackgroundColor', 'swimlaneFillColor'];
+
+const compactRow = (row) => JSON.stringify(Object.fromEntries(Object.entries(row)
+  .filter(([k, v]) => v !== null && v !== false && v !== '' && !(Array.isArray(v) && !v.length) && !((k === 'labelWords' || k === 'wp') && !v))));
 
 function tally(map, key) {
   if (key === undefined || key === null || key === '') return;
@@ -281,8 +285,9 @@ function analyzeFile(path) {
 
 function main(argv) {
   const { options: opts, positionals: files } = parseCliOrExit(argv,
-    { values: { '--out': null, '--page': pageIndexArg, '--find': null }, switches: ['--cells', '--images'] }, USAGE);
+    { values: { '--out': null, '--page': pageIndexArg, '--find': null }, switches: ['--cells', '--images', '--all'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  if (opts.all && !opts.cells) exitUsage('--all goes with --cells', USAGE);
   const outBad = opts.out && outProblem(opts.out, { inputs: files, refuse: DIAGRAM_EXTS });
   if (outBad) exitUsage(outBad, USAGE);
   if (opts.find !== undefined) {
@@ -339,7 +344,11 @@ function main(argv) {
         stroke: parseStyle(c.style).strokeColor ?? null,
         fontSize: parseStyle(c.style).fontSize ?? null,
       }));
-    console.log(JSON.stringify(rows, null, 1));
+    // One compact row per cell, without its empty keys: fifteen keys per cell
+    // pretty-printed made the starter's table 11 KB, the route the read hook
+    // names in place of reading the file (#385).
+    if (opts.all) console.log(JSON.stringify(rows, null, 1));
+    else console.log(rows.map(compactRow).join('\n'));
     return;
   }
 
