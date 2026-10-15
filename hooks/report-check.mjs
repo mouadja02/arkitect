@@ -79,7 +79,9 @@ export function excusesAWarning(reply) {
 // `*` that sent back a status message naming no built file (#373). Its folder
 // still says something: `--out out/$n.drawio` with `n=$(basename ...)` stands
 // for any `.drawio` in out/, `out/*.drawio`, and a reply quoting docs/arch.drawio
-// is not a report of it (#395).
+// is not a report of it (#395). A folder held in a variable set in the same
+// command, `S=scratch/tpl; ... --out "$S/$n.drawio"`, is read like a name and
+// stands for tpl/ (#397).
 const VAR = /\$\{?(\w+)\}?|%(\w+)%/g;
 function valuesOf(name, command) {
   const loop = command.match(new RegExp(`\\bfor\\s+${name}\\s+in\\s+([^;\\n]+?)\\s*;?\\s*do\\b`));
@@ -87,13 +89,23 @@ function valuesOf(name, command) {
   const set = command.match(new RegExp(`(?:^|[;&|\\s])\\$?${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s;&|]+))`));
   return set ? [set[1] ?? set[2] ?? set[3]] : null;
 }
+// The last folder of a path, its variables read from the command; one with a
+// variable left in it is returned as it is and stands for any folder.
+function folderOf(dir, command) {
+  for (const [ref, a, b] of [...dir.matchAll(VAR)]) {
+    const values = valuesOf(a ?? b, command);
+    if (values?.length !== 1) return dir;
+    dir = dir.replace(ref, values[0]);
+  }
+  return dir.split(/[\\/]/).filter(Boolean).pop() ?? '';
+}
 export function outsOf(command) {
   const text = String(command);
   const outs = [];
   for (const m of text.matchAll(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s"'`;&|)]+))/g)) {
     const path = (m[1] ?? m[2] ?? m[3]).split(/[\\/]/);
     let names = [path.pop()];
-    const dir = path.pop() ?? '';
+    const dir = folderOf(path.pop() ?? '', text);
     for (const [ref, a, b] of names[0].match(VAR) ? [...names[0].matchAll(VAR)] : []) {
       const values = valuesOf(a ?? b, text)?.map((v) => v.split(/[\\/]/).pop());
       if (!values || values.some((v) => /[$%]/.test(v))) {
