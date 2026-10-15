@@ -46,8 +46,13 @@ scripts/eval.sh -- --keep-temp                       # after --, straight to cla
 `scripts/eval.sh` is the supported route on Linux and macOS. It checks the
 prerequisites, applies the workarounds below, caps the spend
 (`--max-cost-usd`, default 5), and writes `result.json`, `report.html`,
-`run.log` and a one-screen `summary.txt` under `evals/results/<stamp>/`. It
-exits 1 if any case scored below 1, so it can gate a run.
+`run.log`, a one-screen `summary.txt` and each run's `traces/<case>-runN.jsonl`
+under `evals/results/<stamp>/`. It exits 1 if any case scored below 1, so it
+can gate a run. A trace holds every tool call and the final reply, so a grader
+that failed a reply can be checked against it. `claude plugin eval` deletes
+them with its temp dirs, so the script runs it with `--keep-temp` in a private
+`TMPDIR`, copies the traces out and removes the rest. `-- --keep-temp` keeps
+the dirs where they always were (#374).
 
 The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
 its own:
@@ -57,6 +62,7 @@ its own:
 
     drawio-edit-existing-diagram            0.86
       FAIL  wrote-a-backup - pattern not found in files
+      trace: traces/drawio-edit-existing-diagram-run1.jsonl
 ok  drawio-generate-architecture            1.00
 
 overall 0.91  -  12/12 cases ran  -  42% of runs perfect

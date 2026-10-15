@@ -7,7 +7,8 @@
 #   scripts/eval.sh --case 'drawio-*' --runs 2
 #   scripts/eval.sh -- --keep-temp                   anything after -- goes to claude
 #
-# Results, the JSON and a one-screen summary land under evals/results/<stamp>/.
+# Results, the JSON, a one-screen summary and each run's trace.jsonl land under
+# evals/results/<stamp>/.
 #
 # They cost money: real agent runs and real LLM graders. Nothing here runs by
 # default and every run is capped by --max-cost-usd.
@@ -22,7 +23,7 @@ MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
 die() { echo "error: $*" >&2; exit 2; }
 
 usage() {
-  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 Options:
@@ -125,10 +126,20 @@ if [ "$CHECK_ONLY" -eq 1 ]; then echo; echo "all required prerequisites are pres
 # Only the two paths Claude Code needs to know who you are. Nothing else from
 # the real home is visible, so ~/.docker is simply not there to be refused.
 SANDBOX_HOME="$(mktemp -d "${TMPDIR:-/tmp}/arkitect-eval-home.XXXXXX")"
-cleanup() { rm -rf "$SANDBOX_HOME"; }
+# Each run's trace.jsonl lives in a temp dir that `claude plugin eval` deletes
+# unless told --keep-temp, so a reply a grader failed could not be read after
+# the run (#374). The run keeps them in a TMPDIR of its own, the summary copies
+# the traces out, and this removes the rest, a copy of the Claude config
+# included. Its dirs are read-only, so they are made writable first. With
+# --keep-temp passed after --, the kept dirs stay where they always did.
+RUN_TMP="$SANDBOX_HOME/tmp"
+mkdir -p "$RUN_TMP"
+cleanup() { chmod -R u+rwx "$RUN_TMP" 2>/dev/null; rm -rf "$SANDBOX_HOME"; }
 trap cleanup EXIT INT TERM
 [ -e "$HOME/.claude" ] && ln -s "$HOME/.claude" "$SANDBOX_HOME/.claude"
 [ -e "$HOME/.claude.json" ] && ln -s "$HOME/.claude.json" "$SANDBOX_HOME/.claude.json"
+KEEP=0
+for a in ${PASSTHROUGH+"${PASSTHROUGH[@]}"}; do [ "$a" = "--keep-temp" ] && KEEP=1; done
 
 # ---------------------------------------------------------------- run
 
@@ -151,12 +162,13 @@ args=(plugin eval "$ROOT"
 [ -n "$CASE" ] && args+=(--case "$CASE")
 for t in ${TAGS+"${TAGS[@]}"}; do args+=(--tag "$t"); done
 args+=(${PASSTHROUGH+"${PASSTHROUGH[@]}"})
+if [ "$KEEP" -eq 0 ]; then args+=(--keep-temp); run_tmp="$RUN_TMP"; else run_tmp="${TMPDIR:-/tmp}"; fi
 
 echo
 echo "running: claude ${args[*]}"
 echo "results: $OUT"
 echo
-( cd "$ROOT" && HOME="$SANDBOX_HOME" claude "${args[@]}" ) 2>&1 | tee "$OUT/run.log"
+( cd "$ROOT" && HOME="$SANDBOX_HOME" TMPDIR="$run_tmp" claude "${args[@]}" ) 2>&1 | tee "$OUT/run.log"
 status=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------------- summary
@@ -166,7 +178,7 @@ status=${PIPESTATUS[0]}
 # 2 for a result it cannot read. Exiting with the run's status reported 0 for a
 # batch whose every run errored (#369).
 if [ -f "$OUT/result.json" ]; then
-  node "$HERE/eval-summary.mjs" "$OUT/result.json" | tee "$OUT/summary.txt"
+  node "$HERE/eval-summary.mjs" "$OUT/result.json" --traces "$OUT/traces" | tee "$OUT/summary.txt"
   verdict=${PIPESTATUS[0]}
 else
   echo "no result.json was written; see $OUT/run.log" >&2

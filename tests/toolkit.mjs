@@ -1441,6 +1441,8 @@ test('scripts/eval.sh parses, and its options match its help and the README (#13
 test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () => {
   const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
   assert(/\/mnt\/\[a-zA-Z\]\/\*\)/.test(sh) && sh.includes('linux claude'), 'the WSL check for a Windows claude is gone');
+  assert(sh.includes('args+=(--keep-temp)') && sh.includes('--traces "$OUT/traces"') && sh.includes('chmod -R u+rwx "$RUN_TMP"'),
+    'the traces are no longer kept, or their temp dirs no longer removed (#374)');
   // The script refuses Windows itself, so here only the text above is checked;
   // a skip would count against the fresh-clone total (#47).
   if (process.platform === 'win32') { console.log('      (the script runs on Linux and macOS; its run was checked there)'); return; }
@@ -1450,14 +1452,18 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(bin, { recursive: true });
   const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
-  stub('claude', 'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$STUB_RESULT" "$2"; shift; done; exit 0');
+  // Like the real one with --keep-temp: a read-only temp dir holding the trace.
+  stub('claude', ['keep=0; for a in "$@"; do [ "$a" = --keep-temp ] && keep=1; done',
+    'echo "$keep $TMPDIR" > "$STUB_SEEN"',
+    'if [ $keep = 1 ]; then k="$TMPDIR/claude-eval-stub"; mkdir -p "$k/out"; echo trace > "$k/out/trace.jsonl"; chmod 500 "$k/out" "$k"; fi',
+    'while [ $# -gt 0 ]; do [ "$1" = --json ] && sed "s|@TMP@|$TMPDIR|g" "$STUB_RESULT" > "$2"; shift; done; exit 0'].join('\n'));
   stub('bwrap', 'exit 0');
   stub('socat', 'exit 0');
   const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin` };
-  const run = (result, args = []) => {
+  const run = (result, args = [], more = {}) => {
     writeFileSync(join(dir, 'result.json'), JSON.stringify(result));
     return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], {
-      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json') },
+      cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json'), STUB_SEEN: join(dir, 'seen'), ...more },
     });
   };
   const errored = run({ cases: [{ name: 'c', arms: { with: [{ score: 0, error: 'scaffold failed (exit 127)' }] } }],
@@ -1466,6 +1472,25 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   const clean = run({ cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }],
     aggregates: { overallScore: 1, overallPassRate: 1 } });
   eq(clean.status, 0, `a clean run passes:\n${clean.stdout.slice(-400)}`);
+
+  // Each run's trace is kept with the results, and the temp dir it came from,
+  // read-only and holding a copy of the Claude config, is gone (#374).
+  const failed = run({ cases: [{ name: 'c', arms: { with: [{ score: 0.5, tracePath: '@TMP@/claude-eval-stub/out/trace.jsonl',
+    graders: [{ name: 'g', passed: false }] }] } }], aggregates: { overallScore: 0.5, overallPassRate: 0 } });
+  eq(failed.status, 1, 'a failed grader fails the run');
+  const [keep, tmp] = readFileSync(join(dir, 'seen'), 'utf8').trim().split(' ');
+  eq(keep, '1', 'the run is told to keep its temp dirs');
+  assert(tmp.includes('arkitect-eval-home'), `in a TMPDIR of its own: ${tmp}`);
+  eq(readFileSync(join(dir, 'out', 'traces', 'c-run1.jsonl'), 'utf8').trim(), 'trace', 'the trace is copied');
+  assert(failed.stdout.includes('trace: traces/c-run1.jsonl'), `the failure names its trace:\n${failed.stdout.slice(-400)}`);
+  assert(!existsSync(tmp), `the kept temp dir is removed: ${tmp}`);
+  const own = join(dir, 'tmp');
+  mkdirSync(own, { recursive: true });
+  run({ cases: [], aggregates: {} }, ['--', '--keep-temp'], { TMPDIR: own });
+  eq(readFileSync(join(dir, 'seen'), 'utf8').trim(), `1 ${own}`, 'asked to keep them, they stay where they were');
+  assert(existsSync(join(own, 'claude-eval-stub', 'out', 'trace.jsonl')), 'and are not removed');
+  chmodSync(join(own, 'claude-eval-stub'), 0o755);
+  chmodSync(join(own, 'claude-eval-stub', 'out'), 0o755);
 
   stub('node', 'echo 20');
   const old = spawnSync('bash', ['scripts/eval.sh', '--check'], { cwd: ROOT, encoding: 'utf8', env });
@@ -1553,6 +1578,23 @@ test('the eval summary reports every case and gates on the low ones (#134)', () 
 
   const gone = spawnSync(process.execPath, [summary, join(TMP, 'no-such-result.json')], { encoding: 'utf8' });
   eq(gone.status, 2, 'a missing file should exit 2, not 1');
+
+  // --traces copies each run's trace out of the temp dir and names it under a
+  // failure; a run whose trace is gone is reported without one (#374).
+  const traceFile = join(TMP, 'eval-trace.jsonl');
+  writeFileSync(traceFile, '{"type":"assistant"}\n');
+  writeFileSync(join(TMP, 'eval-result.json'), JSON.stringify({
+    cases: [{ name: 'drawio-x', arms: { with: [{ score: 0.5, tracePath: traceFile, graders: [{ name: 'g', passed: false }] },
+      { score: 0.5, tracePath: join(TMP, 'gone.jsonl'), graders: [{ name: 'g', passed: false }] }] } }],
+    aggregates: {} }));
+  const kept = join(TMP, 'eval-traces');
+  rmSync(kept, { recursive: true, force: true });
+  const traced = spawnSync(process.execPath, [summary, '--traces', kept, join(TMP, 'eval-result.json')], { encoding: 'utf8' });
+  eq(traced.status, 1, 'still gates');
+  eq(readFileSync(join(kept, 'drawio-x-run1.jsonl'), 'utf8'), '{"type":"assistant"}\n', 'the trace is copied');
+  assert(traced.stdout.includes('trace (run 1): eval-traces/drawio-x-run1.jsonl'), traced.stdout);
+  assert(!traced.stdout.includes('trace (run 2)'), `a trace that is gone is not named:\n${traced.stdout}`);
+  eq(spawnSync(process.execPath, [summary, join(TMP, 'eval-result.json'), '--traces'], { encoding: 'utf8' }).status, 2, '--traces needs a folder');
 });
 
 test('the packed CLI works from outside the checkout (#38)', () => {
