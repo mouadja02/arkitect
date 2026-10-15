@@ -1332,6 +1332,17 @@ function assemble(spec, style) {
     }));
   }
 
+  // Two non-negotiables the builder can see and nothing checked on any host:
+  // assumptions on the canvas, and a legend for more than one kind (#384). A
+  // sheet of icons with no connector claims no flow.
+  const nodes = spec.nodes ?? [];
+  if (nodes.length > 3 && spec.edges?.length && !nodes.some((n) => n.kind === 'note')) {
+    report.notes.push('no note on the canvas: put the assumptions from your report on it, a `note` node (pattern 10)');
+  }
+  if (spec.legend === false && usedKinds.size > 1) {
+    report.notes.push(`legend: false drew no legend for ${usedKinds.size} connector kinds (${[...usedKinds].join(', ')}): `
+      + 'a legend is a non-negotiable with more than one kind (pattern 10); remove the key, or say why in the report');
+  }
   if (spec.legend !== false && usedKinds.size > 1) {
     for (const mismatch of legendMismatches) {
       report.notes.push(`edges[${mismatch.i}] ${mismatch.from} -> ${mismatch.to} (${mismatch.kind}) differs from its legend sample: ${mismatch.differing.join(', ')}`);

@@ -4760,6 +4760,33 @@ test('validate reports a remote image file once (#379)', () => {
   eq(JSON.stringify(r.errors.filter((e) => e.includes(id))), JSON.stringify([`file "${id}" is a remote URL; the scene will not be portable`]), 'one error');
 });
 
+// `legend: false` was honoured with nothing said, and nothing on any host
+// checked for a note holding the assumptions (#384).
+test('the build report notes a scene with no canvas note, or a legend turned off (#384)', () => {
+  const nodes = ['a', 'b', 'c', 'd'].map((id, i) => ({ id, kind: 'box', label: id.toUpperCase(), col: i }));
+  const edges = [{ from: 'a', to: 'b', kind: 'flow' }, { from: 'b', to: 'c', kind: 'error' }];
+  const note = { id: 'n', kind: 'note', label: 'Assumes one region', col: 0, row: 1 };
+  const notesOf = (spec) => builder.buildDiagram(spec, { seed: 1 }).report.notes.filter((n) => /legend: false|no note on the canvas/.test(n));
+  const off = notesOf({ nodes, edges, legend: false });
+  assert(off.some((n) => n.startsWith('legend: false drew no legend for 2 connector kinds (flow, error)')), off.join(' | '));
+  assert(off.some((n) => n.startsWith('no note on the canvas') && n.includes('pattern 10')), off.join(' | '));
+  eq(notesOf({ nodes: [...nodes, note], edges }).length, 0, 'a note and a legend');
+  eq(notesOf({ nodes: [...nodes, note], edges: edges.slice(0, 1), legend: false }).length, 0, 'one kind needs no legend');
+  eq(notesOf({ nodes: nodes.slice(0, 3), edges }).length, 0, 'three boxes need no note');
+  eq(notesOf({ nodes }).length, 0, 'icons with no connector claim no flow');
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    eq(notesOf(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8'))).length, 0, file);
+  }
+  // The eval case reads the file for the note, which nothing else did. The
+  // starter's orange decision diamond shares the note fill.
+  const yaml = readFileSync(join(ROOT, 'evals', 'excalidraw', 'generate-architecture', 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+  const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
+  const starter = JSON.parse(readFileSync(STARTER_SPEC, 'utf8'));
+  const written = (spec) => JSON.stringify(builder.buildDiagram(spec, { seed: 1 }).scene, null, 2);
+  assert(grader.test(written(starter)), 'the grader finds a note');
+  assert(!grader.test(written({ ...starter, nodes: starter.nodes.filter((n) => n.kind !== 'note') })), 'and fails a scene without one');
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');
