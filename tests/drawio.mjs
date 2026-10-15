@@ -9,7 +9,7 @@
 // skip rather than fail, so the suite still runs on a clean checkout.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync, linkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -3955,6 +3955,29 @@ test('analyze and build refuse an --out that names their input or the wrong kind
   eq(readdirSync(dir).length, 2, 'no backup and no stray file');
   eq(drawioCli('build', spec, '--out', join(dir, 'b.drawio'), '--defaults').status, 0, 'a .drawio still builds');
   eq(drawioCli('analyze', diagram, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
+});
+
+// A hard link to the input has a path of its own, so the #349 guard let
+// `analyze a.drawio --out summary.json` replace the diagram through it (#391).
+test('analyze and build refuse an --out that is another name for their input (#391)', () => {
+  const dir = join(TMP, 'out-alias');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const diagram = join(dir, 'a.drawio');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(diagram, readFileSync(ARGS_STARTER));
+  writeFileSync(spec, readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.spec.json')));
+  linkSync(diagram, join(dir, 'summary.json'));
+  linkSync(spec, join(dir, 'spec-alias.drawio'));
+  const before = { [diagram]: readFileSync(diagram, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const args of [['analyze', diagram, '--out', join(dir, 'summary.json')], ['build', spec, '--out', join(dir, 'spec-alias.drawio')]]) {
+    const r = drawioCli(...args);
+    eq(r.status, 2, `${args[0]} through a hard link: usage status`);
+    assert(/is the file this reads/.test(r.stderr) && !hasStack(r), `${args[0]}: said "${stderrLine(r)}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup');
+  eq(drawioCli('analyze', diagram, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
 });
 
 // ------------------------------------------------------------- spec checks (#36)

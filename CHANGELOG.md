@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- `analyze --out` and `build --out` refuse a hard link or symlink to the file they read, as they already refused the same path. `analyze a.drawio --out summary.json`, through a hard link, replaced the diagram with its summary, exit 0 and no backup (#391).
+
 ## [2.3.2] — 2026-10-15
 
 ### Added

@@ -98,8 +98,19 @@ export const DIAGRAM_EXTS = ['.drawio', '.dio', '.excalidraw', '.excalidrawlib']
 const samePath =(a, b) => (process.platform === 'win32'
   ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b));
 
+// Two names for one file: a hard link, or a symlink, has its own path string,
+// and `analyze a.drawio --out summary.json` through one replaced the diagram
+// with its summary (#391). Identity is the device and inode, compared only
+// when both exist.
+const sameFile = (a, b) => {
+  try {
+    const [x, y] = [statSync(a, { bigint: true }), statSync(b, { bigint: true })];
+    return x.ino !== 0n && x.dev === y.dev && x.ino === y.ino;
+  } catch { return false; }
+};
+
 export function outProblem(out, { inputs = [], exts = null, refuse = [] } = {}) {
-  const input = inputs.find((file) => samePath(file, out));
+  const input = inputs.find((file) => samePath(file, out) || sameFile(file, out));
   if (input) return `--out ${out} is the file this reads, ${input}; write somewhere else`;
   const ext = extname(out).toLowerCase();
   if (exts && !exts.includes(ext)) return `--out must end in ${exts.join(' or ')}, got "${ext}"`;

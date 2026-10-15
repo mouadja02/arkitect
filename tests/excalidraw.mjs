@@ -13,7 +13,7 @@
 // would stop testing the thing that actually breaks.
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync, linkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -4506,6 +4506,29 @@ test('Excalidraw analyze and build refuse an --out that names their input or the
   eq(readdirSync(dir).length, 2, 'no backup and no stray file');
   eq(arkitect('build', spec, '--out', join(dir, 'b.excalidraw'), '--defaults').status, 0, 'a .excalidraw still builds');
   eq(arkitect('analyze', scene, '--out', join(dir, 'summary.json')).status, 0, 'a .json summary still writes');
+});
+
+// A hard link to the input has a path of its own, so the #349 guard let
+// `analyze a.excalidraw --out summary.json` replace the scene through it (#391).
+test('Excalidraw analyze and build refuse an --out that is another name for their input (#391)', () => {
+  const dir = join(TMP, 'out-alias');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const scene = join(dir, 'a.excalidraw');
+  const spec = join(dir, 'a.spec.json');
+  writeFileSync(scene, readFileSync(STARTER));
+  writeFileSync(spec, readFileSync(STARTER_SPEC));
+  linkSync(scene, join(dir, 'summary.json'));
+  linkSync(spec, join(dir, 'spec-alias.excalidraw'));
+  const before = { [scene]: readFileSync(scene, 'utf8'), [spec]: readFileSync(spec, 'utf8') };
+  for (const args of [['analyze', scene, '--out', join(dir, 'summary.json')], ['build', spec, '--out', join(dir, 'spec-alias.excalidraw')]]) {
+    const r = arkitect(...args);
+    eq(r.status, 2, `${args[0]} through a hard link: usage status`);
+    assert(/is the file this reads/.test(r.stderr) && !hasStack(r), `${args[0]}: said "${r.stderr.trim().split('\n')[0]}"`);
+  }
+  for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup');
+  eq(arkitect('analyze', scene, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
 });
 
 cleanTestIcons();
