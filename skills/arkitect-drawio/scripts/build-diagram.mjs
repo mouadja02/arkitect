@@ -22,13 +22,13 @@
 // grid snapping - the reference diagrams are placed free-hand, so this is a
 // deliberate normalisation, not an observed convention.
 
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
+import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
-import { parseCliOrExit, exitUsage } from './lib/drawio-core.mjs';
+import { parseCliOrExit, exitUsage, parseMxfile, extractCells } from './lib/drawio-core.mjs';
 import { readJson } from './lib/read-json.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
@@ -36,6 +36,7 @@ import {
 } from './lib/spec-numbers.mjs';
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
+import { strayMembers, strayNote } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
@@ -676,6 +677,14 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       cells.unshift(...titleCells);
     }
 
+    // A non-member set between two members is drawn inside the boundary (#378).
+    const members = [
+      ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boxOf(b), boundary: true })),
+      ...pending.filter((d) => placed.get(d.n.id).leaf)
+        .map((d) => ({ id: d.n.id, parent: d.n.parent, box: { x: d.x, y: d.y, width: d.box.w, height: d.box.h } })),
+    ];
+    for (const stray of strayMembers(members)) report.notes.push(at + strayNote(stray));
+
     report.looksLikeBoundary.push(...looksLikeBoundary(footprints));
     // The same verdict an icon node would get, so what is listed would draw (#240).
     const plainBoxes = footprints.filter((f) => f.plain).map((f) => (spec.nodes ?? []).find((n) => n.id === f.id));
@@ -809,6 +818,19 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
 // rewrites it on save, so a file edited by hand since reads as not ours (#339).
 export const isArkitectDrawio = (text) => /<mxfile\b[^>]*\bagent="arkitect-drawio"/.test(text.slice(0, 4096));
 
+// The cells of a file this build replaces that the build does not draw (#376):
+// added since by hand, or dropped from the spec. The ids the builder makes up
+// for itself are left out; they change with the spec, not with an edit.
+const GENERATED = /^(?:[01]|e\d+|title|subtitle|legend(?:-[abet]\d+)?)$|-lbl$/;
+const cellsOf = (xml) => parseMxfile(xml).pages.flatMap((page) => extractCells(page.xml));
+const plainText = (value) => value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim().slice(0, 40);
+export function droppedCells(oldText, newXml) {
+  const drawn = new Set(cellsOf(newXml).map((c) => c.id));
+  return cellsOf(oldText).filter((c) => c.id && (c.vertex || c.edge) && !drawn.has(c.id) && !GENERATED.test(c.id))
+    .map((c) => ({ id: c.id, label: plainText(c.value) }));
+}
+
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
 
@@ -863,9 +885,18 @@ function main(argv) {
   // A missing output folder is created, not reported as a stack trace (#113).
   mkdirSync(dirname(out), { recursive: true });
   const foreign = replacesForeign(out, isArkitectDrawio);
-  const backup = backupExisting(out);
+  // A file someone added to since it was built: name what this build drops,
+  // and keep the backup that holds it out of retention (#376). Draw.io Desktop
+  // drops the mark on save but keeps cell ids, so a file only opened and saved
+  // drops nothing, and its backup is pruned as usual.
+  let dropped = [];
+  if (existsSync(out)) {
+    try { dropped = droppedCells(readFileSync(out, 'utf8'), xml); } catch { /* a page it cannot read drops nothing it can name */ }
+  }
+  const backup = backupExisting(out, { kept: dropped.length > 0 });
   writeFileSync(out, xml);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
+  else if (dropped.length) report.notes.unshift(droppedNote(out, backup, dropped));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

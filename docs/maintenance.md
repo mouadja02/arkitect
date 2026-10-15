@@ -417,9 +417,9 @@ After a merge, update the issue with the implementing PR and verify its acceptan
 criteria before checking them off. If only part of the work landed, link the
 remaining issue explicitly. Preserve the original report as history; put current
 status above it. A decision to defer or replace a proposal is different from an
-implementation. Keep the dated [project status](status.md) snapshot aligned with
-main when priorities or completed scope change. GitHub issue and PR state remain
-the live record.
+implementation. GitHub issue and PR state, the releases and `CHANGELOG.md` are
+the live record; [project status](status.md) holds only how work gets done and
+the decisions that can look unfinished, so it names no release or open issue.
 
 ## Version bumps
 

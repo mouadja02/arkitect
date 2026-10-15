@@ -18,6 +18,7 @@ import {
 import { catalog, unattended } from './find-icon.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { boundaryWord } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
+import { strayMembers, strayNote } from '../../arkitect-drawio/scripts/lib/stray-members.mjs';
 
 const MAX_COORD = 200000;
 // The values Excalidraw draws; the builder reports anything else (#380).
@@ -301,6 +302,30 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
       warnings.push(`frame ${who(fr.id)} comes before ${late} of its children; Excalidraw expects children first. `
         + 'A scene built before 2.0.0 does this: rebuild it from its spec');
     }
+  }
+
+  // A node drawn inside or across a boundary it is not a member of (#378). The
+  // builder stamps each member's boundary as `parent`; a scene with none, built
+  // before that or with nothing nested, has nothing to check it against.
+  const tagOf = (el) => (isObject(el.customData) && isObject(el.customData.arkitect) ? el.customData.arkitect : null);
+  if (live.some((el) => typeof tagOf(el)?.parent === 'string')) {
+    const parts = new Map();
+    for (const el of live) {
+      const tag = tagOf(el);
+      const boundary = typeof tag?.boundary === 'string';
+      if (!boundary && typeof tag?.node !== 'string') continue;
+      // A boundary's own box, a node's drawn shapes: not free text, nor the
+      // transparent box an arrow binds to, which reaches over the caption.
+      if (boundary ? !['rectangle', 'frame', 'magicframe'].includes(el.type)
+        : el.type === 'text' || (el.strokeColor === 'transparent' && el.backgroundColor === 'transparent')) continue;
+      const key = boundary ? `b:${tag.boundary}` : `n:${tag.node}`;
+      const part = parts.get(key) ?? { id: key, parent: null, drawn: [], boundary };
+      if (typeof tag.parent === 'string') part.parent = `b:${tag.parent}`;
+      part.drawn.push(el);
+      parts.set(key, part);
+    }
+    const strays = strayMembers([...parts.values()].map((p) => ({ ...p, box: bbox(p.drawn) })));
+    for (const s of strays) warnings.push(strayNote({ ...s, id: s.id.slice(2), boundary: s.boundary.slice(2) }));
   }
 
   // ------------------------------------------------------------ layout

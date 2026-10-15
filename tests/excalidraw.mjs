@@ -1218,6 +1218,41 @@ test('a build over a scene Arkitect did not draw says so in its notes, naming th
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A scene Arkitect built and someone then added to passed as its own: a
+// rebuild dropped the added element with nothing said, and retention deleted
+// the one backup holding it a few rebuilds later (#376).
+test('a rebuild over a scene someone added to names the dropped elements, and retention keeps their backup (#376)', () => {
+  const dir = join(TMP, 'p376');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.excalidraw');
+  writeFileSync(spec, JSON.stringify({ title: 'Orders', nodes: [{ id: 'orders', label: 'Orders' }, { id: 'worker', label: 'Worker', col: 1 }],
+    edges: [{ from: 'orders', to: 'worker' }, { from: 'worker', to: 'orders', kind: 'async' }] }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  build();
+  eq(build().notes.join(), '', 'a rebuild over its own untouched output says nothing');
+  const scene = JSON.parse(readFileSync(out, 'utf8'));
+  scene.elements.push({ ...scene.elements.find((el) => el.type === 'rectangle'), id: 'added', x: 900, y: 900, customData: undefined,
+    boundElements: [{ type: 'text', id: 'added-label' }] },
+  { ...scene.elements.find((el) => el.type === 'text'), id: 'added-label', text: 'Audit log', containerId: 'added', customData: undefined });
+  writeFileSync(out, JSON.stringify(scene));
+  const dropped = build();
+  eq(dropped.notes.length, 1, 'one note');
+  assert(dropped.notes[0].includes('"added" (rectangle "Audit log")') && dropped.notes[0].includes(dropped.backup)
+    && !dropped.notes[0].includes('added-label') && dropped.notes[0].includes('references/editing.md'), dropped.notes[0]);
+  assert(/\.backup-\d{8}-\d{6}-kept(-\d+)?\.excalidraw$/.test(dropped.backup), dropped.backup);
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} drops nothing more`);
+  const holding = readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('"added"'));
+  eq(holding.length, 1, 'seven rebuilds later, a backup still holds the added element');
+  // A scene built before the title and legend were stamped: they sit where
+  // this build draws them, so they are no one's added work.
+  const before = JSON.parse(readFileSync(out, 'utf8'));
+  for (const el of before.elements) if (el.customData?.arkitect?.chrome) delete el.customData;
+  eq(builder.droppedElements(JSON.stringify(before), builder.buildDiagram(JSON.parse(readFileSync(spec, 'utf8'))).scene).length, 0, 'unstamped chrome in place');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The Draw.io run that shipped five accounts as boxes passed validate silent
 // (#341); the same spec in this engine got no warning either.
 test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {
@@ -1319,7 +1354,8 @@ test('every built element names its spec entry, and validate names it after the 
   eq(tags('edge', 'a->db').map((el) => el.type).sort().join(), 'arrow,text', 'an edge and its label, by its ends');
   eq(tags('edge', 'warm').map((el) => el.type).join(), 'arrow', 'or by its own id');
   const legend = scene.elements.find((el) => el.type === 'text' && el.text === 'Legend');
-  assert(legend && !legend.customData, 'the legend is no spec entry');
+  // Stamped as the builder's own chrome, so a rebuild knows it from added work (#376).
+  eq(JSON.stringify(legend?.customData), '{"arkitect":{"chrome":true}}', 'the legend is no spec entry');
 
   const w = validator.validateScene(scene).warnings;
   const overlap = w.find((x) => x.includes(' overlap by '));
@@ -4469,6 +4505,66 @@ test('a frame inside a scope leaves the scope\'s label clear of the frame\'s nam
   const alone = builder.buildDiagram({ boundaries: [{ id: 'f', kind: 'frame', label: 'One' }], nodes: [{ id: 'a', label: 'A', parent: 'f' }] }, { seed: 1 });
   const before = alone.scene.elements.find((el) => el.type === 'frame');
   eq(`${before.x},${before.y},${before.width}x${before.height}`, `${fr.x},${fr.y},${fr.width}x${fr.height}`, 'a frame on its own builds as before');
+});
+
+// A boundary covers every cell between its members, so a node the spec put
+// outside it, set between two members, was drawn inside it; validate passed
+// and the report said nothing (#378).
+test('an Excalidraw node drawn inside a boundary it is not a member of is noted by the build and warned by validate (#378)', () => {
+  const nodes = (outside) => [{ id: 'a', label: 'Orders', col: 0, parent: 'vpc' }, { id: 'w', label: 'Worker', col: outside === 1 ? 2 : 1, parent: 'vpc' },
+    { id: 'b', label: 'Outside', col: outside }];
+  const stray = (spec) => {
+    const { scene, report } = builder.buildDiagram(spec, { seed: 1 });
+    return { notes: report.notes.filter((n) => /is not its member/.test(n)), warned: validator.validateScene(scene).warnings.filter((w) => /is not its member/.test(w)), scene };
+  };
+  const said = 'node "b" is drawn inside or across boundary "vpc" but is not its member: move it past the members of "vpc", or make it a member (`parent`)';
+  const between = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(1) });
+  eq(between.notes.join(), said, 'the build names the node and the boundary');
+  eq(between.warned.join(), said, 'validate names both');
+  const control = stray({ boundaries: [{ id: 'vpc', label: 'VPC' }], nodes: nodes(2) });
+  eq([...control.notes, ...control.warned].join(), '', 'outside, past the members: nothing');
+  // Membership is stamped, so validate reads it off the scene.
+  const tags = between.scene.elements.map((el) => el.customData?.arkitect).filter((t) => t?.node === 'a' || t?.node === 'b');
+  assert(tags.some((t) => t.node === 'a' && t.parent === 'vpc') && tags.every((t) => t.node !== 'b' || !('parent' in t)), JSON.stringify(tags));
+  // A frame parent and a nested member are no strays.
+  const framed = stray({ boundaries: [{ id: 'vpc', kind: 'frame', label: 'VPC' }, { id: 'sub', label: 'Subnet', parent: 'vpc' }],
+    nodes: [{ id: 'a', label: 'A', parent: 'sub' }, { id: 'c', label: 'C', parent: 'vpc', col: 1 }] });
+  eq([...framed.notes, ...framed.warned].join(), '', 'members at any depth');
+  // A scene built before the stamp has no membership to check against.
+  const old = structuredClone(between.scene);
+  for (const el of old.elements) if (el.customData?.arkitect) delete el.customData.arkitect.parent;
+  eq(validator.validateScene(old).warnings.filter((w) => /is not its member/.test(w)).join(), '', 'an unstamped scene is not checked');
+  for (const name of ['starter-architecture', 'aws-data-platform']) {
+    const spec = JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', `${name}.spec.json`), 'utf8'));
+    const t = stray(spec);
+    eq([...t.notes, ...t.warned].join(), '', `${name}: no new entry`);
+  }
+});
+
+// A child scope's outside label stands clear of that scope, and crossed the
+// border of the frame it belongs to by 24px, with validate clean (#392).
+test('a parent boundary holds a child scope\'s outside label, with padding (#392)', () => {
+  const holds = (outer, inner, pad, what) => {
+    assert(inner.x - outer.x >= pad && inner.y - outer.y >= pad
+      && outer.x + outer.width - (inner.x + inner.width) >= pad && outer.y + outer.height - (inner.y + inner.height) >= pad,
+    `${what}: ${inner.x},${inner.y} ${inner.width}x${inner.height} is not ${pad}px inside ${outer.x},${outer.y} ${outer.width}x${outer.height}`);
+  };
+  const long = 'Order management and fulfilment';
+  for (const [parent, text] of [[{ id: 'f', kind: 'frame' }, 'Orders'], [{ id: 'f', kind: 'frame' }, long], [{ id: 'f', label: 'Account' }, long]]) {
+    const spec = { boundaries: [parent, { id: 's', parent: 'f', label: text, labelPlacement: 'outside' }] };
+    const { scene } = builder.buildDiagram(spec, { seed: 1 });
+    const label = scene.elements.find((el) => el.type === 'text' && el.text === text);
+    const outer = parent.kind === 'frame' ? scene.elements.find((el) => el.type === 'frame')
+      : scene.elements.filter((el) => el.type === 'rectangle').sort((a, b) => b.width * b.height - a.width * a.height)[0];
+    holds(outer, label, 20, `"${text}" in a ${parent.kind ?? 'scope'}`);
+    if (parent.kind === 'frame') eq(label.frameId, outer.id, 'the label belongs to the frame');
+    eq(validator.validateScene(scene).warnings.length, 0, 'validates clean');
+  }
+  // A top-level outside label still sits clear of its own box, which it does not size.
+  const { scene } = builder.buildDiagram({ boundaries: [{ id: 's', label: long, labelPlacement: 'outside' }] }, { seed: 1 });
+  const box = scene.elements.find((el) => el.type === 'rectangle');
+  const label = scene.elements.find((el) => el.type === 'text');
+  assert(label.y + label.height <= box.y && label.width > box.width, 'a top-level outside label stays above and wider than its box');
 });
 
 // A spelling grader is only fair if it passes the spelling the style guide

@@ -4,8 +4,8 @@ Eighteen cases, ten for Draw.io and eight for Excalidraw, covering what
 matters most: that a plain request fires the right skill and produces valid,
 styled, native output; that a missing product icon is reported or built honestly rather
 than substituted; that an edit follows the file in front of it; and that the
-learning and apply skills never fire on their own. One more runs the
-portable report check an AGENTS.md host relies on.
+learning and apply skills never fire on their own. One of the ten Draw.io
+cases runs the portable report check an AGENTS.md host relies on.
 
 ```
 evals/

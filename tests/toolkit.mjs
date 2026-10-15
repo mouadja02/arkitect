@@ -2142,6 +2142,16 @@ test('the report check counts a build by the installed, npx or script command, u
       'sed -n 1405,1450p skills/arkitect-excalidraw/scripts/build-diagram.mjs', 'cd x && git diff skills/arkitect-drawio/scripts/build-diagram.mjs']) {
       assert(!built('Bash', command), `a build: ${command}`);
     }
+    // An install under a home folder with a space is quoted (#382).
+    const spaced = 'D:/Profiles/Jane Doe/.claude/plugins/cache/arkitect/arkitect/2.3.2/skills/arkitect-drawio/scripts/build-diagram.mjs';
+    for (const command of [`node "${spaced}" spec.json --out orders.drawio`, "node '/Users/Jane Doe/arkitect/skills/arkitect-excalidraw/scripts/build-diagram.mjs' a.json",
+      `cd x && "${spaced}" a.json`]) {
+      assert(built('Bash', command), `not a build: ${command}`);
+    }
+    eq(reportHook.outOf(`node "${spaced}" spec.json --out orders.drawio`), 'orders.drawio', 'the --out of a spaced build');
+    for (const command of [`grep -n x "${spaced}"`, `git add "${spaced}"`, `node -e "1" ; grep x "${spaced}"`]) {
+      assert(!built('Bash', command), `a build: ${command}`);
+    }
 
     built('Bash', 'arkitect drawio build a.json --out a.drawio');
     const sent = JSON.parse(reportHook.respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? 'null');
@@ -2179,6 +2189,22 @@ test('the report check reads only a reply naming a file the session built (#345)
   for (const reply of ['#339 is about an existing `.drawio`.', 'See xp329.drawio.', 'See p329.drawio.bak']) {
     assert(!namesABuiltFile(reply, ['p329.drawio']), reply);
   }
+  // A name the command can't resolve keeps its folder, so a reply quoting an
+  // unrelated diagram path is not a report of it (#395).
+  const loop = 'for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out out/$n.drawio; done';
+  eq(outsOf(loop).join(), 'out/*.drawio', 'a substitution in the name');
+  eq(outOf('arkitect drawio build a.json --out $n.drawio'), '*', 'no folder: any file');
+  eq(outOf('arkitect drawio build a.json --out ./$n.drawio'), '*', 'the current folder: any file');
+  eq(outOf('arkitect drawio build a.json --out $C/$n.drawio'), '*', 'a variable folder: any file');
+  eq(outOf('arkitect drawio build a.json --out out/$OUT'), 'out/*', 'any diagram in out/');
+  assert(!namesABuiltFile('Reviewed the issues. AGENTS.md §3 shows `--out docs/arch.drawio`, which writes into the install.', ['out/*.drawio']), 'an unrelated path');
+  for (const reply of ['Built `out/starter.drawio`.', 'Built out\\as-is.drawio', 'Built starter.drawio and as-is.drawio in out/.']) {
+    assert(namesABuiltFile(reply, ['out/*.drawio']), reply);
+  }
+  for (const reply of ['Built starter.drawio.', 'See out/a.excalidraw', 'See layout/a.drawio', 'See out/.drawio']) {
+    assert(!namesABuiltFile(reply, ['out/*.drawio']), reply);
+  }
+  assert(namesABuiltFile('See out/a.excalidraw', ['out/*']), 'any diagram in out/');
   const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
   try {
     const transcript = join(dir, 't.jsonl');
@@ -2187,6 +2213,9 @@ test('the report check reads only a reply naming a file the session built (#345)
     const stop = (reply) => respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: reply });
     eq(stop('Opened three PRs. #339: an agent rebuilt an existing `.drawio` from a new spec.'), null, 'a summary naming no built file');
     assert(/no File, Assumptions/.test(JSON.parse(stop('Done: /tmp/repro/p329.drawio') ?? '{}').reason), 'the built file is still checked');
+    writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name: 'Bash', input: { command: loop } }] } }));
+    eq(stop('Reviewed the issues. AGENTS.md §3 shows `--out docs/arch.drawio`, which writes into the install.'), null, 'a review quoting another path (#395)');
+    assert(/no File, Assumptions/.test(JSON.parse(stop('Done: out/starter.drawio') ?? '{}').reason), 'a file the loop built (#395)');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -2347,6 +2376,14 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
     'fix the bug where the canvas does not draw the architecture overlay', 'the diagram view does not draw edges after a resize',
     "why doesn't the architecture page draw on mobile?", 'refactor the diagram renderer', 'generate the diagram types from the schema',
     'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
+    eq(routeFor(prompt), null, prompt);
+  }
+  // An engine named beside an export format asked for that engine; the
+  // format filter dropped it (#383). The engine's name is no drawing verb.
+  eq(skill(routeFor('Draw our AWS architecture in Draw.io and give me a PNG for the slides')), 'arkitect-drawio', 'Draw.io and a PNG');
+  eq(skill(routeFor('Sketch the system design in Excalidraw and export an SVG for the README')), 'arkitect-excalidraw', 'Excalidraw and an SVG');
+  for (const prompt of ['Convert our draw.io diagram to Mermaid', 'Export the Excalidraw canvas as a PNG',
+    'fix the bug where excalidraw does not draw the architecture on the canvas']) {
     eq(routeFor(prompt), null, prompt);
   }
 

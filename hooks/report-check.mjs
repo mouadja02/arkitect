@@ -24,8 +24,9 @@ const heading = (name) => new RegExp(`\\*\\*${name}\\b|#+\\s*\\**${name}\\b`);
 // the check used to skip them (#301).
 // The script counts only when it is run: `git add`, `grep` or `sed -n` on
 // build-diagram.mjs counted as a build too, and a commit message's "--out" gave
-// a file named "replaces" (#373).
-const BUILD = /(\bnode(\.exe)?["']?\s+(-\S+\s+)*|(^|[;&|(]|\bdo\b|\bthen\b)\s*)["']?[^\s"';&|]*build-diagram\.mjs\b|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
+// a file named "replaces" (#373). A quoted path may hold a space, as a home
+// folder like "/Users/Jane Doe" does (#382).
+const BUILD = /(\bnode(\.exe)?["']?\s+(-\S+\s+)*|(^|[;&|(]|\bdo\b|\bthen\b)\s*)("[^"\n]*|'[^'\n]*|["']?[^\s"';&|]*)build-diagram\.mjs\b|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b/;
 const SHELLS = ['Bash', 'PowerShell'];
 // What a reply says when it describes a picture: "Layout is clean", "SVG
 // confirms structure and spacing". A sentence that is validate's finding, or
@@ -75,7 +76,10 @@ export function excusesAWarning(reply) {
 // in the name is read from the same command, `OUT=docs/a.drawio; ...` or
 // `for n in a b; do ... --out $n.drawio`; one set elsewhere can't be read
 // here, so it stands for any file, as every build did before #345. Both made a
-// `*` that sent back a status message naming no built file (#373).
+// `*` that sent back a status message naming no built file (#373). Its folder
+// still says something: `--out out/$n.drawio` with `n=$(basename ...)` stands
+// for any `.drawio` in out/, `out/*.drawio`, and a reply quoting docs/arch.drawio
+// is not a report of it (#395).
 const VAR = /\$\{?(\w+)\}?|%(\w+)%/g;
 function valuesOf(name, command) {
   const loop = command.match(new RegExp(`\\bfor\\s+${name}\\s+in\\s+([^;\\n]+?)\\s*;?\\s*do\\b`));
@@ -87,10 +91,16 @@ export function outsOf(command) {
   const text = String(command);
   const outs = [];
   for (const m of text.matchAll(/--out(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s"'`;&|)]+))/g)) {
-    let names = [(m[1] ?? m[2] ?? m[3]).split(/[\\/]/).pop()];
+    const path = (m[1] ?? m[2] ?? m[3]).split(/[\\/]/);
+    let names = [path.pop()];
+    const dir = path.pop() ?? '';
     for (const [ref, a, b] of names[0].match(VAR) ? [...names[0].matchAll(VAR)] : []) {
       const values = valuesOf(a ?? b, text)?.map((v) => v.split(/[\\/]/).pop());
-      if (!values || values.some((v) => /[$%]/.test(v))) { names = ['*']; break; }
+      if (!values || values.some((v) => /[$%]/.test(v))) {
+        const named = dir && !/[$%]/.test(dir) && dir !== '.' && dir !== '..';
+        names = named ? names.map((n) => `${dir}/${n.replace(VAR, '*')}`) : ['*'];
+        break;
+      }
       names = names.flatMap((n) => values.map((v) => n.replace(ref, v)));
     }
     // `--out docs/` names a folder: no file to match, and '' matched every reply.
@@ -174,11 +184,22 @@ export function problems(reply, { viewed, unseen = 'no PNG was opened in this se
 // to reproduce a bug is not one, and no honest rewrite could satisfy the check
 // (#345).
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const END = '(?![\\w.-]*\\w)';
+// `out/*.drawio` is named by out/starter.drawio, or by starter.drawio in a
+// reply that also names out/ (#395).
+function namesInFolder(text, out) {
+  const [dir, name] = out.split('/');
+  const file = name === '*' ? '[\\w.-]+\\.(drawio|excalidraw)' : name.split('*').map(escape).join('[\\w.-]+');
+  const folder = `(^|[^\\w.-])${escape(dir)}[\\\\/]`;
+  return new RegExp(`${folder}${file}${END}`, 'i').test(text)
+    || (new RegExp(`(^|[^\\w.\\\\/-])${file}${END}`, 'i').test(text) && new RegExp(folder, 'i').test(text));
+}
 export function namesABuiltFile(reply, outs) {
   const text = String(reply ?? '');
   // Any file still means a file: "an existing `.drawio`" names none (#373).
   return outs.some((out) => (out === '*' ? /[\w)-]\.(drawio|excalidraw)\b/.test(text)
-    : new RegExp(`(^|[^\\w.-])${escape(out)}(?![\\w.-]*\\w)`, 'i').test(text)));
+    : out.includes('*') ? namesInFolder(text, out)
+      : new RegExp(`(^|[^\\w.-])${escape(out)}${END}`, 'i').test(text)));
 }
 
 export function respond(input) {

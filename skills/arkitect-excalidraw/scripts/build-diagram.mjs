@@ -20,7 +20,7 @@
 //   node build-diagram.mjs spec.json --out a.excalidraw --defaults   the house style, ignoring the override
 //   node build-diagram.mjs --print-style                             what a build would use
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import {
   emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
@@ -33,9 +33,10 @@ import {
 import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
-import { outProblem, replacesForeign, foreignNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
+import { outProblem, replacesForeign, foreignNote, droppedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
+import { strayMembers, strayNote } from '../../arkitect-drawio/scripts/lib/stray-members.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
 import { iconKind, unusedIcon } from '../../arkitect-drawio/scripts/lib/icon-kind.mjs';
 import { fitCell } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
@@ -1009,6 +1010,14 @@ function assemble(spec, style) {
 
   const INSET = 14;                // an inside label's distance from the left edge
   const FRAME_NAME = 24;           // the strip the app draws a frame's name in, above it
+  // Where an `outside` label sits: above the box's top-left corner, at a large
+  // size unless the spec names one. Null for any other label.
+  const outsideLabel = (b, box) => {
+    if (!b.label || b.kind === 'frame' || (b.labelPlacement ?? 'inside') !== 'outside') return null;
+    const size = b.fontSize ?? 48;
+    const m = measureText(b.label, size, S.fontFamily);
+    return { size, x: Math.round(box.x), y: Math.round(box.y - m.height - 10), width: m.width, height: m.height };
+  };
   const boundaryBox = new Map();
   const resolveBoundary = (b, seen = new Set()) => {
     if (boundaryBox.has(b.id)) return boundaryBox.get(b.id);
@@ -1021,6 +1030,10 @@ function assemble(spec, style) {
       // The app draws a frame's name in a strip above its top edge, which is
       // where this scope's own label went: the two names overlapped (#236).
       kids.push(other.kind === 'frame' && other.label ? { ...kid, y: kid.y - FRAME_NAME, height: kid.height + FRAME_NAME } : kid);
+      // A child scope's outside label stands clear of that scope, but it is
+      // still inside this one, and it crossed a parent frame's border (#392).
+      const label = outsideLabel(other, kid);
+      if (label) kids.push(label);
     }
     const pad = {
       left: b.padLeft ?? 34, right: b.padRight ?? 34,
@@ -1093,20 +1106,28 @@ function assemble(spec, style) {
       // the box. Beside is what the corpus does, but only because the space
       // there happened to be empty; above the top edge is the one strip that
       // is empty by construction, since boundaries are sized from contents.
-      const outside = (b.labelPlacement ?? 'inside') === 'outside';
-      const size = b.fontSize ?? (outside ? 48 : FONT.M);
-      const m = measureText(b.label, size, S.fontFamily);
+      const outside = outsideLabel(b, box);
+      const size = outside?.size ?? b.fontSize ?? FONT.M;
+      const m = outside ?? measureText(b.label, size, S.fontFamily);
       scopes.push(text({
         text: b.label, fontSize: size, fontFamily: S.fontFamily,
         textAlign: 'left', strokeColor: look.stroke,
         width: m.width, height: m.height,
-        x: Math.round(box.x + (outside ? 0 : INSET)),
-        y: Math.round(outside ? box.y - m.height - 10 : box.y + 12),
+        x: outside ? outside.x : Math.round(box.x + INSET),
+        y: outside ? outside.y : Math.round(box.y + 12),
         groupIds: [group],
       }));
     }
     for (const el of scopes.slice(drawnScopes)) boundaryOf.set(el.id, b.id);
   }
+
+  // A non-member set between two members is drawn inside the boundary (#378).
+  const strays = strayMembers([
+    ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boundaryBox.get(b.id), boundary: true })),
+    ...(spec.nodes ?? []).filter((n) => n.kind !== 'text' && geom.has(n.id))
+      .map((n) => ({ id: n.id, parent: n.parent, box: geom.get(n.id) })),
+  ]);
+  for (const stray of strays) report.notes.push(strayNote(stray));
 
   // ------------------------------------------------------------ edges
 
@@ -1403,13 +1424,20 @@ function assemble(spec, style) {
   reindex(scene.elements);
   // Each element names the spec entry that drew it, so validate can say node
   // "db" and not only a random id that appears in no spec (#353). The app
-  // keeps customData through an edit and a save.
+  // keeps customData through an edit and a save. A member names its boundary
+  // too, so validate can tell a member from a node drawn inside one (#378).
   const frameBoundary = new Map([...frameIdFor].map(([b, fid]) => [fid, b]));
+  const memberOf = new Map([...boundaries, ...(spec.nodes ?? [])].filter((x) => x.parent != null).map((x) => [x.id, x.parent]));
+  const member = (key, id) => (memberOf.has(id) ? { [key]: id, parent: memberOf.get(id) } : { [key]: id });
+  // The title and legend are stamped too, so an element with no stamp is one
+  // someone added since, which a rebuild would drop (#376).
+  const chromeIds = new Set(chrome.map((el) => el.id));
   for (const el of scene.elements) {
-    const tag = nodeOf.has(el.id) ? { node: nodeOf.get(el.id) }
-      : boundaryOf.has(el.id) ? { boundary: boundaryOf.get(el.id) }
-        : frameBoundary.has(el.id) ? { boundary: frameBoundary.get(el.id) }
-          : edgeName.has(el.id) ? { edge: edgeName.get(el.id) } : null;
+    const tag = nodeOf.has(el.id) ? member('node', nodeOf.get(el.id))
+      : boundaryOf.has(el.id) ? member('boundary', boundaryOf.get(el.id))
+        : frameBoundary.has(el.id) ? member('boundary', frameBoundary.get(el.id))
+          : edgeName.has(el.id) ? { edge: edgeName.get(el.id) }
+            : chromeIds.has(el.id) ? { chrome: true } : null;
     if (tag) el.customData = { ...el.customData, arkitect: tag };
   }
   // Reported, not rerouted unless the edge asked for "avoid" (#124): the fix is
@@ -1440,6 +1468,22 @@ function assemble(spec, style) {
 // customData.arkitect the builder stamps on what it draws (#353), which the
 // app keeps through an edit and a save (#339).
 export const isArkitectScene = (text) => (JSON.parse(text).elements ?? []).some((el) => el?.customData?.arkitect);
+
+// The elements of a scene this build replaces that carry no stamp, so someone
+// added them since it was built, and this build does not draw them (#376). A
+// title or legend drawn before chrome was stamped sits where this build draws
+// the same kind of element, so it is not counted. A bound label goes with its
+// shape, and names it.
+export function droppedElements(oldText, scene) {
+  const old = (JSON.parse(oldText).elements ?? []).filter((el) => el && typeof el === 'object' && !el.isDeleted);
+  const spot = (el) => `${el.type}@${Math.round(el.x)},${Math.round(el.y)}`;
+  const drawn = new Set(scene.elements.map(spot));
+  const byId = new Map(old.map((el) => [el.id, el]));
+  const textOf = (el) => (el.type === 'text' ? el.text
+    : (el.boundElements ?? []).map((b) => byId.get(b?.id)).find((t) => t?.type === 'text')?.text) ?? '';
+  return old.filter((el) => !el.customData?.arkitect && !(el.type === 'text' && byId.has(el.containerId)) && !drawn.has(spot(el)))
+    .map((el) => ({ id: String(el.id), label: `${el.type}${textOf(el) ? ` "${String(textOf(el)).replace(/\s+/g, ' ').trim().slice(0, 40)}"` : ''}` }));
+}
 
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults]\n'
   + '       build-diagram.mjs --print-style [--defaults]';
@@ -1496,9 +1540,16 @@ function main(argv) {
   // A missing output folder is created, not reported as a stack trace (#113).
   mkdirSync(dirname(out), { recursive: true });
   const foreign = replacesForeign(out, isArkitectScene);
-  const backup = backupExisting(out);
+  // A scene someone added to since it was built: name what this build drops,
+  // and keep the backup that holds it out of retention (#376).
+  let dropped = [];
+  if (existsSync(out)) {
+    try { dropped = droppedElements(readFileSync(out, 'utf8'), scene); } catch { /* not a scene: it drops nothing it can name */ }
+  }
+  const backup = backupExisting(out, { kept: dropped.length > 0 });
   writeScene(out, scene);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
+  else if (dropped.length) report.notes.unshift(droppedNote(out, backup, dropped));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 
