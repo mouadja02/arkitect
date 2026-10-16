@@ -146,7 +146,14 @@ SANDBOX_HOME="$(mktemp -d "${TMPDIR:-/tmp}/arkitect-eval-home.XXXXXX")"
 # --keep-temp passed after --, the kept dirs stay where they always did.
 RUN_TMP="$SANDBOX_HOME/tmp"
 mkdir -p "$RUN_TMP"
-cleanup() { chmod -R u+rwx "$RUN_TMP" 2>/dev/null; rm -rf "$SANDBOX_HOME"; }
+# Resuming a case's history.jsonl writes the continued session beside it, in
+# the case folder, named for its session id (#418); that goes too.
+cleanup() {
+  chmod -R u+rwx "$RUN_TMP" 2>/dev/null; rm -rf "$SANDBOX_HOME"
+  for h in "$ROOT"/evals/*/*/history.jsonl; do
+    [ -e "$h" ] && find "$(dirname "$h")" -maxdepth 1 -name '????????-????-????-????-????????????.jsonl' -delete
+  done
+}
 trap cleanup EXIT INT TERM
 [ -e "$HOME/.claude" ] && ln -s "$HOME/.claude" "$SANDBOX_HOME/.claude"
 [ -e "$HOME/.claude.json" ] && ln -s "$HOME/.claude.json" "$SANDBOX_HOME/.claude.json"

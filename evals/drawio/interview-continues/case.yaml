@@ -1,0 +1,85 @@
+schema_version: "1.1"
+name: drawio-interview-continues
+description: >
+  The second step of the interview, through context.history_file (#418). The
+  turn before asked what the diagram should cover. The user now answers that,
+  and the cloud and the state with it. The components are still unknown and
+  someone is there to name them, so the next reply asks the next question:
+  one, with its recommended answer, never one already answered and never
+  about styling, and nothing is drawn yet. drawio-interview-when-vague
+  measures the first question; this measures that answers feed forward.
+tags: [interview, conversation, tier-3]
+runs: 3
+
+context:
+  history_file: history.jsonl
+
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    The payment flow only, nothing else. It runs on AWS, and the board wants
+    it as it runs today.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+
+  # What the case exists for: the ladder moves on, one rung.
+  - type: llm
+    name: asks-the-next-question
+    weight: 3
+    criteria: |
+      Earlier in the conversation the user asked for an architecture diagram
+      for a client's architecture review board, and the assistant asked what
+      it should cover. The user has now answered: the payment flow only, on
+      AWS, as it runs today. The components of the payment flow are still
+      unknown. Pass if the response asks ONE new question about something
+      not yet answered - for example the services or products the payment
+      flow runs through, the payment provider, the steps of the flow, or where
+      the PCI or trust boundary sits - and offers its recommended answer to
+      it. A short list of options for that one decision counts as one
+      question. Fail if it asks again about the scope, the cloud, as-is or
+      to-be, or the audience; asks two or more separate questions at once;
+      asks about colours, fonts or styling; or draws a diagram.
+
+  - type: regex
+    name: no-diagram-yet
+    target: files
+    pattern: '\.(drawio|excalidraw)$'
+    flags: m
+    match: not_contains
+
+  - type: tool_used
+    name: no-build-yet
+    tool: Bash
+    input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b'
+    min: 0
+    max: 0
+
+  - type: regex
+    name: asks-a-question
+    target: last_message
+    pattern: '\?'
+
+  - type: regex
+    name: offers-a-recommended-answer
+    target: last_message
+    pattern: '[Rr]ecommend|[Ss]uggest|I''d (go|start) with|[Mm]y (default|pick)|[Dd]efault(:| to| is)|If you(''re| are) not sure'
+
+  - type: regex
+    name: does-not-ask-what-was-answered
+    target: last_message
+    pattern: '(as-is or (the )?to-be|current or (the )?(proposed|target)|which cloud|AWS,? Azure|on AWS or|whole platform or|who (is|will be) (reading|the audience))[^\n?]{0,80}\?'
+    flags: i
+    match: not_contains
+
+  - type: regex
+    name: no-styling-question
+    target: last_message
+    pattern: '\b(colou?rs?|fonts?|themes?|rounded corners|sketchy|hand-drawn look)\b[^\n?]{0,80}\?'
+    flags: i
+    match: not_contains

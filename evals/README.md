@@ -1,15 +1,15 @@
 # Eval cases
 
-Thirty cases, eighteen for Draw.io and twelve for Excalidraw, in three tiers
+Thirty-two cases, nineteen for Draw.io and thirteen for Excalidraw, in three tiers
 (below). Tier 1 holds what matters most and must stay at 1.00: that a plain
 request fires the right skill and produces valid, styled, native output; that
 a missing product icon is reported or built honestly rather than substituted;
 that an edit follows the file in front of it; and that the learning and apply
 skills never fire on their own. Tiers 2 and 3 hold the headroom: editing by
 the spec a file carries, a refused spec repaired, a legend, the drafted
-report, an interview before drawing, a large estate, lifecycle caveats, names
-kept out of the network, instructions planted in a file, and a diagram never
-read whole.
+report, an interview before drawing and its next step, an edit a turn later,
+a large estate, lifecycle caveats, names kept out of the network,
+instructions planted in a file, and a diagram never read whole.
 
 ```
 evals/
@@ -32,6 +32,7 @@ evals/
     scale-multi-region/             tier 3: twenty-odd components in nine boundaries
     lifecycle-target-state/         tier 3: caveats repeated, private names kept local
     instructions-in-a-spec/         tier 3: a planted note is data, never instructions
+    interview-continues/            tier 3: a turn later, the next question, not an old one
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
@@ -45,6 +46,7 @@ evals/
     edit-follows-the-scene/         tier 2: an app-drawn scene edited in its own look
     legend-for-two-kinds/           tier 2: flows told apart, and the legend that follows
     portable-report-check/          tier 2: report --draft, filled in, then checked
+    edit-next-turn/                 tier 2: a turn after the build, one change by its spec
 ```
 
 Case names carry the engine (`drawio-generate-architecture`), so `--case` and
@@ -95,6 +97,7 @@ case uses it, and the summary scores each one.
 | `context` | the window kept for the user's system: no payload read into it | §5 |
 | `interview` | asking before drawing when nothing is known and someone can answer | §2.1 |
 | `scale` | a review-board estate at full size, every named part drawn and marked | §2.3, §4 |
+| `conversation` | a later turn of a conversation, resumed from a history file (below) | §2.1, §5 |
 
 ```bash
 scripts/eval.sh --check                              # prerequisites only, no spend
@@ -165,18 +168,31 @@ same model, and say in the pull request what moved and why. A case it does
 not hold yet is printed as `new`, and a test fails until the board names every
 case that exists.
 
-The first board, 2026-10-16, Haiku under test and Sonnet judging, 88 runs for
-$1.64:
+The board now committed is the second, 2026-10-16, Haiku under test and
+Sonnet judging, 94 runs of 32 cases for $1.56. The first, from the same day,
+had 30 cases and 88 runs:
 
-| | cases | score | all runs perfect |
-|---|---|---|---|
-| tier 1 | 18 | 1.00 | 18 |
-| tier 2 | 8 | 0.89 | 2 |
-| tier 3 | 4 | 0.96 | 2 |
+| | cases | score | all runs perfect | first board |
+|---|---|---|---|---|
+| tier 1 | 18 | 1.00 | 18 | 1.00 |
+| tier 2 | 9 | 0.93 | 4 | 0.89 of 8 |
+| tier 3 | 5 | 0.89 | 3 | 0.96 of 4 |
 
-One run of `excalidraw-unknown-product-placeholder` was lost to the
-account's session limit, so that case scored from two runs. What the headroom
-showed on that run:
+What moved, and why:
+
+- `drawio-interview-when-vague` loaded the skill in all three runs, where the
+  first board's runs never did: the prompt router now takes "I'd like an
+  architecture diagram of ..." (#416). Every run still asked several
+  questions at once, so the case's key grader still fails.
+- No run was refused a `sed` on a plugin file; 47 calls printed a pattern
+  with `pattern N` instead (#417). No write reached the plugin either: the
+  hook refused 7, from `cd` into a skill folder, and each of those runs
+  recovered and scored 1.00 (#404).
+- The two conversation cases are new (#418): `excalidraw-edit-next-turn`
+  scored 0.97 and `drawio-interview-continues` 0.53. No run of the
+  interview case loaded the skill on its later turn.
+
+What the first board's headroom showed:
 
 - `drawio-interview-when-vague`: every run asked five or six questions at
   once, and two never loaded the skill.
@@ -189,6 +205,29 @@ showed on that run:
   `evals/` folder, which the eval sandbox refuses; the agent then called the
   whole shell unavailable and stopped. A refused command is not a refused
   tool, and a small model needs telling so.
+
+## Cases that continue a conversation
+
+A case with `context.history_file` starts a turn later (#418). The runner
+resumes the history with `claude --resume`, so the case's `prompt` is the
+user's next turn, and its trace and graders see only that turn. Such a case
+runs with the plugin only; the runner skips its without-plugin arm.
+
+The history is made, not recorded. `history.mjs` beside the case lists the
+earlier turns as `{ user }`, `{ assistant }` and `{ tool, input, result }`,
+and `node history.mjs` writes `history.jsonl` through `transcript()` in
+`evals/fixtures.mjs`, in the shape Claude Code writes a session: one JSON
+line per message, each chained to the one before, a tool call answered by the
+next line. Ids and times come from each turn's position, so a history rebuilds
+byte for byte, and no line carries a `cwd` or any other path. Change the turns,
+never the JSONL; a test rebuilds every history and fails on any difference, a
+broken chain, a tool call left unanswered or an absolute path. A file the
+history says was written, the case's scaffold writes for real.
+
+Resuming writes the continued session beside the history file, as
+`<session id>.jsonl` in the case folder, and `.gitignore` keeps it out.
+A hand-written history resumes on Claude Code 2.1.300: the pilot of both cases
+is in the pull request that added them.
 
 The underlying command, if you would rather drive it yourself:
 

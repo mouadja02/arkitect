@@ -64,3 +64,7 @@ skills/arkitect-drawio/assets/libraries/contact-sheets/review/
 # A local Claude Code install, unlike the .codex/, .cursor/ and .opencode/
 # adapters beside it, which are committed and ship with the plugin.
 .claude/
+
+# Resuming an eval case's history.jsonl (`context.history_file`) writes the
+# continued session beside it, named for its session id (#418).
+evals/*/*/????????-????-????-????-????????????.jsonl

@@ -1,0 +1,85 @@
+schema_version: "1.1"
+name: excalidraw-edit-next-turn
+description: >
+  A later turn of a conversation, through context.history_file (#418). In the
+  turn before, the agent drew docs/orders.excalidraw from a spec it wrote
+  beside it. Now the user asks for one change and names no file. The edit
+  goes through the spec the scene carries or the one beside it, and is
+  rebuilt over the scene with a backup: one node changes, the rest stays, and
+  the assumption the change makes untrue does not survive it. The history
+  holds the report, not the skill, as a resumed or compacted session does:
+  the agent finds Arkitect again rather than editing the JSON by hand.
+tags: [editing, conversation, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+  history_file: history.jsonl
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    Thanks. One change: the fulfilment worker is a Lambda function now, not
+    its own host. Update the diagram.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+
+  # The point of the case: the builder drew the change with Lambda's own mark,
+  # so the spec the scene carries holds it. Only the builder writes an icon key.
+  - type: regex
+    name: rebuilt-with-a-lambda
+    target: { source: file, path: ./docs/orders.excalidraw }
+    pattern: '"icon": "[^"]*(?:[Ll]ambda|aws-architecture-icons:87|aws-serverless-icons-v2:0)"'
+    weight: 3
+
+  - type: regex
+    name: changed-the-worker-not-added-one
+    target: { source: file, path: ./docs/orders.excalidraw }
+    pattern: '"kind": "'
+    match: count:6
+
+  - type: regex
+    name: nothing-else-lost
+    target: { source: file, path: ./docs/orders.excalidraw }
+    pattern: '^(?=[\s\S]*"node": "shop")(?=[\s\S]*"node": "api")(?=[\s\S]*"node": "queue")(?=[\s\S]*"node": "db")(?=[\s\S]*"edge": "shop->api")(?=[\s\S]*"edge": "api->queue")'
+
+  - type: regex
+    name: assumption-follows-the-change
+    target: { source: file, path: ./docs/orders.excalidraw }
+    pattern: 'runs on its own host'
+    match: not_contains
+
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'orders\.backup-|orders\.excalidraw\.backup-'
+
+  - type: tool_used
+    name: did-not-hand-edit-the-json
+    tool: Edit
+    input_match: 'orders\.excalidraw"'
+    min: 0
+    max: 0
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+
+  - type: regex
+    name: did-not-ask-which-file
+    target: last_message
+    pattern: '[Ww]hich (file|diagram|scene)\b[^\n?]{0,80}\?'
+    match: not_contains
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains

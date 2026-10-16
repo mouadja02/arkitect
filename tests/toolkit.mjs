@@ -1002,6 +1002,104 @@ test('the new eval cases grade their fixtures, the right outcome and the traps t
   rmSync(dir, { recursive: true, force: true });
 });
 
+// Every case was a single prompt, so the interview's second step and an edit
+// made a turn later went unmeasured (#418). A case that continues a
+// conversation resumes a history.jsonl, which the runner hands to `claude
+// --resume`. It is made by history.mjs, the way Claude Code writes a
+// transcript, holds no path, and the session file a resume leaves beside it
+// is ignored.
+const { transcript } = await import(pathToFileURL(join(ROOT, 'evals', 'fixtures.mjs')).href);
+const historyModules = {};
+for (const engine of ['drawio', 'excalidraw']) {
+  for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+    const file = join(ROOT, 'evals', engine, name, 'history.mjs');
+    if (existsSync(file)) historyModules[`${engine}/${name}`] = await import(pathToFileURL(file).href);
+  }
+}
+const nextTurn = await import(pathToFileURL(join(ROOT, 'evals', 'excalidraw', 'edit-next-turn', 'fixture.mjs')).href);
+test('a case that continues a conversation resumes a history made by its history.mjs, with no path in it (#418)', () => {
+  const histories = [];
+  for (const engine of ['drawio', 'excalidraw']) {
+    for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+      const dir = join(ROOT, 'evals', engine, name);
+      const yaml = existsSync(join(dir, 'case.yaml')) ? readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n') : '';
+      const named = yaml.match(/^  history_file: (\S+)$/m)?.[1];
+      eq(Boolean(named), existsSync(join(dir, 'history.mjs')), `${engine}/${name}: a history.mjs and a history_file go together`);
+      if (!named) continue;
+      eq(named, 'history.jsonl', `${engine}/${name}: the history file`);
+      assert(/^  prompt: \|\n {4}\S/m.test(yaml), `${engine}/${name}: a resumed case needs a next turn`);
+      assert(yaml.includes('conversation'), `${engine}/${name}: tagged conversation`);
+      histories.push({ id: `${engine}/${name}`, dir, ...historyModules[`${engine}/${name}`] });
+    }
+  }
+  eq(histories.map((h) => h.id).join(' '), 'drawio/interview-continues excalidraw/edit-next-turn', 'the conversation cases');
+  for (const { id, dir, TURNS, SESSION } of histories) {
+    const text = readFileSync(join(dir, 'history.jsonl'), 'utf8').replace(/\r\n/g, '\n');
+    eq(text, transcript(TURNS, { sessionId: SESSION }), `${id}: history.jsonl is what history.mjs writes; run node history.mjs`);
+    const lines = text.trimEnd().split('\n').map((l) => JSON.parse(l));
+    let parent = null;
+    for (const [i, line] of lines.entries()) {
+      eq(line.parentUuid, parent, `${id} line ${i + 1}: chained to the line before`);
+      eq(line.sessionId, SESSION, `${id} line ${i + 1}: one session`);
+      eq(line.message.role, line.type, `${id} line ${i + 1}: role`);
+      assert(!('cwd' in line), `${id} line ${i + 1}: no cwd`);
+      parent = line.uuid;
+      for (const use of [line.message.content].flat().filter((c) => c?.type === 'tool_use')) {
+        eq(lines[i + 1]?.message.content?.[0]?.tool_use_id, use.id, `${id}: ${use.name} is answered by the next line`);
+      }
+    }
+    eq(lines[0].type, 'user', `${id}: opens with the user`);
+    eq(lines.at(-1).type, 'assistant', `${id}: the next turn is the user's, the case's prompt`);
+    // Invariant 5: no machine's path, in a file that ships.
+    assert(!/\/home\/|\/Users\/|\/mnt\/|\b[A-Za-z]:[\\/]|\\\\/.test(text), `${id}: history.jsonl names an absolute path`);
+    // A resume writes <session>.jsonl beside the history file.
+    const left = relative(ROOT, join(dir, `${SESSION}.jsonl`)).replace(/\\/g, '/');
+    const ignored = spawnSync('git', ['check-ignore', '-q', left], { cwd: ROOT });
+    if (ignored.status !== 128) eq(ignored.status, 0, `.gitignore keeps ${left}, which a resume writes, out of the repository`);
+    // A history teaches what the next turn runs: $CLAUDE_PLUGIN_ROOT is empty
+    // in the agent's shell, so a command spelled with it fails there.
+    assert(!text.includes('CLAUDE_PLUGIN_ROOT'), `${id}: history.jsonl runs a command through $CLAUDE_PLUGIN_ROOT, which the shell does not set`);
+  }
+  assert(/history\.jsonl[\s\S]{0,120}-name '\?{8}-\?{4}-\?{4}-\?{4}-\?{12}\.jsonl' -delete/.test(readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8')),
+    'scripts/eval.sh removes the session a resume leaves beside a history');
+
+  // excalidraw-edit-next-turn: the change rebuilt from the spec passes; the
+  // scene as built, a node added beside the worker, and a hand-edited label do not.
+  const rel = 'excalidraw/edit-next-turn';
+  const yaml = readFileSync(join(ROOT, 'evals', rel, 'case.yaml'), 'utf8');
+  const { make, FILE, SPEC_FILE, SPEC } = nextTurn;
+  const cwd = join(TMP, 'eval-next-turn');
+  rmSync(cwd, { recursive: true, force: true });
+  mkdirSync(cwd, { recursive: true });
+  eq(make(cwd).join(' '), `${FILE} ${SPEC_FILE}`, 'the scene and the spec beside it');
+  eq(readFileSync(join(cwd, SPEC_FILE), 'utf8'), `${JSON.stringify(SPEC, null, 2)}\n`, 'the spec the history wrote');
+  const verdicts = (text) => Object.fromEntries(['rebuilt-with-a-lambda', 'changed-the-worker-not-added-one', 'nothing-else-lost', 'assumption-follows-the-change']
+    .map((name) => [name, evalGrader(yaml, name).passes(text)]));
+  const scene = () => readFileSync(join(cwd, FILE), 'utf8');
+  eq(JSON.stringify(verdicts(scene())), JSON.stringify({ 'rebuilt-with-a-lambda': false, 'changed-the-worker-not-added-one': true, 'nothing-else-lost': true, 'assumption-follows-the-change': false }), 'as built');
+  const handEdited = scene().replace(/"text": "Fulfilment worker"/g, '"text": "Lambda worker"').replace(/runs on its own host/g, 'runs on Lambda');
+  eq(verdicts(handEdited)['rebuilt-with-a-lambda'], false, 'a label changed by hand is no rebuild');
+  const spec = JSON.parse(arkitectCli(['excalidraw', 'spec', FILE], cwd));
+  const added = { ...spec, nodes: [...spec.nodes, { id: 'fn', kind: 'icon', icon: 'lambda', label: 'Lambda', col: 3, row: 1 }] };
+  writeFileSync(join(cwd, 'added.json'), JSON.stringify(added));
+  arkitectCli(['excalidraw', 'build', 'added.json', '--out', 'added.excalidraw'], cwd);
+  eq(verdicts(readFileSync(join(cwd, 'added.excalidraw'), 'utf8'))['changed-the-worker-not-added-one'], false, 'a Lambda added beside the worker');
+  const worker = spec.nodes.find((n) => n.id === 'worker');
+  Object.assign(worker, { kind: 'icon', icon: 'lambda', label: 'Fulfilment worker (Lambda)' });
+  spec.nodes.find((n) => n.id === 'note').label = 'Assumptions: one region; the worker is a Lambda function.';
+  writeFileSync(join(cwd, SPEC_FILE), JSON.stringify(spec, null, 2));
+  arkitectCli(['excalidraw', 'build', SPEC_FILE, '--out', FILE, '--seed', '11'], cwd);
+  eq(JSON.stringify(verdicts(scene())), JSON.stringify({ 'rebuilt-with-a-lambda': true, 'changed-the-worker-not-added-one': true, 'nothing-else-lost': true, 'assumption-follows-the-change': true }), 'rebuilt from the spec');
+  const backup = evalGrader(yaml, 'wrote-a-backup');
+  assert(readdirSync(join(cwd, 'docs')).some((f) => backup.passes(`docs/${f}`)), 'the rebuild\'s backup is one wrote-a-backup sees');
+  rmSync(cwd, { recursive: true, force: true });
+
+  // drawio-interview-continues: asking again what was answered fails it.
+  const asked = evalGrader(readFileSync(join(ROOT, 'evals', 'drawio', 'interview-continues', 'case.yaml'), 'utf8'), 'does-not-ask-what-was-answered');
+  assert(asked.passes('**Which services does a payment pass through?** My recommendation: API Gateway, a Lambda and your PSP.'), 'the next question');
+  for (const again of ['Should I draw it as-is or to-be?', 'Which cloud does it run on?', 'Is that on AWS or on-premises?']) assert(!asked.passes(again), again);
+});
+
 // evals/scoreboard.json is the run to beat (#415). It names every case that
 // exists and no other, each with the tier its case.yaml gives it, and holds
 // scores and counts only: a path in it would be someone's machine.
