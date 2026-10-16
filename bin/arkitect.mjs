@@ -32,6 +32,7 @@ const COMMANDS = {
     render: [DRAWIO, 'render-drawio.mjs', 'export pages locally using Draw.io Desktop'],
     analyze: [DRAWIO, 'analyze-drawio.mjs', 'summarize a .drawio file without loading its XML'],
     backup: [DRAWIO, 'backup.mjs', 'copy a file beside itself before you edit it'],
+    spec: [DRAWIO, 'spec.mjs', 'print the spec a built diagram carries, to change and rebuild'],
     packs: [DRAWIO, 'build-packs.mjs', 'verify or rebuild the icon packs and catalog'],
     sheets: [DRAWIO, 'contact-sheet.mjs', 'render a pack as a labelled grid for review'],
     learn: [DRAWIO, 'build-knowledge.mjs', 'rebuild your style record from your own diagrams'],

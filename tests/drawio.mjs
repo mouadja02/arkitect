@@ -4312,8 +4312,10 @@ test('a spec with a bad number is refused on the command line before any backup 
 // column (#153).
 test('an explicit null takes the default, exactly as leaving the field out does (#153)', () => {
   const nodes = [{ id: 'a', label: 'A', col: 0 }, { id: 'b', label: 'B', col: 1 }];
-  const nulled = builder.buildDiagram({ layout: { colPitch: null, rowPitch: null, originX: null }, nodes }).xml;
-  const absent = builder.buildDiagram({ nodes }).xml;
+  // The file carries the spec as written, nulls included (#388); the drawing is what must match.
+  const drawn = (spec) => builder.buildDiagram(spec).xml.replace(/ arkitect-spec="[^"]*"/, '');
+  const nulled = drawn({ layout: { colPitch: null, rowPitch: null, originX: null }, nodes });
+  const absent = drawn({ nodes });
   eq(nulled, absent, 'a null layout value must build the same file as no value at all');
   const p = join(TMP, 'null-defaults.drawio');
   writeFileSync(p, nulled);
@@ -4812,6 +4814,59 @@ test('a rebuild over a .drawio someone added to names the dropped cells, and ret
   rmSync(dir, { recursive: true, force: true });
 });
 
+// The spec a diagram was built from lived in a separate file, often not
+// committed, so an edit meant hand-written XML, and an agent asked to add one
+// node wrote a new spec for the whole diagram (#339). Every build carries its
+// spec on <mxfile>, which Draw.io Desktop keeps on save, and `spec` prints it
+// (#388).
+test('a built .drawio carries its spec, `drawio spec` prints it, and rebuilding it reproduces the file (#388)', () => {
+  const dir = join(TMP, 'p388');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const templates = join(SKILL, 'assets', 'templates');
+  const odd = { title: 'Quotes "and" <tags> & ampersands', nodes: [{ id: 'a', label: 'Line one\nLine två — ü', kind: 'box' },
+    { id: 'b', label: "it's `code`", col: 1 }], edges: [{ from: 'a', to: 'b', label: '50%' }] };
+  const specs = [...readdirSync(templates).filter((f) => f.endsWith('.spec.json')).map((f) => [f, JSON.parse(readFileSync(join(templates, f), 'utf8'))]), ['odd', odd]];
+  for (const [name, spec] of specs) {
+    const { xml } = builder.buildDiagram(spec);
+    eq(JSON.stringify(builder.specOf(xml)), JSON.stringify(spec), `${name}: the carried spec`);
+    eq(builder.buildDiagram(builder.specOf(xml)).xml, xml, `${name}: rebuilding the carried spec`);
+  }
+  eq(builder.specOf('<mxfile host="Electron"><diagram name="P" id="p"><mxGraphModel/></diagram></mxfile>'), null, 'none carried');
+
+  // Through the dispatcher: print, rebuild, byte for byte.
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', ...args], { encoding: 'utf8' });
+  const spec = join(dir, 'odd.spec.json');
+  const out = join(dir, 'a.drawio');
+  writeFileSync(spec, JSON.stringify(odd, null, 2));
+  cli('build', spec, '--out', out, '--defaults');
+  const printed = cli('spec', out);
+  eq(`${printed.status}|${printed.stderr}`, '0|', 'printed, nothing said');
+  writeFileSync(join(dir, 'printed.json'), printed.stdout);
+  cli('build', join(dir, 'printed.json'), '--out', join(dir, 'b.drawio'), '--defaults');
+  eq(readFileSync(join(dir, 'b.drawio'), 'utf8'), readFileSync(out, 'utf8'), 'the printed spec rebuilds the file');
+  const bare = join(dir, 'bare.drawio');
+  writeFileSync(bare, '<mxfile host="Electron"><diagram name="P" id="p"><mxGraphModel><root><mxCell id="0"/></root></mxGraphModel></diagram></mxfile>');
+  const none = cli('spec', bare);
+  eq(none.status, 1, 'a file with no spec exits 1');
+  assert(/carries no spec/.test(none.stderr) && none.stdout === '', none.stderr);
+  for (const args of [[], [out, bare], [join(dir, 'missing.drawio')]]) assert(cli('spec', ...args).status === 2, `exit 2: ${args.join(' ')}`);
+
+  // Saved in Draw.io Desktop: agent rewritten, the spec kept, a cell added.
+  // It is still Arkitect's, `spec` says an editor saved it, and a rebuild from
+  // its spec reports the added cell through #376's note and kept backup.
+  writeFileSync(out, readFileSync(out, 'utf8').replace('agent="arkitect-drawio"', 'agent="Mozilla/5.0 draw.io/29.0.3"').replace('</root>',
+    '<mxCell id="added" value="Audit log" style="rounded=1;" vertex="1" parent="1"><mxGeometry x="80" y="400" width="190" height="60" as="geometry" /></mxCell></root>'));
+  assert(builder.isArkitectDrawio(readFileSync(out, 'utf8')), 'a saved file carrying its spec is still Arkitect\'s');
+  const saved = cli('spec', out);
+  assert(saved.status === 0 && /saved by an editor/.test(saved.stderr), saved.stderr);
+  writeFileSync(join(dir, 'saved.json'), saved.stdout);
+  const rebuilt = JSON.parse(cli('build', join(dir, 'saved.json'), '--out', out, '--defaults').stdout);
+  eq(rebuilt.notes.length, 1, 'one note');
+  assert(rebuilt.notes[0].includes('"added" (Audit log)') && /-kept\.drawio$/.test(rebuilt.backup), rebuilt.notes[0]);
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // Five AWS accounts shipped as plain boxes with every one listed under
 // looksLikeBoundary, and validate passed silent (#341); a PostgreSQL box
 // listed under namesAProduct did the same, where Excalidraw's validate warns
@@ -4958,7 +5013,7 @@ test('a spec with pages builds one Draw.io page each, and refuses what cannot be
   });
   eq(JSON.stringify([...xml.matchAll(/<diagram name="([^"]*)" id="([^"]*)">/g)].map((m) => [m[1], m[2]])),
     JSON.stringify([['As-is', 'generated-page-1'], ['To-be', 'target']]), 'one <diagram> per page, named, with a default id');
-  assert(/^<mxfile [^>]*\bpages="2">/.test(xml), 'the file carries its page count, as Draw.io writes it');
+  assert(/^<mxfile [^>]*\bpages="2"[ >]/.test(xml), 'the file carries its page count, as Draw.io writes it');
   const [first, second] = xml.split('<diagram ').slice(1);
   assert(first.includes('value="Today"') && !second.includes('value="Today"'), 'a title belongs to its own page');
   assert(!first.includes('id="legend"') && second.includes('id="legend"'), 'a page gets a legend only for its own connector kinds');

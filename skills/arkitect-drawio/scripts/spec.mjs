@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+// Print the spec a .drawio file was built from, to change and rebuild (#388).
+// Draw.io Desktop rewrites agent="arkitect-drawio" on save and keeps the spec.
+import { specCli } from './lib/spec-cli.mjs';
+import { specOf } from './build-diagram.mjs';
+
+const savedSince = (text) => !/<mxfile\b[^>]*\bagent="arkitect-drawio"/.test(text.slice(0, 4096));
+process.exit(specCli(process.argv.slice(2), { specOf, savedSince, kind: 'drawio' }));

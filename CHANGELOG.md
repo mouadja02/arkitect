@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Added
 
 - `arkitect report --draft <diagram> [--spec <spec>]` prints the seven report headings with File, Icons and Validation filled: the file's pages and counts, each icon's id and pack (or ref and library) and every placeholder, missing, ambiguous or on-demand mark resolved from the spec without writing, and every `validate` error, warning and note word for word, with the build report's unknown kinds, unknown fields and notes. Engine, Assumptions, Render and Deviations each hold a `<!-- fill in -->` line, and `arkitect report` and the Stop hook fail a report while one is left (#387).
+- Every Draw.io build carries its spec, as an `arkitect-spec` attribute on `<mxfile>`, which Draw.io Desktop keeps on save, and `arkitect drawio spec <file>` prints it: an edit to a diagram Arkitect built changes the spec and rebuilds instead of hand-writing XML. Rebuilding the printed spec reproduces the file byte for byte. A file saved by an editor since still counts as Arkitect's while it carries the spec, so a rebuild names the cells added there and keeps their backup (#376), and `spec` warns that changes made there are not in it. `references/editing.md` gains that branch. Every built file is larger by its spec, about 3 KB for the starter; the two committed examples are rebuilt, and nothing they draw moved (#388).
 
 ### Changed
 

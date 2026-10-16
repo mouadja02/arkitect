@@ -57,12 +57,22 @@ arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells   # a row per cell; --all, every key
 arkitect drawio analyze docs/arch.drawio --find "Checkout API"
 arkitect drawio backup docs/arch.drawio                # before an edit the builder doesn't make
+arkitect drawio spec docs/arch.drawio > edit.json      # the spec it was built from
 arkitect drawio packs --verify                         # committed packs against their pins
 arkitect drawio sheets --pack azure                    # a pack as a labelled grid
 arkitect drawio learn --sources <files> --merge        # your style record
 arkitect drawio findings --derive
 arkitect drawio apply --list                           # --accept <ids>, --reset
 ```
+
+Every build writes its spec, minified and XML-escaped, as `arkitect-spec` on
+`<mxfile>`; Draw.io Desktop keeps the attribute when it saves. `spec` prints it
+as indented JSON, and building that over the file reproduces it byte for byte
+with the same style. It exits 1 when the file carries none, and says on stderr
+when an editor has saved the file since (its `agent` is no longer Arkitect's):
+a colour or position changed there is not in the spec. A file that carries the
+spec still counts as Arkitect's, so a rebuild names cells added since in
+`notes` and keeps their backup (#376, #388).
 
 ## Excalidraw
 
