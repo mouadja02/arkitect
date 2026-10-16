@@ -671,6 +671,79 @@ const evalCases = () => {
     .sort((a, b) => a.id.localeCompare(b.id));
 };
 
+// A regex grader read out of a case file, applied to text the way
+// `claude plugin eval` applies it: `contains`, `not_contains`, or `count:N`,
+// which is exactly N matches of the pattern made global.
+const evalGrader = (yaml, name) => {
+  const block = yaml.replace(/\r\n/g, '\n').match(new RegExp(`^  - type: (\\w+)\\n    name: ${name}\\n((?:    .*\\n?)*)`, 'm'));
+  assert(block, `the ${name} grader is gone`);
+  const field = (key) => block[2].match(new RegExp(`^    ${key}: (.*)$`, 'm'))?.[1]?.trim();
+  const quoted = (v) => (v?.startsWith("'") ? v.slice(1, -1).replace(/''/g, "'") : v);
+  const grader = { type: block[1], pattern: quoted(field('pattern') ?? field('input_match')), match: field('match') ?? 'contains',
+    target: field('target'), flags: quoted(field('flags')) ?? '' };
+  grader.passes = (text) => {
+    const re = new RegExp(grader.pattern, grader.flags);
+    if (grader.match === 'not_contains') return !re.test(text);
+    const count = grader.match.match(/^count:(\d+)$/);
+    if (count) return (text.match(new RegExp(grader.pattern, `${grader.flags.replace('g', '')}g`)) ?? []).length === Number(count[1]);
+    return re.test(text);
+  };
+  return grader;
+};
+
+// `target: files` is the list of files a run CREATED. A file the scaffold wrote
+// before the run is never in it, rewritten or not, so the four "input
+// unchanged" graders that looked there passed whatever the agent did to the
+// fixture (#414). A files grader may only name what the run itself creates,
+// and the fixture checks read the file: each passes it as written and fails
+// it rewritten.
+test('no files grader names a file its scaffold wrote, and the fixture checks read the file (#414)', () => {
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const script = yaml.match(/^\s{2}scaffold_script:[ \t]*(\S+)/m)?.[1];
+    if (!script) continue;
+    const body = readFileSync(join(dir, script), 'utf8');
+    const written = [...body.matchAll(/(?:cat >|cp "?\S+"?|>)\s*"?([\w./-]+\.\w+)"?/g)].map((m) => m[1].replace(/^\.\//, ''));
+    for (const [, name] of yaml.matchAll(/^  - type: regex\n    name: ([\w-]+)\n(?:    (?!name:).*\n)*?    target: files\n/gm)) {
+      const grader = evalGrader(yaml, name);
+      for (const path of written) {
+        assert(!new RegExp(grader.pattern).test(path), `${id}: ${name} names ${path}, which its scaffold wrote, so it never sees a change`);
+      }
+    }
+  }
+
+  const heredoc = (rel) => readFileSync(join(ROOT, 'evals', rel, 'scaffold.sh'), 'utf8').match(/<<'EOF'\n([\s\S]*?)\nEOF/)[1] + '\n';
+  const template = readFileSync(join(ROOT, 'skills', 'arkitect-excalidraw', 'assets', 'templates', 'starter-architecture.excalidraw'), 'utf8');
+  for (const [rel, fixture, kept, rewrites] of [
+    ['drawio/apply-skill-stays-manual', heredoc('drawio/apply-skill-stays-manual'), 'input-keeps-its-cells',
+      [(t) => t.replaceAll('rounded=1;', 'rounded=0;'), (t) => t.replace('dashed=1;', ''), (t) => t.replace('<mxfile ', '<mxfile agent="arkitect-drawio" ')]],
+    ['drawio/learning-skill-stays-manual', heredoc('drawio/learning-skill-stays-manual'), 'input-keeps-its-cells',
+      [(t) => t.replaceAll('rounded=0;whiteSpace', 'rounded=1;whiteSpace'), (t) => t.replace('html=1;" edge', 'html=1;dashed=1;" edge')]],
+    ['excalidraw/apply-skill-stays-manual', template, 'input-keeps-its-elements',
+      [(t) => t.replaceAll('"strokeStyle": "dashed"', '"strokeStyle": "solid"'), (t) => t.replace(/"customData": \{\s*"arkitect": \{[^}]*\},\s*"arkitectSpec"/, '"customData": {"arkitect": {}, "x"')]],
+    ['excalidraw/learning-skill-stays-manual', template, 'input-keeps-its-elements',
+      [(t) => t.replaceAll('"strokeStyle": "dashed"', '"strokeStyle": "solid"')]],
+  ]) {
+    const yaml = readFileSync(join(ROOT, 'evals', rel, 'case.yaml'), 'utf8');
+    const unchanged = evalGrader(yaml, 'input-unchanged');
+    const count = evalGrader(yaml, kept);
+    assert(unchanged.target.startsWith('{ source: file'), `${rel}: input-unchanged no longer reads the file`);
+    assert(unchanged.passes(fixture), `${rel}: input-unchanged fails the fixture as the scaffold writes it`);
+    assert(count.passes(fixture), `${rel}: ${kept} expects ${count.match}, and the fixture has ${(fixture.match(new RegExp(count.pattern, 'g')) ?? []).length}`);
+    for (const [i, rewrite] of rewrites.entries()) {
+      const changed = rewrite(fixture);
+      assert(changed !== fixture, `${rel}: rewrite ${i} changed nothing; fix the test`);
+      assert(!unchanged.passes(changed), `${rel}: input-unchanged passes rewrite ${i}`);
+    }
+    const grown = rel.startsWith('drawio') ? fixture.replace('</root>', '<mxCell id="x" vertex="1" parent="1" /></root>')
+      : fixture.replace('"elements": [', '"elements": [{"id": "x", "versionNonce": 1},');
+    assert(!count.passes(grown), `${rel}: ${kept} passes a fixture with an element added`);
+    for (const tool of ['input-not-edited', 'input-not-written']) {
+      assert(/^    max: 0$/m.test(yaml.slice(yaml.indexOf(`name: ${tool}`), yaml.indexOf(`name: ${tool}`) + 200)), `${rel}: ${tool} no longer refuses every write`);
+    }
+  }
+});
+
 // `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
 // the case directory - not as inline bash. An inlined script is not run and not
 // reported as skipped: the case errors before the agent starts, with
