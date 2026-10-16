@@ -3128,7 +3128,7 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
       const said = routeFor(prompt);
       if (styleHook.ruleFor(prompt)) eq(said, null, `${engine}/${name}: a style question gets the style rule instead`);
       else if (/\.(drawio|excalidraw)\b/.test(prompt)) assert(said?.includes(`arkitect-${engine}`), `${engine}/${name}: ${said}`);
-      else if (name === 'engine-choice-is-explained') assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
+      else if (['engine-choice-is-explained', 'interview-when-vague'].includes(name)) assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
       else eq(said, null, `${engine}/${name} names no file`);
     }
   }
@@ -3140,7 +3140,13 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
   // skill and handed over SVG or Mermaid (#371). A request for a diagram is
   // routed; a bug report about drawing, or one asking for another format, isn't.
   for (const prompt of ['Draw a sequence diagram for the auth flow', 'make me a flowchart of the signup flow',
-    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.']) {
+    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.',
+    // Asked politely, with no verb on the list: no skill loaded, and every run
+    // asked six questions at once (#416).
+    "I'd like an architecture diagram of our platform for the client's architecture review board",
+    'I’d like a diagram of the checkout flow', 'We would like an architecture diagram for the board',
+    'Could you do a diagram of the order pipeline?', 'Can you put together a flowchart of the signup flow',
+    'show me a diagram of how the services talk']) {
     assert(/^Arkitect: this prompt asks for a diagram\. Load the arkitect-drawio or arkitect-excalidraw skill/.test(routeFor(prompt) ?? ''), prompt);
   }
   eq(skill(routeFor('Sketch the architecture of our payments service in Excalidraw')), 'arkitect-excalidraw', 'an engine named');
@@ -3148,7 +3154,9 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
   for (const prompt of ['Draw it as a Mermaid diagram in the README', 'Draw a diagram of the architecture and save it as docs/arch.svg',
     'fix the bug where the canvas does not draw the architecture overlay', 'the diagram view does not draw edges after a resize',
     "why doesn't the architecture page draw on mobile?", 'refactor the diagram renderer', 'generate the diagram types from the schema',
-    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
+    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?',
+    "I'd like a fix for the diagram renderer", 'I need a test for the diagram parser', 'add a diagram view toggle',
+    'It looks like a diagram from 2010', "I'd like an explanation of the diagram"]) {
     eq(routeFor(prompt), null, prompt);
   }
   // An engine named beside an export format asked for that engine; the

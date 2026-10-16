@@ -60,8 +60,9 @@ The plugin also carries four hooks:
   load first. A spec is Arkitect's when the file holds `nodes` or `pages`, or,
   before it exists, when the prompt calls it a diagram (#327, #355). A prompt
   that names no file but asks for a diagram ("draw ... architecture", "I want
-  a diagram of ...") gets one sentence naming both skills and the engine rule;
-  one asking for Mermaid, PlantUML, SVG or another format gets nothing (#371).
+  a diagram of ...", "I'd like an architecture diagram of ...") gets one
+  sentence naming both skills and the engine rule; one asking for Mermaid,
+  PlantUML, SVG or another format gets nothing (#371, #416).
 - `hooks/report-check.mjs`: after a build, it sends a report back once when it
   is missing one of its headings, when no PNG was opened and its Render
   section describes a picture or doesn't say nothing saw it, or when it calls
