@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. About 20
 seconds on a laptop, up to a minute on a CI runner. It needs a clone; the npm
 package doesn't carry it.
 
-On a fresh clone expect `484 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `485 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -93,7 +93,7 @@ claude plugin details arkitect        # expect Skills (6)
 
 ## Evals
 
-`evals/` holds 18 agent cases, ten for Draw.io and eight for Excalidraw, each
+`evals/` holds 22 agent cases, twelve for Draw.io and ten for Excalidraw, each
 in a tier: tier 1 is the floor every run must hold, tiers 2 and 3 the headroom
 where progress shows. They run real agent sessions and LLM graders, so they
 cost money and never run by default. How to run them, and what each case checks:

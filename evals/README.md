@@ -1,11 +1,13 @@
 # Eval cases
 
-Eighteen cases, ten for Draw.io and eight for Excalidraw, covering what
-matters most: that a plain request fires the right skill and produces valid,
-styled, native output; that a missing product icon is reported or built honestly rather
-than substituted; that an edit follows the file in front of it; and that the
-learning and apply skills never fire on their own. One of the ten Draw.io
-cases runs the portable report check an AGENTS.md host relies on.
+Twenty-two cases, twelve for Draw.io and ten for Excalidraw, in three tiers
+(below). Tier 1 holds what matters most and must stay at 1.00: that a plain
+request fires the right skill and produces valid, styled, native output; that
+a missing product icon is reported or built honestly rather than substituted;
+that an edit follows the file in front of it; and that the learning and apply
+skills never fire on their own. Tiers 2 and 3 hold the headroom: editing by
+the spec a file carries, editing a file an editor has saved since, and editing
+a scene drawn in the app.
 
 ```
 evals/
@@ -20,6 +22,8 @@ evals/
     numbered-flow-one-sequence/     one path numbered from 1; entry points are not steps
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
+    edit-built-diagram/             tier 2: an edit prints the carried spec and rebuilds
+    edit-saved-by-desktop/          tier 3: Desktop's colour and text survive the edit
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
@@ -29,6 +33,8 @@ evals/
     engine-choice-is-explained/     the same request, with no engine named at all
     learning-skill-stays-manual/    same rule, other engine
     apply-skill-stays-manual/       same rule, other engine
+    edit-built-scene/               tier 2: the spec route, other engine
+    edit-follows-the-scene/         tier 2: an app-drawn scene edited in its own look
 ```
 
 Case names carry the engine (`drawio-generate-architecture`), so `--case` and

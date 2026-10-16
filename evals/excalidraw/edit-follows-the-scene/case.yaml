@@ -1,0 +1,101 @@
+schema_version: "1.1"
+name: excalidraw-edit-follows-the-scene
+description: >
+  Editing a scene drawn in the app, not by Arkitect: it carries no spec, so
+  the edit is made in place - analyzed rather than read whole, backed up, and
+  drawn the way the scene is drawn: teal strokes, no roughness, pale cyan
+  boxes, every arrow bound at both ends. The house style guide would give a
+  rough, dark-stroked box, which is the failure this case looks for. The
+  Excalidraw twin of drawio-edit-existing-diagram.
+tags: [editing, style, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 35
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    eval-input/shop.excalidraw has a storefront, a checkout service, an orders
+    database and a stock service. Add an audit log service that the checkout
+    service writes to, in place, and keep the rest of the scene as it is.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  # The read hook's own pattern for analyzing (#368).
+  - type: tool_used
+    name: analyzed-instead-of-reading
+    tool: Bash
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
+
+  - type: regex
+    name: audit-log-added-nothing-lost
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '^(?=[\s\S]*"text": "[^"]*[Aa]udit)(?=[\s\S]*"text": "Storefront")(?=[\s\S]*"text": "Checkout service")(?=[\s\S]*"text": "Orders DB")(?=[\s\S]*"text": "Stock service")'
+
+  # What the case exists for: nothing in the scene is rough, so nothing added
+  # to it may be. The builder's default is roughness 1.
+  - type: regex
+    name: followed-the-scene-not-the-style-guide
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '"roughness": [1-9]'
+    match: not_contains
+    weight: 3
+
+  # Every stroke in the scene is teal; the house text and stroke colour is #1e1e1e.
+  - type: regex
+    name: no-house-stroke-colour
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '"strokeColor": "#1e1e1e"'
+    match: not_contains
+
+  # Three arrows, each bound at both ends, and one more for the audit log.
+  # Bound labels hang off containerId, and the cylinder's line carries null
+  # bindings, so a bound end is exactly an object here.
+  - type: regex
+    name: new-arrow-bound-at-the-start
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '"startBinding": \{'
+    match: count:4
+
+  - type: regex
+    name: new-arrow-bound-at-the-end
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '"endBinding": \{'
+    match: count:4
+
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'shop\.backup-|shop\.excalidraw\.backup-'
+
+  # The scene is the app's: a builder's stamp means it was redrawn from a new spec.
+  - type: regex
+    name: not-redrawn-from-a-new-spec
+    target: { source: file, path: ./eval-input/shop.excalidraw }
+    pattern: '"arkitect": \{'
+    match: not_contains
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+
+  # The same wordings drawio-edit-existing-diagram accepts (#368).
+  - type: regex
+    name: says-it-matched-the-scene
+    target: last_message
+    pattern: '(existing|original)[^.\n]{0,30}styl|styl[^.\n]{0,30}(existing|original)|\b[Mm]atch\w*\s+(the\s+)?(rest\s+of\s+the\s+)?(file|scene|existing|original|other)\b|\b[Ff]ollow\w*\s+(the\s+)?(existing\s+)?(file|scene)\b|\b(file|scene|existing|original)\b[^.\n]{0,60}\b(match|follow)\w*'
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains

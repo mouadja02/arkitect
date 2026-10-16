@@ -744,6 +744,149 @@ test('no files grader names a file its scaffold wrote, and the fixture checks re
   }
 });
 
+// The tier-2 and tier-3 cases build their fixtures with the real CLI through a
+// fixture.mjs, so a test can make the very files a run starts from, act out the
+// outcome a case asks for and the ones it guards against, and hold each file
+// grader to the right verdict on each. A case whose grader passes the trap, or
+// fails the right answer, measures nothing, and nobody sees it until the
+// scores stop moving (#415).
+const fixtureOf = async (rel) => import(pathToFileURL(join(ROOT, 'evals', rel, 'fixture.mjs')).href);
+const evalFixtures = {
+  built: await fixtureOf('drawio/edit-built-diagram'),
+  desktop: await fixtureOf('drawio/edit-saved-by-desktop'),
+  scene: await fixtureOf('excalidraw/edit-built-scene'),
+  appScene: await fixtureOf('excalidraw/edit-follows-the-scene'),
+};
+const { arkitect: arkitectCli } = await import(pathToFileURL(join(ROOT, 'evals', 'fixtures.mjs')).href);
+test('the new eval cases grade their fixtures, the right outcome and the traps the way they mean to (#415)', () => {
+  const dir = join(TMP, 'eval-fixtures');
+  const fresh = (name) => {
+    const at = join(dir, name);
+    rmSync(at, { recursive: true, force: true });
+    mkdirSync(at, { recursive: true });
+    return at;
+  };
+  const caseYaml = (rel) => readFileSync(join(ROOT, 'evals', rel, 'case.yaml'), 'utf8');
+  // Every file grader of a case on one file, as { name: verdict }.
+  const verdicts = (rel, text, path) => {
+    const yaml = caseYaml(rel).replace(/\r\n/g, '\n');
+    const out = {};
+    for (const [, name, target] of yaml.matchAll(/^  - type: regex\n    name: ([\w-]+)\n    target: \{ source: file, path: (\S+) \}$/gm)) {
+      if (target === path) out[name] = evalGrader(yaml, name).passes(text);
+    }
+    assert(Object.keys(out).length, `${rel} has no file grader on ${path}`);
+    return out;
+  };
+  const expect = (rel, text, path, wanted, what) => {
+    const got = verdicts(rel, text, path);
+    for (const [name, verdict] of Object.entries(wanted)) {
+      assert(name in got, `${rel}: no file grader ${name}`);
+      eq(got[name], verdict, `${rel}, ${what}: ${name}`);
+    }
+  };
+  const read = (cwd, rel) => readFileSync(join(cwd, rel), 'utf8');
+  const cmdGrader = (rel, name) => new RegExp(evalGrader(caseYaml(rel), name).pattern);
+
+  // drawio-edit-built-diagram: the spec route passes; an XML edit does not.
+  {
+    const rel = 'drawio/edit-built-diagram';
+    const cwd = fresh('built');
+    evalFixtures.built.make(cwd);
+    const path = './eval-input/payments.drawio';
+    expect(rel, read(cwd, evalFixtures.built.FILE), path,
+      { 'rebuilt-from-the-carried-spec': false, 'fraud-check-wired-in': false, 'direct-call-replaced': false, 'nothing-else-lost': true }, 'as built');
+    const spec = JSON.parse(arkitectCli(['drawio', 'spec', evalFixtures.built.FILE], cwd));
+    spec.nodes.push({ id: 'fraud', kind: 'box', label: 'Fraud check', col: 2, row: 0 });
+    spec.edges = spec.edges.filter((e) => !(e.from === 'api' && e.to === 'psp')).concat({ from: 'api', to: 'fraud' }, { from: 'fraud', to: 'psp' });
+    writeFileSync(join(cwd, 'edit.spec.json'), JSON.stringify(spec));
+    arkitectCli(['drawio', 'build', 'edit.spec.json', '--out', evalFixtures.built.FILE], cwd);
+    const rebuilt = read(cwd, evalFixtures.built.FILE);
+    expect(rel, rebuilt, path, { 'rebuilt-from-the-carried-spec': true, 'fraud-check-wired-in': true, 'direct-call-replaced': true, 'nothing-else-lost': true }, 'rebuilt from its spec');
+    assert(readdirSync(join(cwd, 'eval-input')).some((f) => evalGrader(caseYaml(rel), 'wrote-a-backup').passes(`eval-input/${f}`)), 'the rebuild\'s backup is one wrote-a-backup sees');
+    // The same edit spliced into the XML: wired in, but the spec it carries is the old one.
+    const spliced = read(cwd, '../built/eval-input/payments.drawio').replace(/<mxfile [^>]*>/, (m) => m.replace(/&quot;fraud&quot;/g, '&quot;f&quot;'));
+    expect(rel, spliced, path, { 'rebuilt-from-the-carried-spec': false, 'fraud-check-wired-in': true }, 'edited as XML');
+    for (const cmd of ['node bin/arkitect.mjs drawio spec eval-input/payments.drawio > s.json', 'node scripts/spec.mjs payments.drawio']) {
+      assert(cmdGrader(rel, 'printed-the-carried-spec').test(cmd), cmd);
+    }
+    assert(!cmdGrader(rel, 'printed-the-carried-spec').test('node bin/arkitect.mjs drawio build edit.spec.json --out x.drawio'), 'a build is not the spec');
+  }
+
+  // drawio-edit-saved-by-desktop: an in-place edit keeps Desktop's changes;
+  // a rebuild from the carried spec loses both.
+  {
+    const rel = 'drawio/edit-saved-by-desktop';
+    const cwd = fresh('desktop');
+    const { make, FILE, ADDED, FILL } = evalFixtures.desktop;
+    make(cwd);
+    const path = './eval-input/payments.drawio';
+    const saved = read(cwd, FILE);
+    assert(saved.includes(ADDED) && saved.includes(FILL), 'the fixture holds both Desktop changes');
+    arkitectCli(['drawio', 'validate', FILE], cwd);
+    const warned = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'spec', FILE], { cwd, encoding: 'utf8' });
+    eq(warned.status, 0, 'the spec is still there');
+    assert(/saved by an editor since it was built/.test(warned.stderr), `spec warns: ${warned.stderr}`);
+    expect(rel, saved, path, { 'kept-the-hand-added-text': true, 'kept-the-colour-set-in-desktop': true, 'fraud-check-wired-in': false, 'direct-call-replaced': false, 'nothing-else-lost': true }, 'as saved');
+    const inPlace = saved
+      .replace(/<mxCell id="(e\d+)" ([^>]*)source="api" target="psp">/, '<mxCell id="$1" $2source="fraud" target="psp">')
+      .replace('</root>', '<mxCell id="fraud" value="Fraud check" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="560" y="109" width="120" height="60" as="geometry" /></mxCell><mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="api" target="fraud"><mxGeometry relative="1" as="geometry" /></mxCell></root>');
+    expect(rel, inPlace, path, { 'kept-the-hand-added-text': true, 'kept-the-colour-set-in-desktop': true, 'fraud-check-wired-in': true, 'direct-call-replaced': true }, 'edited in place');
+    const spec = JSON.parse(warned.stdout);
+    spec.nodes.push({ id: 'fraud', kind: 'box', label: 'Fraud check', col: 2, row: 0 });
+    spec.edges = spec.edges.filter((e) => !(e.from === 'api' && e.to === 'psp')).concat({ from: 'api', to: 'fraud' }, { from: 'fraud', to: 'psp' });
+    writeFileSync(join(cwd, 'edit.spec.json'), JSON.stringify(spec));
+    arkitectCli(['drawio', 'build', 'edit.spec.json', '--out', FILE], cwd);
+    expect(rel, read(cwd, FILE), path, { 'kept-the-hand-added-text': false, 'kept-the-colour-set-in-desktop': false, 'fraud-check-wired-in': true }, 'rebuilt over the Desktop save');
+  }
+
+  // excalidraw-edit-built-scene: the spec route passes; the scene as built does not.
+  {
+    const rel = 'excalidraw/edit-built-scene';
+    const cwd = fresh('scene');
+    const { make, FILE } = evalFixtures.scene;
+    make(cwd);
+    const path = './eval-input/orders.excalidraw';
+    expect(rel, read(cwd, FILE), path, { 'rebuilt-from-the-carried-spec': false, 'nothing-else-lost': true, 'names-it-redis': false }, 'as built');
+    const spec = JSON.parse(arkitectCli(['excalidraw', 'spec', FILE], cwd));
+    spec.nodes.push({ id: 'cache', kind: 'icon', icon: 'redis', label: 'Redis cache', col: 2, row: 1 });
+    spec.edges.push({ from: 'api', to: 'cache', label: 'read' });
+    writeFileSync(join(cwd, 'edit.spec.json'), JSON.stringify(spec));
+    arkitectCli(['excalidraw', 'build', 'edit.spec.json', '--out', FILE, '--seed', '7'], cwd);
+    expect(rel, read(cwd, FILE), path, { 'rebuilt-from-the-carried-spec': true, 'nothing-else-lost': true, 'names-it-redis': true }, 'rebuilt from its spec');
+  }
+
+  // excalidraw-edit-follows-the-scene: an element added in the scene's own
+  // look passes; a redraw in the house style fails the case's key grader.
+  {
+    const rel = 'excalidraw/edit-follows-the-scene';
+    const cwd = fresh('app-scene');
+    const { make, FILE, SPEC, STROKE, FILL } = evalFixtures.appScene;
+    make(cwd);
+    arkitectCli(['excalidraw', 'validate', FILE], cwd);
+    const path = './eval-input/shop.excalidraw';
+    const scene = JSON.parse(read(cwd, FILE));
+    expect(rel, JSON.stringify(scene, null, 2), path,
+      { 'followed-the-scene-not-the-style-guide': true, 'no-house-stroke-colour': true, 'new-arrow-bound-at-the-start': false, 'not-redrawn-from-a-new-spec': true, 'audit-log-added-nothing-lost': false }, 'as drawn');
+    const checkout = scene.elements.find((e) => e.type === 'rectangle' && scene.elements.some((t) => t.containerId === e.id && t.text === 'Checkout service'));
+    const like = (over) => ({ ...checkout, groupIds: [], boundElements: [], version: 1, ...over });
+    const box = like({ id: 'audit-box', x: checkout.x + 320, y: checkout.y + 200, boundElements: [{ id: 'audit-text', type: 'text' }, { id: 'audit-arrow', type: 'arrow' }] });
+    const text = { ...scene.elements.find((t) => t.text === 'Stock service'), id: 'audit-text', text: 'Audit log', originalText: 'Audit log', containerId: 'audit-box', x: box.x + 40, y: box.y + 30 };
+    const arrow = { ...scene.elements.find((e) => e.type === 'arrow'), id: 'audit-arrow', startBinding: { elementId: checkout.id, focus: 0, gap: 8 }, endBinding: { elementId: 'audit-box', focus: 0, gap: 8 } };
+    checkout.boundElements = [...(checkout.boundElements ?? []), { id: 'audit-arrow', type: 'arrow' }];
+    const edited = { ...scene, elements: [...scene.elements, box, text, arrow] };
+    expect(rel, JSON.stringify(edited, null, 2), path,
+      { 'followed-the-scene-not-the-style-guide': true, 'no-house-stroke-colour': true, 'new-arrow-bound-at-the-start': true, 'new-arrow-bound-at-the-end': true, 'not-redrawn-from-a-new-spec': true, 'audit-log-added-nothing-lost': true }, 'edited in its own look');
+    assert(box.strokeColor === STROKE && box.backgroundColor === FILL && box.roughness === 0, 'the added box copies the scene\'s look');
+    const redraw = { ...SPEC, nodes: [...SPEC.nodes, { id: 'audit', kind: 'box', label: 'Audit log', col: 2, row: 1 }], edges: [...SPEC.edges, { from: 'checkout', to: 'audit' }] };
+    writeFileSync(join(cwd, 'redraw.spec.json'), JSON.stringify(redraw));
+    arkitectCli(['excalidraw', 'build', 'redraw.spec.json', '--out', 'redrawn.excalidraw'], cwd);
+    expect(rel, read(cwd, 'redrawn.excalidraw'), path,
+      { 'followed-the-scene-not-the-style-guide': false, 'not-redrawn-from-a-new-spec': false, 'audit-log-added-nothing-lost': true }, 'redrawn in the house style');
+  }
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
 // the case directory - not as inline bash. An inlined script is not run and not
 // reported as skipped: the case errors before the agent starts, with
@@ -978,7 +1121,9 @@ test('the edit case recognises every accurate report wording it has failed (#368
 // are checked the way every other count a doc quotes is (#78, #177).
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
   'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
-  'eighteen', 'nineteen', 'twenty'];
+  'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five',
+  'twenty-six', 'twenty-seven', 'twenty-eight', 'twenty-nine', 'thirty', 'thirty-one', 'thirty-two', 'thirty-three',
+  'thirty-four', 'thirty-five', 'thirty-six', 'thirty-seven', 'thirty-eight', 'thirty-nine', 'forty'];
 
 test('evals/README.md counts and lists exactly the cases that exist (#177)', () => {
   const cases = evalCases();
@@ -999,7 +1144,7 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
   // for case. #201 needed a seventh on one side, and a number that has to stay
   // even is a reason not to cover something. The staleness guard is unchanged:
   // every number is still checked against the directories that exist.
-  const quoted = readme.match(/^(\w+) cases, (\w+) for Draw\.io and (\w+) for Excalidraw/mi);
+  const quoted = readme.match(/^([\w-]+) cases, ([\w-]+) for Draw\.io and ([\w-]+) for Excalidraw/mi);
   assert(quoted, 'evals/README.md no longer opens with "<N> cases, <A> for Draw.io and <B> for Excalidraw"');
   const total = NUMBER_WORDS[cases.length];
   assert(total, `${cases.length} cases is past the words this test knows`);
@@ -1028,7 +1173,7 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
   // docs/testing.md repeats the counts in a sentence, and it said 17 cases,
   // nine for Draw.io, for as long as there were 18 (#415).
   const testing = readFileSync(join(ROOT, 'docs', 'testing.md'), 'utf8').replace(/\s+/g, ' ');
-  const said = testing.match(/`evals\/` holds (\d+) agent cases, (\w+) for Draw\.io and (\w+) for Excalidraw/);
+  const said = testing.match(/`evals\/` holds (\d+) agent cases, ([\w-]+) for Draw\.io and ([\w-]+) for Excalidraw/);
   assert(said, 'docs/testing.md no longer says how many eval cases there are, per engine');
   eq(Number(said[1]), cases.length, `docs/testing.md says ${said[1]} eval cases; there are ${cases.length}`);
   for (const [i, engine] of ['drawio', 'excalidraw'].entries()) {

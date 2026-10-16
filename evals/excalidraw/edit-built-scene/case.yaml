@@ -1,0 +1,84 @@
+schema_version: "1.1"
+name: excalidraw-edit-built-scene
+description: >
+  A scene Arkitect built carries its spec on its first node (#388). An edit to
+  it prints the spec, changes it and rebuilds over the scene, so every arrow
+  stays bound and the layout stays collision-free, rather than splicing
+  hand-written elements into generated JSON (#405).
+tags: [editing, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    eval-input/orders.excalidraw was drawn with Arkitect. Add a Redis cache,
+    with the id cache, that the Orders API reads from before it goes to the
+    database. Keep everything else as it is.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  - type: tool_used
+    name: printed-the-carried-spec
+    tool: Bash
+    input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+spec\b'
+
+  - type: tool_order
+    name: spec-before-the-build
+    before: { tool: Bash, input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+spec\b' }
+    after: { tool: Bash, input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+build\b' }
+
+  # The point of the case: the builder drew the cache and its arrow, and the
+  # spec the scene now carries holds them. Hand-written elements carry no stamp.
+  - type: regex
+    name: rebuilt-from-the-carried-spec
+    target: { source: file, path: ./eval-input/orders.excalidraw }
+    pattern: '^(?=[\s\S]*"node": "cache")(?=[\s\S]*"edge": "(?:api->cache|cache->api)")(?=[\s\S]*"arkitectSpec")'
+    weight: 3
+
+  - type: regex
+    name: nothing-else-lost
+    target: { source: file, path: ./eval-input/orders.excalidraw }
+    pattern: '^(?=[\s\S]*"node": "web")(?=[\s\S]*"node": "db")(?=[\s\S]*"node": "note")(?=[\s\S]*"edge": "web->api")'
+
+  - type: regex
+    name: names-it-redis
+    target: { source: file, path: ./eval-input/orders.excalidraw }
+    pattern: '"text": "[^"]*[Rr]edis'
+
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'orders\.backup-|orders\.excalidraw\.backup-'
+
+  - type: tool_used
+    name: did-not-hand-edit-the-json
+    tool: Edit
+    input_match: 'orders\.excalidraw"'
+    min: 0
+    max: 0
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+
+  - type: regex
+    name: says-it-rebuilt-from-the-spec
+    target: last_message
+    pattern: '[Rr]ebuil|from (its|the) (carried |embedded )?spec|spec (it|the scene|the file) carrie'
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains
