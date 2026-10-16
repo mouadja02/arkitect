@@ -4,6 +4,21 @@ Read this before changing an `.excalidraw` file you did not just build, or
 before writing any scene JSON by hand. Paths are relative to the skill; scripts
 are in `scripts/`.
 
+## Built by Arkitect: change its spec and rebuild
+
+A scene Arkitect built carries its spec. Print it, change it, rebuild over the
+scene; the builder keeps the style, routing, bindings and icons, and backs the
+scene up:
+
+```bash
+node scripts/spec.mjs "<file>" > edit.spec.json   # exit 1: no spec, read on
+node scripts/build-diagram.mjs edit.spec.json --out "<file>"
+```
+
+The build's `notes` name every element added since and keep its backup; put
+each one in the spec and rebuild. If `spec.mjs` says an editor saved the scene,
+a colour or position changed there is not in the spec: edit in place instead.
+
 ## Never load the whole file
 
 A scene with embedded images runs to megabytes of base64. Summarize it instead:

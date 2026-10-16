@@ -48,6 +48,7 @@ const COMMANDS = {
     validate: [EXCALI, 'validate-excalidraw.mjs', 'structural checks on an .excalidraw file'],
     analyze: [EXCALI, 'analyze-excalidraw.mjs', 'summarize a scene without loading its JSON'],
     backup: [EXCALI, 'backup.mjs', 'copy a scene beside itself before you edit it'],
+    spec: [EXCALI, 'spec.mjs', 'print the spec a built scene carries, to change and rebuild'],
     render: [EXCALI, 'render-excalidraw.mjs', 'rasterise a scene to SVG/PNG for a look'],
     learn: [EXCALI, 'build-knowledge.mjs', 'rebuild your style record from your own scenes'],
     findings: [EXCALI, 'style-findings.mjs', 'record what your own scenes say about the style'],

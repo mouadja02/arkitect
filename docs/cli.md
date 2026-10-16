@@ -89,10 +89,21 @@ arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders
 arkitect excalidraw analyze docs/arch.excalidraw --cells   # a row per spec entry; --all, per element
 arkitect excalidraw backup docs/arch.excalidraw
+arkitect excalidraw spec docs/arch.excalidraw > edit.json   # the spec it was built from
 arkitect excalidraw learn --sources <files> --merge
 arkitect excalidraw findings --derive
 arkitect excalidraw apply --list
 ```
+
+Every build writes its spec under `customData.arkitectSpec` of the first
+element the first spec node drew, with `arkitectBuilt`, the element count and
+version sum the build wrote. The app keeps an element's `customData` through a
+save; a key at the top of the scene or in `appState` it does not know, it drops.
+`spec` prints the spec, and building it with the same `--seed` and style
+reproduces the scene byte for byte. It exits 1 when the scene carries none,
+the first node deleted included, and says on stderr when the scene no longer
+matches `arkitectBuilt`: the app moves an element's `version` whenever it
+changes one (#388).
 
 ## Behaviour both engines share
 

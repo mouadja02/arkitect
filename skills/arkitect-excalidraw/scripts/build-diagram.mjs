@@ -669,8 +669,43 @@ export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {})
   if (seed != null && parseSeed(seed) === null) {
     throw new SpecError([`seed must be a whole number from 0 to 4294967295, got ${seed}`]);
   }
-  return withSeed(seed, () => assemble(spec, style));
+  // Taken before anything reads the spec, so the scene carries it as written.
+  const carried = JSON.stringify(spec);
+  return withSeed(seed, () => carry(assemble(spec, style), spec, carried));
 }
+
+// The scene carries its spec, so an edit can print it, change it and rebuild
+// instead of hand-writing bound scene JSON (#388). The app writes only an
+// element's customData through a save, never a key at the top of the scene
+// or one appState does not know, so the spec rides on the first element the
+// first spec node drew. `arkitectBuilt` is what the build wrote: the app moves
+// an element's version whenever it changes one, so a scene changed in an
+// editor since no longer matches it. Every label in the spec is already in
+// the scene.
+export const SPEC_KEY = 'arkitectSpec';
+const builtPrint = (elements) => {
+  const live = elements.filter((el) => el && !el.isDeleted);
+  return `${live.length}:${live.reduce((n, el) => n + (Number(el.version) || 0), 0)}`;
+};
+function carry(built, spec, carried) {
+  const { elements } = built.scene;
+  const first = (spec.nodes ?? [])[0]?.id;
+  const carrier = elements.find((el) => first != null && el.customData?.arkitect?.node === first)
+    ?? elements.find((el) => el.customData?.arkitect);
+  if (carrier) carrier.customData = { ...carrier.customData, [SPEC_KEY]: JSON.parse(carried), arkitectBuilt: builtPrint(elements) };
+  return built;
+}
+const carrierOf = (text) => (JSON.parse(text).elements ?? []).find((el) => el && !el.isDeleted && el.customData?.[SPEC_KEY]);
+// The spec a scene was built from, or null when it carries none.
+export function specOf(text) {
+  const spec = carrierOf(text)?.customData[SPEC_KEY];
+  return spec && typeof spec === 'object' ? spec : null;
+}
+// True when an editor has changed the scene since it was built.
+export const changedSince = (text) => {
+  const carrier = carrierOf(text);
+  return Boolean(carrier) && carrier.customData.arkitectBuilt !== builtPrint(JSON.parse(text).elements ?? []);
+};
 
 function assemble(spec, style) {
   const EDGE_KINDS = style.edgeKinds;
