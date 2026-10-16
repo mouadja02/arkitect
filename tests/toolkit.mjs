@@ -1002,6 +1002,28 @@ test('the new eval cases grade their fixtures, the right outcome and the traps t
   rmSync(dir, { recursive: true, force: true });
 });
 
+// evals/scoreboard.json is the run to beat (#415). It names every case that
+// exists and no other, each with the tier its case.yaml gives it, and holds
+// scores and counts only: a path in it would be someone's machine.
+test('the committed eval scoreboard covers exactly the cases that exist, and holds no path (#415)', () => {
+  const board = JSON.parse(readFileSync(join(ROOT, 'evals', 'scoreboard.json'), 'utf8'));
+  eq(board.schema, 'arkitect-eval-scoreboard/1', 'the scoreboard schema');
+  const names = evalCases().map(({ dir }) => readFileSync(join(dir, 'case.yaml'), 'utf8').match(/^name:\s*(\S+)/m)[1]).sort();
+  eq(Object.keys(board.cases).sort().join(' '), names.join(' '), 'the scoreboard\'s cases are the cases that exist; rerun the suite with --scoreboard');
+  for (const { dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8');
+    const name = yaml.match(/^name:\s*(\S+)/m)[1];
+    const tier = yaml.match(/^tags:\s*\[(.*)\]/m)[1].split(',').map((t) => t.trim()).find((t) => /^tier-\d$/.test(t));
+    eq(board.cases[name].tier, tier, `${name}'s tier on the scoreboard`);
+    assert(typeof board.cases[name].score === 'number' && board.cases[name].runs > 0, `${name} has a score from at least one run`);
+  }
+  for (const s of JSON.stringify(board).match(/"[^"]*"/g)) {
+    if (s !== `"${board.schema}"`) assert(!/[\\/]/.test(s), `the scoreboard holds ${s}`);
+  }
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
+  assert(readme.includes('## The scoreboard') && readme.includes('--baseline evals/scoreboard.json'), 'evals/README.md no longer says how to use the scoreboard');
+});
+
 // `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
 // the case directory - not as inline bash. An inlined script is not run and not
 // reported as skipped: the case errors before the agent starts, with

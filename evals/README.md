@@ -155,6 +155,41 @@ gate: pass
   prompt, no reply. `--baseline FILE` reads one, or another `result.json`, and
   prints each case against it.
 
+## The scoreboard
+
+`evals/scoreboard.json` is the run to beat: the whole suite on the model and
+judge it names, with each case's default number of runs. Compare a change
+against it with `--baseline evals/scoreboard.json`. Replace it when a change
+is meant to move the scores, in the same pull request, from a full run on the
+same model, and say in the pull request what moved and why. A case it does
+not hold yet is printed as `new`, and a test fails until the board names every
+case that exists.
+
+The first board, 2026-10-16, Haiku under test and Sonnet judging, 88 runs for
+$1.64:
+
+| | cases | score | all runs perfect |
+|---|---|---|---|
+| tier 1 | 18 | 1.00 | 18 |
+| tier 2 | 8 | 0.89 | 2 |
+| tier 3 | 4 | 0.96 | 2 |
+
+One run of `excalidraw-unknown-product-placeholder` was lost to the
+account's session limit, so that case scored from two runs. What the headroom
+showed on that run:
+
+- `drawio-interview-when-vague`: every run asked five or six questions at
+  once, and two never loaded the skill.
+- `drawio-whole-file-never-read`: one run printed the embedded payload into
+  its context.
+- `drawio-scale-multi-region`: two runs drew fewer than the eight nested
+  boundaries asked for.
+- `excalidraw-edit-built-scene` (two runs) and `drawio-edit-saved-by-desktop`
+  (one) changed nothing. Each run's first command also listed the plugin's
+  `evals/` folder, which the eval sandbox refuses; the agent then called the
+  whole shell unavailable and stopped. A refused command is not a refused
+  tool, and a small model needs telling so.
+
 The underlying command, if you would rather drive it yourself:
 
 ```bash
