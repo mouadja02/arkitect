@@ -49,7 +49,7 @@ now.
 | `learn-drawio-style`, `learn-excalidraw-style` | only when you type the command |
 | `apply-drawio-style`, `apply-excalidraw-style` | only when you type the command |
 
-The plugin also carries four hooks:
+The plugin also carries five hooks:
 
 - `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
   adds one sentence saying a style carries over only through `/learn-*-style`,
@@ -72,10 +72,15 @@ The plugin also carries four hooks:
 - `hooks/diagram-read.mjs`: before a `Read` of a whole `.drawio`, `.dio` or
   `.excalidraw`, it refuses one the session has not analyzed, and one over
   64 KB at all, naming the analyze command to run. A line range passes (#342).
+- `hooks/install-write.mjs`: before a shell command, `Write` or `Edit`, it
+  refuses one that would write inside the plugin, which the next update
+  replaces: a `mkdir`, a redirect or an `--out` after a `cd` into a skill
+  folder, above all. Running a script from there passes, and so does
+  everything when the project is the plugin itself (#404).
 
 None reads anything but the prompt, a `*.spec.json` it names, the last reply,
-the size of a diagram about to be read and the session's tool calls. None
-blocks a prompt.
+the size of a diagram about to be read, the session's tool calls and the path
+a command or edit is about to write. None blocks a prompt.
 
 ## npm
 

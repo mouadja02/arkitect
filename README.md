@@ -109,7 +109,7 @@ has the full statement.
 
 | agent | loads | install |
 |---|---|---|
-| **Claude Code** | plugin: 6 skills, 4 hooks | `claude plugin install arkitect@arkitect` |
+| **Claude Code** | plugin: 6 skills, 5 hooks | `claude plugin install arkitect@arkitect` |
 | **Codex** | `AGENTS.md` + `.agents/skills/arkitect` (`$arkitect`) | `arkitect install codex` |
 | **Cursor** | `.cursor/rules/arkitect.mdc` + `/arkitect` | `arkitect install cursor cursor-command` |
 | **OpenCode** | `AGENTS.md` + `.opencode/command/arkitect.md` | `arkitect install opencode agents` |

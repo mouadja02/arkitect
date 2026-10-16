@@ -1363,8 +1363,8 @@ const skillReading = (engine) => {
 test('each drawing skill reads at most 12,000 bytes before its example, and names one path per task (#113)', () => {
   const measured = [];
   for (const [engine, mustKeep] of [
-    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**', '`node scripts/pattern.mjs N`']],
-    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**', '`node scripts/pattern.mjs N`']],
+    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**', 'never `cd` there', '`node scripts/pattern.mjs N`']],
+    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**', 'never `cd` there', '`node scripts/pattern.mjs N`']],
   ]) {
     const { dir, skill, sections, skillBytes, largest } = skillReading(engine);
     measured.push(`${engine} ${skillBytes} + ${largest} = ${skillBytes + largest}`);
@@ -2948,7 +2948,7 @@ test('the report check sends back a link to the hosted editor, once, with the pa
 const readHook = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
 test('a whole Read of a diagram is refused until it is analyzed, and always when it is large (#342)', () => {
   const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
-  eq(JSON.stringify(pre), JSON.stringify([{ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }]), 'a Read hook');
+  eq(JSON.stringify(pre[0]), JSON.stringify({ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }), 'a Read hook');
   const { refusalFor, respond, LARGE } = readHook;
   const dir = mkdtempSync(join(tmpdir(), 'arkitect-read-'));
   try {
@@ -2988,6 +2988,72 @@ test('a whole Read of a diagram is refused until it is analyzed, and always when
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Agents cd into a skill folder to run its scripts, then mkdir or write a
+// spec relative to it: inside the install, which the next update deletes
+// (#404). A command or an edit that would write there is refused, naming the
+// way back; running a script from there, or working on the plugin itself, isn't.
+const installHook = await import(pathToFileURL(join(ROOT, 'hooks', 'install-write.mjs')).href);
+test('a shell command or edit that would write inside the plugin is refused, and nothing else is (#404)', () => {
+  const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  eq(JSON.stringify(pre[1]), JSON.stringify({ matcher: 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit',
+    hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/install-write.mjs"' }] }), 'a shell and edit hook');
+  const { refusalFor, respond } = installHook;
+  const project = mkdtempSync(join(tmpdir(), 'arkitect-project-'));
+  const env = { CLAUDE_PROJECT_DIR: project };
+  const skill = join(ROOT, 'skills', 'arkitect-drawio');
+  const slashed = skill.replace(/\\/g, '/');
+  const bash = (command, tool_name = 'Bash') => refusalFor({ hook_event_name: 'PreToolUse', tool_name, tool_input: { command }, cwd: project }, env);
+  try {
+    // What the eval traces show, and the other ways to write from there.
+    for (const command of [
+      `cd "${skill}" && mkdir -p ./eval-output`,
+      `cd '${slashed}' && node scripts/find-icon.mjs "kafka" --compact && cat > spec.json <<'EOF'\n{ "nodes": [{ "id": "a", "label": "A -> B" }] }\nEOF`,
+      `cd "${skill}" && node scripts/render-drawio.mjs "${project}/a.drawio" --out-dir .analysis/renders`,
+      `cd "${skill}"; node scripts/build-diagram.mjs "${project}/a.json" --out=a.drawio`,
+      `cd "${skill}" && echo done | tee report.md`,
+      `cd "${join(ROOT, 'skills')}" && cd arkitect-excalidraw && rm -rf eval-output`,
+      `mkdir -p "${join(skill, 'eval-output')}"`,
+      `cd "${skill}" && cp "${project}/a.drawio" .`,
+    ]) {
+      const said = bash(command);
+      assert(/^Arkitect: this would write .+, inside the Arkitect plugin .+so it was not run\. Nothing else is blocked and the shell still works: run the command again from the project folder/.test(said ?? ''), `refused: ${command}\n${said}`);
+    }
+    if (process.platform === 'win32') assert(bash(`cd ${slashed.replace(/^([A-Za-z]):/, (m, d) => `/${d.toLowerCase()}`)} && mkdir out`), 'a Git Bash /c/ path');
+    assert(bash(`Set-Location "${skill}"; New-Item -ItemType Directory -Force eval-output`, 'PowerShell'), 'PowerShell');
+    for (const [tool_name, file_path] of [['Write', join(skill, 'spec.json')], ['Edit', join(skill, 'SKILL.md')], ['MultiEdit', join(ROOT, 'AGENTS.md')]]) {
+      assert(refusalFor({ hook_event_name: 'PreToolUse', tool_name, tool_input: { file_path }, cwd: project }, env), `${tool_name} ${file_path}`);
+    }
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'NotebookEdit', tool_input: { notebook_path: join(skill, 'a.ipynb') }, cwd: project }, env) === null, false, 'NotebookEdit');
+
+    // Reading or running from the skill folder, and writing to the project.
+    for (const command of [
+      `cd "${skill}" && node scripts/find-icon.mjs "bedrock" --compact`,
+      `cd "${skill}" && sed -n '/^## 1\\./,/^## 2\\./p' references/pattern-catalog.md 2>/dev/null`,
+      `cd "${skill}" && node scripts/build-diagram.mjs "${project}/a.json" --out "${project}/out/a.drawio" 2>&1 | head -5`,
+      `cd "${skill}" && echo "a > b" && ls -la >&2`,
+      'mkdir -p eval-output && cd eval-output && echo hi > notes.txt',
+      `node "${skill}/scripts/build-diagram.mjs" spec.json --out docs/a.drawio`,
+      `cat > spec.json <<'EOF'\n{ "nodes": [] }\nEOF\ncd "${skill}" && node scripts/validate-drawio.mjs "${project}/a.drawio"`,
+      `cd "$SOME_DIR" && mkdir out`,
+    ]) eq(bash(command), null, command);
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: 'spec.json' }, cwd: project }, env), null, 'a write to the project');
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(skill, 'SKILL.md') }, cwd: project }, env), null, 'a Read');
+    // Working on the plugin itself is a maintainer's job, not a stray write.
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(skill, 'SKILL.md') }, cwd: ROOT }, { CLAUDE_PROJECT_DIR: ROOT }), null, 'the plugin as the project');
+
+    const said = JSON.parse(respond({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `cd "${skill}" && mkdir x` }, cwd: project }, env));
+    eq(said.hookSpecificOutput.permissionDecision, 'deny', 'a deny decision');
+    const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'install-write.mjs')], { input, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: project } });
+    assert(/"deny"/.test(run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `cd "${skill}" && mkdir x` }, cwd: project })).stdout), 'from the CLI');
+    for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'mkdir out' }, cwd: project })]) {
+      const quiet = run(input);
+      eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${input.slice(0, 40)}`);
+    }
+  } finally {
+    rmSync(project, { recursive: true, force: true });
   }
 });
 

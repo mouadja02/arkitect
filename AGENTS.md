@@ -10,7 +10,8 @@ OpenCode, Cursor, Copilot, Antigravity, Pi, and most others). Claude Code loads
 the same knowledge as skills; see `skills/*/SKILL.md`, which go deeper.
 
 `ARKITECT_ROOT` below means this repository's directory. Every path is relative
-to it, and every command is Node 22+ with **no dependencies to install**.
+to it, but run commands from the project, never `cd` there. Every command is
+Node 22+ with **no dependencies to install**.
 
 ---
 

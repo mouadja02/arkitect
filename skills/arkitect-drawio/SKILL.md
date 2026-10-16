@@ -7,12 +7,13 @@ description: Create or edit editable Draw.io (.drawio) solution-architecture dia
 
 Produces native, editable `.drawio` XML — never a flattened image, never Mermaid
 as the final artifact. The builder applies the house style and embeds the icons;
-you write a small JSON spec. Scripts live in
-`${CLAUDE_PLUGIN_ROOT}/skills/arkitect-drawio/scripts`.
+you write a small JSON spec. `scripts/` and every path below are in
+`${CLAUDE_PLUGIN_ROOT}/skills/arkitect-drawio/`; run commands from the project,
+never `cd` there.
 
 ## What to read
 
-Read only what the task needs. Every path is relative to this skill.
+Read only what the task needs.
 
 | Task | Read |
 |---|---|
