@@ -2501,6 +2501,73 @@ test('arkitect report checks a saved report like the Stop hook, and every adapte
   }
 });
 
+// Copying every warning line with its ids, and every icon, from earlier output
+// is what a small model drops first (#248, #287, #326, #330). `report --draft`
+// writes File, Icons and Validation from the diagram and its spec, and leaves a
+// `fill in` line under each heading only the agent can write; the check fails
+// while one is left (#387).
+test('arkitect report --draft fills File, Icons and Validation from the diagram and its spec, and the check fails a fill-in left (#387)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-draft-'));
+  try {
+    const say = (args) => {
+      const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', ...args], { encoding: 'utf8' });
+      return { code: r.status, out: r.stdout, err: r.stderr };
+    };
+    const cases = [
+      ['drawio', 'starter-architecture', '.drawio', (t) => t.replace(/<diagram name="[^"]*"/, '<diagram')],
+      ['excalidraw', 'aws-data-platform', '.excalidraw', (t) => { const s = JSON.parse(t); s.elements.find((e) => e.type === 'rectangle').strokeStyle = 'wavy'; return JSON.stringify(s); }],
+    ];
+    for (const [engine, name, ext, spoil] of cases) {
+      const templates = join(ROOT, 'skills', `arkitect-${engine}`, 'assets', 'templates');
+      const spec = join(templates, `${name}.spec.json`);
+      const file = join(dir, `${name}${ext}`);
+      writeFileSync(file, spoil(readFileSync(join(templates, `${name}${ext}`), 'utf8')));
+      const validator = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'validate', file, '--json'], { encoding: 'utf8' });
+      const { warnings } = JSON.parse(validator.stdout);
+      assert(warnings.length >= 1, `${engine}: the spoiled copy has no warning to draft`);
+
+      const draft = say(['--draft', file, '--spec', spec]);
+      eq(draft.code, 0, `${engine}: --draft exits 0 (${draft.err})`);
+      const at = ['File', 'Engine', 'Assumptions', 'Icons', 'Validation', 'Render', 'Deviations'].map((h) => draft.out.indexOf(`**${h}**`));
+      assert(at.every((n, i) => n >= 0 && (i === 0 || n > at[i - 1])), `${engine}: the seven headings in order: ${at}`);
+      for (const w of warnings) assert(draft.out.includes(`- warning: ${w}`), `${engine}: the draft drops the warning "${w}"`);
+      const built = JSON.parse(spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'build', spec, '--out', join(dir, `rebuilt${ext}`)], { encoding: 'utf8' }).stdout);
+      if (engine === 'drawio') {
+        const ids = [...new Set(JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.icon).map((n) => n.icon))];
+        eq(built.icons.resolved, ids.length, 'every icon resolved');
+        for (const icon of ids) assert(new RegExp(`- \`${icon}\`: \`[\\w-]+/[\\w-]+\`, \\w[\\w-]* pack`).test(draft.out), `drawio: the draft drops the icon ${icon}`);
+      } else {
+        const nodes = JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.kind === 'icon');
+        for (const n of nodes) assert(new RegExp(`- node \`${n.id}\`: \``).test(draft.out), `excalidraw: the draft drops the icon of ${n.id}`);
+      }
+      assert(/^- note: 6 icons have no edge/m.test(draft.out) || engine === 'drawio', `${engine}: the build report's notes`);
+
+      // The check fails it while a marker is left, and names where.
+      writeFileSync(join(dir, 'draft.md'), draft.out);
+      const left = say([join(dir, 'draft.md'), '--png-viewed']);
+      eq(left.code, 1, `${engine}: a draft with its fill-in lines left`);
+      assert(/fill in[^\n]*under Engine, Assumptions, Render, Deviations/.test(left.out), left.out);
+      // Filled in, the drafted sections pass the same check: nothing in them
+      // reads as an excuse or a description of an unseen picture.
+      const filled = draft.out.replace(/<!-- fill in: why[^\n]*/, 'The user asked for it.').replace(/<!-- fill in: every[^\n]*/, 'None.')
+        .replace(/<!-- fill in: what[^\n]*/, 'Rendered to PNG, opened and looked at.').replace(/<!-- fill in: each[^\n]*/, 'None.');
+      writeFileSync(join(dir, 'filled.md'), filled);
+      const ok = say([join(dir, 'filled.md'), '--png-viewed']);
+      eq(ok.code, 0, `${engine}: the filled-in draft: ${ok.out}`);
+    }
+    // Without --spec the Icons section is the agent's to fill, and says how not to.
+    const bare = say(['--draft', join(dir, 'starter-architecture.drawio')]);
+    eq(bare.code, 0, 'no spec');
+    assert(/\*\*Icons\*\*\s+<!-- fill in: [^\n]*--spec/.test(bare.out), bare.out);
+    for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
+      ['--draft', join(dir, 'starter-architecture.drawio'), '--spec', join(dir, 'missing.json')], ['--draft', join(dir, 'starter-architecture.drawio'), '--png-viewed']]) {
+      eq(say(args).code, 2, args.join(' '));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // Asked to build a spec into a diagram file, the agent loaded no skill and
 // wrote its own builder (#327). A prompt naming a diagram file or a spec gets
 // one line naming the skill, and so does a request for a diagram (#371); any

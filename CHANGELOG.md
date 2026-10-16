@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- `arkitect report --draft <diagram> [--spec <spec>]` prints the seven report headings with File, Icons and Validation filled: the file's pages and counts, each icon's id and pack (or ref and library) and every placeholder, missing, ambiguous or on-demand mark resolved from the spec without writing, and every `validate` error, warning and note word for word, with the build report's unknown kinds, unknown fields and notes. Engine, Assumptions, Render and Deviations each hold a `<!-- fill in -->` line, and `arkitect report` and the Stop hook fail a report while one is left (#387).
+
 ### Changed
 
 - The Cursor and OpenCode slash command is `/arkitect`, not `/diagram`: `arkitect install cursor-command` writes `.cursor/commands/arkitect.md` and `arkitect install opencode` writes `.opencode/command/arkitect.md`. `diagram` is a generic name a host, an extension or the project itself can hold, and a project's own `diagram.md` kept Arkitect's from installing. Adapter names are unchanged. An install removes the `diagram.md` an earlier Arkitect wrote, under any install path, and says so; any other `diagram.md` is the project's own, kept byte for byte and named. Cursor and OpenCode users type `/arkitect` from now on (#401).

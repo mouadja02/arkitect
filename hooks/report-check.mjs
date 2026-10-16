@@ -234,6 +234,21 @@ export function sectionOf(reply, name) {
 }
 export const renderSection = (reply) => sectionOf(reply, 'Render');
 
+// `arkitect report --draft` leaves one marker under each heading only the
+// agent can write, and a draft sent with one still in it is not a report
+// (#387). The headings holding one, in order.
+export const FILL_IN = '<!-- fill in';
+export function unfilled(reply) {
+  const text = String(reply ?? '');
+  const starts = ['File', 'Engine', ...HEADINGS.slice(1)].map((h) => [h, text.search(heading(h))]).filter(([, at]) => at >= 0);
+  const names = [];
+  for (let at = text.indexOf(FILL_IN); at >= 0; at = text.indexOf(FILL_IN, at + 1)) {
+    const under = starts.filter(([, s]) => s <= at).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'no heading';
+    if (!names.includes(under)) names.push(under);
+  }
+  return names;
+}
+
 // Each problem with a report, as a sentence to send back. `unseen` says how
 // the check knows no PNG was looked at: the hook reads the session, the
 // portable command takes the agent's word (#302).
@@ -244,6 +259,10 @@ export function problems(reply, { viewed, unseen = 'no PNG was opened in this se
     out.push(`the report has no ${missing.join(', ')} heading${missing.length > 1 ? 's' : ''}: write it under **File**, `
       + '**Engine** (only when the user named no engine), **Assumptions**, **Icons**, **Validation**, **Render** and '
       + '**Deviations**, each even when it is one line');
+  }
+  const left = unfilled(reply);
+  if (left.length) {
+    out.push(`the report still holds a "${FILL_IN} …" line under ${left.join(', ')}: replace each with what it asks for`);
   }
   const render = renderSection(reply);
   const said = describesThePicture(render);

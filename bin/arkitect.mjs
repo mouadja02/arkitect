@@ -62,7 +62,7 @@ function usage() {
     `arkitect ${version} - editable Draw.io and Excalidraw diagrams, drawn by your agent`,
     '',
     'usage: arkitect <engine> <command> [args...]',
-    '       arkitect install [agent] | report <file> | test | doctor | where | version',
+    '       arkitect install [agent] | report [--draft] <file> | test | doctor | where | version',
     '',
   ];
   for (const [engine, verbs] of Object.entries(COMMANDS)) {

@@ -9,6 +9,7 @@ arkitect                     # every command, one screen
 arkitect doctor              # what is installed, what is optional
 arkitect where               # the install path
 arkitect install --all       # agent adapters for this project
+arkitect report --draft docs/arch.drawio --spec spec.json   # draft one
 arkitect report report.md    # check a saved diagram report
 arkitect test                # the offline suite (clone only)
 arkitect version
@@ -28,6 +29,17 @@ at, no validate warning called intentional, no hosted-editor link. It sees only
 the text, so `--png-viewed` is the agent's word that it opened the PNG, never an
 observed fact. Exit 0 clean, 1 with problems, each named, 2 on a usage error
 (#302).
+
+`report --draft <diagram> [--spec <spec>]` prints the seven headings with what
+a script knows filled in: **File** from the diagram, **Validation** with every
+error, warning and note `validate` prints, word for word, and **Icons** from
+the spec, resolved as the build resolves it without writing anything: each
+icon's id and pack, or ref and library, and every placeholder, missing,
+ambiguous or on-demand mark and product named in a plain box. The build
+report's unknown kinds, unknown fields and notes go under Validation. Engine,
+Assumptions, Render and Deviations each hold one `<!-- fill in: … -->` line,
+and the check fails while one is left. Without `--spec`, Icons is a fill-in
+too (#387).
 
 ## Draw.io
 
