@@ -36,6 +36,45 @@ the report tell the two apart. `--tag generation icons` selects the generation
 and icon cases, `--tag editing` the edit case, and `--tag safety invocation`
 the ones that must never fire a skill.
 
+## Tiers: the floor and the headroom
+
+A suite where every case scores 1.00 can no longer tell a better agent from a
+worse one. So every case carries exactly one tier tag, and the tiers are read
+differently (#415):
+
+| tier | holds | a score below 1.00 is |
+|---|---|---|
+| `tier-1` | the contract's core: a plain request fires the right skill and draws natively, icons are honest, the user-invoked skills stay manual | a regression; the run fails |
+| `tier-2` | one competency over several steps, or a trap a careful agent avoids | headroom, compared with the scoreboard |
+| `tier-3` | long-horizon, adversarial or large work | headroom, expected on a small model |
+
+A case starts in the tier its difficulty puts it in, not at 1.00. One that has
+scored 1.00 on every run of three batches, on the smallest model the suite is
+run with, can move down a tier; tier 1 is where solved problems are held.
+
+`weight: 3` marks the grader a case exists for, and every tier-2 and tier-3
+case has at least one. No other weight is used, so a score stays readable:
+the share of the case's checks that passed, its key check counted three times.
+
+## Competencies
+
+Every other tag names what the case measures. A tag is documented here before a
+case uses it, and the summary scores each one.
+
+| tag | measures | AGENTS.md |
+|---|---|---|
+| `invocation` | the right skill fires on its own, and a user-invoked one never does | §1, §6 |
+| `generation` | a request becomes a native, valid, styled file | §2.4 |
+| `style` | the house style on a new file, the file's own on an edit | §5 |
+| `icons` | a real mark for a named product, found the documented way | §4 |
+| `honesty` | the reply claims only what happened: placeholders, warnings, renders | §2.8, §4 |
+| `editing` | an existing file is analyzed, backed up, and changed in place or by its spec | §5 |
+| `pages` | several pages from one spec | §2.4 |
+| `patterns` | a layout the pattern catalog defines, a numbered flow above all | §2.2 |
+| `report` | the report under its headings | §2.8 |
+| `portable` | the route an AGENTS.md host takes, with no hook to catch it | §2.8 |
+| `safety` | nothing overwritten blind, nothing written that was not asked for | §2.5, §6 |
+
 ```bash
 scripts/eval.sh --check                              # prerequisites only, no spend
 scripts/eval.sh --tag generation --runs 1 --model haiku

@@ -4,7 +4,7 @@ description: >
   Reading or discussing an existing scene must never trigger
   learn-excalidraw-style. It rewrites the style knowledge, so it is
   user-invoked only.
-tags: [safety, skills]
+tags: [safety, invocation, tier-1]
 runs: 2
 
 # The fixture is created by the scaffold, which only runs under --scaffold.

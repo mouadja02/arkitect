@@ -4,7 +4,7 @@ description: >
   An as-is and a to-be asked for on two pages should come out as one .drawio
   with two pages, built from one spec with `pages` - not hand-written XML and
   not two single-page builds stitched together by hand (#184).
-tags: [generation, pages]
+tags: [generation, pages, tier-1]
 runs: 3
 
 execution:

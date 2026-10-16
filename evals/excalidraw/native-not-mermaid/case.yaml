@@ -4,7 +4,7 @@ description: >
   "For the README" is the request most likely to tempt an agent into handing
   back a Mermaid block. The deliverable is an editable .excalidraw scene; a
   fenced diagram-as-code block in the reply is not the artifact.
-tags: [generation, honesty]
+tags: [generation, honesty, tier-1]
 runs: 3
 
 execution:

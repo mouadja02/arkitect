@@ -1024,6 +1024,45 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
   for (const name of listed) {
     assert(cases.some(({ id }) => id.endsWith(`/${name}`)), `evals/README.md's tree lists ${name}, which does not exist`);
   }
+
+  // docs/testing.md repeats the counts in a sentence, and it said 17 cases,
+  // nine for Draw.io, for as long as there were 18 (#415).
+  const testing = readFileSync(join(ROOT, 'docs', 'testing.md'), 'utf8').replace(/\s+/g, ' ');
+  const said = testing.match(/`evals\/` holds (\d+) agent cases, (\w+) for Draw\.io and (\w+) for Excalidraw/);
+  assert(said, 'docs/testing.md no longer says how many eval cases there are, per engine');
+  eq(Number(said[1]), cases.length, `docs/testing.md says ${said[1]} eval cases; there are ${cases.length}`);
+  for (const [i, engine] of ['drawio', 'excalidraw'].entries()) {
+    eq(said[i + 2].toLowerCase(), NUMBER_WORDS[perEngine.get(engine) ?? 0], `docs/testing.md's count for ${engine}`);
+  }
+});
+
+// Every case carries exactly one tier, and only tags evals/README.md documents:
+// the summary scores each tag, and an undocumented one is a score nobody can
+// read. A tier-2 or tier-3 case marks the grader it exists for with weight 3,
+// the only weight used, so a score stays the share of checks passed (#415).
+test('every eval case has one tier, documented tags, and its key grader weighted (#415)', () => {
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8').replace(/\r\n/g, '\n');
+  const documented = new Set([...readme.matchAll(/^\| `([a-z0-9-]+)` \|/gm)].map((m) => m[1]));
+  const tiers = ['tier-1', 'tier-2', 'tier-3'];
+  for (const tier of tiers) assert(documented.has(tier), `evals/README.md no longer documents ${tier}`);
+  const used = new Set();
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const tags = (yaml.match(/^tags:\s*\[(.*)\]/m)?.[1] ?? '').split(',').map((t) => t.trim()).filter(Boolean);
+    const own = tags.filter((t) => tiers.includes(t));
+    eq(own.length, 1, `${id} carries ${own.join(', ') || 'no tier'}; give it exactly one of ${tiers.join(', ')}`);
+    assert(tags.length > 1, `${id} has a tier and no competency tag`);
+    for (const tag of tags) {
+      used.add(tag);
+      assert(documented.has(tag), `${id}: the tag ${tag} is not documented in evals/README.md`);
+    }
+    const weights = [...yaml.matchAll(/^ {4}weight: (\S+)$/gm)].map((m) => m[1]);
+    for (const w of weights) assert(w === '3', `${id}: weight ${w}; weight: 3 marks the grader a case exists for, and no other is used`);
+    if (own[0] !== 'tier-1') assert(weights.length > 0, `${id}: a ${own[0]} case marks the grader it exists for with weight: 3`);
+  }
+  for (const tag of documented) {
+    if (!tiers.includes(tag)) assert(used.has(tag), `evals/README.md documents ${tag}, which no case uses`);
+  }
 });
 
 // The default drawing path has to fit a small model's window before it has read

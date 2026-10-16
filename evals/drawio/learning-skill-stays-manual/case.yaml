@@ -4,7 +4,7 @@ description: >
   learn-drawio-style carries disable-model-invocation, so reading or
   discussing an existing diagram must never trigger it. Only the generation skill
   may fire.
-tags: [safety, invocation]
+tags: [safety, invocation, tier-1]
 runs: 3
 
 # The fixture is created by the scaffold, which only runs under --scaffold.

@@ -6,7 +6,7 @@ description: >
   another product's mark. dbt is in a bundled library and Grafana in a shared
   pack, so nothing needs to be downloaded or traced: the skill fetches a logo
   only when the user asks for one.
-tags: [icons, honesty]
+tags: [icons, honesty, tier-1]
 runs: 3
 
 execution:

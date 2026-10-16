@@ -5,7 +5,7 @@ description: >
   path from 1; the entry points are not steps, so they stay unnumbered or take
   letters. Numbering one of them "1." claims an order the system does not have
   (#251).
-tags: [generation, patterns]
+tags: [generation, patterns, tier-1]
 runs: 3
 
 execution:
