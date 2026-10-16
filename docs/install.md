@@ -132,8 +132,10 @@ from a clone.
 Each adapter is a short block pointing at [`AGENTS.md`](../AGENTS.md), the full
 contract, with the absolute path of your install. A rerun replaces the fenced
 `arkitect:begin … arkitect:end` block in place and leaves the rest of the file
-alone. An unknown adapter or option exits 2 before anything is written;
-`arkitect install --help` lists them.
+alone. A file of its own, such as a Cursor rule or command, is skipped when
+it exists; `--force` replaces it and first copies it beside itself as
+`<file>.backup-<stamp>`, a name no host loads. An unknown adapter or option
+exits 2 before anything is written; `arkitect install --help` lists them.
 
 ### Codex
 

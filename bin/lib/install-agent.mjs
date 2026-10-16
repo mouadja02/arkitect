@@ -17,6 +17,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { backupExisting } from '../../skills/arkitect-drawio/scripts/lib/backups.mjs';
 
 export const BEGIN = '<!-- arkitect:begin -->';
 export const END = '<!-- arkitect:end -->';
@@ -238,10 +239,16 @@ export function install(root, argv) {
       ? upsert(exists ? readFileSync(path, 'utf8') : '', block)
       : block;
 
+    // --force replaced a project's own file with no copy left (#401). The
+    // backup's name ends past the extension, so no host loads it as a command
+    // or a rule; a file already holding this block needs none.
+    const backup = exists && !adapter.merge && readFileSync(path, 'utf8') !== content
+      ? backupExisting(path, { inert: true }) : null;
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
     const verb = !exists ? 'write ' : adapter.merge ? 'update' : 'replace';
     console.log(`${verb} ${relative(target, path) || adapter.file}   (${adapter.hosts})`);
+    if (backup) console.log(`backup ${relative(target, backup)}   (the file it replaced)`);
   }
 
   if (!parsed.options.print && chosen.includes('agents')) {

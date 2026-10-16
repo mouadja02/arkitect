@@ -10,7 +10,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, chmodSync, mkdtempSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
@@ -233,6 +233,33 @@ test('a non-merge adapter refuses to clobber without --force', () => {
 
   cli(['install', 'cursor', '--dir', dir, '--force']);
   assert(readFileSync(join(dir, '.cursor', 'rules', 'arkitect.mdc'), 'utf8').includes('Arkitect'), '--force did not replace it');
+});
+
+// `install --all --force`, the documented update, replaced a project's own
+// command file and left no copy of it (#401). The backup ends past the
+// extension: a `.md` beside a Cursor command is a command too.
+test('install --force backs up each non-merge adapter file it replaces, under a name no host loads (#401)', () => {
+  const dir = join(TMP, 'force-backup');
+  const own = Object.entries(adapters.ADAPTERS).filter(([, a]) => !a.merge);
+  for (const [name, a] of own) {
+    mkdirSync(dirname(join(dir, a.file)), { recursive: true });
+    writeFileSync(join(dir, a.file), `my own ${name}\n`);
+  }
+  const out = cli(['install', '--all', '--force', '--dir', dir]);
+  for (const [name, a] of own) {
+    const folder = dirname(join(dir, a.file));
+    const copies = readdirSync(folder).filter((f) => f.startsWith(`${basename(a.file)}.backup-`));
+    eq(copies.length, 1, `${a.file}: backups`);
+    assert(/\.backup-\d{8}-\d{6}$/.test(copies[0]), `${copies[0]}: ends in the stamp, not in an extension a host loads`);
+    eq(readFileSync(join(folder, copies[0]), 'utf8'), `my own ${name}\n`, `${a.file}: the backup holds the replaced file`);
+    assert(out.includes(copies[0]), `the output names ${copies[0]}`);
+  }
+  // A rerun replaces Arkitect's own block with itself, and needs no copy.
+  cli(['install', '--all', '--force', '--dir', dir]);
+  for (const [, a] of own) {
+    eq(readdirSync(dirname(join(dir, a.file))).filter((f) => f.includes('.backup-')).length, 1, `${a.file}: a second backup of the same block`);
+  }
+  assert(!readdirSync(dir).some((f) => f.includes('.backup-')), 'a merge adapter left a backup');
 });
 
 test('install refuses to write into the Arkitect checkout itself', () => {
