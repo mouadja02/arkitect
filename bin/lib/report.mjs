@@ -26,7 +26,8 @@ export const USAGE = 'usage: arkitect report <report.md | -> [--png-viewed]\n'
   + '  `fill in` marker left.\n'
   + '  --png-viewed  you opened the rendered PNG and looked at it (declared, not observed)\n'
   + '  --draft       print the report with File, Icons and Validation filled from the diagram\n'
-  + '                and its spec; save it, fill in each `fill in` line, then check it';
+  + '                and its spec (--spec, else the one it carries); save it, fill in each\n'
+  + '                `fill in` line, then check it';
 
 export function checkReport(text, { viewed = false } = {}) {
   return problems(text, { viewed, unseen: 'the report check was not told a PNG was looked at (--png-viewed)' });
@@ -103,18 +104,27 @@ export function draftReport(file, { spec: specPath = null } = {}) {
   const engine = engineOf(file);
   if (!engine) return { error: `${file} is not a diagram: --draft reads a .drawio, .dio, .xml or .excalidraw file` };
   const { builder, validator, name, other } = ENGINES[engine];
-  try { readFileSync(file); } catch (e) { return { error: `cannot read the diagram ${file}: ${e.code ?? e.message}` }; }
+  let text;
+  try { text = readFileSync(file, 'utf8'); } catch (e) { return { error: `cannot read the diagram ${file}: ${e.code ?? e.message}` }; }
   const result = validator.validateFile(file);
 
-  let built = null;
+  // Without --spec, the spec the diagram carries, when it carries one (#388).
+  let spec = null;
+  let from = null;
   if (specPath) {
-    let spec;
     try { spec = JSON.parse(readFileSync(specPath, 'utf8')); } catch (e) {
       return { error: e instanceof SyntaxError ? `${specPath} is not valid JSON` : `cannot read the spec ${specPath}: ${e.code ?? e.message}` };
     }
+    from = code(specPath);
+  } else {
+    try { spec = builder.specOf(text); } catch { /* not readable as its engine's file: validate says why */ }
+    from = spec ? `the spec ${code(file)} carries` : null;
+  }
+  let built = null;
+  if (spec) {
     try { built = builder.buildDiagram(spec).report; } catch (e) {
       if (!(e instanceof builder.SpecError)) throw e;
-      return { error: `the spec ${specPath} does not build:\n  ${e.errors.join('\n  ')}` };
+      return { error: `the spec ${specPath ?? `${file} carries`} does not build:\n  ${e.errors.join('\n  ')}` };
     }
   }
 
@@ -125,7 +135,7 @@ export function draftReport(file, { spec: specPath = null } = {}) {
     '**Assumptions**', '', fill('every assumption, asked or not, and any product the user did not name'), '',
     '**Icons**', '',
     ...(built
-      ? [`From ${code(specPath)}, resolved as the build does:`, '', ...(icons.length ? list(icons) : ['- no icon nodes'])]
+      ? [`From ${from}, resolved as the build does:`, '', ...(icons.length ? list(icons) : ['- no icon nodes'])]
       : [fill(`each icon and its source; run report --draft ${file} --spec <spec> to list them`)]),
     '',
     '**Validation**', '',

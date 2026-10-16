@@ -2555,8 +2555,10 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
       const ok = say([join(dir, 'filled.md'), '--png-viewed']);
       eq(ok.code, 0, `${engine}: the filled-in draft: ${ok.out}`);
     }
-    // Without --spec the Icons section is the agent's to fill, and says how not to.
-    const bare = say(['--draft', join(dir, 'starter-architecture.drawio')]);
+    // Without --spec, and with no spec in the file, the Icons section is the
+    // agent's to fill, and says how not to.
+    writeFileSync(join(dir, 'bare.drawio'), readFileSync(join(dir, 'starter-architecture.drawio'), 'utf8').replace(/ arkitect-spec="[^"]*"/, ''));
+    const bare = say(['--draft', join(dir, 'bare.drawio')]);
     eq(bare.code, 0, 'no spec');
     assert(/\*\*Icons\*\*\s+<!-- fill in: [^\n]*--spec/.test(bare.out), bare.out);
     for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
@@ -2566,6 +2568,21 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A diagram carries its spec (#388), so the draft needs no --spec to list a
+// Draw.io file's icons, which its cells do not record (#387).
+test('arkitect report --draft lists the icons from the spec a diagram carries when no --spec is given (#388)', () => {
+  for (const [engine, name, ext] of [['drawio', 'starter-architecture', '.drawio'], ['excalidraw', 'aws-data-platform', '.excalidraw']]) {
+    const templates = join(ROOT, 'skills', `arkitect-${engine}`, 'assets', 'templates');
+    const draft = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', '--draft', join(templates, `${name}${ext}`), ...args], { encoding: 'utf8' }).stdout;
+    const carried = draft();
+    const given = draft('--spec', join(templates, `${name}.spec.json`));
+    assert(carried.includes(`From the spec \`${join(templates, `${name}${ext}`)}\` carries, resolved as the build does:`), `${engine}: ${carried.slice(0, 600)}`);
+    const icons = (text) => text.slice(text.indexOf('**Icons**'), text.indexOf('**Validation**')).split('\n').filter((l) => l.startsWith('- '));
+    assert(icons(carried).length > 3, `${engine}: no icons listed`);
+    eq(icons(carried).join('\n'), icons(given).join('\n'), `${engine}: the same icons as from the spec file`);
   }
 });
 

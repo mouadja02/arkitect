@@ -38,8 +38,8 @@ icon's id and pack, or ref and library, and every placeholder, missing,
 ambiguous or on-demand mark and product named in a plain box. The build
 report's unknown kinds, unknown fields and notes go under Validation. Engine,
 Assumptions, Render and Deviations each hold one `<!-- fill in: … -->` line,
-and the check fails while one is left. Without `--spec`, Icons is a fill-in
-too (#387).
+and the check fails while one is left. Without `--spec` it reads the spec the
+diagram carries (#388); with neither, Icons is a fill-in too (#387).
 
 ## Draw.io
 
