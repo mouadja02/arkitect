@@ -262,6 +262,67 @@ test('install --force backs up each non-merge adapter file it replaces, under a 
   assert(!readdirSync(dir).some((f) => f.includes('.backup-')), 'a merge adapter left a backup');
 });
 
+// `/diagram` is a generic name a host, an extension or the project can hold
+// too, and a project's own `diagram.md` kept Arkitect's from installing (#401).
+// The command is `/arkitect`; an earlier Arkitect's `diagram.md` goes, and a
+// project's own stays byte for byte.
+test('Cursor and OpenCode get /arkitect, and an earlier Arkitect /diagram is removed while a project\'s own is kept (#401)', () => {
+  const pairs = [['cursor-command', '.cursor/commands'], ['opencode', '.opencode/command']];
+  for (const [name, folder] of pairs) {
+    eq(adapters.ADAPTERS[name].file.split(sep).join('/'), `${folder}/arkitect.md`, `${name}: file`);
+    assert(adapters.ADAPTERS[name].hosts.includes('(/arkitect)'), `${name}: ${adapters.ADAPTERS[name].hosts}`);
+  }
+  const fresh = join(TMP, 'command-fresh');
+  cli(['install', 'cursor-command', 'opencode', '--dir', fresh]);
+  for (const [, folder] of pairs) eq(readdirSync(join(fresh, folder)).join(), 'arkitect.md', `${folder}: a fresh install`);
+
+  // What earlier releases wrote, under other install paths, one with CRLF as a
+  // Windows checkout of a committed file has it.
+  const current = (root) => adapters.ADAPTERS['cursor-command'].render(root);
+  const first = (root, s) => ['---', 'description: Draw an editable architecture, system or flow diagram (Draw.io or Excalidraw)', '---', '',
+    `Draw the diagram the user asked for using Arkitect, installed at \`${root}\`.`, '',
+    `Read \`${root}${s}AGENTS.md\` first — it is the contract. Then:`, '',
+    '1. Choose the engine: Draw.io for formal solution architecture, Excalidraw for',
+    '   system design and flows. Say which you chose.',
+    '2. Resolve every icon before laying out. Never substitute one product\'s mark for',
+    '   another.',
+    '3. Write a spec, build it, validate it, render it, and look at the PNG.',
+    '4. Report the file path, your assumptions, and anything you could not resolve.', '', '$ARGUMENTS', ''].join('\n');
+  const earlier = [current('/Users/Jane Doe/arkitect'), first('D:\\Profiles\\Jane Doe\\arkitect', '\\').replace(/\n/g, '\r\n'), first('/opt/arkitect', '/')];
+  earlier.forEach((old, n) => {
+    const dir = join(TMP, `command-migrate-${n}`);
+    for (const [, folder] of pairs) { mkdirSync(join(dir, folder), { recursive: true }); writeFileSync(join(dir, folder, 'diagram.md'), old); }
+    const out = cli(['install', 'cursor-command', 'opencode', '--dir', dir]);
+    for (const [, folder] of pairs) {
+      eq(readdirSync(join(dir, folder)).join(), 'arkitect.md', `${folder}: after migrating release ${n}'s command`);
+      assert(new RegExp(`remove ${folder.replace('/', '[\\\\/]').replace('.', '\\.')}[\\\\/]diagram\\.md`).test(out), `the output does not say ${folder}/diagram.md was removed:\n${out}`);
+    }
+  });
+
+  // A project's own /diagram, and one an earlier Arkitect wrote and the user
+  // then edited, are the project's: kept byte for byte, and named.
+  const own = { 'a Mermaid command': '---\ndescription: Draw a Mermaid diagram\n---\n\nDraw it in Mermaid.\n',
+    'an edited Arkitect command': `${current('/opt/arkitect')}\nAlways use our colours.\n` };
+  for (const [what, text] of Object.entries(own)) {
+    const dir = join(TMP, `command-own-${what.replace(/\W+/g, '-')}`);
+    for (const [, folder] of pairs) { mkdirSync(join(dir, folder), { recursive: true }); writeFileSync(join(dir, folder, 'diagram.md'), text); }
+    for (const force of [[], ['--force']]) {
+      const out = cli(['install', 'cursor-command', 'opencode', '--dir', dir, ...force]);
+      for (const [, folder] of pairs) {
+        eq(readFileSync(join(dir, folder, 'diagram.md'), 'utf8'), text, `${what}${force.join('')}: ${folder}/diagram.md`);
+        assert(existsSync(join(dir, folder, 'arkitect.md')), `${what}: no ${folder}/arkitect.md`);
+        assert(/keep\s+\S*diagram\.md/.test(out), `${what}: the output does not name the kept file:\n${out}`);
+      }
+    }
+  }
+  // No doc names the old command but the one sentence on what install migrates.
+  for (const file of ['README.md', ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => `docs/${f}`)]) {
+    const stale = readFileSync(join(ROOT, file), 'utf8').split('\n')
+      .filter((line) => /(?<![\w:.-])\/diagram(?![\w.-])|\bdiagram\.md\b/.test(line) && !/used to be `\/diagram`/.test(line));
+    eq(stale.join('\n'), '', `${file} still names the old command`);
+  }
+});
+
 test('install refuses to write into the Arkitect checkout itself', () => {
   // It would append a copy of the pointer block, absolute path and all, to the
   // very contract file the block tells agents to read.
@@ -283,8 +344,8 @@ test('--print writes nothing to disk', () => {
 test('this repository ships the adapters it advertises', () => {
   for (const p of [
     '.cursor/rules/arkitect.mdc',
-    '.cursor/commands/diagram.md',
-    '.opencode/command/diagram.md',
+    '.cursor/commands/arkitect.md',
+    '.opencode/command/arkitect.md',
     '.github/copilot-instructions.md',
     'AGENTS.md',
   ]) {
@@ -292,12 +353,12 @@ test('this repository ships the adapters it advertises', () => {
   }
 });
 
-// /diagram restated the workflow in four steps that contradicted it: an
+// The command restated the workflow in four steps that contradicted it: an
 // engine with no reason, a report with no validation, render or icons. A
 // small model follows the short list it reads first (#354).
-test('the /diagram command points at AGENTS.md §2 and restates no step of it (#354)', () => {
+test('the /arkitect command points at AGENTS.md §2 and restates no step of it (#354)', () => {
   const bodies = ['cursor-command', 'opencode'].map((k) => [k, adapters.ADAPTERS[k].render('/opt/arkitect')])
-    .concat(['.cursor/commands/diagram.md', '.opencode/command/diagram.md'].map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
+    .concat(['.cursor/commands/arkitect.md', '.opencode/command/arkitect.md'].map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
   for (const [name, body] of bodies) {
     assert(body.includes('AGENTS.md') && body.includes('§2') && body.includes('step 8'), `${name}: does not point at AGENTS.md §2`);
     assert(!/^\s*\d+\.\s/m.test(body), `${name}: restates numbered steps`);

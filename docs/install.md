@@ -121,8 +121,8 @@ from a clone.
 | agent | writes | command |
 |---|---|---|
 | Codex | `AGENTS.md`, `.agents/skills/arkitect/SKILL.md` | `arkitect install codex` |
-| Cursor | `.cursor/rules/arkitect.mdc`, `.cursor/commands/diagram.md` | `arkitect install cursor cursor-command` |
-| OpenCode | `AGENTS.md`, `.opencode/command/diagram.md` | `arkitect install opencode agents` |
+| Cursor | `.cursor/rules/arkitect.mdc`, `.cursor/commands/arkitect.md` | `arkitect install cursor cursor-command` |
+| OpenCode | `AGENTS.md`, `.opencode/command/arkitect.md` | `arkitect install opencode agents` |
 | GitHub Copilot | `.github/copilot-instructions.md` | `arkitect install copilot` |
 | Antigravity | `AGENTS.md` | `arkitect install antigravity` |
 | Pi | `AGENTS.md` | `arkitect install pi` |
@@ -136,6 +136,10 @@ alone. A file of its own, such as a Cursor rule or command, is skipped when
 it exists; `--force` replaces it and first copies it beside itself as
 `<file>.backup-<stamp>`, a name no host loads. An unknown adapter or option
 exits 2 before anything is written; `arkitect install --help` lists them.
+
+The Cursor and OpenCode command is `/arkitect`; it used to be `/diagram`, in `diagram.md`.
+An install removes that file when an earlier Arkitect wrote it, and leaves,
+and names, one that holds anything else, since that is the project's own.
 
 ### Codex
 
