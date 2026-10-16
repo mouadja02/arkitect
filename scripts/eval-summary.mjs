@@ -159,6 +159,7 @@ const rows = cases.map((c) => {
     tier: tags.find(isTier) ?? null,
     tags: tags.filter((t) => !isTier(t)),
     runs: runs.length,
+    scored: ran.length,
     scores,
     errored: runs.filter((r) => r.error).length,
     mean: mean(ran.map((r) => r.score)),
@@ -179,7 +180,7 @@ function boardOf(rowsIn, source) {
   const cs = {};
   for (const r of rowsIn) {
     cs[r.name] = {
-      tier: r.tier, tags: r.tags, runs: r.runs, score: round(r.mean, 3), perfect: r.perfect,
+      tier: r.tier, tags: r.tags, runs: r.scored ?? r.runs, score: round(r.mean, 3), perfect: r.perfect,
       turns: r.turns, costUsd: round(r.costUsd, 4), contextKb: round(r.contextKb, 1),
     };
   }
@@ -263,7 +264,8 @@ if (groups.length) {
   for (const [label, members] of groups) {
     const scored = members.filter((m) => m.mean !== null);
     const m = mean(scored.map((x) => x.mean));
-    const allPerfect = scored.filter((x) => x.perfect === x.runs && x.runs > 0).length;
+    // An errored run is no score, so it does not stop the others being perfect.
+    const allPerfect = scored.filter((x) => x.perfect === x.scored && x.scored > 0).length;
     const was = mean(scored.map((x) => before(x.name)).filter((v) => v !== null));
     out.push(`  ${label.padEnd(18)} ${String(members.length).padStart(5)}  ${score(m)}  ${String(allPerfect).padStart(16)}`
       + (baseline ? `  ${was === null ? '   -' : was.toFixed(2)}` : ''));

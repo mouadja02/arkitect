@@ -2142,6 +2142,16 @@ test('the eval summary scores tiers and competencies, gates on tier 1, and keeps
   const fresh = sum(grown, ['--baseline', board]);
   eq(fresh.status, 0, fresh.stdout);
   assert(/excalidraw-new .* new$/m.test(fresh.stdout) && /^tier-3$/m.test(fresh.stdout), fresh.stdout);
+  // An errored run is no score: it is not counted as a run, and it does not
+  // stop the runs that scored from being all perfect. The full run of the
+  // suite lost one run of 88 to a session limit and listed its case as not
+  // perfect, though both of its scored runs were (#415).
+  const limited = result(1, 1);
+  limited.cases[0].arms.with.push({ score: 0, error: "exit 1: You've hit your session limit" });
+  const capped = sum(limited, ['--scoreboard', join(dir, 'limited.json')]);
+  assert(/^ {2}tier-1 +1 +1\.00 +1$/m.test(capped.stdout), `an errored run kept a case from all perfect:\n${capped.stdout}`);
+  eq(JSON.parse(readFileSync(join(dir, 'limited.json'), 'utf8')).cases['drawio-floor'].runs, 1, 'the scoreboard counts the runs that scored');
+
   // A result.json serves as a baseline too.
   const old = join(dir, 'old-result.json');
   writeFileSync(old, JSON.stringify(result(1, 1)));
