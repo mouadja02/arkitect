@@ -1,0 +1,74 @@
+schema_version: "1.1"
+name: excalidraw-portable-report-check
+description: >
+  The Excalidraw twin of drawio-portable-report-check, one step further.
+  AGENTS.md step 8 now has an agent draft the report with
+  `arkitect report --draft`, which fills File, Icons and Validation, then fill
+  in the rest and run the portable check `arkitect report` on what it saved
+  (#387). A host that reads AGENTS.md has no Stop hook to catch a skipped
+  step, so the order is checked, and a draft's `<!-- fill in` lines must not
+  reach the user.
+tags: [report, portable, tier-2]
+runs: 3
+
+execution:
+  max_turns: 35
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    We drive Arkitect from its AGENTS.md agent contract, as our other coding
+    agents do. Read the AGENTS.md at the Arkitect plugin's root, the directory
+    that holds its skills/ folder, and follow it to the end, step 8 included.
+    Sketch, in Excalidraw, a GitHub webhook hitting a Go ingest service that
+    publishes to NATS JetStream, with two consumers: a Postgres writer and a
+    Slack notifier. Save it to ./eval-output/webhooks.excalidraw.
+
+graders:
+  - type: regex
+    name: native-bound-scene
+    target: { source: file, path: ./eval-output/webhooks.excalidraw }
+    pattern: '^(?=[\s\S]*"type": "excalidraw")(?=[\s\S]*"type": "arrow")(?=[\s\S]*"startBinding": \{)(?=[\s\S]*"endBinding": \{)'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+
+  # What the case exists for: the report drafted, then checked.
+  - type: tool_used
+    name: drafted-the-report
+    tool: Bash
+    input_match: '\barkitect(\.mjs)?["'']?\s+report\s+--draft\b'
+    weight: 3
+
+  - type: tool_order
+    name: drafted-before-the-check
+    before: { tool: Bash, input_match: '\barkitect(\.mjs)?["'']?\s+report\s+--draft\b' }
+    after: { tool: Bash, input_match: '\barkitect(\.mjs)?["'']?\s+report\s+(?!--draft)\S' }
+
+  - type: tool_used
+    name: ran-the-portable-report-check
+    tool: Bash
+    input_match: '\barkitect(\.mjs)?["'']?\s+report\s+(?!--draft)\S'
+
+  - type: regex
+    name: no-fill-in-left
+    target: last_message
+    pattern: '<!-- fill in'
+    match: not_contains
+
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'webhooks\.excalidraw'
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains

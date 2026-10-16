@@ -1,0 +1,101 @@
+schema_version: "1.1"
+name: drawio-scale-multi-region
+description: >
+  A review-board architecture at the size real ones come in: two regions, a
+  VPC in each with public and private subnets, a global database replicating
+  across, failover routing in front - more than twenty components in nine
+  nested boundaries. Every named product needs its real mark, several of them
+  only under their formal names, and the layout has to stay clean at that
+  size. Nothing else in the suite asks for more than eight nodes.
+tags: [scale, generation, icons, tier-3]
+runs: 3
+
+execution:
+  max_turns: 50
+  timeout_seconds: 1500
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    For the architecture review board, draw the disaster-recovery design of
+    our booking platform on AWS, in Draw.io. Two regions: eu-west-1 is the
+    primary and eu-central-1 the standby. Each region has a VPC with a public
+    subnet holding an Application Load Balancer and a NAT gateway, and a
+    private subnet holding an ECS Fargate service and an ElastiCache for Redis
+    cluster. Aurora Global Database has its writer in eu-west-1 and a reader in
+    eu-central-1 that replicates from it. Route 53 does failover routing
+    between the two load balancers, behind CloudFront with AWS WAF in front of
+    it. S3 holds the static assets, replicated across regions to a bucket in
+    eu-central-1. Each region has its own Secrets Manager and KMS key, and a
+    CloudWatch alarm on the primary triggers the failover. Save it to
+    ./eval-output/booking-dr.drawio.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: regex
+    name: native-drawio-xml
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: '^(?=[\s\S]*<mxfile [^>]*\bagent="arkitect-drawio")(?=[\s\S]*vertex="1")(?=[\s\S]*edge="1")'
+
+  # What the case exists for: nothing the prompt names is left out at this
+  # size. Each name is looked for in a cell's label, never in the base64 of
+  # the embedded artwork, where a short word can turn up by chance.
+  - type: regex
+    name: every-component-drawn
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: '^(?=[\s\S]*value="[^"]*route\s*53)(?=[\s\S]*value="[^"]*cloudfront)(?=[\s\S]*value="[^"]*\bwaf\b)(?=[\s\S]*value="[^"]*(?:load balancer|\balb\b))(?=[\s\S]*value="[^"]*\bnat\b)(?=[\s\S]*value="[^"]*fargate)(?=[\s\S]*value="[^"]*(?:elasticache|redis))(?=[\s\S]*value="[^"]*aurora)(?=[\s\S]*value="[^"]*\bs3\b)(?=[\s\S]*value="[^"]*secrets manager)(?=[\s\S]*value="[^"]*\bkms\b)(?=[\s\S]*value="[^"]*cloudwatch)(?=[\s\S]*value="[^"]*eu-west-1)(?=[\s\S]*value="[^"]*eu-central-1)'
+    flags: i
+    weight: 3
+
+  # Two regions, two VPCs and four subnets at least, each a real container.
+  - type: regex
+    name: nested-boundaries
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: '^(?:[\s\S]*?container=1){8}'
+
+  # Real marks for most of what is named, embedded rather than linked.
+  - type: regex
+    name: icons-embedded
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: '^(?:[\s\S]*?image=data:image/){12}'
+
+  - type: regex
+    name: the-flows-are-drawn
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: '^(?:[\s\S]*?edge="1"){12}'
+
+  - type: regex
+    name: assumptions-on-the-canvas
+    target: { source: file, path: ./eval-output/booking-dr.drawio }
+    pattern: 'fillColor=#F7F7F7;strokeColor=#DFDFDF;'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+
+  # validate printed a pass for the saved file at least once; a failing file
+  # prints FAIL and its errors.
+  - type: regex
+    name: validated-clean
+    target: trace
+    pattern: 'PASS {2}[^"\\\n]*booking-dr\.drawio'
+
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'booking-dr\.drawio'
+
+  - type: regex
+    name: no-hosted-editor
+    target: last_message
+    pattern: 'app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net/\?|//(?:www\.)?draw\.io'
+    match: not_contains

@@ -20,6 +20,17 @@ separate file, no naming scheme, no required format beyond that.
 - Every eval case carries one tier tag. `tier-1` is the floor and must stay at 1.00; `tier-2` and `tier-3` hold the cases that measure progress, where a score below 1.00 is expected. Every other tag is a documented competency, `weight: 3` marks the grader a tier-2 or tier-3 case exists for, and a test holds all three. The 18 existing cases are tier 1, and `excalidraw-learning-skill-stays-manual` is tagged `invocation`, like its Draw.io twin, in place of `skills`. `docs/testing.md` said 17 cases, nine for Draw.io, and is checked now (#415).
 - The eval summary prints a scorecard by tier and by competency, each with its cases, mean score and the cases where every run was perfect. An efficiency line reads each run's trace: median turns, tool calls, failed or refused calls, permission denials and the bytes of tool output taken into context. A failed `weight: 3` grader is listed as `CRIT`, and a run that used every turn as `TURNS`. The gate fails on a tier-1 case below 1.00, an errored run, or a case further than `--tolerance` (default 0.2) below its `--baseline`, which is a scoreboard or a `result.json`. A tier-2 or tier-3 case below 1.00 no longer fails it. `--scoreboard FILE` writes the run's scores and counts with no path, prompt or reply in it. `scripts/eval.sh` writes one beside every result and takes `--baseline`, `--tolerance` and `--tier N` (#415).
 - Four tier-2 and tier-3 eval cases measure editing, one competency four ways. `drawio-edit-built-diagram` and `excalidraw-edit-built-scene` give the agent a file Arkitect built and nobody has touched since, and expect the spec route of #388: print the spec, change it, rebuild over the file. `drawio-edit-saved-by-desktop` gives it the same build after a Draw.io Desktop save that filled a box orange and added a text cell by hand, and expects both to survive. `excalidraw-edit-follows-the-scene` gives it a scene drawn in the app, with its own colours and no roughness, and expects an in-place edit in that look with every arrow bound. Each scaffold builds its fixture with the real CLI through `evals/fixtures.mjs`. A test makes each fixture, acts out the right outcome and the traps, and holds every file grader to its verdict on each (#405, #415).
+- Eight more tier-2 and tier-3 eval cases, for what the contract promises and no case measured:
+  - `drawio-refused-spec-is-repaired`: a refused spec fixed rather than its edge dropped;
+  - `drawio-instructions-in-a-spec`: a note planted in a spec, asking for an upload, a POST and a deletion, treated as data;
+  - `drawio-lifecycle-target-state`: lifecycle caveats repeated for a target state, and a customer name and codename kept out of every search, fetch and download;
+  - `drawio-whole-file-never-read`: a 400 KB diagram answered without its payload entering the trace;
+  - `drawio-interview-when-vague`: one question with a recommended answer, and nothing drawn yet;
+  - `drawio-scale-multi-region`: twenty-odd components in nine nested boundaries;
+  - `excalidraw-legend-for-two-kinds`: flows told apart by kind, and the legend that follows;
+  - `excalidraw-portable-report-check`: `report --draft`, filled in, then checked, on an AGENTS.md host.
+
+  The suite has 30 cases. Five tags are new: `robustness`, `privacy`, `context`, `interview` and `scale` (#415).
 
 ### Changed
 

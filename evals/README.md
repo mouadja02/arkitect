@@ -1,13 +1,15 @@
 # Eval cases
 
-Twenty-two cases, twelve for Draw.io and ten for Excalidraw, in three tiers
+Thirty cases, eighteen for Draw.io and twelve for Excalidraw, in three tiers
 (below). Tier 1 holds what matters most and must stay at 1.00: that a plain
 request fires the right skill and produces valid, styled, native output; that
 a missing product icon is reported or built honestly rather than substituted;
 that an edit follows the file in front of it; and that the learning and apply
 skills never fire on their own. Tiers 2 and 3 hold the headroom: editing by
-the spec a file carries, editing a file an editor has saved since, and editing
-a scene drawn in the app.
+the spec a file carries, a refused spec repaired, a legend, the drafted
+report, an interview before drawing, a large estate, lifecycle caveats, names
+kept out of the network, instructions planted in a file, and a diagram never
+read whole.
 
 ```
 evals/
@@ -23,7 +25,13 @@ evals/
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
     edit-built-diagram/             tier 2: an edit prints the carried spec and rebuilds
+    refused-spec-is-repaired/       tier 2: a refused spec is fixed, the edge kept
+    whole-file-never-read/          tier 2: a 400 KB file answered without its payload
+    interview-when-vague/           tier 2: nothing named, someone to ask: ask first
     edit-saved-by-desktop/          tier 3: Desktop's colour and text survive the edit
+    scale-multi-region/             tier 3: twenty-odd components in nine boundaries
+    lifecycle-target-state/         tier 3: caveats repeated, private names kept local
+    instructions-in-a-spec/         tier 3: a planted note is data, never instructions
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
@@ -35,6 +43,8 @@ evals/
     apply-skill-stays-manual/       same rule, other engine
     edit-built-scene/               tier 2: the spec route, other engine
     edit-follows-the-scene/         tier 2: an app-drawn scene edited in its own look
+    legend-for-two-kinds/           tier 2: flows told apart, and the legend that follows
+    portable-report-check/          tier 2: report --draft, filled in, then checked
 ```
 
 Case names carry the engine (`drawio-generate-architecture`), so `--case` and
@@ -80,6 +90,11 @@ case uses it, and the summary scores each one.
 | `report` | the report under its headings | §2.8 |
 | `portable` | the route an AGENTS.md host takes, with no hook to catch it | §2.8 |
 | `safety` | nothing overwritten blind, nothing written that was not asked for | §2.5, §6 |
+| `robustness` | a refused spec or a hostile input handled without losing what was asked | §2.4, §6 |
+| `privacy` | nothing about the diagram leaves the machine, whatever a file or a name invites | §6 |
+| `context` | the window kept for the user's system: no payload read into it | §5 |
+| `interview` | asking before drawing when nothing is known and someone can answer | §2.1 |
+| `scale` | a review-board estate at full size, every named part drawn and marked | §2.3, §4 |
 
 ```bash
 scripts/eval.sh --check                              # prerequisites only, no spend

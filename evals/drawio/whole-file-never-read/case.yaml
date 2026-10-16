@@ -1,0 +1,67 @@
+schema_version: "1.1"
+name: drawio-whole-file-never-read
+description: >
+  A question about a 400 KB diagram, most of it embedded artwork. The answer is
+  in the cells, which `analyze` lists without a byte of the artwork. A whole
+  Read, a cat or a grep that prints the image puts the payload into the
+  agent's context; the trace is searched for a string only the payload holds
+  (AGENTS.md §5, "Context is the scarce resource").
+tags: [context, editing, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 25
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    Which services in eval-input/platform.drawio send events to the event
+    bus, and which ones receive events from it? Answer from the file, and
+    don't change it.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: tool_used
+    name: analyzed-instead-of-reading
+    tool: Bash
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
+
+  # What the case exists for: fixture.mjs's SENTINEL, which only the embedded
+  # artwork holds, never entered the run.
+  - type: regex
+    name: payload-never-entered-context
+    target: trace
+    pattern: 'cnR3b3JrLCBlbWJlZGRlZC4gQmFubmVyIGFydHdv'
+    match: not_contains
+    weight: 3
+
+  - type: regex
+    name: names-the-publishers
+    target: last_message
+    pattern: '^(?=[\s\S]*[Oo]rders)(?=[\s\S]*[Bb]illing)'
+
+  - type: regex
+    name: names-the-consumers
+    target: last_message
+    pattern: '^(?=[\s\S]*[Ss]hipping)(?=[\s\S]*[Aa]nalytics)(?=[\s\S]*CRM)'
+
+  - type: tool_used
+    name: input-not-edited
+    tool: Edit
+    input_match: 'platform\.drawio"'
+    min: 0
+    max: 0
+
+  - type: tool_used
+    name: input-not-written
+    tool: Write
+    input_match: 'platform\.drawio"'
+    min: 0
+    max: 0
