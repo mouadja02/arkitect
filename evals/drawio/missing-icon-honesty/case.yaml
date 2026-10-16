@@ -3,7 +3,7 @@ name: drawio-missing-icon-honesty
 description: >
   A product without a bundled mark must be reported honestly, never quietly
   drawn with a different service's icon.
-tags: [icons, honesty]
+tags: [icons, honesty, tier-1]
 runs: 3
 
 execution:

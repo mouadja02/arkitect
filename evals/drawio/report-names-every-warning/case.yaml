@@ -5,7 +5,7 @@ description: >
   must name each warning by its ids rather than summarise them as "a few" or
   leave them out: validate is the finish line, and a defect it printed is
   either gone or listed (#248).
-tags: [generation, honesty]
+tags: [generation, honesty, tier-1]
 runs: 3
 
 context:

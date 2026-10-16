@@ -4,7 +4,7 @@ description: >
   A plain request for an architecture diagram should fire arkitect-excalidraw and
   produce a validated, native .excalidraw scene with every arrow bound at both
   ends and the house style tokens applied.
-tags: [generation, style]
+tags: [generation, style, tier-1]
 runs: 3
 
 execution:

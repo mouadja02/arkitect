@@ -1,0 +1,84 @@
+schema_version: "1.1"
+name: drawio-edit-saved-by-desktop
+description: >
+  The same request as drawio-edit-built-diagram, on a file Draw.io Desktop has
+  saved since Arkitect built it: the processor was filled orange and a text
+  cell added by hand. `arkitect drawio spec` warns that such changes are not in
+  the spec, and references/editing.md says to edit in place. A rebuild from
+  the spec loses the colour and, unless the build's notes are acted on, the
+  text - with nothing in the file to show it (#376, #403).
+tags: [editing, safety, tier-3]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 35
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    eval-input/payments.drawio was first drawn with Arkitect. Add a fraud-check
+    service, with the id fraud, between the Payments API and the payment
+    processor: the API calls the fraud check, and the fraud check calls the
+    processor in place of the API's direct call. Keep everything else as it is.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  # What the case exists for: the two changes made in Desktop survive.
+  - type: regex
+    name: kept-the-hand-added-text
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: 'PCI DSS scope: owned by the payments team'
+    weight: 3
+
+  - type: regex
+    name: kept-the-colour-set-in-desktop
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '<mxCell\b(?=[^>]*\bid="psp")[^>]*\bfillColor=#FFE6CC'
+    weight: 3
+
+  - type: regex
+    name: fraud-check-wired-in
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '^(?=[\s\S]*<mxCell\b(?=[^>]*\bid="fraud")[^>]*\bvertex="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="fraud")[^>]*\bedge="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="fraud")(?=[^>]*\btarget="psp")[^>]*\bedge="1")'
+
+  - type: regex
+    name: direct-call-replaced
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="psp")'
+    match: not_contains
+
+  - type: regex
+    name: nothing-else-lost
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '^(?=[\s\S]*<mxCell\b[^>]*\bid="web")(?=[\s\S]*<mxCell\b[^>]*\bid="ledger")(?=[\s\S]*<mxCell\b[^>]*\bid="note")'
+
+  # Never overwrite blind: `drawio backup` or the builder's own copy.
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'payments\.backup-|payments\.drawio\.backup-'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+
+  # The report says the file had been changed outside Arkitect, which is what
+  # decided the route; whether the changes survived is the file graders' job.
+  - type: regex
+    name: says-the-file-was-edited-since
+    target: last_message
+    pattern: '[Ee]ditor|Desktop|by hand|hand-(added|drawn|made)|PCI|since (it was|Arkitect) (built|drew)|in place'
+
+  - type: regex
+    name: no-hosted-editor
+    target: last_message
+    pattern: 'app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net/\?|//(?:www\.)?draw\.io'
+    match: not_contains

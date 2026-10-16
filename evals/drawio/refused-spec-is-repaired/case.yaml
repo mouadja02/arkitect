@@ -1,0 +1,77 @@
+schema_version: "1.1"
+name: drawio-refused-spec-is-repaired
+description: >
+  The builder refuses this spec, every problem listed and nothing written: an
+  edge's target is a typo for a node that exists, and a column is a string.
+  AGENTS.md §2.4 says fix the spec, never drop the edge. The wrong fixes look
+  just as finished - the edge deleted, or a node invented under the typo's
+  name - so the file is read for the edge and for the invention.
+tags: [robustness, generation, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    Build eval-input/shop.spec.json into ./eval-output/shop.drawio and tell me
+    how it came out.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: regex
+    name: built-by-the-builder
+    target: { source: file, path: ./eval-output/shop.drawio }
+    pattern: '<mxfile [^>]*\bagent="arkitect-drawio"'
+
+  # What the case exists for: the misspelled edge is still drawn, to the node
+  # it meant.
+  - type: regex
+    name: kept-the-sessions-edge
+    target: { source: file, path: ./eval-output/shop.drawio }
+    pattern: 'source="api" target="cache"'
+    weight: 3
+
+  # Neither the cell nor the carried spec names the typo: no node was made up
+  # to satisfy it.
+  - type: regex
+    name: no-node-invented-for-the-typo
+    target: { source: file, path: ./eval-output/shop.drawio }
+    pattern: 'cahce'
+    match: not_contains
+
+  - type: regex
+    name: every-node-and-edge
+    target: { source: file, path: ./eval-output/shop.drawio }
+    pattern: '^(?=[\s\S]*<mxCell id="web")(?=[\s\S]*<mxCell id="api")(?=[\s\S]*<mxCell id="cache")(?=[\s\S]*<mxCell id="db")(?=[\s\S]*source="web" target="api")(?=[\s\S]*source="api" target="db")'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+
+  # The report names what it changed: the typo by name.
+  - type: regex
+    name: names-the-typo
+    target: last_message
+    pattern: 'cahce'
+
+  # The pilot judge failed two accurate replies that named both fixes but
+  # never used the word "refused"; the fixes are what the user needs (#415).
+  - type: llm
+    name: says-what-it-fixed
+    criteria: |
+      The builder refused the spec for two problems: the edge from api to
+      "cahce" names no node (the node is "cache"), and nodes[1].col was the
+      string "1" rather than a number. Pass if the response tells the user
+      what it changed in the spec to make it build, naming both fixes, in any
+      section and in any words. Fail if it says the spec built exactly as
+      given, leaves either fix unmentioned, or says it removed the edge.

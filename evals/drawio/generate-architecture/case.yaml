@@ -3,7 +3,7 @@ name: drawio-generate-architecture
 description: >
   A plain request for an AWS architecture diagram should fire arkitect-drawio
   and produce a validated, native .drawio file with embedded custom icons.
-tags: [generation, style]
+tags: [generation, style, tier-1]
 runs: 3
 
 execution:

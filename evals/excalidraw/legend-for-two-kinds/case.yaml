@@ -1,0 +1,80 @@
+schema_version: "1.1"
+name: excalidraw-legend-for-two-kinds
+description: >
+  A request whose flows mean different things: a synchronous call, an event
+  consumed asynchronously and a scheduled job. Drawn with one connector kind
+  they read as the same arrow; drawn with the kinds that mean them
+  (`--print-style` lists their meanings), the builder adds the legend AGENTS.md
+  §7 requires whenever more than one kind is used.
+tags: [patterns, generation, tier-2]
+runs: 3
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    For our README, sketch how the notification service works. The mobile app
+    calls the Notifications API over HTTPS and waits for its answer. The API
+    publishes a NotificationRequested event to a Kafka topic, and a sender
+    worker consumes it asynchronously and calls APNs and FCM. Every night a
+    batch job purges notifications older than 90 days from Postgres, which the
+    API also writes to. Save it to ./eval-output/notifications.excalidraw.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-excalidraw
+    tool: Skill
+    input_match: arkitect-excalidraw
+    arm: with-only
+
+  - type: regex
+    name: native-bound-scene
+    target: { source: file, path: ./eval-output/notifications.excalidraw }
+    pattern: '^(?=[\s\S]*"type": "excalidraw")(?=[\s\S]*"type": "arrow")(?=[\s\S]*"startBinding": \{)(?=[\s\S]*"endBinding": \{)'
+
+  # What the case exists for. The builder draws a legend only when the spec
+  # uses more than one edge kind, so a legend is the evidence the flows were
+  # told apart.
+  - type: regex
+    name: drew-a-legend
+    target: { source: file, path: ./eval-output/notifications.excalidraw }
+    pattern: '"text": "Legend"'
+    weight: 3
+
+  # At least one edge is dashed, the house mark of an async or scheduled flow.
+  - type: regex
+    name: an-async-edge-is-dashed
+    target: { source: file, path: ./eval-output/notifications.excalidraw }
+    pattern: '"strokeStyle": "dashed",(?:(?!"strokeStyle")[\s\S]){0,2000}?"type": "arrow",(?:(?!"strokeStyle")[\s\S]){0,4000}?"edge": "'
+
+  - type: regex
+    name: every-component-drawn
+    target: { source: file, path: ./eval-output/notifications.excalidraw }
+    pattern: '^(?=[\s\S]*"text": "[^"]*Kafka)(?=[\s\S]*"text": "[^"]*(?:APNs|Apple Push))(?=[\s\S]*"text": "[^"]*(?:FCM|Firebase))(?=[\s\S]*"text": "[^"]*Postgre)(?=[\s\S]*"text": "[^"]*(?:[Ww]orker|[Ss]ender))'
+
+  - type: regex
+    name: assumptions-on-the-canvas
+    target: { source: file, path: ./eval-output/notifications.excalidraw }
+    pattern: '"backgroundColor": "#ffec99",(?:[^{}]|\{[^{}]*\})*?"type": "rectangle"'
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+
+  - type: regex
+    name: reports-under-every-heading
+    target: last_message
+    pattern: '^(?=[\s\S]*(?:\*\*File\b|#+\s*\**File\b))(?=[\s\S]*(?:\*\*Assumptions\b|#+\s*\**Assumptions\b))(?=[\s\S]*(?:\*\*Icons\b|#+\s*\**Icons\b))(?=[\s\S]*(?:\*\*Validation\b|#+\s*\**Validation\b))(?=[\s\S]*(?:\*\*Render\b|#+\s*\**Render\b))(?=[\s\S]*(?:\*\*Deviations\b|#+\s*\**Deviations\b))'
+
+  - type: regex
+    name: names-the-saved-file
+    target: last_message
+    pattern: 'notifications\.excalidraw'
+
+  - type: regex
+    name: nothing-uploaded
+    target: last_message
+    pattern: 'I uploaded|uploaded (?:it|the|your|this)|have uploaded|excalidraw\.com/#json'
+    match: not_contains

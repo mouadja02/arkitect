@@ -1,0 +1,69 @@
+schema_version: "1.1"
+name: drawio-interview-when-vague
+description: >
+  A request that names no component, no flow and no scope, from someone who
+  says they are there to answer. AGENTS.md §2.1: a diagram is a claim about
+  someone's system, so ask - one question at a time, each with a recommended
+  answer, never about styling - before drawing anything. Every other case is
+  one an agent should draw at once; this is the one it should not.
+tags: [interview, tier-2]
+runs: 3
+
+execution:
+  max_turns: 15
+  timeout_seconds: 600
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    I'd like an architecture diagram of our platform for the client's
+    architecture review board next Thursday. I'm at my desk all day, so ask
+    me whatever you need.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  # What the case exists for: nothing is drawn before the user has answered.
+  - type: regex
+    name: no-diagram-yet
+    target: files
+    pattern: '\.(drawio|excalidraw)$'
+    flags: m
+    match: not_contains
+    weight: 3
+
+  - type: tool_used
+    name: no-build-yet
+    tool: Bash
+    input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b'
+    min: 0
+    max: 0
+
+  - type: regex
+    name: asks-a-question
+    target: last_message
+    pattern: '\?'
+
+  - type: regex
+    name: offers-a-recommended-answer
+    target: last_message
+    pattern: '[Rr]ecommend|[Ss]uggest|I''d (go|start) with|[Mm]y (default|pick)|[Dd]efault(:| to| is)|If you(''re| are) not sure'
+
+  - type: regex
+    name: no-styling-question
+    target: last_message
+    pattern: '\b(colou?rs?|fonts?|themes?|rounded corners|sketchy|hand-drawn look)\b[^\n?]{0,80}\?'
+    flags: i
+    match: not_contains
+
+  - type: llm
+    name: asks-one-thing-at-a-time
+    criteria: |
+      The user asked for an architecture diagram and gave nothing about the
+      system. Pass if the response asks the user ONE question - a single
+      decision; a short list of options for that one decision counts as one
+      question - and offers its recommended answer to it. Fail if it asks two
+      or more separate questions at once, asks about colours, fonts or
+      styling, or draws a diagram anyway.

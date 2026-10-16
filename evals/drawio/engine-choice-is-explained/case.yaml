@@ -4,7 +4,7 @@ description: >
   The user names no engine. An AWS architecture going in front of a client's
   review board is the Draw.io case, and whichever way the choice goes the agent
   has to say which engine it picked and why rather than choosing in silence.
-tags: [generation, invocation]
+tags: [generation, invocation, tier-1]
 runs: 3
 
 execution:

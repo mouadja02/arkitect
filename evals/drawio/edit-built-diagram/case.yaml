@@ -1,0 +1,94 @@
+schema_version: "1.1"
+name: drawio-edit-built-diagram
+description: >
+  A diagram Arkitect built carries its spec (#388). references/editing.md sends
+  an edit to it down that route first: print the spec, change it, rebuild over
+  the file. The case measures whether the agent finds and takes the route
+  rather than hand-writing XML into a generated file (#405).
+tags: [editing, tier-2]
+runs: 3
+
+context:
+  scaffold_script: scaffold.sh
+
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
+  prompt: |
+    eval-input/payments.drawio was drawn with Arkitect. Add a fraud-check
+    service, with the id fraud, between the Payments API and the payment
+    processor: the API calls the fraud check, and the fraud check calls the
+    processor in place of the API's direct call. Keep everything else as it is.
+
+graders:
+  - type: tool_used
+    name: fires-arkitect-drawio
+    tool: Skill
+    input_match: arkitect-drawio
+    arm: with-only
+
+  - type: tool_used
+    name: printed-the-carried-spec
+    tool: Bash
+    input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+spec\b'
+
+  # The spec first, then the build: a build before it is a new diagram.
+  - type: tool_order
+    name: spec-before-the-build
+    before: { tool: Bash, input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+spec\b' }
+    after: { tool: Bash, input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+build\b' }
+
+  # The point of the case. Only the builder writes its stamp and a spec that
+  # holds the new node; an XML edit leaves the old spec on <mxfile>, which a
+  # later rebuild would quietly revert the edit to.
+  - type: regex
+    name: rebuilt-from-the-carried-spec
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '<mxfile [^>]*\bagent="arkitect-drawio"[^>]*\barkitect-spec="[^"]*&quot;fraud&quot;'
+    weight: 3
+
+  - type: regex
+    name: fraud-check-wired-in
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '^(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="fraud")[^>]*\bedge="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="fraud")(?=[^>]*\btarget="psp")[^>]*\bedge="1")'
+
+  - type: regex
+    name: direct-call-replaced
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="psp")'
+    match: not_contains
+
+  - type: regex
+    name: nothing-else-lost
+    target: { source: file, path: ./eval-input/payments.drawio }
+    pattern: '^(?=[\s\S]*<mxCell id="web")(?=[\s\S]*<mxCell id="ledger")(?=[\s\S]*<mxCell id="note")(?=[\s\S]*source="web" target="api")(?=[\s\S]*source="api" target="ledger")'
+
+  # The builder backs the file up before it replaces it.
+  - type: regex
+    name: wrote-a-backup
+    target: files
+    pattern: 'payments\.backup-|payments\.drawio\.backup-'
+
+  - type: tool_used
+    name: did-not-hand-edit-the-xml
+    tool: Edit
+    input_match: 'payments\.drawio"'
+    min: 0
+    max: 0
+
+  - type: tool_used
+    name: ran-the-validator
+    tool: Bash
+    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+
+  - type: regex
+    name: says-it-rebuilt-from-the-spec
+    target: last_message
+    pattern: '[Rr]ebuil|from (its|the) (carried |embedded )?spec|spec (it|the file) carrie'
+
+  - type: regex
+    name: no-hosted-editor
+    target: last_message
+    pattern: 'app\.diagrams\.net|viewer\.diagrams\.net|diagrams\.net/\?|//(?:www\.)?draw\.io'
+    match: not_contains

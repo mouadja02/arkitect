@@ -4,7 +4,7 @@ description: >
   The mirror of the Draw.io case. The user names no engine, and "for the
   README" is the Excalidraw side of the rule in AGENTS.md §1 - the signal that
   picked Draw.io twice out of two before #201.
-tags: [generation, invocation]
+tags: [generation, invocation, tier-1]
 runs: 3
 
 execution:

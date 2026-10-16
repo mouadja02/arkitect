@@ -4,7 +4,7 @@ description: >
   Editing an existing diagram has its own rules: analyze it rather than reading
   megabytes of it into context, back it up before touching it, and match the
   style of the file in front of you rather than the house style guide.
-tags: [editing, style]
+tags: [editing, style, tier-1]
 runs: 2
 
 # The fixture is created by the scaffold, which only runs under --scaffold.

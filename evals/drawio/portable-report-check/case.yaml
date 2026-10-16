@@ -6,7 +6,7 @@ description: >
   run `arkitect report` itself. Claude Code reads the skills, not AGENTS.md, so
   the prompt hands the agent the contract the way such a host would, and the
   case checks the agent ran the portable check on the file it saved.
-tags: [report, portable]
+tags: [report, portable, tier-1]
 runs: 3
 
 execution:

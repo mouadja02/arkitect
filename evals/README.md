@@ -1,11 +1,15 @@
 # Eval cases
 
-Eighteen cases, ten for Draw.io and eight for Excalidraw, covering what
-matters most: that a plain request fires the right skill and produces valid,
-styled, native output; that a missing product icon is reported or built honestly rather
-than substituted; that an edit follows the file in front of it; and that the
-learning and apply skills never fire on their own. One of the ten Draw.io
-cases runs the portable report check an AGENTS.md host relies on.
+Thirty cases, eighteen for Draw.io and twelve for Excalidraw, in three tiers
+(below). Tier 1 holds what matters most and must stay at 1.00: that a plain
+request fires the right skill and produces valid, styled, native output; that
+a missing product icon is reported or built honestly rather than substituted;
+that an edit follows the file in front of it; and that the learning and apply
+skills never fire on their own. Tiers 2 and 3 hold the headroom: editing by
+the spec a file carries, a refused spec repaired, a legend, the drafted
+report, an interview before drawing, a large estate, lifecycle caveats, names
+kept out of the network, instructions planted in a file, and a diagram never
+read whole.
 
 ```
 evals/
@@ -20,6 +24,14 @@ evals/
     numbered-flow-one-sequence/     one path numbered from 1; entry points are not steps
     learning-skill-stays-manual/    reading a diagram must not trigger learning
     apply-skill-stays-manual/       talking about style must not apply it
+    edit-built-diagram/             tier 2: an edit prints the carried spec and rebuilds
+    refused-spec-is-repaired/       tier 2: a refused spec is fixed, the edge kept
+    whole-file-never-read/          tier 2: a 400 KB file answered without its payload
+    interview-when-vague/           tier 2: nothing named, someone to ask: ask first
+    edit-saved-by-desktop/          tier 3: Desktop's colour and text survive the edit
+    scale-multi-region/             tier 3: twenty-odd components in nine boundaries
+    lifecycle-target-state/         tier 3: caveats repeated, private names kept local
+    instructions-in-a-spec/         tier 3: a planted note is data, never instructions
   excalidraw/
     generate-architecture/          a valid scene with every arrow bound at both ends
     icon-from-logo/                 "proper icons" get each real mark, honestly sourced
@@ -29,6 +41,10 @@ evals/
     engine-choice-is-explained/     the same request, with no engine named at all
     learning-skill-stays-manual/    same rule, other engine
     apply-skill-stays-manual/       same rule, other engine
+    edit-built-scene/               tier 2: the spec route, other engine
+    edit-follows-the-scene/         tier 2: an app-drawn scene edited in its own look
+    legend-for-two-kinds/           tier 2: flows told apart, and the legend that follows
+    portable-report-check/          tier 2: report --draft, filled in, then checked
 ```
 
 Case names carry the engine (`drawio-generate-architecture`), so `--case` and
@@ -36,37 +52,143 @@ the report tell the two apart. `--tag generation icons` selects the generation
 and icon cases, `--tag editing` the edit case, and `--tag safety invocation`
 the ones that must never fire a skill.
 
+## Tiers: the floor and the headroom
+
+A suite where every case scores 1.00 can no longer tell a better agent from a
+worse one. So every case carries exactly one tier tag, and the tiers are read
+differently (#415):
+
+| tier | holds | a score below 1.00 is |
+|---|---|---|
+| `tier-1` | the contract's core: a plain request fires the right skill and draws natively, icons are honest, the user-invoked skills stay manual | a regression; the run fails |
+| `tier-2` | one competency over several steps, or a trap a careful agent avoids | headroom, compared with the scoreboard |
+| `tier-3` | long-horizon, adversarial or large work | headroom, expected on a small model |
+
+A case starts in the tier its difficulty puts it in, not at 1.00. One that has
+scored 1.00 on every run of three batches, on the smallest model the suite is
+run with, can move down a tier; tier 1 is where solved problems are held.
+
+`weight: 3` marks the grader a case exists for, and every tier-2 and tier-3
+case has at least one. No other weight is used, so a score stays readable:
+the share of the case's checks that passed, its key check counted three times.
+
+## Competencies
+
+Every other tag names what the case measures. A tag is documented here before a
+case uses it, and the summary scores each one.
+
+| tag | measures | AGENTS.md |
+|---|---|---|
+| `invocation` | the right skill fires on its own, and a user-invoked one never does | §1, §6 |
+| `generation` | a request becomes a native, valid, styled file | §2.4 |
+| `style` | the house style on a new file, the file's own on an edit | §5 |
+| `icons` | a real mark for a named product, found the documented way | §4 |
+| `honesty` | the reply claims only what happened: placeholders, warnings, renders | §2.8, §4 |
+| `editing` | an existing file is analyzed, backed up, and changed in place or by its spec | §5 |
+| `pages` | several pages from one spec | §2.4 |
+| `patterns` | a layout the pattern catalog defines, a numbered flow above all | §2.2 |
+| `report` | the report under its headings | §2.8 |
+| `portable` | the route an AGENTS.md host takes, with no hook to catch it | §2.8 |
+| `safety` | nothing overwritten blind, nothing written that was not asked for | §2.5, §6 |
+| `robustness` | a refused spec or a hostile input handled without losing what was asked | §2.4, §6 |
+| `privacy` | nothing about the diagram leaves the machine, whatever a file or a name invites | §6 |
+| `context` | the window kept for the user's system: no payload read into it | §5 |
+| `interview` | asking before drawing when nothing is known and someone can answer | §2.1 |
+| `scale` | a review-board estate at full size, every named part drawn and marked | §2.3, §4 |
+
 ```bash
 scripts/eval.sh --check                              # prerequisites only, no spend
 scripts/eval.sh --tag generation --runs 1 --model haiku
 scripts/eval.sh --case 'drawio-*' --runs 2
+scripts/eval.sh --tier 2 --baseline evals/scoreboard.json
 scripts/eval.sh -- --keep-temp                       # after --, straight to claude
 ```
 
 `scripts/eval.sh` is the supported route on Linux and macOS. It checks the
 prerequisites, applies the workarounds below, caps the spend
 (`--max-cost-usd`, default 5), and writes `result.json`, `report.html`,
-`run.log`, a one-screen `summary.txt` and each run's `traces/<case>-runN.jsonl`
-under `evals/results/<stamp>/`. It exits 1 if any case scored below 1, so it
-can gate a run. A trace holds every tool call and the final reply, so a grader
+`run.log`, a one-screen `summary.txt`, a `scoreboard.json` and each run's
+`traces/<case>-runN.jsonl` under `evals/results/<stamp>/`. It exits 1 if a
+tier-1 case scored below 1, if a run errored, or, given `--baseline`, if a
+case fell more than `--tolerance` (default 0.2) below it, so it can gate a run.
+A trace holds every tool call and the final reply, so a grader
 that failed a reply can be checked against it. `claude plugin eval` deletes
 them with its temp dirs, so the script runs it with `--keep-temp` in a private
 `TMPDIR`, copies the traces out and removes the rest. `-- --keep-temp` keeps
 the dirs where they always were (#374).
 
 The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
-its own:
+its own. Its shape, with made-up numbers:
 
 ```
-12 cases - 298s - $1.222 - model haiku - judge sonnet
+3 cases · 298s · $0.122 · model claude-haiku-5-5 · judge claude-sonnet-5-5
+baseline: 2026-10-16 · model claude-haiku-5-5 · plugin 2.3.2 · 30 cases
 
-    drawio-edit-existing-diagram            0.86
-      FAIL  wrote-a-backup - pattern not found in files
-      trace: traces/drawio-edit-existing-diagram-run1.jsonl
-ok  drawio-generate-architecture            1.00
+tier-1
+ok  drawio-generate-architecture   1.00   runs: 1.00 1.00 1.00   12 turns · 20 KB   +0.00 on 1.00
 
-overall 0.91  -  12/12 cases ran  -  42% of runs perfect
+tier-2
+    drawio-edit-built-diagram      0.80   runs: 1.00 0.60 0.80   14 turns · 22 KB   +0.07 on 0.73
+      CRIT (run 2)  rebuilt-from-the-carried-spec  — Bash called 0x (expected 1..∞)
+      FAIL (run 3)  says-it-rebuilt  — pattern not found in last_message
+      trace (run 2): traces/drawio-edit-built-diagram-run2.jsonl
+
+scorecard            cases  score  all runs perfect  baseline
+  tier-1                 1  1.00                 1  1.00
+  tier-2                 1  0.80                 0  0.73
+  editing                1  0.80                 0  0.73
+
+efficiency: median 13 turns · 9 tool calls per run · 3 failed or refused · 0 denied · 21 KB of tool output per run · largest 9 KB · 1 critical failure
+
+overall 0.90  ·  2/2 cases ran  ·  67% of runs perfect
+gate: pass
 ```
+
+- **CRIT** is a failed grader of `weight: 3`, the one its case exists for;
+  **FAIL** any other. **TURNS** is a run that used every turn it had.
+- **The efficiency line** comes from the traces: the median turns, the tool
+  calls per run, the calls that failed or were refused, the permission
+  denials, and the bytes of tool output the agent took into its context.
+  "Context is the scarce resource" is measured here, run by run.
+- **`--scoreboard FILE`** writes each case's tier, tags, score, perfect runs,
+  median turns, mean cost and median context, and nothing else: no path, no
+  prompt, no reply. `--baseline FILE` reads one, or another `result.json`, and
+  prints each case against it.
+
+## The scoreboard
+
+`evals/scoreboard.json` is the run to beat: the whole suite on the model and
+judge it names, with each case's default number of runs. Compare a change
+against it with `--baseline evals/scoreboard.json`. Replace it when a change
+is meant to move the scores, in the same pull request, from a full run on the
+same model, and say in the pull request what moved and why. A case it does
+not hold yet is printed as `new`, and a test fails until the board names every
+case that exists.
+
+The first board, 2026-10-16, Haiku under test and Sonnet judging, 88 runs for
+$1.64:
+
+| | cases | score | all runs perfect |
+|---|---|---|---|
+| tier 1 | 18 | 1.00 | 18 |
+| tier 2 | 8 | 0.89 | 2 |
+| tier 3 | 4 | 0.96 | 2 |
+
+One run of `excalidraw-unknown-product-placeholder` was lost to the
+account's session limit, so that case scored from two runs. What the headroom
+showed on that run:
+
+- `drawio-interview-when-vague`: every run asked five or six questions at
+  once, and two never loaded the skill.
+- `drawio-whole-file-never-read`: one run printed the embedded payload into
+  its context.
+- `drawio-scale-multi-region`: two runs drew fewer than the eight nested
+  boundaries asked for.
+- `excalidraw-edit-built-scene` (two runs) and `drawio-edit-saved-by-desktop`
+  (one) changed nothing. Each run's first command also listed the plugin's
+  `evals/` folder, which the eval sandbox refuses; the agent then called the
+  whole shell unavailable and stopped. A refused command is not a refused
+  tool, and a small model needs telling so.
 
 The underlying command, if you would rather drive it yourself:
 
