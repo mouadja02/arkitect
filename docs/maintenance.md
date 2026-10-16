@@ -79,8 +79,8 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
-| `arkitect-drawio` | 11,153 | 735 | 11,888 |
-| `arkitect-excalidraw` | 11,105 | 882 | 11,987 |
+| `arkitect-drawio` | 11,152 | 735 | 11,887 |
+| `arkitect-excalidraw` | 11,104 | 882 | 11,986 |
 
 The worked example an agent copies comes on top. A rule that holds on every
 drawing stays in `SKILL.md`; a rule for one situation moves beside it.

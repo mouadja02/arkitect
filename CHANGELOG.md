@@ -17,6 +17,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- AGENTS.md step 8 and both `SKILL.md` step 9 name `arkitect report --draft` in place of the sentence asking for each `validate` warning by hand, with every id; the drafted Validation section carries them. Each reading path is a few bytes shorter (#387).
 - The Cursor and OpenCode slash command is `/arkitect`, not `/diagram`: `arkitect install cursor-command` writes `.cursor/commands/arkitect.md` and `arkitect install opencode` writes `.opencode/command/arkitect.md`. `diagram` is a generic name a host, an extension or the project itself can hold, and a project's own `diagram.md` kept Arkitect's from installing. Adapter names are unchanged. An install removes the `diagram.md` an earlier Arkitect wrote, under any install path, and says so; any other `diagram.md` is the project's own, kept byte for byte and named. Cursor and OpenCode users type `/arkitect` from now on (#401).
 
 ### Fixed

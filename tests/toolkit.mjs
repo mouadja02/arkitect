@@ -2560,11 +2560,29 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
     eq(bare.code, 0, 'no spec');
     assert(/\*\*Icons\*\*\s+<!-- fill in: [^\n]*--spec/.test(bare.out), bare.out);
     for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
+      ['--draft', join(dir, 'starter-architecture.drawio'), '--spec'],
       ['--draft', join(dir, 'starter-architecture.drawio'), '--spec', join(dir, 'missing.json')], ['--draft', join(dir, 'starter-architecture.drawio'), '--png-viewed']]) {
       eq(say(args).code, 2, args.join(' '));
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// The report step names the draft where it asked for each warning with every
+// id, by hand; the drafted Validation section carries them now, and the
+// reading budget stays flat (#387).
+test('the report step on every reading path names report --draft in place of copying each warning by hand (#387)', () => {
+  const steps = {
+    'AGENTS.md': readFileSync(join(ROOT, 'AGENTS.md'), 'utf8').match(/\n8\. \*\*Report\*\*[\s\S]*?\n\n/)[0],
+    ...Object.fromEntries(['drawio', 'excalidraw'].map((e) => [`arkitect-${e}/SKILL.md`,
+      readFileSync(join(ROOT, 'skills', `arkitect-${e}`, 'SKILL.md'), 'utf8').match(/\n9\. \*\*Report\.\*\*[\s\S]*?\n## /)[0]])),
+  };
+  for (const [name, step] of Object.entries(steps)) {
+    const flat = step.replace(/\s+/g, ' ');
+    assert(/arkitect\.mjs report --draft <\w+> --spec <spec>/.test(flat), `${name}: does not name report --draft`);
+    assert(!/with every id it (gives|names)/.test(flat), `${name}: still asks for each warning's ids by hand`);
+    assert(/each defect seen and left,? by page/.test(flat), `${name}: lost the defects seen in the render`);
   }
 });
 
