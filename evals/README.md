@@ -79,33 +79,60 @@ case uses it, and the summary scores each one.
 scripts/eval.sh --check                              # prerequisites only, no spend
 scripts/eval.sh --tag generation --runs 1 --model haiku
 scripts/eval.sh --case 'drawio-*' --runs 2
+scripts/eval.sh --tier 2 --baseline evals/scoreboard.json
 scripts/eval.sh -- --keep-temp                       # after --, straight to claude
 ```
 
 `scripts/eval.sh` is the supported route on Linux and macOS. It checks the
 prerequisites, applies the workarounds below, caps the spend
 (`--max-cost-usd`, default 5), and writes `result.json`, `report.html`,
-`run.log`, a one-screen `summary.txt` and each run's `traces/<case>-runN.jsonl`
-under `evals/results/<stamp>/`. It exits 1 if any case scored below 1, so it
-can gate a run. A trace holds every tool call and the final reply, so a grader
+`run.log`, a one-screen `summary.txt`, a `scoreboard.json` and each run's
+`traces/<case>-runN.jsonl` under `evals/results/<stamp>/`. It exits 1 if a
+tier-1 case scored below 1, if a run errored, or, given `--baseline`, if a
+case fell more than `--tolerance` (default 0.2) below it, so it can gate a run.
+A trace holds every tool call and the final reply, so a grader
 that failed a reply can be checked against it. `claude plugin eval` deletes
 them with its temp dirs, so the script runs it with `--keep-temp` in a private
 `TMPDIR`, copies the traces out and removes the rest. `-- --keep-temp` keeps
 the dirs where they always were (#374).
 
 The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
-its own:
+its own. Its shape, with made-up numbers:
 
 ```
-12 cases - 298s - $1.222 - model haiku - judge sonnet
+3 cases · 298s · $0.122 · model claude-haiku-5-5 · judge claude-sonnet-5-5
+baseline: 2026-10-16 · model claude-haiku-5-5 · plugin 2.3.2 · 30 cases
 
-    drawio-edit-existing-diagram            0.86
-      FAIL  wrote-a-backup - pattern not found in files
-      trace: traces/drawio-edit-existing-diagram-run1.jsonl
-ok  drawio-generate-architecture            1.00
+tier-1
+ok  drawio-generate-architecture   1.00   runs: 1.00 1.00 1.00   12 turns · 20 KB   +0.00 on 1.00
 
-overall 0.91  -  12/12 cases ran  -  42% of runs perfect
+tier-2
+    drawio-edit-built-diagram      0.80   runs: 1.00 0.60 0.80   14 turns · 22 KB   +0.07 on 0.73
+      CRIT (run 2)  rebuilt-from-the-carried-spec  — Bash called 0x (expected 1..∞)
+      FAIL (run 3)  says-it-rebuilt  — pattern not found in last_message
+      trace (run 2): traces/drawio-edit-built-diagram-run2.jsonl
+
+scorecard            cases  score  all runs perfect  baseline
+  tier-1                 1  1.00                 1  1.00
+  tier-2                 1  0.80                 0  0.73
+  editing                1  0.80                 0  0.73
+
+efficiency: median 13 turns · 9 tool calls per run · 3 failed or refused · 0 denied · 21 KB of tool output per run · largest 9 KB · 1 critical failure
+
+overall 0.90  ·  2/2 cases ran  ·  67% of runs perfect
+gate: pass
 ```
+
+- **CRIT** is a failed grader of `weight: 3`, the one its case exists for;
+  **FAIL** any other. **TURNS** is a run that used every turn it had.
+- **The efficiency line** comes from the traces: the median turns, the tool
+  calls per run, the calls that failed or were refused, the permission
+  denials, and the bytes of tool output the agent took into its context.
+  "Context is the scarce resource" is measured here, run by run.
+- **`--scoreboard FILE`** writes each case's tier, tags, score, perfect runs,
+  median turns, mean cost and median context, and nothing else: no path, no
+  prompt, no reply. `--baseline FILE` reads one, or another `result.json`, and
+  prints each case against it.
 
 The underlying command, if you would rather drive it yourself:
 

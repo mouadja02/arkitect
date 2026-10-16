@@ -5,10 +5,11 @@
 #   scripts/eval.sh --check                          prerequisites only, no spend
 #   scripts/eval.sh --tag generation --runs 1 --model haiku
 #   scripts/eval.sh --case 'drawio-*' --runs 2
+#   scripts/eval.sh --tier 2 --baseline evals/scoreboard.json
 #   scripts/eval.sh -- --keep-temp                   anything after -- goes to claude
 #
-# Results, the JSON, a one-screen summary and each run's trace.jsonl land under
-# evals/results/<stamp>/.
+# Results, the JSON, a one-screen summary with its scorecard, a scoreboard and
+# each run's trace.jsonl land under evals/results/<stamp>/.
 #
 # They cost money: real agent runs and real LLM graders. Nothing here runs by
 # default and every run is capped by --max-cost-usd.
@@ -19,15 +20,17 @@ ROOT="$(cd "$HERE/.." && pwd)"
 
 TAGS=(); CASE=""; RUNS=""; MODEL="haiku"; JUDGE="sonnet"
 MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
+BASELINE=""; TOLERANCE=""
 
 die() { echo "error: $*" >&2; exit 2; }
 
 usage() {
-  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
   cat <<'USAGE'
 
 Options:
   --tag <tag>          only cases with this tag (repeatable)
+  --tier <n>           only tier-<n> cases; the same as --tag tier-<n>
   --case <glob>        only cases whose name matches
   --runs <n>           runs per case (default: each case's own runs:)
   --model <model>      model under test (default haiku)
@@ -36,18 +39,25 @@ Options:
   -j, --concurrency <n>  parallel agent runs (default 2)
   --no-scaffold        skip the cases' scaffold scripts
   --out <dir>          results directory (default evals/results/<stamp>)
+  --baseline <file>    compare with a scoreboard (evals/scoreboard.json) or a
+                       result.json; a case further below it than the tolerance fails
+  --tolerance <n>      how far below its baseline a case may score (default 0.2)
   --check              check prerequisites and exit
   -h, --help           this
   --                   pass everything after it to `claude plugin eval`
 
 The judge defaults to sonnet deliberately. A haiku judge disagrees with itself
 and with sonnet on identical output, in both directions - see #135.
+
+The run fails if a tier-1 case scores below 1, a run errors, or a case falls
+below its baseline; tiers 2 and 3 are expected below 1 (evals/README.md).
 USAGE
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --tag) [ $# -ge 2 ] || die "--tag needs a value"; TAGS+=("$2"); shift 2 ;;
+    --tier) [ $# -ge 2 ] || die "--tier needs a value"; TAGS+=("tier-$2"); shift 2 ;;
     --case) [ $# -ge 2 ] || die "--case needs a value"; CASE="$2"; shift 2 ;;
     --runs) [ $# -ge 2 ] || die "--runs needs a value"; RUNS="$2"; shift 2 ;;
     --model) [ $# -ge 2 ] || die "--model needs a value"; MODEL="$2"; shift 2 ;;
@@ -56,6 +66,8 @@ while [ $# -gt 0 ]; do
     -j|--concurrency) [ $# -ge 2 ] || die "--concurrency needs a value"; CONCURRENCY="$2"; shift 2 ;;
     --no-scaffold) SCAFFOLD=0; shift ;;
     --out) [ $# -ge 2 ] || die "--out needs a value"; OUT="$2"; shift 2 ;;
+    --baseline) [ $# -ge 2 ] || die "--baseline needs a value"; BASELINE="$2"; shift 2 ;;
+    --tolerance) [ $# -ge 2 ] || die "--tolerance needs a value"; TOLERANCE="$2"; shift 2 ;;
     --check) CHECK_ONLY=1; shift ;;
     -h|--help) usage; exit 0 ;;
     --) shift; PASSTHROUGH=("$@"); break ;;
@@ -174,11 +186,16 @@ status=${PIPESTATUS[0]}
 # ---------------------------------------------------------------- summary
 
 # The run is passed --threshold 0, so its own status says only whether it ran.
-# Whether it passed is the summary's: 1 for any case below 1 or any errored run,
-# 2 for a result it cannot read. Exiting with the run's status reported 0 for a
+# Whether it passed is the summary's: 1 for a tier-1 case below 1, an errored
+# run or a case below its baseline, 2 for a result it cannot read. Exiting with the run's status reported 0 for a
 # batch whose every run errored (#369).
+# A missing baseline is a typo, not a reason to throw the run's spend away.
+if [ -n "$BASELINE" ] && [ ! -f "$BASELINE" ]; then echo "no baseline at $BASELINE; summarising without one" >&2; BASELINE=""; fi
+summary=("$OUT/result.json" --traces "$OUT/traces" --scoreboard "$OUT/scoreboard.json")
+[ -n "$BASELINE" ] && summary+=(--baseline "$BASELINE")
+[ -n "$TOLERANCE" ] && summary+=(--tolerance "$TOLERANCE")
 if [ -f "$OUT/result.json" ]; then
-  node "$HERE/eval-summary.mjs" "$OUT/result.json" --traces "$OUT/traces" | tee "$OUT/summary.txt"
+  node "$HERE/eval-summary.mjs" "${summary[@]}" | tee "$OUT/summary.txt"
   verdict=${PIPESTATUS[0]}
 else
   echo "no result.json was written; see $OUT/run.log" >&2

@@ -1800,6 +1800,106 @@ test('the eval summary reports every case and gates on the low ones (#134)', () 
   eq(spawnSync(process.execPath, [summary, join(TMP, 'eval-result.json'), '--traces'], { encoding: 'utf8' }).status, 2, '--traces needs a folder');
 });
 
+// Every case scored 1.00, so the suite stopped telling a better agent from a
+// worse one, and a case meant to be hard would fail the gate for ever (#415).
+// The summary reads each case's tier and tags, gates on tier 1, scores every
+// tier and competency, reads how each run worked from its trace, and writes
+// and compares a scoreboard that holds no path.
+test('the eval summary scores tiers and competencies, gates on tier 1, and keeps a scoreboard (#415)', () => {
+  const summary = join(ROOT, 'scripts', 'eval-summary.mjs');
+  const dir = join(TMP, 'eval-415');
+  rmSync(dir, { recursive: true, force: true });
+  const caseDir = (name, tags) => {
+    mkdirSync(join(dir, name), { recursive: true });
+    writeFileSync(join(dir, name, 'case.yaml'), `schema_version: "1.1"\nname: ${name}\ntags: [${tags.join(', ')}]\n`);
+    return join(dir, name);
+  };
+  const trace = join(dir, 'trace.jsonl');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(trace, [
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: {} }, { type: 'tool_use', name: 'Read', input: {} }] } },
+    { type: 'system', subtype: 'permission_denied' },
+    { type: 'user', message: { content: [{ type: 'tool_result', content: 'x'.repeat(2048), is_error: true }, { type: 'tool_result', content: [{ type: 'text', text: 'ok' }] }] } },
+  ].map((l) => JSON.stringify(l)).join('\n') + '\n');
+  const ran = (score, graders = [], more = {}) => ({ score, turns: 9, costUsd: 0.02, tracePath: trace, graders: [{ name: 'ran', passed: true }, ...graders], ...more });
+  const result = (floor, headroom) => ({
+    startedAt: '2026-10-16T08:00:00.000Z', claudeVersion: '2.1.300', costUsd: 0.1, durationSeconds: 60,
+    suite: { modelOverride: 'claude-haiku-5-5', judgeModel: 'claude-sonnet-5-5', plugins: [{ name: 'arkitect', version: '2.3.2', path: '/home/Jane Doe/arkitect' }] },
+    cases: [
+      { name: 'drawio-floor', dir: caseDir('drawio-floor', ['generation', 'tier-1']), maxTurns: 30, promptMarkdown: 'a secret prompt', arms: { with: [ran(floor)] } },
+      { name: 'drawio-headroom', dir: caseDir('drawio-headroom', ['editing', 'safety', 'tier-2']), maxTurns: 9, arms: { with: [
+        ran(headroom, [{ name: 'kept-the-note', passed: false, weight: 3, explanation: 'pattern not found' }, { name: 'said-so', passed: false, weight: 1 }]),
+        ran(1)] } },
+    ],
+    aggregates: { casesTotal: 2, casesPassed: 2, overallScore: 0.9, overallPassRate: 0.5 },
+  });
+  const sum = (json, args = []) => {
+    const file = join(dir, `result-${Math.random().toString(36).slice(2)}.json`);
+    writeFileSync(file, JSON.stringify(json));
+    return spawnSync(process.execPath, [summary, file, ...args], { encoding: 'utf8' });
+  };
+
+  const headroom = sum(result(1, 0.5));
+  eq(headroom.status, 0, `a tier-2 case below 1 is headroom, not a failure:\n${headroom.stdout}`);
+  assert(headroom.stdout.includes('gate: pass'), headroom.stdout);
+  for (const line of [/^tier-1$/m, /^tier-2$/m, /^ {2}tier-2 +1 +0\.75 +0$/m, /^ {2}editing +1 +0\.75/m, /^ {2}generation +1 +1\.00 +1$/m]) {
+    assert(line.test(headroom.stdout), `the scorecard lost ${line}:\n${headroom.stdout}`);
+  }
+  assert(/CRIT \(run 1\) {2}kept-the-note/.test(headroom.stdout), `a weight-3 failure is critical:\n${headroom.stdout}`);
+  assert(/FAIL \(run 1\) {2}said-so/.test(headroom.stdout), `a weight-1 failure is an ordinary one:\n${headroom.stdout}`);
+  assert(headroom.stdout.includes('used all 9 turns'), `a run that used every turn is named:\n${headroom.stdout}`);
+  assert(/2 tool calls per run · 3 failed or refused · 3 denied · 2 KB of tool output per run/.test(headroom.stdout),
+    `the efficiency line reads the traces:\n${headroom.stdout}`);
+  assert(headroom.stdout.includes('· 2 runs used every turn · 1 critical failure'), `the efficiency line counts both:\n${headroom.stdout}`);
+
+  const floor = sum(result(0.9, 1));
+  eq(floor.status, 1, 'a tier-1 case below 1 fails the run');
+  assert(floor.stdout.includes('gate: FAIL - 1 tier-1 case below 1.00'), floor.stdout);
+
+  // The scoreboard holds scores and counts, and no path, prompt or reply.
+  const board = join(dir, 'board', 'scoreboard.json');
+  eq(sum(result(1, 0.5), ['--scoreboard', board]).status, 0, 'writing a scoreboard changes no verdict');
+  const written = JSON.parse(readFileSync(board, 'utf8'));
+  eq(written.schema, 'arkitect-eval-scoreboard/1', 'the scoreboard names its schema');
+  eq(JSON.stringify(written.run), JSON.stringify({ date: '2026-10-16', claude: '2.1.300', plugin: '2.3.2', model: 'claude-haiku-5-5', judge: 'claude-sonnet-5-5', costUsd: 0.1 }), 'the run it records');
+  eq(written.cases['drawio-headroom'].score, 0.75, 'a case score');
+  eq(written.cases['drawio-headroom'].tier, 'tier-2', 'a case tier');
+  const strings = JSON.stringify(written).match(/"[^"]*"/g);
+  for (const s of strings) {
+    if (s !== `"${written.schema}"`) assert(!/[\\/]/.test(s) && !s.includes('secret'), `the scoreboard holds ${s}`);
+  }
+
+  // Against that scoreboard: a case that falls further than the tolerance
+  // fails, a smaller dip is reported, and a case it has never seen is new.
+  const fell = sum(result(1, 0), ['--baseline', board]);
+  eq(fell.status, 1, `a case 0.25 below its baseline fails:\n${fell.stdout}`);
+  assert(/drawio-headroom .*−0\.25 on 0\.75 {2}REGRESSED/.test(fell.stdout), fell.stdout);
+  assert(fell.stdout.includes('1 regressed more than 0.2 on the baseline'), fell.stdout);
+  eq(sum(result(1, 0), ['--baseline', board, '--tolerance', '0.5']).status, 0, 'within a wider tolerance');
+  assert(/drawio-headroom .*−0\.15 on 0\.75$/m.test(sum(result(1, 0.2), ['--baseline', board]).stdout), 'a smaller dip is reported, not failed');
+  const grown = result(1, 0.5);
+  grown.cases.push({ name: 'excalidraw-new', dir: caseDir('excalidraw-new', ['icons', 'tier-3']), arms: { with: [ran(0.4)] } });
+  const fresh = sum(grown, ['--baseline', board]);
+  eq(fresh.status, 0, fresh.stdout);
+  assert(/excalidraw-new .* new$/m.test(fresh.stdout) && /^tier-3$/m.test(fresh.stdout), fresh.stdout);
+  // A result.json serves as a baseline too.
+  const old = join(dir, 'old-result.json');
+  writeFileSync(old, JSON.stringify(result(1, 1)));
+  assert(/drawio-headroom .*−0\.25 on 1\.00 {2}REGRESSED$/m.test(sum(result(1, 0.5), ['--baseline', old]).stdout), 'a result as the baseline');
+
+  for (const args of [['--tolerance', '-1'], ['--bogus'], ['--baseline', join(dir, 'missing.json')], ['--baseline']]) {
+    eq(sum(result(1, 1), args).status, 2, `refused: ${args.join(' ')}`);
+  }
+
+  // scripts/eval.sh writes the scoreboard beside every result and forwards
+  // --baseline and --tolerance, and --tier is a tag.
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(sh.includes('--scoreboard "$OUT/scoreboard.json"'), 'scripts/eval.sh no longer writes a scoreboard');
+  assert(sh.includes('summary+=(--baseline "$BASELINE")') && sh.includes('summary+=(--tolerance "$TOLERANCE")'), 'the baseline is not forwarded');
+  assert(sh.includes('TAGS+=("tier-$2")'), '--tier is no longer a tag');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 test('the packed CLI works from outside the checkout (#38)', () => {
   if (!npmCli) return 'skip';
   const { tmp, root } = packOnce();
