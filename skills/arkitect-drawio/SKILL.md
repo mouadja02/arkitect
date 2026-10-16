@@ -33,8 +33,8 @@ the report.
 1. **Decide whether to ask** — see Interview first, below. Most requests are
    drawn straight away, with the assumptions stated.
 
-2. **Pick a pattern and state assumptions.** Choose the nearest row, then read
-   only that `## N.` section of `references/pattern-catalog.md`:
+2. **Pick a pattern and state assumptions.** Choose the nearest row, then print
+   only its section, `node scripts/pattern.mjs N`:
 
    | # | Use for |
    |---|---|

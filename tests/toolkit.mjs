@@ -1363,8 +1363,8 @@ const skillReading = (engine) => {
 test('each drawing skill reads at most 12,000 bytes before its example, and names one path per task (#113)', () => {
   const measured = [];
   for (const [engine, mustKeep] of [
-    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**']],
-    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**']],
+    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**', '`node scripts/pattern.mjs N`']],
+    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**', '`node scripts/pattern.mjs N`']],
   ]) {
     const { dir, skill, sections, skillBytes, largest } = skillReading(engine);
     measured.push(`${engine} ${skillBytes} + ${largest} = ${skillBytes + largest}`);
@@ -1380,13 +1380,42 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
     }
     // The selector offers exactly the patterns the catalog has, as table rows or
     // as a "1 pipeline · 2 ..." list (#137).
-    const selector = skill.slice(skill.indexOf('pattern-catalog.md`:'), skill.indexOf('Spec fragments'));
+    const selector = skill.slice(skill.indexOf('pattern.mjs N`:'), skill.indexOf('Spec fragments'));
     const entry = selector.includes('|') ? /\|\s*(\d+)\s*\|/g : /(?:^|·)[ \t]*(\d+) (?=[a-z])/gm;
     const offered = [...selector.matchAll(entry)].map((m) => Number(m[1])).sort((a, b) => a - b);
     eq(offered.join(','), [...sections.keys()].sort((a, b) => a - b).join(','), `${engine}: selector rows vs catalog sections`);
     for (const rule of mustKeep) assert(skill.includes(rule), `${engine}: SKILL.md no longer says "${rule}"`);
   }
   console.log(`      (context budget: ${measured.join('; ')})`);
+});
+
+// Step 2 sent an agent to one catalog section, and `sed -n` on a plugin file
+// is refused in a sandboxed run; two runs read the refusal as a dead shell and
+// stopped (#417). `arkitect <engine> pattern N` prints the section, read-only.
+test('arkitect <engine> pattern N prints that section of the catalog, and nothing else (#417)', () => {
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), ...args], { encoding: 'utf8' });
+  for (const [engine, n] of [['drawio', 1], ['excalidraw', 6]]) {
+    const catalog = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'references', 'pattern-catalog.md'), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const heads = [...catalog.matchAll(/^## (\d+)\. (.+)$/gm)];
+    for (const [, num, title] of heads) {
+      const said = cli(engine, 'pattern', num);
+      eq(said.status, 0, `${engine} pattern ${num}`);
+      const start = catalog.indexOf(`## ${num}. ${title}`);
+      const next = catalog.slice(start + 1).search(/\n#{1,2} /);
+      const section = (next < 0 ? catalog.slice(start) : catalog.slice(start, start + 1 + next)).trimEnd().replace(/\n+-{3,}$/, '');
+      eq(said.stdout, `${section}\n`, `${engine} pattern ${num} is the file's section`);
+      if (Number(num) === n) assert(said.stdout.startsWith(`## ${n}. `), `${engine} pattern ${n}`);
+    }
+    const listed = cli(engine, 'pattern');
+    eq(listed.stdout.trim().split('\n').length, heads.length, `${engine} pattern lists every section`);
+    for (const bad of [['0'], ['99'], ['x'], ['1', '2']]) eq(cli(engine, 'pattern', ...bad).status, 2, `${engine} pattern ${bad}`);
+    // The skill names the command, by the path it runs from.
+    const skill = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'SKILL.md'), 'utf8');
+    assert(skill.includes('`node scripts/pattern.mjs N`') && existsSync(join(ROOT, 'skills', `arkitect-${engine}`, 'scripts', 'pattern.mjs')),
+      `${engine}: SKILL.md step 2 names a pattern script that exists`);
+  }
+  assert(/arkitect drawio pattern\s+print one section/.test(cli('--help').stdout), 'the dispatcher lists it');
 });
 
 // AGENTS.md is the whole route on every non-Claude host, and a learning

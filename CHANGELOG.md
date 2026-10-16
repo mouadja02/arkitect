@@ -32,6 +32,7 @@ separate file, no naming scheme, no required format beyond that.
 
   The suite has 30 cases. Five tags are new: `robustness`, `privacy`, `context`, `interview` and `scale` (#415).
 - `evals/scoreboard.json` holds the first full run of the 30 cases: Haiku under test, Sonnet judging, 88 runs for $1.64. Tier 1 scored 1.00, tier 2 0.89 and tier 3 0.96. `evals/README.md` says what the headroom showed and when to replace the board, and a test keeps the board naming exactly the cases that exist, each with its tier and no path (#415).
+- `arkitect drawio pattern N` and `arkitect excalidraw pattern N` print one section of the pattern catalog, read-only, and with no N list the sections. Both `SKILL.md` step 2 name `node scripts/pattern.mjs N` in place of reading the section by hand: `sed -n` on a plugin file is refused in a sandboxed run, and two eval runs read that refusal as a dead shell and stopped without the edit. AGENTS.md step 2 names the command too, and each reading path is 13 bytes shorter (#417).
 
 ### Changed
 

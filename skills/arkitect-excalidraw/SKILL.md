@@ -37,8 +37,8 @@ Do not undo them by hand.
 1. **Decide whether to ask** — see Interview first, below. Most requests are
    drawn straight away, with the assumptions stated.
 
-2. **Pick a pattern and state assumptions.** Choose the nearest, then read
-   only that `## N.` section of `references/pattern-catalog.md`:
+2. **Pick a pattern and state assumptions.** Choose the nearest, then print
+   only its section, `node scripts/pattern.mjs N`:
    1 pipeline · 2 scope or trust box · 3 tiers · 4 request with a decision ·
    5 current vs proposed · 6 external systems · 7 one service's inside ·
    8 agentic/LLM · 9 ordered protocol · 10 legend · 11 sources into one store ·
