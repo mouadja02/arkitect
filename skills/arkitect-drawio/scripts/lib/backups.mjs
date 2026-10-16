@@ -16,11 +16,13 @@ const quoteRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // `kept: true` names it `<stem>.backup-<stamp>-kept<ext>`, which retention
 // never matches: the builders pass it when the file holds work the build drops
-// (#376).
-export function backupExisting(path, { now = new Date(), kept = false } = {}) {
+// (#376). `inert: true` names it `<name><ext>.backup-<stamp>`, outside the
+// extension a host loads: a `.md` beside a Cursor or OpenCode command is a
+// command too (#401). Retention never matches that name either.
+export function backupExisting(path, { now = new Date(), kept = false, inert = false } = {}) {
   if (!existsSync(path)) return null;
   const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
-  const ext = extname(path);
+  const ext = inert ? '' : extname(path);
   const name = `${basename(path, ext)}.backup-${stamp}${kept ? '-kept' : ''}`;
   const sameSecond = new RegExp(`^${quoteRe(name)}(?:-([1-9]\\d*))?${quoteRe(ext)}$`);
   let first = 0;

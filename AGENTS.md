@@ -110,11 +110,11 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    but reads badly is not done.
 8. **Report** under **File**, **Engine** (if none was named: why it
    over the other, §1), **Assumptions**, **Icons** (sources, gaps),
-   **Validation**, **Render**, **Deviations** from the style guide. Each
-   validate warning still printed is named with every id it gives, as a defect
-   still there, and each defect seen in the render and left by page — never
-   "minor" or "a few". Save it, run `node bin/arkitect.mjs report <file>`
-   (`--png-viewed` once you looked) and fix what it names.
+   **Validation**, **Render**, **Deviations** from the style guide. Draft it
+   with `node bin/arkitect.mjs report --draft <diagram> --spec <spec>`, which
+   fills File, Icons and Validation; add each defect seen and left, by page.
+   Save it, run `node bin/arkitect.mjs report <file>` (`--png-viewed` once you
+   looked) and fix what it names.
 
 ## 3. Commands
 

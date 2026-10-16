@@ -1253,6 +1253,68 @@ test('a rebuild over a scene someone added to names the dropped elements, and re
   rmSync(dir, { recursive: true, force: true });
 });
 
+// The spec a scene was built from lived in a separate file, so an edit meant
+// hand-written scene JSON with both sides of every binding (#339). Every build
+// carries its spec on the first node's customData: the app keeps an element's
+// customData through a save and drops any key it does not know at the top of
+// the scene or in appState. `spec` prints it (#388).
+test('a built scene carries its spec through an app save, `excalidraw spec` prints it, and rebuilding it reproduces the scene (#388)', () => {
+  const dir = join(TMP, 'p388');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const templates = join(SKILL, 'assets', 'templates');
+  const odd = { title: 'Quotes "and" <tags> & ampersands', nodes: [{ id: 'a', label: 'Line one\nLine två — ü' }, { id: 'b', label: "it's `code`", col: 1 }],
+    edges: [{ from: 'a', to: 'b', label: '50%' }] };
+  const specs = [...readdirSync(templates).filter((f) => f.endsWith('.spec.json')).map((f) => [f, JSON.parse(readFileSync(join(templates, f), 'utf8'))]), ['odd', odd]];
+  for (const [name, spec] of specs) {
+    const text = JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene);
+    eq(JSON.stringify(builder.specOf(text)), JSON.stringify(spec), `${name}: the carried spec`);
+    eq(JSON.stringify(builder.buildDiagram(builder.specOf(text), { seed: 7 }).scene), text, `${name}: rebuilding the carried spec`);
+    const carriers = JSON.parse(text).elements.filter((el) => el.customData?.arkitectSpec);
+    eq(carriers.length, 1, `${name}: one element carries it`);
+    eq(carriers[0].customData.arkitect.node, spec.nodes[0].id, `${name}: the first node carries it`);
+    assert(!builder.changedSince(text), `${name}: a fresh build has not changed`);
+  }
+
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8' });
+  const spec = join(dir, 'odd.spec.json');
+  const out = join(dir, 'a.excalidraw');
+  writeFileSync(spec, JSON.stringify(odd, null, 2));
+  cli('build', spec, '--out', out, '--seed', '3', '--defaults');
+  const printed = cli('spec', out);
+  eq(`${printed.status}|${printed.stderr}`, '0|', 'printed, nothing said');
+  writeFileSync(join(dir, 'printed.json'), printed.stdout);
+  cli('build', join(dir, 'printed.json'), '--out', join(dir, 'b.excalidraw'), '--seed', '3', '--defaults');
+  eq(readFileSync(join(dir, 'b.excalidraw'), 'utf8'), readFileSync(out, 'utf8'), 'the printed spec rebuilds the scene');
+  for (const args of [[], [out, spec], [join(dir, 'missing.excalidraw')]]) assert(cli('spec', ...args).status === 2, `exit 2: ${args.join(' ')}`);
+  const none = cli('spec', join(templates, 'starter-architecture.spec.json'));
+  assert(none.status === 1 && /carries no spec/.test(none.stderr), `a file that is no scene: ${none.stderr}`);
+
+  // Saved by the app, as serializeAsJSON writes it: only the keys it knows at
+  // the top and in appState, every element's customData kept. Someone moved a
+  // node, so its version moved, and added a box of their own.
+  const scene = JSON.parse(readFileSync(out, 'utf8'));
+  const moved = scene.elements.find((el) => el.customData?.arkitect?.node === 'b');
+  Object.assign(moved, { x: moved.x + 40, version: moved.version + 1 });
+  scene.elements.push({ ...scene.elements.find((el) => el.type === 'rectangle'), id: 'added', x: 900, y: 900, version: 1, customData: undefined });
+  const saved = { type: scene.type, version: scene.version, source: scene.source, elements: scene.elements,
+    appState: { gridSize: 20, gridStep: 5, gridModeEnabled: false, viewBackgroundColor: scene.appState.viewBackgroundColor }, files: scene.files };
+  writeFileSync(out, JSON.stringify(saved, null, 2));
+  const after = cli('spec', out);
+  assert(after.status === 0 && /saved by an editor/.test(after.stderr), after.stderr);
+  eq(JSON.stringify(JSON.parse(after.stdout)), JSON.stringify(odd), 'the spec survives the save');
+  writeFileSync(join(dir, 'saved.json'), after.stdout);
+  const rebuilt = JSON.parse(cli('build', join(dir, 'saved.json'), '--out', out, '--defaults').stdout);
+  eq(rebuilt.notes.length, 1, 'one note');
+  assert(rebuilt.notes[0].includes('"added"') && /-kept\.excalidraw$/.test(rebuilt.backup), rebuilt.notes[0]);
+  // The node that carried it deleted: no spec, said so.
+  const gone = JSON.parse(readFileSync(out, 'utf8'));
+  gone.elements = gone.elements.filter((el) => el.customData?.arkitect?.node !== 'a');
+  writeFileSync(out, JSON.stringify(gone));
+  eq(cli('spec', out).status, 1, 'the carrier deleted');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The Draw.io run that shipped five accounts as boxes passed validate silent
 // (#341); the same spec in this engine got no warning either.
 test('validate warns on a plain shape named like a boundary, once each, and not on a real boundary (#341)', () => {
@@ -1868,10 +1930,12 @@ test('a spec with a bad number is refused on the command line before any backup 
 // of no width and layout.colPitch: null collapsed the grid (#153).
 test('an explicit null takes the default, exactly as leaving the field out does (#153)', () => {
   const nodes = [{ id: 'a', kind: 'box', label: 'A', col: 0 }, { id: 'b', kind: 'box', label: 'B', col: 1 }];
+  // The scene carries the spec as written, nulls included (#388); the drawing is what must match.
+  const drawn = (scene) => JSON.stringify(scene, (k, v) => (k === 'arkitectSpec' ? undefined : v));
   const same = (nulled, absent, what) => {
     const a = builder.buildDiagram(nulled, { seed: 1 }).scene;
     const b = builder.buildDiagram(absent, { seed: 1 }).scene;
-    eq(JSON.stringify(a), JSON.stringify(b), what);
+    eq(drawn(a), drawn(b), what);
     return a;
   };
   const layout = same({ layout: { colPitch: null, rowPitch: null, originX: null }, nodes }, { nodes },

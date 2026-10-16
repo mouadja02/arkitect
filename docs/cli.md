@@ -9,6 +9,7 @@ arkitect                     # every command, one screen
 arkitect doctor              # what is installed, what is optional
 arkitect where               # the install path
 arkitect install --all       # agent adapters for this project
+arkitect report --draft docs/arch.drawio --spec spec.json   # draft one
 arkitect report report.md    # check a saved diagram report
 arkitect test                # the offline suite (clone only)
 arkitect version
@@ -29,6 +30,17 @@ the text, so `--png-viewed` is the agent's word that it opened the PNG, never an
 observed fact. Exit 0 clean, 1 with problems, each named, 2 on a usage error
 (#302).
 
+`report --draft <diagram> [--spec <spec>]` prints the seven headings with what
+a script knows filled in: **File** from the diagram, **Validation** with every
+error, warning and note `validate` prints, word for word, and **Icons** from
+the spec, resolved as the build resolves it without writing anything: each
+icon's id and pack, or ref and library, and every placeholder, missing,
+ambiguous or on-demand mark and product named in a plain box. The build
+report's unknown kinds, unknown fields and notes go under Validation. Engine,
+Assumptions, Render and Deviations each hold one `<!-- fill in: … -->` line,
+and the check fails while one is left. Without `--spec` it reads the spec the
+diagram carries (#388); with neither, Icons is a fill-in too (#387).
+
 ## Draw.io
 
 ```bash
@@ -45,12 +57,22 @@ arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells   # a row per cell; --all, every key
 arkitect drawio analyze docs/arch.drawio --find "Checkout API"
 arkitect drawio backup docs/arch.drawio                # before an edit the builder doesn't make
+arkitect drawio spec docs/arch.drawio > edit.json      # the spec it was built from
 arkitect drawio packs --verify                         # committed packs against their pins
 arkitect drawio sheets --pack azure                    # a pack as a labelled grid
 arkitect drawio learn --sources <files> --merge        # your style record
 arkitect drawio findings --derive
 arkitect drawio apply --list                           # --accept <ids>, --reset
 ```
+
+Every build writes its spec, minified and XML-escaped, as `arkitect-spec` on
+`<mxfile>`; Draw.io Desktop keeps the attribute when it saves. `spec` prints it
+as indented JSON, and building that over the file reproduces it byte for byte
+with the same style. It exits 1 when the file carries none, and says on stderr
+when an editor has saved the file since (its `agent` is no longer Arkitect's):
+a colour or position changed there is not in the spec. A file that carries the
+spec still counts as Arkitect's, so a rebuild names cells added since in
+`notes` and keeps their backup (#376, #388).
 
 ## Excalidraw
 
@@ -67,10 +89,21 @@ arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders
 arkitect excalidraw analyze docs/arch.excalidraw --cells   # a row per spec entry; --all, per element
 arkitect excalidraw backup docs/arch.excalidraw
+arkitect excalidraw spec docs/arch.excalidraw > edit.json   # the spec it was built from
 arkitect excalidraw learn --sources <files> --merge
 arkitect excalidraw findings --derive
 arkitect excalidraw apply --list
 ```
+
+Every build writes its spec under `customData.arkitectSpec` of the first
+element the first spec node drew, with `arkitectBuilt`, the element count and
+version sum the build wrote. The app keeps an element's `customData` through a
+save; a key at the top of the scene or in `appState` it does not know, it drops.
+`spec` prints the spec, and building it with the same `--seed` and style
+reproduces the scene byte for byte. It exits 1 when the scene carries none,
+the first node deleted included, and says on stderr when the scene no longer
+matches `arkitectBuilt`: the app moves an element's `version` whenever it
+changes one (#388).
 
 ## Behaviour both engines share
 

@@ -14,9 +14,10 @@
 // so re-running after an update refreshes it without touching anything else in
 // the file.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { backupExisting } from '../../skills/arkitect-drawio/scripts/lib/backups.mjs';
 
 export const BEGIN = '<!-- arkitect:begin -->';
 export const END = '<!-- arkitect:end -->';
@@ -78,6 +79,40 @@ its §2, the report in step 8 included, checked with
 $ARGUMENTS
 `;
 
+// The command was /diagram until #401, a generic name a host, an extension or
+// the project itself can hold too. An install removes the `diagram.md` an
+// earlier Arkitect wrote, recognised by its body under any install path; any
+// other `diagram.md` is the project's own and stays as it is.
+const EARLIER_COMMANDS = [command, (root) => `---
+description: Draw an editable architecture, system or flow diagram (Draw.io or Excalidraw)
+---
+
+Draw the diagram the user asked for using Arkitect, installed at \`${root}\`.
+
+Read \`${join(root, 'AGENTS.md')}\` first — it is the contract — and follow
+its §2, the report in step 8 included.
+
+$ARGUMENTS
+`, (root) => `---
+description: Draw an editable architecture, system or flow diagram (Draw.io or Excalidraw)
+---
+
+Draw the diagram the user asked for using Arkitect, installed at \`${root}\`.
+
+Read \`${join(root, 'AGENTS.md')}\` first — it is the contract. Then:
+
+1. Choose the engine: Draw.io for formal solution architecture, Excalidraw for
+   system design and flows. Say which you chose.
+2. Resolve every icon before laying out. Never substitute one product's mark for
+   another.
+3. Write a spec, build it, validate it, render it, and look at the PNG.
+4. Report the file path, your assumptions, and anything you could not resolve.
+
+$ARGUMENTS
+`].map((render) => new RegExp(`^${render('\u0000').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  .replace(/\\\\|\//g, '[\\\\/]').replace(/\u0000/g, '[^`"\\n]+')}$`));
+export const earlierCommand = (text) => EARLIER_COMMANDS.some((re) => re.test(String(text).replace(/\r\n/g, '\n')));
+
 // Codex discovers skills in .agents/skills of the repository, or of the user's
 // home for every project (#127). The engine guides are written for Claude Code
 // and name their scripts under ${CLAUDE_PLUGIN_ROOT}, which Codex never sets,
@@ -124,10 +159,11 @@ export const ADAPTERS = {
     merge: false,
   },
   'cursor-command': {
-    file: join('.cursor', 'commands', 'diagram.md'),
-    hosts: 'Cursor (/diagram)',
+    file: join('.cursor', 'commands', 'arkitect.md'),
+    hosts: 'Cursor (/arkitect)',
     render: command,
     merge: false,
+    legacy: join('.cursor', 'commands', 'diagram.md'),
   },
   copilot: {
     file: join('.github', 'copilot-instructions.md'),
@@ -136,10 +172,11 @@ export const ADAPTERS = {
     merge: true,
   },
   opencode: {
-    file: join('.opencode', 'command', 'diagram.md'),
-    hosts: 'OpenCode (/diagram)',
+    file: join('.opencode', 'command', 'arkitect.md'),
+    hosts: 'OpenCode (/arkitect)',
     render: command,
     merge: false,
+    legacy: join('.opencode', 'command', 'diagram.md'),
   },
   'codex-skill': {
     file: join('.agents', 'skills', 'arkitect', 'SKILL.md'),
@@ -165,6 +202,19 @@ function upsert(existing, block) {
   const j = existing.indexOf(END);
   if (i !== -1 && j > i) return existing.slice(0, i) + fenced.trimEnd() + existing.slice(j + END.length);
   return `${existing.trimEnd()}\n\n${fenced}`;
+}
+
+// Once the new command is in place, the old name goes only if an earlier
+// Arkitect wrote it.
+function migrate(target, adapter) {
+  const old = adapter.legacy && join(target, adapter.legacy);
+  if (!old || !existsSync(old)) return;
+  if (earlierCommand(readFileSync(old, 'utf8'))) {
+    unlinkSync(old);
+    console.log(`remove ${adapter.legacy}   (an earlier Arkitect's /diagram; the command is /arkitect now)`);
+  } else {
+    console.log(`keep   ${adapter.legacy}   (not written by Arkitect: your own /diagram, left as it is)`);
+  }
 }
 
 export function install(root, argv) {
@@ -231,6 +281,7 @@ export function install(root, argv) {
 
     if (exists && !adapter.merge && !parsed.options.force) {
       console.log(`skip   ${relative(target, path) || adapter.file}  (exists - pass --force to replace)`);
+      migrate(target, adapter);
       continue;
     }
 
@@ -238,10 +289,17 @@ export function install(root, argv) {
       ? upsert(exists ? readFileSync(path, 'utf8') : '', block)
       : block;
 
+    // --force replaced a project's own file with no copy left (#401). The
+    // backup's name ends past the extension, so no host loads it as a command
+    // or a rule; a file already holding this block needs none.
+    const backup = exists && !adapter.merge && readFileSync(path, 'utf8') !== content
+      ? backupExisting(path, { inert: true }) : null;
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
     const verb = !exists ? 'write ' : adapter.merge ? 'update' : 'replace';
     console.log(`${verb} ${relative(target, path) || adapter.file}   (${adapter.hosts})`);
+    if (backup) console.log(`backup ${relative(target, backup)}   (the file it replaced)`);
+    migrate(target, adapter);
   }
 
   if (!parsed.options.print && chosen.includes('agents')) {

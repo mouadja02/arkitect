@@ -135,9 +135,9 @@ Do not undo them by hand.
    logo you built; every placeholder. **Render**: you looked at the PNG, or it
    failed and why; never "rendered" for a render that failed, and never a
    picture you did not see. With only an SVG, say so — spacing and crossings are
-   then the validator's findings, quoted as its. **Validation**: each warning
-   left, with every id it names, as a defect still there, never "minor" or
-   "a few"; each defect seen and left, by page.
+   then the validator's findings, quoted as its. **Validation**: `node
+   ${CLAUDE_PLUGIN_ROOT}/bin/arkitect.mjs report --draft <file> --spec <spec>`
+   drafts it; each defect seen and left, by page.
    **Deviations** from the guide.
    Offer nothing Arkitect cannot do: there is no PowerPoint or PDF export.
 

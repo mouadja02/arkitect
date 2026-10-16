@@ -10,7 +10,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, chmodSync, mkdtempSync, realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
@@ -235,6 +235,94 @@ test('a non-merge adapter refuses to clobber without --force', () => {
   assert(readFileSync(join(dir, '.cursor', 'rules', 'arkitect.mdc'), 'utf8').includes('Arkitect'), '--force did not replace it');
 });
 
+// `install --all --force`, the documented update, replaced a project's own
+// command file and left no copy of it (#401). The backup ends past the
+// extension: a `.md` beside a Cursor command is a command too.
+test('install --force backs up each non-merge adapter file it replaces, under a name no host loads (#401)', () => {
+  const dir = join(TMP, 'force-backup');
+  const own = Object.entries(adapters.ADAPTERS).filter(([, a]) => !a.merge);
+  for (const [name, a] of own) {
+    mkdirSync(dirname(join(dir, a.file)), { recursive: true });
+    writeFileSync(join(dir, a.file), `my own ${name}\n`);
+  }
+  const out = cli(['install', '--all', '--force', '--dir', dir]);
+  for (const [name, a] of own) {
+    const folder = dirname(join(dir, a.file));
+    const copies = readdirSync(folder).filter((f) => f.startsWith(`${basename(a.file)}.backup-`));
+    eq(copies.length, 1, `${a.file}: backups`);
+    assert(/\.backup-\d{8}-\d{6}$/.test(copies[0]), `${copies[0]}: ends in the stamp, not in an extension a host loads`);
+    eq(readFileSync(join(folder, copies[0]), 'utf8'), `my own ${name}\n`, `${a.file}: the backup holds the replaced file`);
+    assert(out.includes(copies[0]), `the output names ${copies[0]}`);
+  }
+  // A rerun replaces Arkitect's own block with itself, and needs no copy.
+  cli(['install', '--all', '--force', '--dir', dir]);
+  for (const [, a] of own) {
+    eq(readdirSync(dirname(join(dir, a.file))).filter((f) => f.includes('.backup-')).length, 1, `${a.file}: a second backup of the same block`);
+  }
+  assert(!readdirSync(dir).some((f) => f.includes('.backup-')), 'a merge adapter left a backup');
+});
+
+// `/diagram` is a generic name a host, an extension or the project can hold
+// too, and a project's own `diagram.md` kept Arkitect's from installing (#401).
+// The command is `/arkitect`; an earlier Arkitect's `diagram.md` goes, and a
+// project's own stays byte for byte.
+test('Cursor and OpenCode get /arkitect, and an earlier Arkitect /diagram is removed while a project\'s own is kept (#401)', () => {
+  const pairs = [['cursor-command', '.cursor/commands'], ['opencode', '.opencode/command']];
+  for (const [name, folder] of pairs) {
+    eq(adapters.ADAPTERS[name].file.split(sep).join('/'), `${folder}/arkitect.md`, `${name}: file`);
+    assert(adapters.ADAPTERS[name].hosts.includes('(/arkitect)'), `${name}: ${adapters.ADAPTERS[name].hosts}`);
+  }
+  const fresh = join(TMP, 'command-fresh');
+  cli(['install', 'cursor-command', 'opencode', '--dir', fresh]);
+  for (const [, folder] of pairs) eq(readdirSync(join(fresh, folder)).join(), 'arkitect.md', `${folder}: a fresh install`);
+
+  // What earlier releases wrote, under other install paths, one with CRLF as a
+  // Windows checkout of a committed file has it.
+  const current = (root) => adapters.ADAPTERS['cursor-command'].render(root);
+  const first = (root, s) => ['---', 'description: Draw an editable architecture, system or flow diagram (Draw.io or Excalidraw)', '---', '',
+    `Draw the diagram the user asked for using Arkitect, installed at \`${root}\`.`, '',
+    `Read \`${root}${s}AGENTS.md\` first — it is the contract. Then:`, '',
+    '1. Choose the engine: Draw.io for formal solution architecture, Excalidraw for',
+    '   system design and flows. Say which you chose.',
+    '2. Resolve every icon before laying out. Never substitute one product\'s mark for',
+    '   another.',
+    '3. Write a spec, build it, validate it, render it, and look at the PNG.',
+    '4. Report the file path, your assumptions, and anything you could not resolve.', '', '$ARGUMENTS', ''].join('\n');
+  const earlier = [current('/Users/Jane Doe/arkitect'), first('D:\\Profiles\\Jane Doe\\arkitect', '\\').replace(/\n/g, '\r\n'), first('/opt/arkitect', '/')];
+  earlier.forEach((old, n) => {
+    const dir = join(TMP, `command-migrate-${n}`);
+    for (const [, folder] of pairs) { mkdirSync(join(dir, folder), { recursive: true }); writeFileSync(join(dir, folder, 'diagram.md'), old); }
+    const out = cli(['install', 'cursor-command', 'opencode', '--dir', dir]);
+    for (const [, folder] of pairs) {
+      eq(readdirSync(join(dir, folder)).join(), 'arkitect.md', `${folder}: after migrating release ${n}'s command`);
+      assert(new RegExp(`remove ${folder.replace('/', '[\\\\/]').replace('.', '\\.')}[\\\\/]diagram\\.md`).test(out), `the output does not say ${folder}/diagram.md was removed:\n${out}`);
+    }
+  });
+
+  // A project's own /diagram, and one an earlier Arkitect wrote and the user
+  // then edited, are the project's: kept byte for byte, and named.
+  const own = { 'a Mermaid command': '---\ndescription: Draw a Mermaid diagram\n---\n\nDraw it in Mermaid.\n',
+    'an edited Arkitect command': `${current('/opt/arkitect')}\nAlways use our colours.\n` };
+  for (const [what, text] of Object.entries(own)) {
+    const dir = join(TMP, `command-own-${what.replace(/\W+/g, '-')}`);
+    for (const [, folder] of pairs) { mkdirSync(join(dir, folder), { recursive: true }); writeFileSync(join(dir, folder, 'diagram.md'), text); }
+    for (const force of [[], ['--force']]) {
+      const out = cli(['install', 'cursor-command', 'opencode', '--dir', dir, ...force]);
+      for (const [, folder] of pairs) {
+        eq(readFileSync(join(dir, folder, 'diagram.md'), 'utf8'), text, `${what}${force.join('')}: ${folder}/diagram.md`);
+        assert(existsSync(join(dir, folder, 'arkitect.md')), `${what}: no ${folder}/arkitect.md`);
+        assert(/keep\s+\S*diagram\.md/.test(out), `${what}: the output does not name the kept file:\n${out}`);
+      }
+    }
+  }
+  // No doc names the old command but the one sentence on what install migrates.
+  for (const file of ['README.md', ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => `docs/${f}`)]) {
+    const stale = readFileSync(join(ROOT, file), 'utf8').split('\n')
+      .filter((line) => /(?<![\w:.-])\/diagram(?![\w.-])|\bdiagram\.md\b/.test(line) && !/used to be `\/diagram`/.test(line));
+    eq(stale.join('\n'), '', `${file} still names the old command`);
+  }
+});
+
 test('install refuses to write into the Arkitect checkout itself', () => {
   // It would append a copy of the pointer block, absolute path and all, to the
   // very contract file the block tells agents to read.
@@ -256,8 +344,8 @@ test('--print writes nothing to disk', () => {
 test('this repository ships the adapters it advertises', () => {
   for (const p of [
     '.cursor/rules/arkitect.mdc',
-    '.cursor/commands/diagram.md',
-    '.opencode/command/diagram.md',
+    '.cursor/commands/arkitect.md',
+    '.opencode/command/arkitect.md',
     '.github/copilot-instructions.md',
     'AGENTS.md',
   ]) {
@@ -265,12 +353,12 @@ test('this repository ships the adapters it advertises', () => {
   }
 });
 
-// /diagram restated the workflow in four steps that contradicted it: an
+// The command restated the workflow in four steps that contradicted it: an
 // engine with no reason, a report with no validation, render or icons. A
 // small model follows the short list it reads first (#354).
-test('the /diagram command points at AGENTS.md §2 and restates no step of it (#354)', () => {
+test('the /arkitect command points at AGENTS.md §2 and restates no step of it (#354)', () => {
   const bodies = ['cursor-command', 'opencode'].map((k) => [k, adapters.ADAPTERS[k].render('/opt/arkitect')])
-    .concat(['.cursor/commands/diagram.md', '.opencode/command/diagram.md'].map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
+    .concat(['.cursor/commands/arkitect.md', '.opencode/command/arkitect.md'].map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
   for (const [name, body] of bodies) {
     assert(body.includes('AGENTS.md') && body.includes('§2') && body.includes('step 8'), `${name}: does not point at AGENTS.md §2`);
     assert(!/^\s*\d+\.\s/m.test(body), `${name}: restates numbered steps`);
@@ -2231,6 +2319,75 @@ test('the report check reads only a reply naming a file the session built (#345)
   }
 });
 
+// A heredoc writing a test script, a `node -e` string and a commit message each
+// quoted a build command; each counted as a build, and every later reply naming
+// any diagram was sent back (#400). Only what the shell runs is read.
+test('the report check counts a build only from what the shell runs, not one quoted in text (#400)', () => {
+  const { sessionOf, respond, outsOf } = reportHook;
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    const run = (command, name = 'Bash') => {
+      writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name, input: { command } }] } }));
+      return sessionOf(transcript);
+    };
+    const reply = 'Merged both PRs; AGENTS.md §3 shows `--out docs/arch.drawio`.';
+    const stop = () => respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: reply });
+    const quotedOnly = {
+      'commit message': 'git add -A && git commit -m "Keep the folder of an --out the check cannot resolve\n\nA loop such as node bin/arkitect.mjs drawio build $f --out out/$n.drawio now keeps out/."',
+      'commit message from a heredoc': "git commit -m \"$(cat <<'EOF'\nRead node bin/arkitect.mjs drawio build $f --out out/$n.drawio\nEOF\n)\"",
+      'heredoc test script': "cat > t.mjs <<'EOF'\nconst loop = 'node bin/arkitect.mjs drawio build a.json --out $C/$n.drawio';\nconsole.log(loop);\nEOF\nnode t.mjs",
+      'node -e string': 'node -e "const cmd = \'arkitect drawio build a.json --out \\$OUT\'; console.log(cmd)"',
+      'README section': 'cat >> README.md <<\'EOF\'\nRebuild with `arkitect drawio build spec.json --out "$OUT"`.\nEOF',
+      'echo': 'echo "arkitect excalidraw build a.json --out $OUT" >> ci.sh',
+      'PowerShell here-string': "git commit -m @'\nRead arkitect drawio build a.json --out $C/$n.drawio\n'@",
+    };
+    for (const [name, command] of Object.entries(quotedOnly)) {
+      const seen = run(command, name.startsWith('PowerShell') ? 'PowerShell' : 'Bash');
+      eq(`${seen.built}|${seen.outs.join()}`, 'false|', name);
+      eq(stop(), null, `${name}: the reply is not sent back`);
+    }
+    // What a shell does run still counts, and of the same files outsOf() reads.
+    const spaced = 'D:/Profiles/Jane Doe/.claude/plugins/cache/arkitect/arkitect/2.3.2/skills/arkitect-drawio/scripts/build-diagram.mjs';
+    const builds = [
+      'arkitect drawio build a.json --out a.drawio',
+      'node bin/arkitect.mjs drawio build p329.json --out /tmp/repro/p329.drawio',
+      `node "${spaced}" spec.json --out orders.drawio`,
+      "node '/Users/Jane Doe/arkitect/skills/arkitect-excalidraw/scripts/build-diagram.mjs' a.json --out a.excalidraw",
+      'node "C:\\Program Files\\arkitect\\bin\\arkitect.mjs" excali build a.json --out a.excalidraw',
+      'arkitect excalidraw build a.json --out="docs/my arch.excalidraw"',
+      'OUT=docs/arch.drawio; arkitect drawio build a.json --out "$OUT"',
+      'for n in starter as-is; do arkitect drawio build $n.spec.json --out "$T/$n.drawio"; done',
+      'for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out out/$n.drawio; done',
+      'S="scratch/tpl"; mkdir -p "$S"; for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out "$S/$n.drawio" --defaults; done',
+      'arkitect drawio build a.json --out $C/$n.drawio',
+    ];
+    for (const command of builds) {
+      const seen = run(command);
+      eq(`${seen.built}|${seen.outs.join()}`, `true|${outsOf(command).join()}`, command);
+    }
+    const ps = run('$out = "docs/p.excalidraw"; node bin/arkitect.mjs excalidraw build a.json --out $out', 'PowerShell');
+    eq(`${ps.built}|${ps.outs.join()}`, 'true|p.excalidraw', 'a PowerShell build');
+    for (const [command, outs, name] of [
+      ['bash -c "node bin/arkitect.mjs drawio build a.json --out docs/a.drawio"', 'a.drawio', 'bash -c'],
+      ["sh -lc 'arkitect excalidraw build a.json --out \"$D/b.excalidraw\"'", 'b.excalidraw', 'sh -lc'],
+      ['pwsh -NoProfile -Command "node bin/arkitect.mjs drawio build a.json --out c.drawio"', 'c.drawio', 'pwsh -Command'],
+      ['cmd /c "arkitect drawio build a.json --out d.drawio"', 'd.drawio', 'cmd /c'],
+      ["bash <<'EOF'\nnode bin/arkitect.mjs drawio build a.json --out e.drawio\nEOF", 'e.drawio', 'a heredoc fed to bash'],
+      ["cat <<'EOF' | sh\narkitect drawio build a.json --out f.drawio\nEOF", 'f.drawio', 'a heredoc piped to sh'],
+      ["cat > t.mjs <<'EOF'\nx\nEOF\nnode bin/arkitect.mjs drawio build a.json --out g.drawio", 'g.drawio', 'a build after a heredoc'],
+    ]) {
+      const seen = run(command);
+      eq(`${seen.built}|${seen.outs.join()}`, `true|${outs}`, name);
+    }
+    run('git commit -m "Rebuild out/a.drawio" && node bin/arkitect.mjs drawio build a.json --out a.drawio');
+    assert(/no File, Assumptions/.test(JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? '{}').reason),
+      'a real build beside a commit message is still checked');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // A report linked "Draw.io Desktop" to https://www.draw.io, the hosted editor
 // (#340). The check uses the eval cases' own pattern, so the two can't drift.
 test('the report check sends back a link to the hosted editor, once, with the pattern the evals grade (#340)', () => {
@@ -2341,6 +2498,108 @@ test('arkitect report checks a saved report like the Stop hook, and every adapte
     assert(/hosted editor/.test(cli.stdout), cli.stdout);
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Copying every warning line with its ids, and every icon, from earlier output
+// is what a small model drops first (#248, #287, #326, #330). `report --draft`
+// writes File, Icons and Validation from the diagram and its spec, and leaves a
+// `fill in` line under each heading only the agent can write; the check fails
+// while one is left (#387).
+test('arkitect report --draft fills File, Icons and Validation from the diagram and its spec, and the check fails a fill-in left (#387)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-draft-'));
+  try {
+    const say = (args) => {
+      const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', ...args], { encoding: 'utf8' });
+      return { code: r.status, out: r.stdout, err: r.stderr };
+    };
+    const cases = [
+      ['drawio', 'starter-architecture', '.drawio', (t) => t.replace(/<diagram name="[^"]*"/, '<diagram')],
+      ['excalidraw', 'aws-data-platform', '.excalidraw', (t) => { const s = JSON.parse(t); s.elements.find((e) => e.type === 'rectangle').strokeStyle = 'wavy'; return JSON.stringify(s); }],
+    ];
+    for (const [engine, name, ext, spoil] of cases) {
+      const templates = join(ROOT, 'skills', `arkitect-${engine}`, 'assets', 'templates');
+      const spec = join(templates, `${name}.spec.json`);
+      const file = join(dir, `${name}${ext}`);
+      writeFileSync(file, spoil(readFileSync(join(templates, `${name}${ext}`), 'utf8')));
+      const validator = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'validate', file, '--json'], { encoding: 'utf8' });
+      const { warnings } = JSON.parse(validator.stdout);
+      assert(warnings.length >= 1, `${engine}: the spoiled copy has no warning to draft`);
+
+      const draft = say(['--draft', file, '--spec', spec]);
+      eq(draft.code, 0, `${engine}: --draft exits 0 (${draft.err})`);
+      const at = ['File', 'Engine', 'Assumptions', 'Icons', 'Validation', 'Render', 'Deviations'].map((h) => draft.out.indexOf(`**${h}**`));
+      assert(at.every((n, i) => n >= 0 && (i === 0 || n > at[i - 1])), `${engine}: the seven headings in order: ${at}`);
+      for (const w of warnings) assert(draft.out.includes(`- warning: ${w}`), `${engine}: the draft drops the warning "${w}"`);
+      const built = JSON.parse(spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'build', spec, '--out', join(dir, `rebuilt${ext}`)], { encoding: 'utf8' }).stdout);
+      if (engine === 'drawio') {
+        const ids = [...new Set(JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.icon).map((n) => n.icon))];
+        eq(built.icons.resolved, ids.length, 'every icon resolved');
+        for (const icon of ids) assert(new RegExp(`- \`${icon}\`: \`[\\w-]+/[\\w-]+\`, \\w[\\w-]* pack`).test(draft.out), `drawio: the draft drops the icon ${icon}`);
+      } else {
+        const nodes = JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.kind === 'icon');
+        for (const n of nodes) assert(new RegExp(`- node \`${n.id}\`: \``).test(draft.out), `excalidraw: the draft drops the icon of ${n.id}`);
+      }
+      assert(/^- note: 6 icons have no edge/m.test(draft.out) || engine === 'drawio', `${engine}: the build report's notes`);
+
+      // The check fails it while a marker is left, and names where.
+      writeFileSync(join(dir, 'draft.md'), draft.out);
+      const left = say([join(dir, 'draft.md'), '--png-viewed']);
+      eq(left.code, 1, `${engine}: a draft with its fill-in lines left`);
+      assert(/fill in[^\n]*under Engine, Assumptions, Render, Deviations/.test(left.out), left.out);
+      // Filled in, the drafted sections pass the same check: nothing in them
+      // reads as an excuse or a description of an unseen picture.
+      const filled = draft.out.replace(/<!-- fill in: why[^\n]*/, 'The user asked for it.').replace(/<!-- fill in: every[^\n]*/, 'None.')
+        .replace(/<!-- fill in: what[^\n]*/, 'Rendered to PNG, opened and looked at.').replace(/<!-- fill in: each[^\n]*/, 'None.');
+      writeFileSync(join(dir, 'filled.md'), filled);
+      const ok = say([join(dir, 'filled.md'), '--png-viewed']);
+      eq(ok.code, 0, `${engine}: the filled-in draft: ${ok.out}`);
+    }
+    // Without --spec, and with no spec in the file, the Icons section is the
+    // agent's to fill, and says how not to.
+    writeFileSync(join(dir, 'bare.drawio'), readFileSync(join(dir, 'starter-architecture.drawio'), 'utf8').replace(/ arkitect-spec="[^"]*"/, ''));
+    const bare = say(['--draft', join(dir, 'bare.drawio')]);
+    eq(bare.code, 0, 'no spec');
+    assert(/\*\*Icons\*\*\s+<!-- fill in: [^\n]*--spec/.test(bare.out), bare.out);
+    for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
+      ['--draft', join(dir, 'starter-architecture.drawio'), '--spec'],
+      ['--draft', join(dir, 'starter-architecture.drawio'), '--spec', join(dir, 'missing.json')], ['--draft', join(dir, 'starter-architecture.drawio'), '--png-viewed']]) {
+      eq(say(args).code, 2, args.join(' '));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A diagram carries its spec (#388), so the draft needs no --spec to list a
+// Draw.io file's icons, which its cells do not record (#387).
+test('arkitect report --draft lists the icons from the spec a diagram carries when no --spec is given (#388)', () => {
+  for (const [engine, name, ext] of [['drawio', 'starter-architecture', '.drawio'], ['excalidraw', 'aws-data-platform', '.excalidraw']]) {
+    const templates = join(ROOT, 'skills', `arkitect-${engine}`, 'assets', 'templates');
+    const draft = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'report', '--draft', join(templates, `${name}${ext}`), ...args], { encoding: 'utf8' }).stdout;
+    const carried = draft();
+    const given = draft('--spec', join(templates, `${name}.spec.json`));
+    assert(carried.includes(`From the spec \`${join(templates, `${name}${ext}`)}\` carries, resolved as the build does:`), `${engine}: ${carried.slice(0, 600)}`);
+    const icons = (text) => text.slice(text.indexOf('**Icons**'), text.indexOf('**Validation**')).split('\n').filter((l) => l.startsWith('- '));
+    assert(icons(carried).length > 3, `${engine}: no icons listed`);
+    eq(icons(carried).join('\n'), icons(given).join('\n'), `${engine}: the same icons as from the spec file`);
+  }
+});
+
+// The report step names the draft where it asked for each warning with every
+// id, by hand; the drafted Validation section carries them now, and the
+// reading budget stays flat (#387).
+test('the report step on every reading path names report --draft in place of copying each warning by hand (#387)', () => {
+  const steps = {
+    'AGENTS.md': readFileSync(join(ROOT, 'AGENTS.md'), 'utf8').match(/\n8\. \*\*Report\*\*[\s\S]*?\n\n/)[0],
+    ...Object.fromEntries(['drawio', 'excalidraw'].map((e) => [`arkitect-${e}/SKILL.md`,
+      readFileSync(join(ROOT, 'skills', `arkitect-${e}`, 'SKILL.md'), 'utf8').match(/\n9\. \*\*Report\.\*\*[\s\S]*?\n## /)[0]])),
+  };
+  for (const [name, step] of Object.entries(steps)) {
+    const flat = step.replace(/\s+/g, ' ');
+    assert(/arkitect\.mjs report --draft <\w+> --spec <spec>/.test(flat), `${name}: does not name report --draft`);
+    assert(!/with every id it (gives|names)/.test(flat), `${name}: still asks for each warning's ids by hand`);
+    assert(/each defect seen and left,? by page/.test(flat), `${name}: lost the defects seen in the render`);
   }
 });
 

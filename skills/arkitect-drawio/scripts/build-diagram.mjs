@@ -457,6 +457,8 @@ function pageProblems(spec, at, { layout = false, pageOf = null, n = 0 } = {}) {
 export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   const problems = validateSpec(spec);
   if (problems.length) throw new SpecError(problems);
+  // Taken before anything reads the spec, so the file carries it as written.
+  const carried = JSON.stringify(spec);
   // The resolved tokens and kinds, under the names the drawing code has always used.
   const T = style.tokens;
   const EDGE_KINDS = style.edgeKinds;
@@ -820,15 +822,27 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   if (allNodes.length > 3 && drawnPages.some((page) => page.edges?.length) && !allNodes.some((n) => n.kind === 'note')) {
     report.notes.push('no note on the canvas: put the assumptions from your report on it, a `note` node (pattern 9)');
   }
-  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count}>\n`
+  // The spec rides on <mxfile>, which Draw.io Desktop clones on save and keeps,
+  // so an edit can print it, change it and rebuild instead of hand-writing XML
+  // (#388). Every label in it is already in the file.
+  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count} ${SPEC_ATTR}="${esc(carried)}">\n`
     + diagrams.join('\n') + '\n</mxfile>\n';
 
   return { xml, report };
 }
 
 // The builder writes agent="arkitect-drawio" on <mxfile>; Draw.io Desktop
-// rewrites it on save, so a file edited by hand since reads as not ours (#339).
-export const isArkitectDrawio = (text) => /<mxfile\b[^>]*\bagent="arkitect-drawio"/.test(text.slice(0, 4096));
+// rewrites it on save, so a file edited by hand since read as not ours (#339).
+// The spec it also writes there survives the save, and says the same (#388).
+export const SPEC_ATTR = 'arkitect-spec';
+export const isArkitectDrawio = (text) => /<mxfile\b[^>]*\b(agent="arkitect-drawio"|arkitect-spec=")/.test(text.slice(0, 4096));
+
+// The spec a file was built from, parsed, or null when it carries none.
+export function specOf(text) {
+  const value = parseMxfile(text).attrs[SPEC_ATTR];
+  if (value == null) return null;
+  try { return JSON.parse(value); } catch { return null; }
+}
 
 // The cells of a file this build replaces that the build does not draw (#376):
 // added since by hand, or dropped from the spec. The ids the builder makes up

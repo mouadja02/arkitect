@@ -4,6 +4,20 @@ Read this before changing a `.drawio` file you did not just build, or before
 writing any XML by hand. Paths are relative to the skill; scripts are in
 `scripts/`.
 
+## Built by Arkitect: change its spec and rebuild
+
+A file Arkitect built carries its spec. Print it, change it, rebuild over the
+file; the builder keeps the style, routing and icons, and backs the file up:
+
+```bash
+node scripts/spec.mjs "<file>" > edit.spec.json   # exit 1: no spec, read on
+node scripts/build-diagram.mjs edit.spec.json --out "<file>"
+```
+
+The build's `notes` name every cell added since and keep its backup; put each
+one in the spec and rebuild. If `spec.mjs` says an editor saved the file, a
+colour or position changed there is not in the spec: edit in place instead.
+
 ## Never load the whole file
 
 Reference pages run 4–7 MB because of embedded images; loading one wholesale

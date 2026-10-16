@@ -32,6 +32,7 @@ const COMMANDS = {
     render: [DRAWIO, 'render-drawio.mjs', 'export pages locally using Draw.io Desktop'],
     analyze: [DRAWIO, 'analyze-drawio.mjs', 'summarize a .drawio file without loading its XML'],
     backup: [DRAWIO, 'backup.mjs', 'copy a file beside itself before you edit it'],
+    spec: [DRAWIO, 'spec.mjs', 'print the spec a built diagram carries, to change and rebuild'],
     packs: [DRAWIO, 'build-packs.mjs', 'verify or rebuild the icon packs and catalog'],
     sheets: [DRAWIO, 'contact-sheet.mjs', 'render a pack as a labelled grid for review'],
     learn: [DRAWIO, 'build-knowledge.mjs', 'rebuild your style record from your own diagrams'],
@@ -47,6 +48,7 @@ const COMMANDS = {
     validate: [EXCALI, 'validate-excalidraw.mjs', 'structural checks on an .excalidraw file'],
     analyze: [EXCALI, 'analyze-excalidraw.mjs', 'summarize a scene without loading its JSON'],
     backup: [EXCALI, 'backup.mjs', 'copy a scene beside itself before you edit it'],
+    spec: [EXCALI, 'spec.mjs', 'print the spec a built scene carries, to change and rebuild'],
     render: [EXCALI, 'render-excalidraw.mjs', 'rasterise a scene to SVG/PNG for a look'],
     learn: [EXCALI, 'build-knowledge.mjs', 'rebuild your style record from your own scenes'],
     findings: [EXCALI, 'style-findings.mjs', 'record what your own scenes say about the style'],
@@ -62,7 +64,7 @@ function usage() {
     `arkitect ${version} - editable Draw.io and Excalidraw diagrams, drawn by your agent`,
     '',
     'usage: arkitect <engine> <command> [args...]',
-    '       arkitect install [agent] | report <file> | test | doctor | where | version',
+    '       arkitect install [agent] | report [--draft] <file> | test | doctor | where | version',
     '',
   ];
   for (const [engine, verbs] of Object.entries(COMMANDS)) {
