@@ -2231,6 +2231,75 @@ test('the report check reads only a reply naming a file the session built (#345)
   }
 });
 
+// A heredoc writing a test script, a `node -e` string and a commit message each
+// quoted a build command; each counted as a build, and every later reply naming
+// any diagram was sent back (#400). Only what the shell runs is read.
+test('the report check counts a build only from what the shell runs, not one quoted in text (#400)', () => {
+  const { sessionOf, respond, outsOf } = reportHook;
+  const dir = mkdtempSync(join(tmpdir(), 'arkitect-report-'));
+  try {
+    const transcript = join(dir, 't.jsonl');
+    const run = (command, name = 'Bash') => {
+      writeFileSync(transcript, JSON.stringify({ message: { role: 'assistant', content: [{ type: 'tool_use', name, input: { command } }] } }));
+      return sessionOf(transcript);
+    };
+    const reply = 'Merged both PRs; AGENTS.md §3 shows `--out docs/arch.drawio`.';
+    const stop = () => respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: reply });
+    const quotedOnly = {
+      'commit message': 'git add -A && git commit -m "Keep the folder of an --out the check cannot resolve\n\nA loop such as node bin/arkitect.mjs drawio build $f --out out/$n.drawio now keeps out/."',
+      'commit message from a heredoc': "git commit -m \"$(cat <<'EOF'\nRead node bin/arkitect.mjs drawio build $f --out out/$n.drawio\nEOF\n)\"",
+      'heredoc test script': "cat > t.mjs <<'EOF'\nconst loop = 'node bin/arkitect.mjs drawio build a.json --out $C/$n.drawio';\nconsole.log(loop);\nEOF\nnode t.mjs",
+      'node -e string': 'node -e "const cmd = \'arkitect drawio build a.json --out \\$OUT\'; console.log(cmd)"',
+      'README section': 'cat >> README.md <<\'EOF\'\nRebuild with `arkitect drawio build spec.json --out "$OUT"`.\nEOF',
+      'echo': 'echo "arkitect excalidraw build a.json --out $OUT" >> ci.sh',
+      'PowerShell here-string': "git commit -m @'\nRead arkitect drawio build a.json --out $C/$n.drawio\n'@",
+    };
+    for (const [name, command] of Object.entries(quotedOnly)) {
+      const seen = run(command, name.startsWith('PowerShell') ? 'PowerShell' : 'Bash');
+      eq(`${seen.built}|${seen.outs.join()}`, 'false|', name);
+      eq(stop(), null, `${name}: the reply is not sent back`);
+    }
+    // What a shell does run still counts, and of the same files outsOf() reads.
+    const spaced = 'D:/Profiles/Jane Doe/.claude/plugins/cache/arkitect/arkitect/2.3.2/skills/arkitect-drawio/scripts/build-diagram.mjs';
+    const builds = [
+      'arkitect drawio build a.json --out a.drawio',
+      'node bin/arkitect.mjs drawio build p329.json --out /tmp/repro/p329.drawio',
+      `node "${spaced}" spec.json --out orders.drawio`,
+      "node '/Users/Jane Doe/arkitect/skills/arkitect-excalidraw/scripts/build-diagram.mjs' a.json --out a.excalidraw",
+      'node "C:\\Program Files\\arkitect\\bin\\arkitect.mjs" excali build a.json --out a.excalidraw',
+      'arkitect excalidraw build a.json --out="docs/my arch.excalidraw"',
+      'OUT=docs/arch.drawio; arkitect drawio build a.json --out "$OUT"',
+      'for n in starter as-is; do arkitect drawio build $n.spec.json --out "$T/$n.drawio"; done',
+      'for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out out/$n.drawio; done',
+      'S="scratch/tpl"; mkdir -p "$S"; for f in specs/*.spec.json; do n=$(basename $f .spec.json); node bin/arkitect.mjs drawio build $f --out "$S/$n.drawio" --defaults; done',
+      'arkitect drawio build a.json --out $C/$n.drawio',
+    ];
+    for (const command of builds) {
+      const seen = run(command);
+      eq(`${seen.built}|${seen.outs.join()}`, `true|${outsOf(command).join()}`, command);
+    }
+    const ps = run('$out = "docs/p.excalidraw"; node bin/arkitect.mjs excalidraw build a.json --out $out', 'PowerShell');
+    eq(`${ps.built}|${ps.outs.join()}`, 'true|p.excalidraw', 'a PowerShell build');
+    for (const [command, outs, name] of [
+      ['bash -c "node bin/arkitect.mjs drawio build a.json --out docs/a.drawio"', 'a.drawio', 'bash -c'],
+      ["sh -lc 'arkitect excalidraw build a.json --out \"$D/b.excalidraw\"'", 'b.excalidraw', 'sh -lc'],
+      ['pwsh -NoProfile -Command "node bin/arkitect.mjs drawio build a.json --out c.drawio"', 'c.drawio', 'pwsh -Command'],
+      ['cmd /c "arkitect drawio build a.json --out d.drawio"', 'd.drawio', 'cmd /c'],
+      ["bash <<'EOF'\nnode bin/arkitect.mjs drawio build a.json --out e.drawio\nEOF", 'e.drawio', 'a heredoc fed to bash'],
+      ["cat <<'EOF' | sh\narkitect drawio build a.json --out f.drawio\nEOF", 'f.drawio', 'a heredoc piped to sh'],
+      ["cat > t.mjs <<'EOF'\nx\nEOF\nnode bin/arkitect.mjs drawio build a.json --out g.drawio", 'g.drawio', 'a build after a heredoc'],
+    ]) {
+      const seen = run(command);
+      eq(`${seen.built}|${seen.outs.join()}`, `true|${outs}`, name);
+    }
+    run('git commit -m "Rebuild out/a.drawio" && node bin/arkitect.mjs drawio build a.json --out a.drawio');
+    assert(/no File, Assumptions/.test(JSON.parse(respond({ hook_event_name: 'Stop', transcript_path: transcript, last_assistant_message: 'Done: a.drawio' }) ?? '{}').reason),
+      'a real build beside a commit message is still checked');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // A report linked "Draw.io Desktop" to https://www.draw.io, the hosted editor
 // (#340). The check uses the eval cases' own pattern, so the two can't drift.
 test('the report check sends back a link to the hosted editor, once, with the pattern the evals grade (#340)', () => {

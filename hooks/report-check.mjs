@@ -122,6 +122,82 @@ export function outsOf(command) {
 }
 export const outOf = (command) => outsOf(command)[0] ?? null;
 
+// What a shell runs of a command, for BUILD and outsOf() to read. A build
+// command quoted in text builds nothing, yet a heredoc writing a test script,
+// a `node -e` string and a commit message each counted, `--out the` became a
+// built file, and `--out $C/$n.drawio` became any file, so every later reply
+// naming a diagram was sent back (#400). So a heredoc's body, a commit message
+// and any other quoted string of more than one word are dropped. Kept: the
+// body of `bash -c`, `pwsh -Command` or `cmd /c`, and of a heredoc fed to a
+// shell, which the shell does run; a quoted `--out` value; and a quoted path,
+// "/Users/Jane Doe/.../build-diagram.mjs" (#382): its first word holds a
+// folder and no word is an option. A script a heredoc writes and the next line
+// runs is not read, so that session goes unchecked.
+const SH = '(?:ba|z|da|k)?sh|pwsh|powershell';
+const FED = new RegExp(`(^|[|(\\s])(${SH})(\\.exe)?(\\s|$)`, 'i');
+const RUNS = new RegExp(`(^|[|(&;\\s])((?:ba|z|da|k)?sh(\\.exe)?(\\s+-[a-z]+)*\\s+-[a-z]*c[a-z]*`
+  + '|(pwsh|powershell)(\\.exe)?(\\s+-\\w+)*?\\s+-(c|command)|cmd(\\.exe)?\\s+\\/[ck])\\s*$', 'i');
+const MESSAGE = /\bgit\b[^;&|\n]*\bcommit\b[^;&|\n]*\s(-[a-z]*m|--message)(\s+|=)$/i;
+const OUT_VALUE = /--out(=|\s+)$/;
+
+function heredocsOf(text) {
+  const out = [];
+  const pending = [];
+  for (const line of text.split('\n')) {
+    if (pending.length) {
+      const bare = line.replace(/\r$/, '');
+      if ((pending[0].dash ? bare.replace(/^\t+/, '') : bare) === pending[0].end) pending.shift();
+      else if (pending[0].keep) out.push(line);
+      continue;
+    }
+    out.push(line);
+    for (const m of line.matchAll(/(?<!<)<<(-?)[ \t]*\\?(["']?)([A-Za-z_][\w.-]*)\2/g)) {
+      const pipeline = line.slice(0, m.index).split(/;|&&|\|\|/).pop() + line.slice(m.index).split(/;|&&|\|\|/)[0];
+      pending.push({ end: m[3], dash: m[1] === '-', keep: FED.test(pipeline) });
+    }
+  }
+  return out.join('\n');
+}
+
+// Where the quoted string opening at `i` ends (the index of its closing
+// quote), and its text with the shell's escapes undone.
+function quoted(text, i, powershell) {
+  const here = powershell && text[i] === '@' ? text.slice(i).match(/^@(["'])\r?\n([\s\S]*?)\r?\n\1@/) : null;
+  if (here) return { end: i + here[0].length - 1, body: here[2] };
+  const q = text[i];
+  let body = '';
+  for (let j = i + 1; j < text.length; j++) {
+    const c = text[j];
+    if (powershell && c === q && text[j + 1] === q) { body += c; j++; continue; }
+    if (c === q) return { end: j, body };
+    if (q === '"' && (powershell ? c === '`' : c === '\\' && /["\\$`]/.test(text[j + 1] ?? ''))) { body += text[++j] ?? ''; continue; }
+    body += c;
+  }
+  return null;
+}
+
+export function runOf(command, { powershell = false } = {}) {
+  const text = powershell ? String(command) : heredocsOf(String(command));
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === (powershell ? '`' : '\\')) { out += text.slice(i, i + 2); i++; continue; }
+    const opens = c === '"' || c === "'" || (powershell && c === '@' && /^@["']\r?\n/.test(text.slice(i, i + 4)));
+    const q = opens ? quoted(text, i, powershell) : null;
+    if (!q) { out += c; continue; }
+    const before = text.slice(text.lastIndexOf('\n', i - 1) + 1, i);
+    const words = q.body.trim().split(/\s+/);
+    const shell = before.match(RUNS);
+    if (shell) out += ` ${runOf(q.body, { powershell: /pwsh|powershell/i.test(shell[2]) })} `;
+    else if (MESSAGE.test(before)) out += '""';
+    else if (words.length < 2 || OUT_VALUE.test(before) || (/[\\/]/.test(words[0]) && !words.some((w) => w.startsWith('-')))) {
+      out += text.slice(i, q.end + 1);
+    } else out += '""';
+    i = q.end;
+  }
+  return out;
+}
+
 // What the session did, from its transcript: a build, the files it wrote, and
 // a PNG opened.
 export function sessionOf(transcriptPath) {
@@ -133,8 +209,9 @@ export function sessionOf(transcriptPath) {
         const e = JSON.parse(line);
         for (const part of (e.message ?? e).content ?? []) {
           if (part?.type !== 'tool_use') continue;
-          const command = String(part.input?.command ?? '');
-          if (SHELLS.includes(part.name) && BUILD.test(command)) {
+          const command = SHELLS.includes(part.name)
+            ? runOf(part.input?.command ?? '', { powershell: part.name === 'PowerShell' }) : '';
+          if (BUILD.test(command)) {
             seen.built = true;
             for (const out of outsOf(command)) if (!seen.outs.includes(out)) seen.outs.push(out);
           }
