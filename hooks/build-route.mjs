@@ -16,6 +16,13 @@
 // "a diagram" asked for, counts; a prompt naming another format (Mermaid,
 // PlantUML, SVG ...) and no engine asked for that, and every other prompt gets
 // nothing.
+//
+// "I'd like an architecture diagram of our platform for the review board"
+// asked for one with no verb on the list, so no skill loaded, and all three
+// runs asked six questions at once where the skill asks one (#416). Asking
+// politely counts too: "I'd like", "would like", "could you do", "put
+// together", "show me". "A fix for the diagram" or "a diagram renderer" asks
+// for no diagram.
 
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -30,7 +37,7 @@ const COMMAND = /\/(arkitect:)?(learn|apply)-(drawio|excalidraw)-style\b/i;
 // sentence away from the verb. "doesn't draw" is a bug report, not a request.
 const DRAW = /(?<!(\bnot|n't|\bcannot|\bnever)\b[^.?!\n]{0,40})\b(draw|sketch|visuali[sz]e|map out|lay out)\b/i;
 const NOUN = /\b(diagrams?|flow ?charts?|architecture|topology|system design)\b/i;
-const ASK =/\b(create|make|produce|generate|want|need|give me|add|draw|sketch)\b[^.?!\n]{0,40}?\b(a|an)\b[^.?!\n]{0,40}?\b(diagram|flow ?chart)\b/i;
+const ASK = /(\b(create|make|produce|generate|want|need|give me|add|draw|sketch|put together|show me|would like|(can|could|would) you do)|['’]d like)\b[^.?!\n]{0,40}?\b(a|an)\b(?:(?!\b(the|this|that|our|its|my|your)\b)[^.?!\n]){0,40}?\b(diagram|flow ?chart)\b(?!\s+(renderer|parser|editor|view|component|module|library|code|tests?|bugs?|types?|page|panel|widget|api)\b)/i;
 const OTHER = /\b(mermaid|plantuml|graphviz|d2|ascii|tikz|svg|png|jpe?g|lucid(chart)?|figma|visio|miro|canvas|matplotlib|plotly)\b|\.(mmd|puml|dot)\b/i;
 const NAMED = { drawio: /\bdraw\.?io\b|diagrams\.net/i, excalidraw: /\bexcalidraw\b/i };
 

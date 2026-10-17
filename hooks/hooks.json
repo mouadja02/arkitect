@@ -9,6 +9,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/install-write.mjs\""
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

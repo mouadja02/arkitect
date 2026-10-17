@@ -1002,6 +1002,104 @@ test('the new eval cases grade their fixtures, the right outcome and the traps t
   rmSync(dir, { recursive: true, force: true });
 });
 
+// Every case was a single prompt, so the interview's second step and an edit
+// made a turn later went unmeasured (#418). A case that continues a
+// conversation resumes a history.jsonl, which the runner hands to `claude
+// --resume`. It is made by history.mjs, the way Claude Code writes a
+// transcript, holds no path, and the session file a resume leaves beside it
+// is ignored.
+const { transcript } = await import(pathToFileURL(join(ROOT, 'evals', 'fixtures.mjs')).href);
+const historyModules = {};
+for (const engine of ['drawio', 'excalidraw']) {
+  for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+    const file = join(ROOT, 'evals', engine, name, 'history.mjs');
+    if (existsSync(file)) historyModules[`${engine}/${name}`] = await import(pathToFileURL(file).href);
+  }
+}
+const nextTurn = await import(pathToFileURL(join(ROOT, 'evals', 'excalidraw', 'edit-next-turn', 'fixture.mjs')).href);
+test('a case that continues a conversation resumes a history made by its history.mjs, with no path in it (#418)', () => {
+  const histories = [];
+  for (const engine of ['drawio', 'excalidraw']) {
+    for (const name of readdirSync(join(ROOT, 'evals', engine))) {
+      const dir = join(ROOT, 'evals', engine, name);
+      const yaml = existsSync(join(dir, 'case.yaml')) ? readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n') : '';
+      const named = yaml.match(/^  history_file: (\S+)$/m)?.[1];
+      eq(Boolean(named), existsSync(join(dir, 'history.mjs')), `${engine}/${name}: a history.mjs and a history_file go together`);
+      if (!named) continue;
+      eq(named, 'history.jsonl', `${engine}/${name}: the history file`);
+      assert(/^  prompt: \|\n {4}\S/m.test(yaml), `${engine}/${name}: a resumed case needs a next turn`);
+      assert(yaml.includes('conversation'), `${engine}/${name}: tagged conversation`);
+      histories.push({ id: `${engine}/${name}`, dir, ...historyModules[`${engine}/${name}`] });
+    }
+  }
+  eq(histories.map((h) => h.id).join(' '), 'drawio/interview-continues excalidraw/edit-next-turn', 'the conversation cases');
+  for (const { id, dir, TURNS, SESSION } of histories) {
+    const text = readFileSync(join(dir, 'history.jsonl'), 'utf8').replace(/\r\n/g, '\n');
+    eq(text, transcript(TURNS, { sessionId: SESSION }), `${id}: history.jsonl is what history.mjs writes; run node history.mjs`);
+    const lines = text.trimEnd().split('\n').map((l) => JSON.parse(l));
+    let parent = null;
+    for (const [i, line] of lines.entries()) {
+      eq(line.parentUuid, parent, `${id} line ${i + 1}: chained to the line before`);
+      eq(line.sessionId, SESSION, `${id} line ${i + 1}: one session`);
+      eq(line.message.role, line.type, `${id} line ${i + 1}: role`);
+      assert(!('cwd' in line), `${id} line ${i + 1}: no cwd`);
+      parent = line.uuid;
+      for (const use of [line.message.content].flat().filter((c) => c?.type === 'tool_use')) {
+        eq(lines[i + 1]?.message.content?.[0]?.tool_use_id, use.id, `${id}: ${use.name} is answered by the next line`);
+      }
+    }
+    eq(lines[0].type, 'user', `${id}: opens with the user`);
+    eq(lines.at(-1).type, 'assistant', `${id}: the next turn is the user's, the case's prompt`);
+    // Invariant 5: no machine's path, in a file that ships.
+    assert(!/\/home\/|\/Users\/|\/mnt\/|\b[A-Za-z]:[\\/]|\\\\/.test(text), `${id}: history.jsonl names an absolute path`);
+    // A resume writes <session>.jsonl beside the history file.
+    const left = relative(ROOT, join(dir, `${SESSION}.jsonl`)).replace(/\\/g, '/');
+    const ignored = spawnSync('git', ['check-ignore', '-q', left], { cwd: ROOT });
+    if (ignored.status !== 128) eq(ignored.status, 0, `.gitignore keeps ${left}, which a resume writes, out of the repository`);
+    // A history teaches what the next turn runs: $CLAUDE_PLUGIN_ROOT is empty
+    // in the agent's shell, so a command spelled with it fails there.
+    assert(!text.includes('CLAUDE_PLUGIN_ROOT'), `${id}: history.jsonl runs a command through $CLAUDE_PLUGIN_ROOT, which the shell does not set`);
+  }
+  assert(/history\.jsonl[\s\S]{0,120}-name '\?{8}-\?{4}-\?{4}-\?{4}-\?{12}\.jsonl' -delete/.test(readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8')),
+    'scripts/eval.sh removes the session a resume leaves beside a history');
+
+  // excalidraw-edit-next-turn: the change rebuilt from the spec passes; the
+  // scene as built, a node added beside the worker, and a hand-edited label do not.
+  const rel = 'excalidraw/edit-next-turn';
+  const yaml = readFileSync(join(ROOT, 'evals', rel, 'case.yaml'), 'utf8');
+  const { make, FILE, SPEC_FILE, SPEC } = nextTurn;
+  const cwd = join(TMP, 'eval-next-turn');
+  rmSync(cwd, { recursive: true, force: true });
+  mkdirSync(cwd, { recursive: true });
+  eq(make(cwd).join(' '), `${FILE} ${SPEC_FILE}`, 'the scene and the spec beside it');
+  eq(readFileSync(join(cwd, SPEC_FILE), 'utf8'), `${JSON.stringify(SPEC, null, 2)}\n`, 'the spec the history wrote');
+  const verdicts = (text) => Object.fromEntries(['rebuilt-with-a-lambda', 'changed-the-worker-not-added-one', 'nothing-else-lost', 'assumption-follows-the-change']
+    .map((name) => [name, evalGrader(yaml, name).passes(text)]));
+  const scene = () => readFileSync(join(cwd, FILE), 'utf8');
+  eq(JSON.stringify(verdicts(scene())), JSON.stringify({ 'rebuilt-with-a-lambda': false, 'changed-the-worker-not-added-one': true, 'nothing-else-lost': true, 'assumption-follows-the-change': false }), 'as built');
+  const handEdited = scene().replace(/"text": "Fulfilment worker"/g, '"text": "Lambda worker"').replace(/runs on its own host/g, 'runs on Lambda');
+  eq(verdicts(handEdited)['rebuilt-with-a-lambda'], false, 'a label changed by hand is no rebuild');
+  const spec = JSON.parse(arkitectCli(['excalidraw', 'spec', FILE], cwd));
+  const added = { ...spec, nodes: [...spec.nodes, { id: 'fn', kind: 'icon', icon: 'lambda', label: 'Lambda', col: 3, row: 1 }] };
+  writeFileSync(join(cwd, 'added.json'), JSON.stringify(added));
+  arkitectCli(['excalidraw', 'build', 'added.json', '--out', 'added.excalidraw'], cwd);
+  eq(verdicts(readFileSync(join(cwd, 'added.excalidraw'), 'utf8'))['changed-the-worker-not-added-one'], false, 'a Lambda added beside the worker');
+  const worker = spec.nodes.find((n) => n.id === 'worker');
+  Object.assign(worker, { kind: 'icon', icon: 'lambda', label: 'Fulfilment worker (Lambda)' });
+  spec.nodes.find((n) => n.id === 'note').label = 'Assumptions: one region; the worker is a Lambda function.';
+  writeFileSync(join(cwd, SPEC_FILE), JSON.stringify(spec, null, 2));
+  arkitectCli(['excalidraw', 'build', SPEC_FILE, '--out', FILE, '--seed', '11'], cwd);
+  eq(JSON.stringify(verdicts(scene())), JSON.stringify({ 'rebuilt-with-a-lambda': true, 'changed-the-worker-not-added-one': true, 'nothing-else-lost': true, 'assumption-follows-the-change': true }), 'rebuilt from the spec');
+  const backup = evalGrader(yaml, 'wrote-a-backup');
+  assert(readdirSync(join(cwd, 'docs')).some((f) => backup.passes(`docs/${f}`)), 'the rebuild\'s backup is one wrote-a-backup sees');
+  rmSync(cwd, { recursive: true, force: true });
+
+  // drawio-interview-continues: asking again what was answered fails it.
+  const asked = evalGrader(readFileSync(join(ROOT, 'evals', 'drawio', 'interview-continues', 'case.yaml'), 'utf8'), 'does-not-ask-what-was-answered');
+  assert(asked.passes('**Which services does a payment pass through?** My recommendation: API Gateway, a Lambda and your PSP.'), 'the next question');
+  for (const again of ['Should I draw it as-is or to-be?', 'Which cloud does it run on?', 'Is that on AWS or on-premises?']) assert(!asked.passes(again), again);
+});
+
 // evals/scoreboard.json is the run to beat (#415). It names every case that
 // exists and no other, each with the tier its case.yaml gives it, and holds
 // scores and counts only: a path in it would be someone's machine.
@@ -1022,6 +1120,30 @@ test('the committed eval scoreboard covers exactly the cases that exist, and hol
   }
   const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
   assert(readme.includes('## The scoreboard') && readme.includes('--baseline evals/scoreboard.json'), 'evals/README.md no longer says how to use the scoreboard');
+});
+
+// The Haiku board alone cannot tell "fails because the model is small" from
+// "fails on every model", which points at the plugin (#419). A board per larger
+// model holds tiers 2 and 3, tier 1 being saturated by construction; each
+// names exactly those cases, says which model it ran, and holds no path.
+test('each per-model scoreboard holds exactly the tier-2 and tier-3 cases, its model and no path (#419)', () => {
+  const headroom = evalCases().map(({ dir }) => readFileSync(join(dir, 'case.yaml'), 'utf8'))
+    .filter((yaml) => /^tags:\s*\[.*\btier-[23]\b/m.test(yaml)).map((yaml) => yaml.match(/^name:\s*(\S+)/m)[1]).sort();
+  const files = readdirSync(join(ROOT, 'evals')).filter((f) => /^scoreboard\.[\w-]+\.json$/.test(f)).sort();
+  eq(files.join(' '), 'scoreboard.opus.json scoreboard.sonnet.json', 'a board for each larger model');
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
+  for (const file of files) {
+    const board = JSON.parse(readFileSync(join(ROOT, 'evals', file), 'utf8'));
+    eq(board.schema, 'arkitect-eval-scoreboard/1', `${file}: the schema`);
+    eq(board.run.model, file.split('.')[1], `${file}: the model it ran`);
+    assert(board.run.costUsd > 0 && board.run.judge, `${file}: its cost and judge`);
+    eq(Object.keys(board.cases).sort().join(' '), headroom.join(' '), `${file}: the tier-2 and tier-3 cases; rerun with --tier 2 --tier 3 --model ${board.run.model}`);
+    for (const [name, c] of Object.entries(board.cases)) assert(/^tier-[23]$/.test(c.tier) && typeof c.score === 'number' && c.runs > 0, `${file}: ${name} scored`);
+    for (const s of JSON.stringify(board).match(/"[^"]*"/g)) {
+      if (s !== `"${board.schema}"`) assert(!/[\\/]/.test(s), `${file} holds ${s}`);
+    }
+    assert(readme.includes(`(scoreboard.${board.run.model}.json)`), `evals/README.md links ${file}`);
+  }
 });
 
 // `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
@@ -1363,8 +1485,8 @@ const skillReading = (engine) => {
 test('each drawing skill reads at most 12,000 bytes before its example, and names one path per task (#113)', () => {
   const measured = [];
   for (const [engine, mustKeep] of [
-    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**']],
-    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**']],
+    ['arkitect-drawio', ['open_drawio_xml', 'confident', 'Never** use a different product', 'validate-only', '--print-style', 'scripts/backup.mjs', 'No hosted-editor URL', 'no link to the hosted editor', 'never overrides a stated', '**Engine**', 'never `cd` there', '`node scripts/pattern.mjs N`']],
+    ['arkitect-excalidraw', ['Never read a whole existing scene', 'placeholder', 'never** use one product', '--format svg', '--print-style', 'scripts/backup.mjs', 'never overrides a stated', '**Engine**', 'never `cd` there', '`node scripts/pattern.mjs N`']],
   ]) {
     const { dir, skill, sections, skillBytes, largest } = skillReading(engine);
     measured.push(`${engine} ${skillBytes} + ${largest} = ${skillBytes + largest}`);
@@ -1380,13 +1502,42 @@ test('each drawing skill reads at most 12,000 bytes before its example, and name
     }
     // The selector offers exactly the patterns the catalog has, as table rows or
     // as a "1 pipeline · 2 ..." list (#137).
-    const selector = skill.slice(skill.indexOf('pattern-catalog.md`:'), skill.indexOf('Spec fragments'));
+    const selector = skill.slice(skill.indexOf('pattern.mjs N`:'), skill.indexOf('Spec fragments'));
     const entry = selector.includes('|') ? /\|\s*(\d+)\s*\|/g : /(?:^|·)[ \t]*(\d+) (?=[a-z])/gm;
     const offered = [...selector.matchAll(entry)].map((m) => Number(m[1])).sort((a, b) => a - b);
     eq(offered.join(','), [...sections.keys()].sort((a, b) => a - b).join(','), `${engine}: selector rows vs catalog sections`);
     for (const rule of mustKeep) assert(skill.includes(rule), `${engine}: SKILL.md no longer says "${rule}"`);
   }
   console.log(`      (context budget: ${measured.join('; ')})`);
+});
+
+// Step 2 sent an agent to one catalog section, and `sed -n` on a plugin file
+// is refused in a sandboxed run; two runs read the refusal as a dead shell and
+// stopped (#417). `arkitect <engine> pattern N` prints the section, read-only.
+test('arkitect <engine> pattern N prints that section of the catalog, and nothing else (#417)', () => {
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), ...args], { encoding: 'utf8' });
+  for (const [engine, n] of [['drawio', 1], ['excalidraw', 6]]) {
+    const catalog = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'references', 'pattern-catalog.md'), 'utf8')
+      .replace(/\r\n/g, '\n');
+    const heads = [...catalog.matchAll(/^## (\d+)\. (.+)$/gm)];
+    for (const [, num, title] of heads) {
+      const said = cli(engine, 'pattern', num);
+      eq(said.status, 0, `${engine} pattern ${num}`);
+      const start = catalog.indexOf(`## ${num}. ${title}`);
+      const next = catalog.slice(start + 1).search(/\n#{1,2} /);
+      const section = (next < 0 ? catalog.slice(start) : catalog.slice(start, start + 1 + next)).trimEnd().replace(/\n+-{3,}$/, '');
+      eq(said.stdout, `${section}\n`, `${engine} pattern ${num} is the file's section`);
+      if (Number(num) === n) assert(said.stdout.startsWith(`## ${n}. `), `${engine} pattern ${n}`);
+    }
+    const listed = cli(engine, 'pattern');
+    eq(listed.stdout.trim().split('\n').length, heads.length, `${engine} pattern lists every section`);
+    for (const bad of [['0'], ['99'], ['x'], ['1', '2']]) eq(cli(engine, 'pattern', ...bad).status, 2, `${engine} pattern ${bad}`);
+    // The skill names the command, by the path it runs from.
+    const skill = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'SKILL.md'), 'utf8');
+    assert(skill.includes('`node scripts/pattern.mjs N`') && existsSync(join(ROOT, 'skills', `arkitect-${engine}`, 'scripts', 'pattern.mjs')),
+      `${engine}: SKILL.md step 2 names a pattern script that exists`);
+  }
+  assert(/arkitect drawio pattern\s+print one section/.test(cli('--help').stdout), 'the dispatcher lists it');
 });
 
 // AGENTS.md is the whole route on every non-Claude host, and a learning
@@ -2919,7 +3070,7 @@ test('the report check sends back a link to the hosted editor, once, with the pa
 const readHook = await import(pathToFileURL(join(ROOT, 'hooks', 'diagram-read.mjs')).href);
 test('a whole Read of a diagram is refused until it is analyzed, and always when it is large (#342)', () => {
   const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
-  eq(JSON.stringify(pre), JSON.stringify([{ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }]), 'a Read hook');
+  eq(JSON.stringify(pre[0]), JSON.stringify({ matcher: 'Read', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/diagram-read.mjs"' }] }), 'a Read hook');
   const { refusalFor, respond, LARGE } = readHook;
   const dir = mkdtempSync(join(tmpdir(), 'arkitect-read-'));
   try {
@@ -2959,6 +3110,72 @@ test('a whole Read of a diagram is refused until it is analyzed, and always when
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Agents cd into a skill folder to run its scripts, then mkdir or write a
+// spec relative to it: inside the install, which the next update deletes
+// (#404). A command or an edit that would write there is refused, naming the
+// way back; running a script from there, or working on the plugin itself, isn't.
+const installHook = await import(pathToFileURL(join(ROOT, 'hooks', 'install-write.mjs')).href);
+test('a shell command or edit that would write inside the plugin is refused, and nothing else is (#404)', () => {
+  const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  eq(JSON.stringify(pre[1]), JSON.stringify({ matcher: 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit',
+    hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/install-write.mjs"' }] }), 'a shell and edit hook');
+  const { refusalFor, respond } = installHook;
+  const project = mkdtempSync(join(tmpdir(), 'arkitect-project-'));
+  const env = { CLAUDE_PROJECT_DIR: project };
+  const skill = join(ROOT, 'skills', 'arkitect-drawio');
+  const slashed = skill.replace(/\\/g, '/');
+  const bash = (command, tool_name = 'Bash') => refusalFor({ hook_event_name: 'PreToolUse', tool_name, tool_input: { command }, cwd: project }, env);
+  try {
+    // What the eval traces show, and the other ways to write from there.
+    for (const command of [
+      `cd "${skill}" && mkdir -p ./eval-output`,
+      `cd '${slashed}' && node scripts/find-icon.mjs "kafka" --compact && cat > spec.json <<'EOF'\n{ "nodes": [{ "id": "a", "label": "A -> B" }] }\nEOF`,
+      `cd "${skill}" && node scripts/render-drawio.mjs "${project}/a.drawio" --out-dir .analysis/renders`,
+      `cd "${skill}"; node scripts/build-diagram.mjs "${project}/a.json" --out=a.drawio`,
+      `cd "${skill}" && echo done | tee report.md`,
+      `cd "${join(ROOT, 'skills')}" && cd arkitect-excalidraw && rm -rf eval-output`,
+      `mkdir -p "${join(skill, 'eval-output')}"`,
+      `cd "${skill}" && cp "${project}/a.drawio" .`,
+    ]) {
+      const said = bash(command);
+      assert(/^Arkitect: this would write .+, inside the Arkitect plugin .+so it was not run\. Nothing else is blocked and the shell still works: run the command again from the project folder/.test(said ?? ''), `refused: ${command}\n${said}`);
+    }
+    if (process.platform === 'win32') assert(bash(`cd ${slashed.replace(/^([A-Za-z]):/, (m, d) => `/${d.toLowerCase()}`)} && mkdir out`), 'a Git Bash /c/ path');
+    assert(bash(`Set-Location "${skill}"; New-Item -ItemType Directory -Force eval-output`, 'PowerShell'), 'PowerShell');
+    for (const [tool_name, file_path] of [['Write', join(skill, 'spec.json')], ['Edit', join(skill, 'SKILL.md')], ['MultiEdit', join(ROOT, 'AGENTS.md')]]) {
+      assert(refusalFor({ hook_event_name: 'PreToolUse', tool_name, tool_input: { file_path }, cwd: project }, env), `${tool_name} ${file_path}`);
+    }
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'NotebookEdit', tool_input: { notebook_path: join(skill, 'a.ipynb') }, cwd: project }, env) === null, false, 'NotebookEdit');
+
+    // Reading or running from the skill folder, and writing to the project.
+    for (const command of [
+      `cd "${skill}" && node scripts/find-icon.mjs "bedrock" --compact`,
+      `cd "${skill}" && sed -n '/^## 1\\./,/^## 2\\./p' references/pattern-catalog.md 2>/dev/null`,
+      `cd "${skill}" && node scripts/build-diagram.mjs "${project}/a.json" --out "${project}/out/a.drawio" 2>&1 | head -5`,
+      `cd "${skill}" && echo "a > b" && ls -la >&2`,
+      'mkdir -p eval-output && cd eval-output && echo hi > notes.txt',
+      `node "${skill}/scripts/build-diagram.mjs" spec.json --out docs/a.drawio`,
+      `cat > spec.json <<'EOF'\n{ "nodes": [] }\nEOF\ncd "${skill}" && node scripts/validate-drawio.mjs "${project}/a.drawio"`,
+      `cd "$SOME_DIR" && mkdir out`,
+    ]) eq(bash(command), null, command);
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: 'spec.json' }, cwd: project }, env), null, 'a write to the project');
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(skill, 'SKILL.md') }, cwd: project }, env), null, 'a Read');
+    // Working on the plugin itself is a maintainer's job, not a stray write.
+    eq(refusalFor({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(skill, 'SKILL.md') }, cwd: ROOT }, { CLAUDE_PROJECT_DIR: ROOT }), null, 'the plugin as the project');
+
+    const said = JSON.parse(respond({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `cd "${skill}" && mkdir x` }, cwd: project }, env));
+    eq(said.hookSpecificOutput.permissionDecision, 'deny', 'a deny decision');
+    const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'install-write.mjs')], { input, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: project } });
+    assert(/"deny"/.test(run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `cd "${skill}" && mkdir x` }, cwd: project })).stdout), 'from the CLI');
+    for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'mkdir out' }, cwd: project })]) {
+      const quiet = run(input);
+      eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${input.slice(0, 40)}`);
+    }
+  } finally {
+    rmSync(project, { recursive: true, force: true });
   }
 });
 
@@ -3128,7 +3345,7 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
       const said = routeFor(prompt);
       if (styleHook.ruleFor(prompt)) eq(said, null, `${engine}/${name}: a style question gets the style rule instead`);
       else if (/\.(drawio|excalidraw)\b/.test(prompt)) assert(said?.includes(`arkitect-${engine}`), `${engine}/${name}: ${said}`);
-      else if (name === 'engine-choice-is-explained') assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
+      else if (['engine-choice-is-explained', 'interview-when-vague'].includes(name)) assert(/asks for a diagram.*arkitect-drawio or arkitect-excalidraw skill.*README/.test(said), `${engine}/${name}: ${said}`);
       else eq(said, null, `${engine}/${name} names no file`);
     }
   }
@@ -3140,7 +3357,13 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
   // skill and handed over SVG or Mermaid (#371). A request for a diagram is
   // routed; a bug report about drawing, or one asking for another format, isn't.
   for (const prompt of ['Draw a sequence diagram for the auth flow', 'make me a flowchart of the signup flow',
-    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.']) {
+    'I need a diagram of the network topology for the client', 'For the review board. Draw it, the whole architecture.',
+    // Asked politely, with no verb on the list: no skill loaded, and every run
+    // asked six questions at once (#416).
+    "I'd like an architecture diagram of our platform for the client's architecture review board",
+    'I’d like a diagram of the checkout flow', 'We would like an architecture diagram for the board',
+    'Could you do a diagram of the order pipeline?', 'Can you put together a flowchart of the signup flow',
+    'show me a diagram of how the services talk']) {
     assert(/^Arkitect: this prompt asks for a diagram\. Load the arkitect-drawio or arkitect-excalidraw skill/.test(routeFor(prompt) ?? ''), prompt);
   }
   eq(skill(routeFor('Sketch the architecture of our payments service in Excalidraw')), 'arkitect-excalidraw', 'an engine named');
@@ -3148,7 +3371,9 @@ test('a prompt naming a diagram file or spec is told which skill to load; any ot
   for (const prompt of ['Draw it as a Mermaid diagram in the README', 'Draw a diagram of the architecture and save it as docs/arch.svg',
     'fix the bug where the canvas does not draw the architecture overlay', 'the diagram view does not draw edges after a resize',
     "why doesn't the architecture page draw on mobile?", 'refactor the diagram renderer', 'generate the diagram types from the schema',
-    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?']) {
+    'Explain this architecture diagram', 'add a test that draws a random sample', 'What does the architecture look like?',
+    "I'd like a fix for the diagram renderer", 'I need a test for the diagram parser', 'add a diagram view toggle',
+    'It looks like a diagram from 2010', "I'd like an explanation of the diagram"]) {
     eq(routeFor(prompt), null, prompt);
   }
   // An engine named beside an export format asked for that engine; the

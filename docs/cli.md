@@ -58,6 +58,7 @@ arkitect drawio analyze docs/arch.drawio --page 0 --cells   # a row per cell; --
 arkitect drawio analyze docs/arch.drawio --find "Checkout API"
 arkitect drawio backup docs/arch.drawio                # before an edit the builder doesn't make
 arkitect drawio spec docs/arch.drawio > edit.json      # the spec it was built from
+arkitect drawio pattern 1                              # one section of the pattern catalog; no N lists them
 arkitect drawio packs --verify                         # committed packs against their pins
 arkitect drawio sheets --pack azure                    # a pack as a labelled grid
 arkitect drawio learn --sources <files> --merge        # your style record
@@ -90,6 +91,7 @@ arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders
 arkitect excalidraw analyze docs/arch.excalidraw --cells   # a row per spec entry; --all, per element
 arkitect excalidraw backup docs/arch.excalidraw
 arkitect excalidraw spec docs/arch.excalidraw > edit.json   # the spec it was built from
+arkitect excalidraw pattern 6                          # one section of the pattern catalog
 arkitect excalidraw learn --sources <files> --merge
 arkitect excalidraw findings --derive
 arkitect excalidraw apply --list
@@ -308,7 +310,7 @@ Scene format notes for hand-editing:
 ```
 bin/arkitect.mjs               the dispatcher; bin/lib/install-agent.mjs writes adapters
 .claude-plugin/                plugin and marketplace manifests
-hooks/                         the four Claude Code hooks
+hooks/                         the five Claude Code hooks
 docker/                        the local Excalidraw app
 skills/arkitect-drawio/        SKILL.md, references/, assets/ (packs, templates), scripts/
 skills/arkitect-excalidraw/    SKILL.md, references/, assets/ (36 libraries, templates), scripts/

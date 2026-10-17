@@ -8,11 +8,13 @@ description: Create or edit editable Excalidraw (.excalidraw) diagrams — syste
 Produces native, editable `.excalidraw` JSON — never a flattened image, never
 Mermaid as the final artifact. Any cloud, any stack. The builder applies the
 house style, binds the arrows and embeds the icons; you write a small JSON spec.
-Scripts live in `${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw/scripts`.
+`scripts/` and every path below are in
+`${CLAUDE_PLUGIN_ROOT}/skills/arkitect-excalidraw/`; run commands from the project,
+never `cd` there.
 
 ## What to read
 
-Read only what the task needs. Every path is relative to this skill.
+Read only what the task needs.
 
 | Task | Read |
 |---|---|
@@ -30,15 +32,15 @@ shipped guide. Say so in the report.
 
 The builder already draws the corpus's habits: elbow arrows at stroke width 4,
 edge captions beside the line, dashed-rectangle regions, captions below shapes.
-Do not undo them by hand.
+Do not undo them.
 
 ## Workflow
 
 1. **Decide whether to ask** — see Interview first, below. Most requests are
    drawn straight away, with the assumptions stated.
 
-2. **Pick a pattern and state assumptions.** Choose the nearest, then read
-   only that `## N.` section of `references/pattern-catalog.md`:
+2. **Pick a pattern and state assumptions.** Choose the nearest, then print
+   only its section, `node scripts/pattern.mjs N`:
    1 pipeline · 2 scope or trust box · 3 tiers · 4 request with a decision ·
    5 current vs proposed · 6 external systems · 7 one service's inside ·
    8 agentic/LLM · 9 ordered protocol · 10 legend · 11 sources into one store ·

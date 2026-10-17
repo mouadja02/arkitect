@@ -10,7 +10,8 @@ OpenCode, Cursor, Copilot, Antigravity, Pi, and most others). Claude Code loads
 the same knowledge as skills; see `skills/*/SKILL.md`, which go deeper.
 
 `ARKITECT_ROOT` below means this repository's directory. Every path is relative
-to it, and every command is Node 22+ with **no dependencies to install**.
+to it, but run commands from the project, never `cd` there. Every command is
+Node 22+ with **no dependencies to install**.
 
 ---
 
@@ -70,8 +71,8 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    and state every assumption. Never interrogate anyone about
    styling; that is what Arkitect is for. The full ladder is in each engine's
    SKILL.md under "Interview first".
-2. **Pick a pattern.** `skills/arkitect-<engine>/references/pattern-catalog.md`
-   holds the reusable layouts. State every architectural assumption you make;
+2. **Pick a pattern.** `node bin/arkitect.mjs <engine> pattern` lists the
+   reusable layouts; `pattern N` prints one. State every architectural assumption you make;
    they go into your report and, where they matter, into a note on the canvas.
 3. **Resolve icons before laying out.** A diagram of grey boxes is not worth
    drawing. See §4.
