@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-10-17
+
 ### Added
 
 - `arkitect report --draft <diagram> [--spec <spec>]` prints the seven report headings with File, Icons and Validation filled: the file's pages and counts, each icon's id and pack (or ref and library) and every placeholder, missing, ambiguous or on-demand mark resolved from the spec without writing, and every `validate` error, warning and note word for word, with the build report's unknown kinds, unknown fields and notes. Engine, Assumptions, Render and Deviations each hold a `<!-- fill in -->` line, and `arkitect report` and the Stop hook fail a report while one is left (#387).
