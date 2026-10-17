@@ -1122,6 +1122,30 @@ test('the committed eval scoreboard covers exactly the cases that exist, and hol
   assert(readme.includes('## The scoreboard') && readme.includes('--baseline evals/scoreboard.json'), 'evals/README.md no longer says how to use the scoreboard');
 });
 
+// The Haiku board alone cannot tell "fails because the model is small" from
+// "fails on every model", which points at the plugin (#419). A board per larger
+// model holds tiers 2 and 3, tier 1 being saturated by construction; each
+// names exactly those cases, says which model it ran, and holds no path.
+test('each per-model scoreboard holds exactly the tier-2 and tier-3 cases, its model and no path (#419)', () => {
+  const headroom = evalCases().map(({ dir }) => readFileSync(join(dir, 'case.yaml'), 'utf8'))
+    .filter((yaml) => /^tags:\s*\[.*\btier-[23]\b/m.test(yaml)).map((yaml) => yaml.match(/^name:\s*(\S+)/m)[1]).sort();
+  const files = readdirSync(join(ROOT, 'evals')).filter((f) => /^scoreboard\.[\w-]+\.json$/.test(f)).sort();
+  eq(files.join(' '), 'scoreboard.opus.json scoreboard.sonnet.json', 'a board for each larger model');
+  const readme = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8');
+  for (const file of files) {
+    const board = JSON.parse(readFileSync(join(ROOT, 'evals', file), 'utf8'));
+    eq(board.schema, 'arkitect-eval-scoreboard/1', `${file}: the schema`);
+    eq(board.run.model, file.split('.')[1], `${file}: the model it ran`);
+    assert(board.run.costUsd > 0 && board.run.judge, `${file}: its cost and judge`);
+    eq(Object.keys(board.cases).sort().join(' '), headroom.join(' '), `${file}: the tier-2 and tier-3 cases; rerun with --tier 2 --tier 3 --model ${board.run.model}`);
+    for (const [name, c] of Object.entries(board.cases)) assert(/^tier-[23]$/.test(c.tier) && typeof c.score === 'number' && c.runs > 0, `${file}: ${name} scored`);
+    for (const s of JSON.stringify(board).match(/"[^"]*"/g)) {
+      if (s !== `"${board.schema}"`) assert(!/[\\/]/.test(s), `${file} holds ${s}`);
+    }
+    assert(readme.includes(`(scoreboard.${board.run.model}.json)`), `evals/README.md links ${file}`);
+  }
+});
+
 // `claude plugin eval` reads context.scaffold_script as a PATH, resolved against
 // the case directory - not as inline bash. An inlined script is not run and not
 // reported as skipped: the case errors before the agent starts, with

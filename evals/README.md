@@ -206,6 +206,42 @@ What the first board's headroom showed:
   whole shell unavailable and stopped. A refused command is not a refused
   tool, and a small model needs telling so.
 
+### One board per model
+
+The Haiku board alone cannot tell a case that fails because the model is
+small from one that fails on every model, which points at the plugin (#419).
+So tiers 2 and 3 have a board for each larger model as well, from
+`scripts/eval.sh --tier 2 --tier 3 --model <m>`; tier 1 is saturated by
+construction and is left out. A test keeps each board naming exactly the
+tier-2 and tier-3 cases. Compare a run on that model with
+`--baseline evals/scoreboard.<m>.json`.
+
+| model | board | tier 2 (9) | tier 3 (5) | all runs perfect | runs | cost |
+|---|---|---|---|---|---|---|
+| Haiku | [scoreboard.json](scoreboard.json) | 0.93 | 0.89 | 7 of 14 | 42 of 94 | $1.56 for all 32 cases |
+| Sonnet | [scoreboard.sonnet.json](scoreboard.sonnet.json) | 0.99 | 0.99 | 11 of 14 | 42 | $6.47 |
+| Opus | [scoreboard.opus.json](scoreboard.opus.json) | 0.97 | 0.98 | 9 of 14 | 42 | $17.10 |
+
+All three were judged by Sonnet on 2026-10-16 and 17. The account's session
+limit stopped the Opus run after 22 of its 42 runs, so the seven cases it
+left were run again in full on Claude Code 2.1.302 and merged in; the cost
+counts both. The figures are what the runs would cost at API prices.
+
+Two cases score below 1.00 on every model, and they point at the plugin:
+
+- `drawio-interview-when-vague` (0.89, 0.93, 0.93): with the skill loaded,
+  most runs on every model still ask several questions at once (#422).
+- `drawio-interview-continues` (0.53, 0.97, 0.90): one Opus run asked two
+  things; Haiku never loaded the skill on the later turn, which the router
+  could fix by reading the session (#423).
+
+Everything else Haiku misses, a larger model does not: the whole-file read,
+the scene's own look, the full estate. Those are the small-model gap the
+plugin's scripts and hooks exist to close. Opus scored below Haiku on three
+cases, each from one run: in `excalidraw-portable-report-check` it skipped
+the draft and the validator, and in `excalidraw-edit-built-scene` and
+`excalidraw-legend-for-two-kinds` it missed one grader each.
+
 ## Cases that continue a conversation
 
 A case with `context.history_file` starts a turn later (#418). The runner
