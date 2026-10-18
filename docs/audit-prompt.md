@@ -1,15 +1,19 @@
 # The audit prompt
 
-Paste this to an agent when you want the next round of work found, diagnosed
-and filed. It is written to be run whole. It scores against the two
-constraints in `AGENTS.md` under "What Arkitect optimises for", not against
-taste.
+Paste this to an agent when you want the next round of bugs, useful features
+and product improvements found, diagnosed and filed. It is written to be run
+whole. It scores against user value and the two constraints in `AGENTS.md`
+under "What Arkitect optimises for", not against taste.
 
 Run it on a clean checkout of `main`, level with `origin/main`. Give the agent
 `Read`, `Glob`, `Grep` and `Bash`: `Bash` because it runs the suite and files
 issues with `gh`, which must be logged in with write access to issues. It files
 issues and comments, edits only its own issues, and closes exactly one, its
 record of what it rejected. It never writes code.
+
+Use `$creative-ideation` for opportunity discovery when the skill is available.
+The self-contained fallback below keeps this prompt usable on other hosts;
+no extra skill installation is required.
 
 Issues carry no release. Fixes land under `[Unreleased]` as they merge, and
 the bump is picked when a release is prepared, from the changelog
@@ -24,6 +28,12 @@ You are auditing **Arkitect**, a zero-dependency Node 22+ plugin that makes a
 coding agent draw editable `.drawio` and `.excalidraw` architecture diagrams.
 Everything runs locally. The repository and its issue tracker are public.
 
+Your job is to discover what would make Arkitect more useful, reliable, easy
+to use, maintainable and easy to adopt. Audit the implementation and the
+product: features, system design, repository structure, performance, user
+experience, security, documentation, README, demos and samples. Do not stop
+after finding bugs or wait for the maintainer to suggest features.
+
 ## What you are scoring against
 
 Two constraints outrank every feature:
@@ -33,19 +43,23 @@ Two constraints outrank every feature:
    and on whatever host runs it: Claude Code, Codex, Cursor, Copilot, OpenCode.
 
 `docs/maintenance.md` turns them into invariants. Read 0, 2, 2a and 2b before
-anything else; the defect classes below come from them.
+anything else; every proposal below must respect them.
 
-## The defect classes: sweep every one
+## The audit areas: sweep every one
 
-Report a measured result for each class, even when it is "nothing found". An
-empty class counts only if you say what you measured. The audit at 2.2.0
+Report evidence for each area, even when it is "nothing found": what you
+inspected or measured, what works, what is missing, and any limits on the
+check. Mark an unverified area as unverified, never as clean. The audit at 2.2.0
 (#294–#297) filed four geometry bugs and measured none of the other classes;
-this rule is why.
+this rule is why. Coverage is mandatory; findings are not a quota. Look for
+defects and opportunities in each area without inventing work to fill it.
 
-**1. Wrong output that passes.** A builder draws something the spec did not
-say, or something the editor will not honour, and `validate` returns clean.
-The worst are the ones a reader would believe: a lost or misrouted edge, a
-child outside its boundary, a binding the app drops. #294, #295 and #297 show
+**1. Bugs and wrong output that passes.** Check crashes, malformed input,
+silent fallbacks, destructive writes, portability and compatibility failures,
+as well as geometry. Pay particular attention when a builder draws something
+the spec did not say, or the editor will not honour, and `validate` returns
+clean. The worst are the ones a reader would believe: a lost or misrouted
+edge, a child outside its boundary, a binding the app drops. #294, #295 and #297 show
 the shape of the evidence: an in-memory reproduction through the exported
 builder, the validator's `ok: true`, and the line that causes it.
 
@@ -97,6 +111,74 @@ engine has and the other lacks, with no stated reason. #191 made Excalidraw
 boundaries hold all of their children's text; #295 found Draw.io's are still
 sized from the grid alone.
 
+**8. Security and privacy.** Map inputs and trust boundaries: specs, diagram
+and SVG/XML parsing, logo URLs and redirects, archives, filesystem paths,
+subprocess arguments, browser rendering, hooks, packaging and CI workflows.
+Trace plausible paths to command injection, path traversal, arbitrary writes,
+unsafe deletion, secret exposure, unintended network access, resource
+exhaustion or excessive workflow permissions. State the attacker-controlled
+input, prerequisites, reachable sink and impact; distinguish a vulnerability
+from optional hardening. Use harmless local fixtures, never real secrets,
+external targets or destructive payloads. Follow the private-disclosure rule
+under Privacy before putting security evidence in the public tracker.
+
+**9. Performance and resource use.** Measure cold and warm CLI startup, icon
+lookup, build, validation, rendering and batch workflows where available.
+Use small, representative and larger synthetic inputs; record input size,
+environment, repeated timings and memory or output size when relevant.
+Inspect repeated parsing, filesystem work, avoidable scans, algorithmic
+growth and unnecessary output. Propose an optimization only with a measured
+bottleneck or a demonstrated scaling problem, a target and a correctness
+check. Do not repeat a rejected caching idea without new evidence.
+
+**10. System design and repository structure.** Map entry points, shared
+logic, engine-specific code, data flow and ownership before proposing changes.
+Look for duplicated policy, divergent validation, fragile coupling, hidden
+side effects, unclear module boundaries, dead routes and confusing file
+placement. Identify a concrete change or failure that the current structure
+makes harder. Prefer a small extraction, clearer interface or simpler flow;
+give migration and compatibility costs. A new abstraction, framework or
+directory tree is not an improvement without a demonstrated benefit.
+
+**11. Useful features and functionality gaps.** Build a capability map from
+CLI help, exported functions, specs, docs, templates and tracker requests:
+what exists, what is hard to discover, what is incomplete and what is absent.
+Walk realistic jobs: a first diagram, editing an existing one, comparing
+options, resolving an icon, recovering from failure and using another host
+or engine. Find repeated manual steps and unmet jobs that the current pieces
+could serve. For each proposal name the user, trigger, current workaround,
+desired result, supporting evidence and smallest useful scope. Compare
+exposing an existing capability, simplifying its route and adding a feature.
+Label inferred demand as a hypothesis; do not claim users requested it.
+Do not limit discovery to parity fixes or deletion.
+
+**12. User experience and accessibility.** Follow the journey from install
+and engine selection to spec creation, errors, validation, rendering, editing
+and sharing an editable file. Test help, defaults, command discoverability,
+diagnostics, progress, recovery, platform differences and host consistency.
+Check diagram legibility and accessibility as well as CLI clarity. Record
+the exact step where a user gets stuck, unnecessary decisions or commands,
+and the proposed before/after journey. Use command output or a viewed public
+template render as evidence; do not infer editor behaviour from JSON alone.
+
+**13. Documentation.** Check installation, quickstarts, CLI/spec references,
+troubleshooting, contributor guidance and cross-links against working routes.
+Look for missing task guides, unexplained concepts, stale examples,
+contradictions and useful functionality absent from the docs. Run quoted
+commands with synthetic inputs in temp where practical. Propose the exact
+page and gap to fix, or a focused new guide; do not pad the default agent
+reading path to solve an occasional human documentation need.
+
+**14. Marketing and adoption.** Read the README as a prospective user: can
+they tell who Arkitect helps, what it produces, why it is useful, how to try
+it and where to go next? Inspect package metadata, demos, screenshots,
+samples and template coverage for discoverability and credible proof of the
+capabilities. Suggest concrete copy, a demo outline or a sample scenario
+with its audience and next action. Prefer a short path to a first successful
+diagram and public, reproducible examples. Never invent testimonials,
+benchmarks, usage numbers or competitor claims. Do not change repository
+settings, publish assets or start campaigns as part of this audit.
+
 ## Method
 
 1. Record what you audit: `git rev-parse HEAD`, `node --version`, the OS.
@@ -108,20 +190,72 @@ sized from the grid alone.
    `Audited commit:` in its body. Read `git log --stat <that commit>..HEAD`
    and start where the code moved since; then cover the rest.
 4. Inventory `bin/`, `hooks/`, `skills/*/scripts/`, `tests/`, `evals/`,
-   `scripts/`, `.github/workflows/` and `.claude-plugin/` with `Glob` and
-   `Grep`, and read only what matches. Never read bundled artwork or its
+   `scripts/`, `.github/workflows/`, `.claude-plugin/`, `docs/`, README,
+   package metadata and public sample/demo locations with `Glob` and `Grep`,
+   and read only what matches. Make a compact capability and module map,
+   then walk the user journeys in areas 11–14; do not let the code sweep
+   consume the entire audit. Never read bundled artwork or its
    indexes: `skills/*/assets/libraries/`, `references/icon-catalog.json`,
    `references/pack-index.md`, and the `.drawio`, `.excalidraw` and PNG files
-   under `assets/`. They run to megabytes and tell you nothing.
+   under `assets/` wholesale. Read small template specs when needed and view
+   selected committed template PNGs for UX/demo evidence; inspect generated
+   files through the analyzer. Do not load embedded artwork into context.
 5. Run what is cheap: `node bin/arkitect.mjs doctor`,
    `node tests/run-tests.mjs` (about a minute), and
    `node bin/arkitect.mjs <engine> build --print-style`. Never run the eval
    suite; it costs money and needs a sandbox.
-6. Diagnose every candidate, as below, before you classify it.
+6. Run the creative-opportunity pass below on the capability map and observed
+   user friction, before ranking. Generate possibilities separately from
+   deciding which ones deserve issues.
+7. Maintain a coverage table for all 14 areas: checks, evidence, candidates
+   and limitations. Diagnose every candidate using the appropriate track
+   below before classifying and ranking it.
 
-## Diagnose each candidate
+## Generate creative opportunities
 
-A finding is six facts. Get all of them, or say which you could not get.
+Use `$creative-ideation` to turn the audit evidence into specific, non-obvious
+improvements. Read its routing guidance and only the selected method reference,
+not the whole library. Choose one primary method for this pass, based on the
+task: discovering unmet user jobs, expanding an existing capability, resolving
+an architectural tradeoff or improving adoption. Name the method and its
+originator in the report. Do not stack methods to make the audit look thorough.
+
+If the skill is unavailable, use **SCAMPER**, Bob Eberle's method building on
+Alex Osborn's checklist, to expand an existing Arkitect workflow:
+
+1. State the current workflow and desired user outcome in one precise sentence.
+2. Try all seven transformations: **Substitute** a step; **Combine** existing
+   capabilities; **Adapt** a mechanism from another context; **Modify** scale
+   or granularity; **Put to another use** an existing capability; **Eliminate**
+   a step; **Reverse or rearrange** the sequence. These generate possibilities,
+   not obligations to add features.
+3. Discard the first three speculative ideas as warm-ups, then generate beyond
+   them. This applies to ideation only: never discard observed defects,
+   security findings or supported user requests to satisfy a creativity rule.
+4. Develop the strongest one to three ideas. For each, state the exact user
+   situation, concrete mechanism, before/after example, honest failure mode
+   or tradeoff and a first validation step. Mark at least one **grounded**:
+   useful and feasible now under the project's constraints. If no candidate
+   meets that bar, say so rather than manufacture a finding.
+
+Apply the same quality bar when the skill supplies another method. Reject
+generic suggestions such as "add AI", "improve onboarding" or "more demos"
+without an Arkitect-specific mechanism. An idea that could fit another repo
+by swapping its name needs more work. Consider features, design, UX and
+marketing; a new presentation of an existing capability may be more useful
+than new code. Novelty alone never establishes value or demand.
+
+Keep exploration separate from publication: ideas enter Develop improvement
+proposals, duplicate checks and ranking before any issue is filed. Preserve
+the lightweight, local and editable-output constraints throughout. Do not
+publish every SCAMPER cell or rejected warm-up as an issue; record only
+substantive evaluated proposals under Record what you rejected.
+
+## Diagnose defects
+
+A defect finding is six facts. Get all of them, or say which you could not
+get. Use the opportunity track below for proposed improvements that do not
+claim existing behaviour is broken.
 
 1. **The smallest reproduction.** Invented input, in memory through the
    exported functions or in the OS temp directory. Cut it down until removing
@@ -147,11 +281,42 @@ says so in its Evidence. One only an eval run could confirm, such as whether
 a small model follows a rule, puts the eval case in Done when and never
 claims a behaviour nobody observed.
 
+## Develop improvement proposals
+
+A feature, architecture, optimization, UX, documentation or marketing
+proposal needs evidence too, but not a fabricated bug reproduction. Record:
+
+1. **User and job.** Who benefits, what triggers the need and what outcome
+   improves. For internal design work, connect maintainer effort to a user
+   benefit such as fewer regressions or a simpler future change.
+2. **Current baseline.** Exact commands, steps, files or measurements showing
+   the friction or missing capability. Cite repository paths and lines; use
+   existing issues as demand evidence when available.
+3. **Smallest useful change.** A concrete before/after example, proposed CLI
+   usage, API boundary, documentation outline or demo storyboard. No code
+   changes are made during this audit. For an ideation-derived proposal,
+   include the mechanism, method, first step and likely failure mode.
+4. **Alternatives and cost.** Existing workaround, reuse or simplification
+   first; then the proposed addition. Include context bytes, runtime and
+   maintenance cost, dependencies, compatibility and engine/host scope.
+5. **Validation.** An observable acceptance condition: fewer steps, a measured
+   performance target, a working example, a clearer recovery path or a
+   reproducible demo. Separate what can be checked locally from adoption or
+   usability hypotheses that need later user feedback.
+6. **Confidence.** Observed friction | supported request | hypothesis. State
+   what would validate or disprove the proposal. Do not invent an introducing
+   commit or a missing regression test for a capability that never existed.
+
+Reject vague work such as "improve UX", "refactor architecture" or "add more
+examples" until it has a specific user problem and a checkable outcome.
+
 ## Privacy
 
 The tracker is public, and some machines this runs on hold real diagrams.
 
-- Read only tracked files (`git ls-files`). Never open `.analysis/`, anything
+- For repository discovery, read only tracked files (`git ls-files`). You
+  may also read your own synthetic temp fixtures, generated outputs and
+  tracker exports. Never open `.analysis/`, anything
   `.analysis/sources.local.json` lists, `~/.arkitect/` or `$ARKITECT_HOME`, or
   an ignored file such as a local `*PLAN*.md`.
 - The suite runs extra tests when a local corpus is present. Quote its counts,
@@ -159,6 +324,11 @@ The tracker is public, and some machines this runs on hold real diagrams.
 - A reproduction uses invented names (`a`, `Orders`, `Worker`). Nothing from a
   real diagram goes into an issue: invariant 5 holds for the tracker as much
   as for the repository.
+- Do not publish exploitable security details, payloads or secrets in a
+  public issue, comment or rejected-ideas record. Use the repository's private
+  security reporting channel if available and authorized; otherwise report
+  a sanitized finding to the maintainer in chat and mark it pending private
+  disclosure. Lack of a private channel does not authorize public disclosure.
 
 ## Read the tracker before writing anything
 
@@ -186,8 +356,10 @@ Classify every candidate, and say which it is:
   commit that introduced it. Never a +1.
 - **fixed**: closed as completed, or in the changelog. Drop it.
 - **rejected**: closed as not planned, listed in `docs/status.md`, or in an
-  earlier "Audit: considered and rejected" issue. Drop it and don't comment;
-  re-filing argues with a decision already made.
+  earlier "Audit: considered and rejected" issue. Respect maintainer decisions:
+  drop it and don't comment. An earlier auditor's hypothesis may be revisited
+  only with materially new evidence that changes its stated rejection reason;
+  link that record and explain what changed. Renaming an idea is not evidence.
 - **regressed**: a completed issue whose fix no longer holds. File it as new,
   link the old issue, and name the commit that broke it.
 
@@ -197,13 +369,21 @@ File **worst first**, so the numbers run in severity order:
 
 1. Harm the user would not see: data lost or overwritten without a backup,
    anything leaving the machine, a wrong product's mark, a component invented
-   or dropped.
+   or dropped; exploitable security vulnerabilities stay on the private route.
 2. Output that validates and is wrong (class 1).
-3. A rule a small model misses, with nothing mechanical behind it.
-4. Context weight, and work the model does that code could.
-5. Docs drift and maintainer tooling.
+3. Common workflows that fail or block users, including installation and
+   recovery; a rule a small model misses with nothing mechanical behind it.
+4. High-value features, UX fixes and measured optimizations that remove
+   recurring friction or unlock a supported user job.
+5. Context weight, automation, architecture and repository improvements,
+   documentation and marketing, ranked by their demonstrated user impact.
 
-Within a group, what the committed templates hit goes before what they don't.
+For each candidate record impact (high/medium/low), reach, evidence confidence,
+effort and ongoing cost. Within a group prioritize common paths and committed
+templates, stronger evidence and smaller changes with the same benefit.
+Category is not destiny: a broken quickstart or misleading README can block
+every new user and outrank a rare code defect. Keep useful opportunities in
+the shortlist; do not fill the cap with minor bugs before comparing them.
 
 ## Write each issue
 
@@ -216,18 +396,18 @@ One or two sentences. Specific.
 ## Evidence
 Audited commit: `<sha>` · Node <version> · <OS>
 
-- Cause: path:line (and the symptom's path:line, if elsewhere).
-- Reproduction, and the output you got.
-- Control: the nearest input that works, and its output.
-- Reach: drawio, excalidraw or both; which templates or eval fixtures hit it.
-- Since: the commit, or "before <sha>" if you did not bisect.
-- Missed by: the test file that covers the code, and why it passed.
-- Confidence: reproduced | editor effect unverified | from the code only.
+- Type: defect | opportunity. Audit area(s): <numbers and names>.
+- For a defect only: cause at path:line, reproduction with actual output, working
+  control, reach, since when, missed test and confidence from Diagnose defects.
+- For an opportunity only: user/job, baseline at path:line with observed friction or
+  request evidence, scope and confidence from Develop improvement proposals.
+  Include benchmark details for a performance claim.
 
 Classification: new. <The nearest closed issues, and why none covers it.>
 
 ## Why it matters
-Tied to one of the two constraints, not to taste.
+Concrete user benefit and impact/reach, consistent with the two constraints.
+Separate observed harm or friction from expected benefits and assumptions.
 
 ## Fix
 The smallest change that resolves it; what it costs in bytes, dependencies or
@@ -237,14 +417,20 @@ weighed when the choice isn't obvious.
 
 ## Done when
 - [ ] A checkable condition.
-- [ ] A test in `tests/*.mjs` that fails at the audited commit, for a code change.
+- [ ] For a reproduced code defect, a regression test in `tests/*.mjs` that
+  fails at the audited commit; for new functionality, an acceptance test.
 
-Effort: XS | S | M | L · Scope: drawio | excalidraw | both · Depends on: #n, or none
+Impact: high | medium | low · Effort: XS | S | M | L
+Scope: <engines, hosts or repository areas> · Depends on: #n, or none
 ```
 
 Done when also names the eval case for a change to skill wording (2b: an eval
 run is what tells a fix from a restatement), and the rebuilt templates and a
 render someone looked at for a change to generated output.
+For a new capability, name a meaningful acceptance test rather than a test
+that must already fail. For docs, marketing or structure-only proposals, use
+working commands, resolved links, discoverable routes or another observable
+result; do not demand a synthetic regression test for copy edits.
 
 Name no version and no bump. What the fix changes for existing users goes in
 Fix as a fact; the release is picked later, from the changelog.
@@ -261,16 +447,18 @@ files, and the kinds that apply: `fix`, `enhancement`, `docs`, `test`,
 
 1. Write each issue to a file in the temp directory, and check it against the
    list below.
-2. Re-run every reproduction from a fresh shell at the audited commit, and
-   make the draft quote the output you got, not the output you expected. One
-   that no longer reproduces is dropped.
+2. Re-run every defect reproduction from a fresh shell at the audited commit.
+   Make the draft quote the output you got, not the output you expected. One
+   that no longer reproduces is dropped. For opportunities, recheck the
+   baseline, demand evidence and proposed acceptance conditions instead.
 3. Just before each `gh issue create`, search the tracker again by the
    title's key words: someone may have filed it since you read it.
-4. File worst first, always from the file:
+4. File worst first, always from the file, selecting existing labels for its
+   type (for example, `enhancement` for a feature or `docs` for a guide):
 
    ```bash
    gh issue create --title "<title>" --body-file "$T/issue-1.md" \
-     --label audit --label fix --label test
+     --label audit --label "<applicable existing label>"
    ```
 
    Never pass a body inline with `--body`: the shell eats backslashes and
@@ -283,20 +471,24 @@ files, and the kinds that apply: `fix`, `enhancement`, `docs`, `test`,
 A draft is ready when:
 
 - every section is there, in order;
-- Evidence opens with the audited commit, and has a `path:line` and output you
-  got, not output you predicted;
+- Evidence opens with the audited commit, identifies defect or opportunity,
+  and has a `path:line` and observed output or baseline, not a prediction;
 - the classification names the nearest closed issues;
 - Done when has at least one box a test or a script can decide;
 - every name in it is invented or already in the repository;
-- it names no version and no bump.
+- it names no version and no bump;
+- security disclosure follows the private route when required.
 
 ## Record what you rejected
 
 What you weighed and turned down matters as much as the findings: it stops
 the next audit walking the same ground. File one issue titled
 "Audit: considered and rejected at `<short sha>`", labelled `audit` only, one
-line per idea with the reason and, where it applies, the cost ("adds 900
-bytes to every drawing path for one rare branch"). Then close it:
+line per idea with the reason, evidence and, where it applies, the cost ("adds
+900 bytes to every drawing path for one rare branch"). Distinguish a
+maintainer decision from your assessment. For a hypothesis, state what new
+evidence could change that assessment. Do not record deferred or under-cap
+candidates as rejected. Then close it:
 
 ```bash
 gh issue close <n> --reason "not planned"
@@ -309,7 +501,10 @@ The next audit finds it among the closed issues and reads it as **rejected**.
 In the chat:
 
 - the audited commit;
-- one line per defect class: what you measured, what you found, which issues;
+- the coverage table for all 14 audit areas: evidence, findings and limits;
+- the highest-value improvements, their expected user benefit and priority;
+- the creative method used and its originator, with the strongest grounded
+  idea and what would validate it (or why none qualified);
 - the issues filed, with numbers and titles;
 - the issues you commented on, and what you added;
 - what you dropped, and the issue or changelog entry you deferred to;
@@ -320,23 +515,27 @@ In the chat:
 
 - **File issues and comments, nothing else.** No code, no pull requests, no
   commits, no edits to tracked files. A one-line obvious fix still goes in an
-  issue; the maintainer decides what ships.
+  issue; the maintainer decides what ships. Security findings follow the
+  private-disclosure exception under Privacy.
 - **Leave the checkout as you found it.** Scratch files and worktrees go in the
   OS temp directory, and `git status` is clean when you finish.
 - **Edit only your own issues, and close only the rejected-ideas one.** Never
   close, relabel or edit anyone else's.
 - **Never file a duplicate.** If you are unsure whether something is covered,
-  comment on the nearest issue instead.
+  keep it pending; comment on the nearest issue only with new evidence.
 - **Don't propose a dependency.** If a fix seems to need one, it goes in the
   rejected-ideas issue with what it would cost.
 - **Don't fix an ignored rule with more prose** unless you say what comes out
   to make room, or what mechanical check backs it. Adding words is the failure
   mode this project is most prone to.
-- **Prefer deleting to adding.** A finding that takes bytes off a reading path
-  and loses nothing beats a new feature.
+- **Prefer the smallest useful change.** Remove waste and reuse existing
+  capabilities first, but propose new functionality when its user benefit
+  justifies its cost within the invariants. Minimalism is not a reason to
+  ignore an unmet user job.
 - **Say when you are unsure.** "I could not verify this without running the
   evals" is useful; a confident guess is not.
 - **At most 15 issues**, the rejected-ideas one aside. More than that means
   you stopped ranking: leave the smallest out and name them in the chat.
-- **One fix per issue.** Findings that share one fix are one issue; a bundle
-  of five fixes cannot be closed.
+- **One independently deliverable change per issue.** Findings that share one
+  fix are one issue; split larger opportunities into useful increments with
+  explicit dependencies. A bundle of five unrelated fixes cannot be closed.
