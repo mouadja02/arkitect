@@ -5,6 +5,7 @@ import { decodeDataUrl } from './excalidraw-core.mjs';
 import { transparency } from '../make-icon.mjs';
 
 const PREFIX = 'drawio:';
+export const NO_ARTWORK = 'the matching shared icon has no committed artwork';
 let byRef;
 let entries;
 
@@ -41,7 +42,7 @@ export function sharedUnattended(query, candidates = sharedCatalog()) {
   if (!result.confident) return { entry: null, reason: result.reason };
   const entry = candidates.find((e) => e.ref === PREFIX + result.icon.id);
   return entry ? { entry, reason: null }
-    : { entry: null, reason: 'the matching shared icon has no committed artwork' };
+    : { entry: null, reason: NO_ARTWORK };
 }
 
 export function resolveSharedRef(ref) {

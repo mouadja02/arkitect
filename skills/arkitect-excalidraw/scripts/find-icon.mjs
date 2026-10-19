@@ -24,7 +24,7 @@ import {
 import { loadIndex as loadIconIndex, getIcon } from './make-icon.mjs';
 import { listInstalled, libraryItems } from './browse-libraries.mjs';
 import { loadIndex as loadBundledIndex, bundledItem } from './index-libraries.mjs';
-import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef } from './lib/shared-icons.mjs';
+import { sharedCatalog, sharedScore, sharedUnattended, resolveSharedRef, NO_ARTWORK } from './lib/shared-icons.mjs';
 import { loadCatalog as loadSharedCatalog, byExactId, lifecycleOf } from '../../arkitect-drawio/scripts/find-icon.mjs';
 import { onlyGenericWords, vendorOf, GENERIC_VENDOR, KEEP_PLACEHOLDER } from '../../arkitect-drawio/scripts/lib/generic-words.mjs';
 import { fileURLToPath } from 'node:url';
@@ -225,27 +225,10 @@ export function resolveIcon(ref, { shared = true } = {}) {
   if (!ref) return null;
   const direct = String(ref);
 
-  if (direct.startsWith('drawio:')) return shared ? resolveSharedRef(direct) : null;
+  const sharedId = asSharedRef(direct);
+  if (sharedId) return shared ? resolveSharedRef(sharedId) : null;
 
-  if (direct.includes(':')) {
-    // A bundled reference resolves without touching the download cache, and an
-    // index like "gcp-icons:37" is the only way to reach an unnamed item.
-    const fromBundle = bundledItem(direct);
-    if (fromBundle) {
-      return {
-        source: fromBundle.ref, name: fromBundle.name, kind: 'bundled',
-        library: fromBundle.libraryTitle, elements: fromBundle.elements,
-      };
-    }
-    const [slug, key] = direct.split(':');
-    const items = libraryItems(normalizeName(slug));
-    if (!items) return null;
-    const item = /^\d+$/.test(key)
-      ? items[Number(key)]
-      : items.find((it) => normalizeName(it.name) === normalizeName(key));
-    if (!item) return null;
-    return { source: `${slug}:${item.index}`, name: item.name, kind: 'library', elements: item.elements };
-  }
+  if (direct.includes(':')) return libraryRef(direct);
 
   const house = getIcon(direct);
   if (house) {
@@ -260,6 +243,50 @@ export function resolveIcon(ref, { shared = true } = {}) {
   // a substring match used to be enough, and drew the wrong product silently (#22).
   const { entry } = unattended(direct, { entries: catalog({ shared }) });
   return entry ? resolveIcon(entry.ref, { shared }) : null;
+}
+
+// Draw.io spells a shared mark `<pack>/<slug>`; read as `drawio:<pack>/<slug>`
+// when it is exactly a catalog id, so a spec moves between engines with its
+// marks (#440). A library ref has no slash, so the two cannot collide.
+function asSharedRef(ref) {
+  if (ref.startsWith(SHARED)) return ref;
+  return ref.includes('/') && byExactId(loadSharedCatalog(), ref) ? SHARED + ref : null;
+}
+const SHARED = 'drawio:';
+
+function libraryRef(ref) {
+  // A bundled reference resolves without touching the download cache, and an
+  // index like "gcp-icons:37" is the only way to reach an unnamed item.
+  const fromBundle = bundledItem(ref);
+  if (fromBundle) {
+    return {
+      source: fromBundle.ref, name: fromBundle.name, kind: 'bundled',
+      library: fromBundle.libraryTitle, elements: fromBundle.elements,
+    };
+  }
+  const [slug, key] = ref.split(':');
+  const items = libraryItems(normalizeName(slug));
+  if (!items) return null;
+  const item = /^\d+$/.test(key)
+    ? items[Number(key)]
+    : items.find((it) => normalizeName(it.name) === normalizeName(key));
+  if (!item) return null;
+  return { source: `${slug}:${item.index}`, name: item.name, kind: 'library', elements: item.elements };
+}
+
+// A ref given to the search answers as what a spec node naming it draws: as
+// text, "icons:41", the item named "java", offered the Icons8 logo first
+// (#443). Null when the query is no ref, and is searched.
+export function exactRef(query) {
+  const sharedId = asSharedRef(query);
+  if (sharedId) {
+    const id = sharedId.slice(SHARED.length);
+    const icon = byExactId(loadSharedCatalog(), id);
+    if (!icon) return { ref: sharedId, reason: 'no shared pack has this id' };
+    return icon.bytes === 'committed' ? { ref: sharedId, name: icon.title } : { ref: sharedId, reason: NO_ARTWORK };
+  }
+  const found = query.includes(':') ? libraryRef(query) : null;
+  return found ? { ref: found.source, name: found.name } : null;
 }
 
 // The answer an agent acts on, in well under 1KB (#117): what a spec node draws,
@@ -343,6 +370,15 @@ function main(argv) {
   }
 
   const query = words.join(' ');
+  const exact = exactRef(query);
+  if (exact) {
+    const answer = exact.reason
+      ? { query, placeholder: exact.reason, node: { kind: 'placeholder' },
+        next: 'Search the product by name, or keep the placeholder and say so.' }
+      : compactAnswer(query, [exact], { entry: exact });
+    console.log(options.compact ? JSON.stringify(answer) : JSON.stringify({ ...answer, exact: true }, null, 2));
+    return;
+  }
   const hits = search(query, { entries, limit: options.limit ?? 8 });
   if (options.compact) {
     console.log(JSON.stringify(compactAnswer(query, hits, hits.length ? unattended(query, { entries }) : {})));

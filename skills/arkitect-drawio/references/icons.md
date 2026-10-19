@@ -17,9 +17,11 @@ node scripts/find-icon.mjs --list-packs
 
 The search answers with `confident: true` or with the reason it is not, plus the
 alternatives, and never prints icon bytes. Do not take the first row because it
-was first. An exact `<pack>/<slug>` is looked up as an id, never searched, so it
-draws that mark or nothing; a node that also pins a different `pack` is a
-contradiction and is reported instead of resolved (#95).
+was first. An exact `<pack>/<slug>`, or Excalidraw's `drawio:<pack>/<slug>`, is
+looked up as an id, never searched, by the search as by the build, so it
+answers and draws that mark or nothing; a node that also pins a different `pack`
+is a contradiction and is reported instead of resolved (#95, #440, #443). An
+Excalidraw library ref (`icons:41`) is reported as one, not searched.
 
 `--compact` prints one line: a confident answer as its id and a spec `node`,
 with an `onDemand` next step or a `lifecycle` caveat when the mark has one; an

@@ -26,7 +26,7 @@ import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
-import { resolve, unattended, drawnMark, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
+import { resolve, unattended, drawnMark, catalogId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf, EXCALIDRAW_ITEM } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage, parseMxfile, extractCells } from './lib/drawio-core.mjs';
 import { readJson } from './lib/read-json.mjs';
@@ -228,8 +228,9 @@ export function resolveIcon(node, catalog, report, contextPacks) {
   // An exact catalog id is an instruction, not a search term. `<pack>/<slug>`
   // is what a search prints and what the skill tells an agent to put in a
   // spec; sending it through text search drew another product's mark for 752
-  // of the 4,843 committed ids and a plain box for 227 more (#95).
-  const exact = byExactId(catalog, query);
+  // of the 4,843 committed ids and a plain box for 227 more (#95). Excalidraw's
+  // `drawio:<pack>/<slug>` is the same instruction (#440).
+  const exact = catalogId(catalog, query);
   if (exact) {
     // A node that pins a pack the id does not belong to is a spec arguing with
     // itself, and neither half is safe to act on unattended. Searching the
@@ -248,7 +249,7 @@ export function resolveIcon(node, catalog, report, contextPacks) {
 
   const r = resolve(query, { catalog, limit: 3, packs: contextPacks, pack: pinned });
   if (!r.groups.length) {
-    report.missing.push({ query, ...(pinned ? { pack: pinned } : {}) });
+    report.missing.push({ query, ...(pinned ? { pack: pinned } : {}), ...(r.reason === EXCALIDRAW_ITEM ? { reason: r.reason } : {}) });
     return null;
   }
 

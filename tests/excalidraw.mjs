@@ -668,6 +668,49 @@ test('Excalidraw CLI emits one metadata-only response when importing the Draw.io
   assert(stats.sharedIcons > 4700, 'shared icon count');
 });
 
+// A spec node read a ref as that item, but the search an agent checks one
+// with searched it as text: `icons:41`, the item named "java", answered
+// "weak match" with the Icons8 logo first, and `drawio:databases/postgresql`
+// offered a generic database server (#443).
+test('the search answers a ref or an exact shared id with that entry (#443, #440)', () => {
+  const ask = (q) => JSON.parse(node('find-icon.mjs', [q, '--compact']));
+  const java = ask('icons:41');
+  eq(java.draws, 'icons:41', 'a library ref answers itself');
+  eq(java.name, 'java', 'by its own name');
+  eq(JSON.stringify(java.node), '{"kind":"icon","icon":"icons:41"}', 'with the node to copy');
+  eq(ask('aws-serverless:0').draws, 'aws-serverless:0', 'an unnamed item answers by its ref');
+  eq(ask('drawio:databases/postgresql').draws, 'drawio:databases/postgresql', 'a shared ref answers itself');
+  eq(ask('databases/postgresql').draws, 'drawio:databases/postgresql', "Draw.io's spelling answers the same mark");
+  const tableau = ask('drawio:data-platforms/tableau');
+  assert(!tableau.draws && /no committed artwork/.test(tableau.placeholder ?? ''), `an on-demand id says why it is a placeholder: ${JSON.stringify(tableau)}`);
+  assert(!tableau.choices, 'and offers no other product');
+  eq(ask('postgres').draws, 'drawio:databases/postgresql', 'a name still searches as before');
+  const full = JSON.parse(node('find-icon.mjs', ['icons:41']));
+  eq(full.draws, 'icons:41', 'the full answer agrees');
+});
+
+// Draw.io writes a shared mark as `<pack>/<slug>`, and Excalidraw drew a
+// placeholder for it: a spec printed by one engine lost its marks in the
+// other (#440). A bare id is read as `drawio:<pack>/<slug>`, exactly.
+test('a build reads both spellings of a shared-pack id (#440)', () => {
+  const cat = JSON.parse(readFileSync(join(ROOT, 'skills/arkitect-drawio/references/icon-catalog.json'), 'utf8'));
+  const wrong = [];
+  for (const icon of cat.icons) {
+    const got = finder.resolveIcon(icon.id)?.source ?? null;
+    const want = icon.bytes === 'committed' ? `drawio:${icon.id}` : null;
+    if (got !== want) wrong.push(`${icon.id}: ${got}`);
+  }
+  assert(!wrong.length, `${wrong.length} bare ids:\n        ${wrong.slice(0, 10).join('\n        ')}`);
+  eq(finder.resolveIcon('databases/postgresql', { shared: false }), null, 'no shared mark without the shared packs');
+
+  const { report } = builder.buildDiagram({ nodes: [
+    { id: 'pg', kind: 'icon', icon: 'databases/postgresql', label: 'PostgreSQL' },
+    { id: 'gf', kind: 'icon', icon: 'observability/grafana', label: 'Grafana', col: 1 },
+  ] });
+  eq(report.icons.map((i) => i.ref).join(), 'drawio:databases/postgresql,drawio:observability/grafana', 'a build draws both');
+  eq(report.missingIcons.length, 0, 'and no placeholder');
+});
+
 test('removing an icon takes its item and index entry with it', () => {
   icons.storeIcon(`${TEST_PREFIX}gone`, Buffer.from(DONUT_SVG, 'utf8'), { trace: true });
   icons.removeIcon(`${TEST_PREFIX}gone`);

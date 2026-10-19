@@ -141,6 +141,20 @@ export function search(query, { limit = 8, catalog = loadCatalog(), packs = null
 // The head never settles a tie the whole query found (#75), and never reaches
 // a vendor's mark the spec did not ask for: "billing service" is not GCP's.
 export function resolve(query, opts = {}) {
+  // An exact id answers as that entry, in a search as in a build: as text,
+  // `databases/postgresql` was a weak match with Amazon RDS first (#443).
+  const exact = catalogId(opts.catalog ?? loadCatalog(), query);
+  if (exact) {
+    const group = { title: exact.title, pack: exact.pack, best: null, exact: true, doubt: null, variants: [exact] };
+    // An id outside the pinned pack is a request arguing with itself (#95).
+    if (opts.pack && exact.pack !== opts.pack) {
+      return { query, confident: false, reason: `${exact.id} is in the "${exact.pack}" pack, not "${opts.pack}"`, icon: exact, groups: [group] };
+    }
+    return { query, confident: true, reason: null, icon: exact, groups: [group] };
+  }
+  // `<library>:<n>` is an Excalidraw library item, which no pack here holds;
+  // searched as text it offered Icons8 (#440).
+  if (EXCALIDRAW_REF.test(String(query ?? ''))) return { query, confident: false, reason: EXCALIDRAW_ITEM, groups: [] };
   const result = resolveNamed(query, opts);
   if (result.confident) return result;
   // A query that names the vendor names its stack, as the spec's context does:
@@ -366,8 +380,19 @@ export function byExactId(catalog, id) {
   return map.get(id) ?? null;
 }
 
+// Excalidraw spells a shared mark `drawio:<pack>/<slug>`; both spellings are
+// one instruction, so a spec moves between engines with its marks (#440).
+const SHARED_PREFIX = 'drawio:';
+export function catalogId(catalog, query) {
+  const id = typeof query === 'string' && query.startsWith(SHARED_PREFIX) ? query.slice(SHARED_PREFIX.length) : query;
+  return byExactId(catalog, id);
+}
+
+const EXCALIDRAW_REF = /^[a-z0-9]+(?:-[a-z0-9]+)*:\d+$/i;
+export const EXCALIDRAW_ITEM = 'an Excalidraw library item, which no Draw.io pack holds';
+
 function byId(catalog, id) {
-  return byExactId(catalog, id)
+  return catalogId(catalog, id)
     ?? catalog.icons.find((i) => String(i.libraryIndex) === String(id));
 }
 
@@ -428,6 +453,10 @@ export function compactAnswer(r, catalog = loadCatalog()) {
     };
   };
   if (!r.groups.length) {
+    if (r.reason === EXCALIDRAW_ITEM) {
+      return { query: r.query, confident: false, found: 0, reason: r.reason,
+        next: 'Name the product to search the packs here; else draw a labelled box and say so.' };
+    }
     return { query: r.query, confident: false, found: 0,
       next: 'No pack has it. Try --list-packs or the formal name; else draw a labelled box and say so. Never another product’s mark.' };
   }
@@ -437,7 +466,7 @@ export function compactAnswer(r, catalog = loadCatalog()) {
   }
   const all = r.groups.flatMap((g) => g.variants.map((v) => ({ v, g })));
   const pick = (list) => list.slice(0, COMPACT_CHOICES).map(({ v, g }) => ({
-    id: v.id, title: g.title, strength: g.best,
+    id: v.id, title: g.title, ...(g.exact ? { exact: true } : { strength: g.best }),
     ...(v.bytes === 'on-demand' ? { onDemand: true } : {}),
     ...(v.status ? { lifecycle: v.status.state } : {}),
   }));
@@ -536,6 +565,7 @@ function main(argv) {
   if (!r.groups.length) {
     console.log(JSON.stringify({
       query, matches: [], confident: false,
+      ...(r.reason === EXCALIDRAW_ITEM ? { reason: r.reason } : {}),
       advice: 'No pack has this icon. Check --list-packs, try the product\'s formal name, or draw a '
         + 'plain labelled box and say so in the report. Never substitute a different product\'s mark.',
     }, null, 2));
@@ -549,7 +579,7 @@ function main(argv) {
     matches: r.groups.map((g) => ({
       title: g.title,
       pack: g.pack,
-      strength: g.best,
+      ...(g.exact ? { exact: true } : { strength: g.best }),
       ambiguous: g.variants.length > 1,
       variants: g.variants.map((v) => describe(v, catalog)),
     })),

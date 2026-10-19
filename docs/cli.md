@@ -226,7 +226,7 @@ and `as-is-to-be.spec.json` (two pages), each with its PNG. Pattern fragments:
 | `ellipse`, `diamond` | a start or end state; a decision |
 | `cylinder` | a datastore |
 | `actor` | a person or external role |
-| `icon` | a library item, a shared mark (`drawio:<pack>/<slug>`) or an icon you built, captioned below |
+| `icon` | a library item, a shared mark (`drawio:<pack>/<slug>`, or Draw.io's `<pack>/<slug>`) or an icon you built, captioned below |
 | `placeholder` | an empty slot for a mark to drop in later |
 | `note`, `text` | a sticky note; bare text |
 
