@@ -2195,6 +2195,52 @@ test('icon resolution corpus: never confidently wrong, and precision at rank 1 h
     `precision@1 ${pct(m.top1, m.answerable)} fell below the ${key.precisionFloor * 100}% floor`);
 });
 
+// The builder drew the leader of every search it was unsure of: "java" came out
+// as the JavaScript file mark, "tempo" as Temporal and "nat gateway" as API
+// Gateway, and validate passed each one (#432). An unsure search is now a
+// labelled box listed with its alternatives; only one product's own variants draw.
+test('a Draw.io icon the search is unsure of draws a labelled box, listed with its alternatives (#432)', () => {
+  for (const q of ['java', 'tempo', 'nat gateway']) {
+    const { xml, report } = builder.buildDiagram({ nodes: [{ id: 'a', kind: 'icon', icon: q, label: 'Service', col: 0, row: 0 }] });
+    eq(report.used.map((u) => u.id).join(), '', `"${q}" draws no mark`);
+    assert(!xml.includes('shape=image'), `"${q}" embedded artwork`);
+    eq(report.missing.map((m) => m.query).join(), q, `"${q}" is listed missing`);
+    assert(report.missing[0].reason && report.missing[0].alternatives.length, `"${q}" is listed without its reason and alternatives`);
+    eq(report.ambiguous.length, 0, `"${q}" is not drawn as a guess`);
+  }
+
+  const cat = finder.loadCatalog();
+  const variants = finder.resolve('agentcore');
+  assert(variants.groups[0].variants.length > 1, 'agentcore no longer has same-title variants to test');
+  const report = { used: [], missing: [], ambiguous: [], needsFetch: [] };
+  eq(builder.resolveIcon({ kind: 'icon', icon: 'agentcore' }, cat, report, null)?.id, variants.icon.id, 'one product\'s variants still draw');
+  eq(report.ambiguous.map((a) => a.reason).join(), 'several icons share this title', 'and are named');
+
+  // Same-title variants with another product close behind are not one product's.
+  const widget = (id, pack, title) => ({ id, pack, title, aliases: ['widget'], bytes: 'committed' });
+  const tiny = { packs: [{ id: 'x', rank: 10 }, { id: 'y', rank: 10 }],
+    icons: [widget('x/widget', 'x', 'Widget'), widget('x/widget-2', 'x', 'Widget'), widget('y/widget-hub', 'y', 'Widget Hub')] };
+  const close = finder.resolve('widget', { catalog: tiny });
+  eq(close.reason, 'runner-up is too close', 'a close runner-up outranks the variants');
+  eq(finder.unattended(close), null, 'and nothing draws');
+});
+
+test('no row of the icon answer key draws, through the builder, artwork the key does not accept (#432)', () => {
+  const key = JSON.parse(readFileSync(join(HERE, 'icon-queries.json'), 'utf8'));
+  const cat = finder.loadCatalog();
+  const wrong = [];
+  let drawn = 0;
+  for (const [q, accept, context] of key.queries) {
+    const report = { used: [], missing: [], ambiguous: [], needsFetch: [] };
+    const chosen = builder.resolveIcon({ kind: 'icon', icon: q }, cat, report, context ? context.split(',') : null);
+    if (!chosen) continue;
+    drawn++;
+    if (accept === null || ![].concat(accept).includes(chosen.id)) wrong.push(`${q}${context ? ` [${context}]` : ''} -> ${chosen.id}`);
+  }
+  assert(drawn > 300, `only ${drawn} rows draw artwork`);
+  assert(!wrong.length, `${wrong.length} rows draw a mark the key does not accept: ${wrong.join('; ')}`);
+});
+
 // "router" drew Google's Cloud Router, "etl" AWS Glue, "state machine" Step
 // Functions, "object storage" S3: 24 of 63 common architecture nouns drew a
 // vendor's mark with no vendor in the spec (#347).
@@ -4973,6 +5019,28 @@ test('a plain box naming bundled products is listed under namesAProduct; a gener
   writeFileSync(specPath, JSON.stringify(spec));
   const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'names-a-product.drawio')], { encoding: 'utf8' }));
   eq(out.namesAProduct.length, 3, 'the CLI prints them');
+});
+
+// An on-demand entry ships no bytes, so the icon node namesAProduct handed over
+// drew the same plain box, and validate repeated a warning nothing could clear:
+// Tableau and Power BI, among 124 entries with nothing to fetch (#434).
+test('a plain box named for an on-demand product is not listed or warned; a bundled one still is (#434)', () => {
+  const spec = { nodes: [
+    { id: 'bi', label: 'Tableau', col: 0, row: 0 },
+    { id: 'pl', label: 'Teradata', col: 1, row: 0 },
+    { id: 'td', kind: 'icon', icon: 'teradata', label: 'Warehouse', col: 2, row: 0 },
+  ], edges: [{ from: 'bi', to: 'td' }, { from: 'pl', to: 'td' }] };
+  const built = builder.buildDiagram(spec);
+  eq(built.report.namesAProduct.map((p) => `${p.node}:${p.icon}`).join(), 'pl:data-platforms/teradata', 'only the bundled product');
+  mkdirSync(TMP, { recursive: true });
+  const file = join(TMP, 'p434.drawio');
+  writeFileSync(file, built.xml);
+  const warned = validator.validateFile(file).warnings.filter((w) => w.includes('its product has a bundled mark'));
+  eq(warned.map((w) => w.match(/cell "([^"]+)"/)[1]).join(), 'pl', 'validate warns on the bundled product only');
+
+  const recommended = finder.loadCatalog().icons.filter((i) => i.bytes === 'on-demand')
+    .filter((i) => finder.drawnMark(finder.resolve(i.title)) === i.id).map((i) => i.id);
+  eq(recommended.join(), '', 'no on-demand entry is recommended by its own title');
 });
 
 // The agents pack's "Memory" is an idea, not a product, and a shipped pattern
