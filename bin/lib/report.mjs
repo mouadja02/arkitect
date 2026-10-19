@@ -71,7 +71,7 @@ function iconLines(engine, report) {
     return [
       ...report.used.map((u) => `${code(u.query)}: ${code(u.id)}, ${u.pack} pack`),
       ...report.logos.map((l) => `${code(l.name)}: a fetched logo, embedded`),
-      ...report.missing.map((m) => `not found, drawn as a labelled box: ${brief(m)}`),
+      ...report.missing.map((m) => `${m.alternatives ? 'unsure' : 'not found'}, drawn as a labelled box: ${brief(m)}`),
       ...report.ambiguous.map((a) => `not confident: ${code(a.query)} drew ${code(a.chose)}; alternatives ${a.alternatives.join(', ')}`),
       ...report.needsFetch.map((n) => `on demand, not drawn: ${brief(n)}`),
       ...report.sameArtwork.map((s) => `one artwork for several marks: ${brief(s)}`),

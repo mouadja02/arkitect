@@ -240,18 +240,38 @@ function judge(query, ranked, opts, barred) {
   // the spec names that vendor's stack (#231).
   const vendorForGeneric = VENDOR_PACKS.has(top.pack) && onlyGenericWords(query)
     && !opts.packs?.includes(top.pack);
+  const clear = margin >= CLEAR_MARGIN || groups.length === 1 || decidedByContext;
   const confident = top.best >= CONFIDENT_AT
     && !top.doubt
     && !vendorForGeneric
-    && (margin >= CLEAR_MARGIN || groups.length === 1 || decidedByContext)
+    && clear
     && top.variants.length === 1;
+  // SAME_TITLE is kept for a leader that is otherwise certain, so it names one
+  // product's own variants and nothing else (#432).
   const reason = confident ? null
     : top.best < CONFIDENT_AT ? 'weak match'
       : top.doubt ? top.doubt
         : vendorForGeneric ? GENERIC_VENDOR
-          : top.variants.length > 1 ? 'several icons share this title'
-            : 'runner-up is too close';
+          : !clear ? 'runner-up is too close'
+            : SAME_TITLE;
   return { query, confident, reason, icon: top.variants[0], groups };
+}
+
+const SAME_TITLE = 'several icons share this title';
+
+// The entry a node draws when nobody chose it: a confident leader, or one
+// product's own variants. Every other doubt is a labelled box, listed with its
+// alternatives - a leader the search is unsure of is how "java" drew the
+// JavaScript file mark and "nat gateway" API Gateway (#432).
+export function unattended(r) {
+  return r.groups?.length && (r.confident || r.reason === SAME_TITLE) ? r.icon : null;
+}
+
+// The id worth recommending for a plain box: one that would draw. An on-demand
+// entry ships no bytes, so its icon node is the same plain box (#434).
+export function drawnMark(r) {
+  const icon = unattended(r);
+  return icon && icon.bytes !== 'on-demand' ? icon.id : null;
 }
 
 const libCache = new Map();
