@@ -3737,6 +3737,22 @@ const drawioCli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'a
 const stderrLine = (r) => r.stderr.trim().split('\n')[0];
 const hasStack = (r) => /\n\s+at /.test(r.stderr);
 
+test('missing Draw.io input fails concisely in validate and analyze (#436)', () => {
+  const missing = join(TMP, 'missing-input.drawio');
+  const validate = drawioCli('validate', missing);
+  eq(validate.status, 1, 'validate status');
+  assert(validate.stdout.includes(`FAIL  ${missing}`) && validate.stdout.includes(`ERROR  no file at ${missing}`),
+    `validate said: ${validate.stdout || validate.stderr}`);
+  assert(!hasStack(validate) && !validate.stderr.includes('node:fs'), 'validate prints no stack');
+  assert(validate.stdout.trim().split('\n').length <= 2, 'validate stays concise');
+
+  const analyze = drawioCli('analyze', missing);
+  eq(analyze.status, 2, 'analyze status');
+  assert(analyze.stderr.includes(`cannot read ${missing}: ENOENT`), `analyze said: ${analyze.stderr}`);
+  assert(!hasStack(analyze) && !analyze.stderr.includes('node:fs'), 'analyze prints no stack');
+  eq(analyze.stderr.trim().split('\n').length, 1, 'analyze prints one line');
+});
+
 test('validate --page N validates that page and never reads N as a file (#37)', () => {
   const r = drawioCli('validate', ARGS_STARTER, '--page', '0', '--json');
   eq(r.status, 0, `--page 0 --json status (stderr: ${stderrLine(r)})`);

@@ -362,4 +362,12 @@ function main(argv) {
   }
 }
 
-if (process.argv[1] && process.argv[1].endsWith('analyze-drawio.mjs')) main(process.argv.slice(2));
+if (process.argv[1] && process.argv[1].endsWith('analyze-drawio.mjs')) {
+  try {
+    main(process.argv.slice(2));
+  } catch (e) {
+    if (e?.code !== 'ENOENT') throw e;
+    console.error(`cannot read ${e.path}: ENOENT`);
+    process.exit(2);
+  }
+}

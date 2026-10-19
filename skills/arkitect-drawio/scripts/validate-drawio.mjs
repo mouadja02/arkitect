@@ -73,7 +73,13 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
   const notes = [];
   const info = {};
   let catalog = null;
-  const text = readFileSync(path, 'utf8');
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch (e) {
+    const problem = e?.code === 'ENOENT' ? `no file at ${path}` : `cannot read ${path}: ${e?.code ?? e?.message}`;
+    return { path, ok: false, errors: [problem], warnings, notes, info };
+  }
 
   // A forgiving tag scanner is what extractCells needs - it has to keep going
   // through a page it only half understands - but it cannot tell a native
