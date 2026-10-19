@@ -3282,6 +3282,14 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
     const bare = say(['--draft', join(dir, 'bare.drawio')]);
     eq(bare.code, 0, 'no spec');
     assert(/\*\*Icons\*\*\s+<!-- fill in: [^\n]*--spec/.test(bare.out), bare.out);
+    // A search the resolver is unsure of is a box with choices, not a mark no pack has (#432).
+    const unsure = join(dir, 'unsure.json');
+    writeFileSync(unsure, JSON.stringify({ nodes: [{ id: 'a', kind: 'icon', icon: 'java', label: 'Service' },
+      { id: 'b', kind: 'icon', icon: 'acme internal gateway', label: 'Gateway', col: 1 }] }));
+    spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', unsure, '--out', join(dir, 'unsure.drawio')], { encoding: 'utf8' });
+    const icons = say(['--draft', join(dir, 'unsure.drawio'), '--spec', unsure]).out;
+    assert(/^- unsure, drawn as a labelled box: query java, reason [^\n]*alternatives \[/m.test(icons), icons);
+    assert(/^- not found, drawn as a labelled box: query acme internal gateway$/m.test(icons), icons);
     for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
       ['--draft', join(dir, 'starter-architecture.drawio'), '--spec'],
       ['--draft', join(dir, 'starter-architecture.drawio'), '--spec', join(dir, 'missing.json')], ['--draft', join(dir, 'starter-architecture.drawio'), '--png-viewed']]) {

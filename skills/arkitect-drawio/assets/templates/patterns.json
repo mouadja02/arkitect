@@ -76,8 +76,8 @@
       { "id": "agent-a", "kind": "icon", "icon": "bedrock", "label": "Monitoring agent", "parent": "runtime", "col": 1, "row": 0 },
       { "id": "agent-b", "kind": "icon", "icon": "bedrock", "label": "Diagnosis agent", "parent": "runtime", "col": 2, "row": 0 },
       { "id": "agent-c", "kind": "icon", "icon": "bedrock", "label": "Recommendation agent", "parent": "runtime", "col": 3, "row": 0 },
-      { "id": "memory", "kind": "icon", "icon": "agentcore memory", "label": "Agent memory", "col": 2, "row": 1 },
-      { "id": "observability", "kind": "icon", "icon": "agentcore observability", "label": "Agent observability", "col": 3, "row": 1 }
+      { "id": "memory", "kind": "icon", "icon": "aws/amazon-bedrock-agentcore-memory", "label": "Agent memory", "col": 2, "row": 1 },
+      { "id": "observability", "kind": "icon", "icon": "aws/amazon-bedrock-agentcore-observability", "label": "Agent observability", "col": 3, "row": 1 }
     ],
     "edges": [
       { "from": "agent-a", "to": "agent-b", "kind": "error", "label": "failure detected" },

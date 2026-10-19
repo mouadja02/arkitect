@@ -26,7 +26,7 @@ import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
-import { resolve, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
+import { resolve, unattended, drawnMark, byExactId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
 import { parseCliOrExit, exitUsage, parseMxfile, extractCells } from './lib/drawio-core.mjs';
 import { readJson } from './lib/read-json.mjs';
@@ -40,7 +40,6 @@ import { strayMembers, strayNote } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
-import { GENERIC_VENDOR } from './lib/generic-words.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 import { planEdges, readEnd, SIDES } from './lib/edge-plan.mjs';
 import { captionBox } from './lib/routes.mjs';
@@ -253,17 +252,17 @@ export function resolveIcon(node, catalog, report, contextPacks) {
     return null;
   }
 
-  const g = r.groups[0];
-  const chosen = g.variants[0];
-
-  // Any other doubt still draws the leader and lists it. Here the leader is
-  // the harm - a vendor's mark on a component named in generic words - so the
-  // node gets the labelled box instead (#231).
-  if (r.reason === GENERIC_VENDOR) {
+  // A leader the search is unsure of is another product's mark often enough
+  // to be the harm: a vendor's mark on a component named in generic words
+  // (#231), the JavaScript file mark for "java" (#432). The node gets the
+  // labelled box, and the report the ids to choose from.
+  const chosen = unattended(r);
+  if (!chosen) {
     report.missing.push({ query, reason: r.reason, alternatives: r.groups.slice(0, 4).map((x) => x.variants[0].id) });
     return null;
   }
 
+  // One product's own variants: the leader draws, and the others are named.
   if (!r.confident) {
     report.ambiguous.push({
       query,
@@ -688,12 +687,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
     for (const stray of strayMembers(members)) report.notes.push(at + strayNote(stray));
 
     report.looksLikeBoundary.push(...looksLikeBoundary(footprints));
-    // The same verdict an icon node would get, so what is listed would draw (#240).
+    // The same verdict an icon node would get, so what is listed would draw
+    // (#240), and never an on-demand entry, which ships no bytes to draw (#434).
     const plainBoxes = footprints.filter((f) => f.plain).map((f) => (spec.nodes ?? []).find((n) => n.id === f.id));
-    report.namesAProduct.push(...namedProducts(plainBoxes, (text) => {
-      const r = resolve(text, { catalog, limit: 3, packs: contextPacks });
-      return r.confident ? r.icon.id : null;
-    }));
+    report.namesAProduct.push(...namedProducts(plainBoxes, (text) => drawnMark(resolve(text, { catalog, limit: 3, packs: contextPacks }))));
 
     // An unknown kind draws as a plain flow. It used to crash on the edge label.
     const kindOf = (e) => (Object.hasOwn(EDGE_KINDS, e.kind ?? '') ? e.kind : 'flow');

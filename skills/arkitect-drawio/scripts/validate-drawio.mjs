@@ -17,7 +17,7 @@ import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/rout
 import { boundaryWord } from './lib/fake-boundaries.mjs';
 import { strayMembers } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
-import { resolve as resolveIcon, loadCatalog } from './find-icon.mjs';
+import { resolve as resolveIcon, drawnMark, loadCatalog } from './find-icon.mjs';
 
 const USAGE = 'usage: validate-drawio.mjs <file...> [--page N] [--json] [--strict]';
 
@@ -423,10 +423,9 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
     let productBoxes = 0;
     if (products && plainBoxes.length) {
       catalog ??= loadCatalog();
-      const named = namedProducts(plainBoxes, (t) => {
-        const r = resolveIcon(t, { catalog, limit: 3 });
-        return r.confident ? r.icon.id : null;
-      }).filter((p) => p.replace);
+      // Only a mark that would draw: an on-demand product's icon node is the
+      // same plain box, so its warning could never clear (#434).
+      const named = namedProducts(plainBoxes, (t) => drawnMark(resolveIcon(t, { catalog, limit: 3 }))).filter((p) => p.replace);
       if (leaves.some((c) => isIcon(c.style))) {
         for (const p of named) {
           productBoxes++;
