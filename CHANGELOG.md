@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- Draw.io `validate` and `analyze` now report a missing input concisely instead of printing a Node stack trace (#436).
+
 ## [2.4.0] — 2026-10-17
 
 ### Added
