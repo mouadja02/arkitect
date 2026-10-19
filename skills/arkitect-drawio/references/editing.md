@@ -18,6 +18,9 @@ The build's `notes` name every cell added since and keep its backup; put each
 one in the spec and rebuild. If `spec.mjs` says an editor saved the file, a
 colour or position changed there is not in the spec: edit in place instead.
 
+To switch engines, build the printed spec with the other engine's builder; its
+report lists what it draws differently (#440).
+
 ## Never load the whole file
 
 Reference pages run 4–7 MB because of embedded images; loading one wholesale

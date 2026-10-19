@@ -25,7 +25,9 @@ at most four `choices`, and a few `others` (#117).
 
 **Shared packs** fill coverage gaps with 4,850 original SVG/PNG marks from the
 sibling Draw.io skill. Existing successful resolutions keep their artwork; use
-`"icon": "drawio:databases/postgresql"` to choose a shared mark exactly. Search
+`"icon": "drawio:databases/postgresql"` to choose a shared mark exactly; Draw.io's
+spelling, `databases/postgresql`, names the same mark (#440). A ref given to the
+search answers as that item, never as text (#443). Search
 and build reports identify these as **embedded**, with source and licence
 metadata. They keep captions and arrow bindings editable, but the logo paths are
 not Excalidraw strokes. No tracing, recolouring or download occurs. On-demand

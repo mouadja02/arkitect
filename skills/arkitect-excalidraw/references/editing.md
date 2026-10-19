@@ -19,6 +19,9 @@ The build's `notes` name every element added since and keep its backup; put
 each one in the spec and rebuild. If `spec.mjs` says an editor saved the scene,
 a colour or position changed there is not in the spec: edit in place instead.
 
+To switch engines, build the printed spec with the other engine's builder; its
+report lists what it draws differently (#440).
+
 ## Never load the whole file
 
 A scene with embedded images runs to megabytes of base64. Summarize it instead:

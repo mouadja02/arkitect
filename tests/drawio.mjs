@@ -2402,6 +2402,60 @@ test('a build draws the mark each exact id names, and says so (#95)', () => {
   assert(/pack/.test(clash.report.missing[0].reason ?? ''), 'the report names the pack the id really lives in');
 });
 
+// The builder read an exact id as that entry since #95, but the search an
+// agent checks an id with still searched it as text: `databases/postgresql`
+// answered "weak match" with Amazon RDS first, and `data-platforms/tableau`,
+// a catalogued on-demand mark, "No pack has it" (#443).
+test('the search answers an exact id with that entry, in either spelling (#443, #440)', () => {
+  const cat = finder.loadCatalog();
+  const wrong = [];
+  for (const icon of cat.icons) {
+    for (const q of [icon.id, `drawio:${icon.id}`]) {
+      const r = finder.resolve(q, { catalog: cat });
+      if (!r.confident || r.icon.id !== icon.id) wrong.push(`${q}: ${r.confident ? r.icon.id : r.reason}`);
+    }
+  }
+  assert(!wrong.length, `${wrong.length} exact ids answered as something else:\n        ${wrong.slice(0, 10).join('\n        ')}`);
+
+  const ask = (...args) => JSON.parse(node('find-icon.mjs', [...args, '--compact']));
+  const pg = ask('databases/postgresql');
+  eq(pg.confident, true, 'an exact id is confident');
+  eq(pg.resolved, 'databases/postgresql', 'and answers itself');
+  eq(JSON.stringify(pg.node), '{"kind":"icon","icon":"databases/postgresql"}', 'with the node to copy');
+  eq(ask('drawio:databases/postgresql').resolved, 'databases/postgresql', "Excalidraw's spelling answers the same entry");
+  const tableau = ask('data-platforms/tableau');
+  eq(tableau.resolved, 'data-platforms/tableau', 'a catalogued on-demand id is not "no pack has it"');
+  assert(tableau.onDemand, 'and carries its on-demand note');
+  eq(ask('postgres').resolved, 'databases/postgresql', 'a name still searches as before');
+
+  // The builder refuses an id that contradicts its node's pack; so does the
+  // search, rather than scoring Amazon RDS inside the pinned pack.
+  const clash = ask('databases/postgresql', '--pack', 'aws');
+  eq(clash.confident, false, 'an id outside the pinned pack is not confident');
+  assert(!clash.choices?.some((c) => c.id.startsWith('aws/')), `and offers no AWS mark: ${JSON.stringify(clash.choices)}`);
+});
+
+// Excalidraw writes a shared mark as `drawio:<pack>/<slug>`, and Draw.io
+// refused that spelling: `shared-icon-packs.spec.json`, built here, drew 3 of
+// its 4 icons as boxes (#440). An Excalidraw library ref names no Draw.io
+// mark at all, and searched as text it offered Icons8.
+test('a build reads both spellings of a shared-pack id, and names an Excalidraw library ref (#440)', () => {
+  const spec = JSON.parse(readFileSync(join(ROOT, 'skills/arkitect-excalidraw/assets/templates/shared-icon-packs.spec.json'), 'utf8'));
+  const icons = spec.nodes.filter((n) => n.kind === 'icon');
+  const { report } = builder.buildDiagram(spec);
+  eq(report.missing.length, 0, `nothing is missing: ${JSON.stringify(report.missing)}`);
+  eq(report.used.length, icons.length, 'every icon of the Excalidraw template draws');
+  for (const n of icons.filter((x) => x.icon.startsWith('drawio:'))) {
+    assert(report.used.some((u) => u.query === n.icon && u.id === n.icon.slice('drawio:'.length)), `${n.icon} draws the mark it names`);
+  }
+
+  const ref = builder.buildDiagram({ nodes: [{ id: 'a', kind: 'icon', icon: 'aws-architecture-icons:16', label: 'Lambda' }] }).report;
+  eq(ref.used.length, 0, 'an Excalidraw library ref draws no Draw.io mark');
+  eq(ref.missing.length, 1, 'it is reported');
+  assert(/Excalidraw library/.test(ref.missing[0].reason ?? ''), `as an Excalidraw library item: ${JSON.stringify(ref.missing[0])}`);
+  assert(!ref.missing[0].alternatives, 'with no other product offered in its place');
+});
+
 test('an on-demand icon refuses to produce bytes and hands back the command', () => {
   const cat = finder.loadCatalog();
   const icon = cat.icons.find((i) => i.id === 'ai-frameworks/openai');
