@@ -3254,9 +3254,9 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
       for (const w of warnings) assert(draft.out.includes(`- warning: ${w}`), `${engine}: the draft drops the warning "${w}"`);
       const built = JSON.parse(spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'build', spec, '--out', join(dir, `rebuilt${ext}`)], { encoding: 'utf8' }).stdout);
       if (engine === 'drawio') {
-        const ids = [...new Set(JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.icon).map((n) => n.icon))];
-        eq(built.icons.resolved, ids.length, 'every icon resolved');
-        for (const icon of ids) assert(new RegExp(`- \`${icon}\`: \`[\\w-]+/[\\w-]+\`, \\w[\\w-]* pack`).test(draft.out), `drawio: the draft drops the icon ${icon}`);
+        const nodes = JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.icon);
+        eq(built.icons.resolved, nodes.length, 'every icon resolved');
+        for (const n of nodes) assert(new RegExp(`- node \`${n.id}\`: \`[\\w-]+/[\\w-]+\`, \\w[\\w-]* pack`).test(draft.out), `drawio: the draft drops the icon of ${n.id}`);
       } else {
         const nodes = JSON.parse(readFileSync(spec, 'utf8')).nodes.filter((n) => n.kind === 'icon');
         for (const n of nodes) assert(new RegExp(`- node \`${n.id}\`: \``).test(draft.out), `excalidraw: the draft drops the icon of ${n.id}`);
@@ -3288,8 +3288,8 @@ test('arkitect report --draft fills File, Icons and Validation from the diagram 
       { id: 'b', kind: 'icon', icon: 'acme internal gateway', label: 'Gateway', col: 1 }] }));
     spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', unsure, '--out', join(dir, 'unsure.drawio')], { encoding: 'utf8' });
     const icons = say(['--draft', join(dir, 'unsure.drawio'), '--spec', unsure]).out;
-    assert(/^- unsure, drawn as a labelled box: query java, reason [^\n]*alternatives \[/m.test(icons), icons);
-    assert(/^- not found, drawn as a labelled box: query acme internal gateway$/m.test(icons), icons);
+    assert(/^- unsure, drawn as a labelled box: node a, query java, reason [^\n]*alternatives \[/m.test(icons), icons);
+    assert(/^- not found, drawn as a labelled box: node b, query acme internal gateway$/m.test(icons), icons);
     for (const args of [['--draft'], ['--draft', join(dir, 'draft.md')], ['--draft', join(dir, 'missing.drawio')], ['--spec', 'a.json', 'r.md'],
       ['--draft', join(dir, 'starter-architecture.drawio'), '--spec'],
       ['--draft', join(dir, 'starter-architecture.drawio'), '--spec', join(dir, 'missing.json')], ['--draft', join(dir, 'starter-architecture.drawio'), '--png-viewed']]) {
@@ -3312,6 +3312,86 @@ test('arkitect report --draft lists the icons from the spec a diagram carries wh
     const icons = (text) => text.slice(text.indexOf('**Icons**'), text.indexOf('**Validation**')).split('\n').filter((l) => l.startsWith('- '));
     assert(icons(carried).length > 3, `${engine}: no icons listed`);
     eq(icons(carried).join('\n'), icons(given).join('\n'), `${engine}: the same icons as from the spec file`);
+  }
+});
+
+// The draft replays the spec as the build that drew it does: through the same
+// reader, which takes one byte order mark (#430), in the same applied style, so
+// a kind the person added is not called unknown (#429), and with each Draw.io
+// icon line naming its node, as Excalidraw's does (#409).
+test('arkitect report --draft reads, styles and attributes the spec as the build does (#429, #430, #409)', () => {
+  const dir = join(TMP, 'report-draft-replay');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const run = (args, env = process.env) => {
+    const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), ...args], { encoding: 'utf8', env });
+    return { code: r.status, out: r.stdout, err: r.stderr };
+  };
+  const spec = (kind) => JSON.stringify({ nodes: [{ id: 'a', label: 'Café ☕' }, { id: 'b', label: 'Worker', col: 1 }], edges: [{ from: 'a', to: 'b', kind }] });
+  const event = {
+    drawio: { stroke: '#CC0000', dashed: 1, width: 2, meaning: 'event' },
+    excalidraw: { color: '#e03131', strokeStyle: 'dashed', width: 2, meaning: 'event' },
+  };
+  try {
+    for (const [engine, ext] of [['drawio', '.drawio'], ['excalidraw', '.excalidraw']]) {
+      // One BOM, as Windows PowerShell writes, drafts as the same spec without it.
+      const plain = join(dir, `plain-${engine}.json`);
+      const bom = join(dir, `bom-${engine}.json`);
+      writeFileSync(plain, spec('flow'));
+      writeFileSync(bom, `﻿${spec('flow')}`);
+      const file = join(dir, `a${ext}`);
+      eq(run([engine, 'build', bom, '--out', file, '--defaults']).code, 0, `${engine}: a BOM spec builds`);
+      const fromBom = run(['report', '--draft', file, '--spec', bom]);
+      eq(fromBom.code, 0, `${engine}: and drafts (${fromBom.err})`);
+      eq(fromBom.out.replaceAll(bom, plain), run(['report', '--draft', file, '--spec', plain]).out, `${engine}: as the spec without one`);
+      writeFileSync(join(dir, 'two.json'), `﻿﻿${spec('flow')}`);
+      writeFileSync(join(dir, 'bad.json'), '{"nodes": [');
+      for (const bad of ['two.json', 'bad.json']) {
+        const r = run(['report', '--draft', file, '--spec', join(dir, bad)]);
+        eq(r.code, 2, `${engine}: ${bad} is refused`);
+        assert(r.err.includes('is not valid JSON'), r.err);
+      }
+
+      // A kind the applied style adds: the build draws it, and the draft from
+      // the same store agrees.
+      const home = join(dir, `home-${engine}`);
+      mkdirSync(join(home, engine), { recursive: true });
+      const override = join(home, engine, 'style-overrides.json');
+      writeFileSync(override, JSON.stringify({ schemaVersion: 1, engine, edgeKinds: { event: event[engine] } }));
+      const env = { ...process.env, ARKITECT_HOME: home };
+      const custom = join(dir, `event-${engine}.json`);
+      writeFileSync(custom, spec('event'));
+      const styled = join(dir, `event${ext}`);
+      eq(JSON.stringify(JSON.parse(run([engine, 'build', custom, '--out', styled], env).out).unknownKinds), '[]', `${engine}: the build knows the kind`);
+      const draft = run(['report', '--draft', styled, '--spec', custom], env);
+      eq(draft.code, 0, `${engine}: drafts (${draft.err})`);
+      assert(!draft.out.includes('unknownKinds'), `${engine}: the draft calls the applied kind unknown:\n${draft.out}`);
+      // The house style has no such kind: asked for, the draft says it replayed that.
+      const house = run(['report', '--draft', styled, '--spec', custom, '--defaults'], env).out;
+      assert(/^The build report for the spec, replayed now in the house style \(--defaults\):$/m.test(house), house);
+      assert(/^- unknownKinds: field edges\[0\]\.kind, value event, drawnAs flow/m.test(house), house);
+      // An override with a problem is ignored by build and draft alike, and named.
+      writeFileSync(override, JSON.stringify({ schemaVersion: 1, engine, edgeKinds: { event: { ...event[engine], width: 99 } } }));
+      const ignored = run(['report', '--draft', styled, '--spec', custom], env).out;
+      assert(/^- style: the applied style is ignored, as a build here ignores it: edgeKinds\.event\.width/m.test(ignored), ignored);
+      assert(/^- unknownKinds: field edges\[0\]\.kind, value event/m.test(ignored), ignored);
+      eq(run(['report', '--defaults', join(dir, 'r.md')]).code, 2, '--defaults goes with --draft');
+    }
+
+    // Two nodes with one query, and an unsure one: each line names its node.
+    const twins = join(dir, 'twins.json');
+    writeFileSync(twins, JSON.stringify({ nodes: [{ id: 'orders', kind: 'icon', icon: 'aws/aws-lambda', label: 'Orders' },
+      { id: 'billing', kind: 'icon', icon: 'aws/aws-lambda', label: 'Billing', col: 1 },
+      { id: 'svc', kind: 'icon', icon: 'java', label: 'Service', col: 2 },
+      { id: 'agent', kind: 'icon', icon: 'agentcore', label: 'Agent', col: 3 }] }));
+    const twinsFile = join(dir, 'twins.drawio');
+    eq(run(['drawio', 'build', twins, '--out', twinsFile, '--defaults']).code, 0, 'twins build');
+    const icons = run(['report', '--draft', twinsFile]).out;
+    for (const id of ['orders', 'billing']) assert(icons.includes(`- node \`${id}\`: \`aws/aws-lambda\`, aws pack\n`), icons);
+    assert(/^- unsure, drawn as a labelled box: node svc, query java, /m.test(icons), icons);
+    assert(/^- not confident: node `agent` drew `aws\/[\w-]+` for `agentcore`; alternatives aws\//m.test(icons), icons);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 

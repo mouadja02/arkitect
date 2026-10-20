@@ -206,6 +206,8 @@ export function resolveIcon(node, catalog, report, contextPacks) {
   const query = typeof node === 'string' ? node : node.icon;
   if (!query) return null;
   const pinned = typeof node === 'object' ? node.pack ?? null : null;
+  // Each entry names its node, so two nodes on one query are told apart (#409).
+  const at = typeof node === 'object' && node.id != null ? { node: node.id } : {};
 
   // Whatever route chose the mark, an on-demand entry ships no bytes: it is
   // reported to fetch, never swapped for something that does draw.
@@ -213,15 +215,15 @@ export function resolveIcon(node, catalog, report, contextPacks) {
     // Drawn or not, a product that was discontinued, renamed or absorbed is
     // named in the report, so the person reading the diagram hears it (#83).
     const lifecycle = lifecycleOf(chosen, catalog);
-    if (lifecycle) (report.lifecycle ??= []).push({ query, id: chosen.id, ...lifecycle });
+    if (lifecycle) (report.lifecycle ??= []).push({ ...at, query, id: chosen.id, ...lifecycle });
     if (chosen.bytes === 'on-demand') {
       report.needsFetch.push({
-        query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, artwork: chosen.artwork,
+        ...at, query, id: chosen.id, licence: chosen.licence, reason: chosen.reason, artwork: chosen.artwork,
         ...(chosen.fetch ? { fetch: chosen.fetch } : { next: onDemandNext(chosen) }),
       });
       return null;
     }
-    report.used.push({ query, title: chosen.title, id: chosen.id, pack: chosen.pack });
+    report.used.push({ ...at, query, title: chosen.title, id: chosen.id, pack: chosen.pack });
     return chosen;
   };
 
@@ -238,6 +240,7 @@ export function resolveIcon(node, catalog, report, contextPacks) {
     // `databases/postgresql` scores Amazon RDS, confidently.
     if (pinned && exact.pack !== pinned) {
       report.missing.push({
+        ...at,
         query,
         pack: pinned,
         reason: `${query} is in the "${exact.pack}" pack, but this node pins "${pinned}"`,
@@ -249,7 +252,7 @@ export function resolveIcon(node, catalog, report, contextPacks) {
 
   const r = resolve(query, { catalog, limit: 3, packs: contextPacks, pack: pinned });
   if (!r.groups.length) {
-    report.missing.push({ query, ...(pinned ? { pack: pinned } : {}), ...(r.reason === EXCALIDRAW_ITEM ? { reason: r.reason } : {}) });
+    report.missing.push({ ...at, query, ...(pinned ? { pack: pinned } : {}), ...(r.reason === EXCALIDRAW_ITEM ? { reason: r.reason } : {}) });
     return null;
   }
 
@@ -259,13 +262,14 @@ export function resolveIcon(node, catalog, report, contextPacks) {
   // labelled box, and the report the ids to choose from.
   const chosen = unattended(r);
   if (!chosen) {
-    report.missing.push({ query, reason: r.reason, alternatives: r.groups.slice(0, 4).map((x) => x.variants[0].id) });
+    report.missing.push({ ...at, query, reason: r.reason, alternatives: r.groups.slice(0, 4).map((x) => x.variants[0].id) });
     return null;
   }
 
   // One product's own variants: the leader draws, and the others are named.
   if (!r.confident) {
     report.ambiguous.push({
+      ...at,
       query,
       reason: r.reason,
       chose: chosen.id,
