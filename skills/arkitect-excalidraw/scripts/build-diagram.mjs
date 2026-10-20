@@ -1521,12 +1521,13 @@ export const isArkitectScene = (text) => (JSON.parse(text).elements ?? []).some(
 // The elements of a scene this build replaces that carry no stamp, so someone
 // added them since it was built, and this build does not draw them (#376). A
 // title or legend drawn before chrome was stamped sits where this build draws
-// the same kind of element, so it is not counted. A bound label goes with its
+// the same kind of chrome, so it is not counted; anything else is, even where
+// it sits on a shape this build draws (#426). A bound label goes with its
 // shape, and names it.
 export function droppedElements(oldText, scene) {
   const old = (JSON.parse(oldText).elements ?? []).filter((el) => el && typeof el === 'object' && !el.isDeleted);
   const spot = (el) => `${el.type}@${Math.round(el.x)},${Math.round(el.y)}`;
-  const drawn = new Set(scene.elements.map(spot));
+  const drawn = new Set(scene.elements.filter((el) => el.customData?.arkitect?.chrome).map(spot));
   const byId = new Map(old.map((el) => [el.id, el]));
   const textOf = (el) => (el.type === 'text' ? el.text
     : (el.boundElements ?? []).map((b) => byId.get(b?.id)).find((t) => t?.type === 'text')?.text) ?? '';

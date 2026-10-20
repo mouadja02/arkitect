@@ -848,14 +848,16 @@ export function specOf(text) {
 
 // The cells of a file this build replaces that the build does not draw (#376):
 // added since by hand, or dropped from the spec. The ids the builder makes up
-// for itself are left out; they change with the spec, not with an edit.
+// for itself are left out; they change with the spec, not with an edit. A cell
+// id is unique only within its page, so a cell is kept only by the same id on
+// the same page, never by one on another page (#425).
 const GENERATED = /^(?:[01]|e\d+|title|subtitle|legend(?:-[abet]\d+)?)$|-lbl$/;
-const cellsOf = (xml) => parseMxfile(xml).pages.flatMap((page) => extractCells(page.xml));
+const cellsOf = (xml) => parseMxfile(xml).pages.flatMap((page) => extractCells(page.xml).map((c) => ({ ...c, at: `${page.id}\u0000${c.id}` })));
 const plainText = (value) => value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim().slice(0, 40);
 export function droppedCells(oldText, newXml) {
-  const drawn = new Set(cellsOf(newXml).map((c) => c.id));
-  return cellsOf(oldText).filter((c) => c.id && (c.vertex || c.edge) && !drawn.has(c.id) && !GENERATED.test(c.id))
+  const drawn = new Set(cellsOf(newXml).map((c) => c.at));
+  return cellsOf(oldText).filter((c) => c.id && (c.vertex || c.edge) && !drawn.has(c.at) && !GENERATED.test(c.id))
     .map((c) => ({ id: c.id, label: plainText(c.value) }));
 }
 

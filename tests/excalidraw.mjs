@@ -1296,6 +1296,33 @@ test('a rebuild over a scene someone added to names the dropped elements, and re
   rmSync(dir, { recursive: true, force: true });
 });
 
+// An added shape whose top-left matched a shape the build draws passed as old
+// unstamped chrome, so a rebuild dropped it with nothing said and retention
+// deleted its backup (#426). Only chrome excuses an unstamped element now.
+test('a rebuild names a shape added on top of a drawn one, and keeps its backup (#426)', () => {
+  const dir = join(TMP, 'p426');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.excalidraw');
+  writeFileSync(spec, JSON.stringify({ title: 'Orders', nodes: [{ id: 'orders', label: 'Orders' }, { id: 'worker', label: 'Worker', col: 1 }],
+    edges: [{ from: 'orders', to: 'worker' }, { from: 'worker', to: 'orders', kind: 'async' }] }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  build();
+  eq(build().notes.join(), '', 'a rebuild over its own untouched output says nothing');
+  const scene = JSON.parse(readFileSync(out, 'utf8'));
+  const drawn = scene.elements.find((el) => el.type === 'rectangle' && el.customData?.arkitect?.node === 'orders');
+  scene.elements.push({ ...drawn, id: 'added-marker', width: drawn.width + 50, customData: undefined, boundElements: [], index: undefined });
+  writeFileSync(out, JSON.stringify(scene));
+  const dropped = build();
+  eq(dropped.notes.length, 1, 'one note');
+  assert(dropped.notes[0].includes('"added-marker" (rectangle)') && /-kept(-\d+)?\.excalidraw$/.test(dropped.backup), dropped.notes[0]);
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} drops nothing more`);
+  const holding = readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('"added-marker"'));
+  eq(holding.length, 1, 'seven rebuilds later, a backup still holds the added shape');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The spec a scene was built from lived in a separate file, so an edit meant
 // hand-written scene JSON with both sides of every binding (#339). Every build
 // carries its spec on the first node's customData: the app keeps an element's

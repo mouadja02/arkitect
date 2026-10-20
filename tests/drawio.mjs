@@ -4930,6 +4930,43 @@ test('a rebuild over a .drawio someone added to names the dropped cells, and ret
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A cell id is unique only within its page, and the rebuild compared ids
+// across the whole file: a cell added to one page went with nothing said when
+// another page used the same id, and retention deleted its backup (#425).
+test('a rebuild names a cell added to one page even when another page uses its id, and keeps its backup (#425)', () => {
+  const dir = join(TMP, 'p425');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.drawio');
+  const pages = [{ id: 'p', name: 'First', nodes: [{ id: 'orders', label: 'Orders' }] }, { id: 'q', name: 'Second', nodes: [{ id: 'a', label: 'Worker' }] }];
+  writeFileSync(spec, JSON.stringify({ pages }));
+  const build = () => JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  const cell = (id) => `<mxCell id="${id}" value="Audit log" style="rounded=0;" vertex="1" parent="1"><mxGeometry x="400" y="100" width="190" height="60" as="geometry" /></mxCell>`;
+  build();
+  eq(build().notes.join(), '', 'a rebuild over its own untouched output says nothing');
+  writeFileSync(out, readFileSync(out, 'utf8').replace('</root>', `${cell('a')}</root>`));
+  const dropped = build();
+  eq(dropped.notes.length, 1, 'one note');
+  assert(dropped.notes[0].includes('"a" (Audit log)') && /-kept(-\d+)?\.drawio$/.test(dropped.backup), dropped.notes[0]);
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} drops nothing more`);
+  const holding = readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('Audit log'));
+  eq(holding.length, 1, 'seven rebuilds later, a backup still holds the added cell');
+
+  // Kept on its own page, it is not dropped; a page gone takes its cells,
+  // whatever the surviving page calls its own.
+  const xml = builder.buildDiagram({ pages }).xml;
+  const ids = (text, next = xml) => builder.droppedCells(text, next).map((d) => d.id).join();
+  eq(ids(xml), '', 'every cell kept on its own page');
+  const second = (text) => text.replace(/<\/root>(?![\s\S]*<\/root>)/, `${cell('extra')}</root>`);
+  eq(ids(second(xml), builder.buildDiagram({ pages: [pages[0], { ...pages[1], nodes: [...pages[1].nodes, { id: 'extra', col: 1 }] }] }).xml), '',
+    'a cell the rebuild draws on the same page is kept');
+  eq(ids(second(xml)), 'extra', 'and named when the rebuild does not draw it there');
+  eq(ids(xml.replace('</root>', `${cell('extra')}</root>`), builder.buildDiagram({ pages: [{ ...pages[1], nodes: [...pages[1].nodes, { id: 'orders', col: 1 }] }] }).xml),
+    'orders,extra', 'a removed page names its cells though the surviving page has an orders');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The spec a diagram was built from lived in a separate file, often not
 // committed, so an edit meant hand-written XML, and an agent asked to add one
 // node wrote a new spec for the whole diagram (#339). Every build carries its
