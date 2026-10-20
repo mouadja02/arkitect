@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.4.1] — 2026-10-20
+
 ### Fixed
 
 - A Draw.io icon node whose search the resolver is unsure of now draws a labelled box, listed under `icons.missing` with its reason and up to four alternatives, instead of the leading guess: `java` drew the JavaScript file mark, `tempo` Temporal and `nat gateway` Amazon API Gateway, and 38 rows of the icon answer key drew a mark the key rejects. **This changes what existing specs draw**: a node named by a weak, prefix-only, close or generic match is a box until its spec names the id; one product's same-title variants still draw their leader and are listed under `icons.ambiguous`. `report --draft` lists such a node as `unsure, drawn as a labelled box`, no longer `not found`. Pattern 10 names its two AgentCore marks by exact id. The build, the build report's `namesAProduct` and `validate` share one verdict, `unattended()` in `find-icon.mjs` (#432).
