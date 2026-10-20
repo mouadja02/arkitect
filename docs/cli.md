@@ -30,13 +30,16 @@ the text, so `--png-viewed` is the agent's word that it opened the PNG, never an
 observed fact. Exit 0 clean, 1 with problems, each named, 2 on a usage error
 (#302).
 
-`report --draft <diagram> [--spec <spec>]` prints the seven headings with what
+`report --draft <diagram> [--spec <spec>] [--defaults]` prints the seven headings with what
 a script knows filled in: **File** from the diagram, **Validation** with every
 error, warning and note `validate` prints, word for word, and **Icons** from
 the spec, resolved as the build resolves it without writing anything: each
-icon's id and pack, or ref and library, and every placeholder, missing,
-ambiguous or on-demand mark and product named in a plain box. The build
-report's unknown kinds, unknown fields and notes go under Validation. Engine,
+icon node's id and pack, or ref and library, and every placeholder, missing,
+ambiguous or on-demand mark and product named in a plain box, each by its
+node (#409). The build report's unknown kinds, unknown fields and notes go
+under Validation, replayed in the style the build loads from the same store,
+or the house style with `--defaults`, and say which; an applied style the
+build ignores is named there (#429). Engine,
 Assumptions, Render and Deviations each hold one `<!-- fill in: … -->` line,
 and the check fails while one is left. Without `--spec` it reads the spec the
 diagram carries (#388); with neither, Icons is a fill-in too (#387).
@@ -145,7 +148,7 @@ Both builders print a JSON report. Beyond the file written and its backup:
 
 | key | lists |
 |---|---|
-| `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground`. A Draw.io search the resolver is unsure of draws a labelled box, listed under `missing` with its `reason` and `alternatives`; `ambiguous` holds only one product's same-title variants, whose leader draws (#432). Each shared mark is named by `ref` and `pack`; `--verbose` adds `icons.sources`, its source, licence and hash once per ref (#386) |
+| `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground`. A Draw.io search the resolver is unsure of draws a labelled box, listed under `missing` with its `reason` and `alternatives`; `ambiguous` holds only one product's same-title variants, whose leader draws (#432). Each Draw.io entry names its `node` (#409). Each shared mark is named by `ref` and `pack`; `--verbose` adds `icons.sources`, its source, licence and hash once per ref (#386) |
 | `placeholders` | Excalidraw: each empty slot drawn, and why |
 | `logos` | Draw.io: the fetched logos a build embedded |
 | `namesAProduct` | a plain box whose label names a bundled product with artwork to draw, never an on-demand one (#434); `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |

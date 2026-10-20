@@ -1,5 +1,5 @@
 // arkitect report <file|-> [--png-viewed]
-// arkitect report --draft <diagram> [--spec <spec>]
+// arkitect report --draft <diagram> [--spec <spec>] [--defaults]
 //
 // The report check, for every host. Claude Code runs it as a Stop hook
 // (hooks/report-check.mjs); Codex, Cursor, Copilot, OpenCode and Gemini had no
@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { readJson } from '../../skills/arkitect-drawio/scripts/lib/read-json.mjs';
 import { problems, FILL_IN } from '../../hooks/report-check.mjs';
 import * as drawioBuilder from '../../skills/arkitect-drawio/scripts/build-diagram.mjs';
 import * as drawioValidator from '../../skills/arkitect-drawio/scripts/validate-drawio.mjs';
@@ -20,14 +21,15 @@ import * as excalidrawBuilder from '../../skills/arkitect-excalidraw/scripts/bui
 import * as excalidrawValidator from '../../skills/arkitect-excalidraw/scripts/validate-excalidraw.mjs';
 
 export const USAGE = 'usage: arkitect report <report.md | -> [--png-viewed]\n'
-  + '       arkitect report --draft <diagram> [--spec <spec.json>]\n'
+  + '       arkitect report --draft <diagram> [--spec <spec.json>] [--defaults]\n'
   + '  checks a saved diagram report: the seven headings, a Render section that describes\n'
   + '  only what was seen, no validate warning explained away, no hosted-editor link, no\n'
   + '  `fill in` marker left.\n'
   + '  --png-viewed  you opened the rendered PNG and looked at it (declared, not observed)\n'
   + '  --draft       print the report with File, Icons and Validation filled from the diagram\n'
   + '                and its spec (--spec, else the one it carries); save it, fill in each\n'
-  + '                `fill in` line, then check it';
+  + '                `fill in` line, then check it\n'
+  + '  --defaults    replay the spec in the house style, as build --defaults draws it';
 
 export function checkReport(text, { viewed = false } = {}) {
   return problems(text, { viewed, unseen: 'the report check was not told a PNG was looked at (--png-viewed)' });
@@ -66,13 +68,18 @@ function fileSection(file, engine, result) {
     + `${i.canvas ? `, canvas ${i.canvas.width}x${i.canvas.height}` : ''}.`];
 }
 
+// A Draw.io entry by its node, as Excalidraw's are (#409); by its query when
+// the API was handed a bare one.
+const whose = (e) => (e.node != null ? `node ${code(e.node)}` : code(e.query));
+
 function iconLines(engine, report) {
   if (engine === 'drawio') {
     return [
-      ...report.used.map((u) => `${code(u.query)}: ${code(u.id)}, ${u.pack} pack`),
+      ...report.used.map((u) => `${whose(u)}: ${code(u.id)}, ${u.pack} pack`),
       ...report.logos.map((l) => `${code(l.name)}: a fetched logo, embedded`),
       ...report.missing.map((m) => `${m.alternatives ? 'unsure' : 'not found'}, drawn as a labelled box: ${brief(m)}`),
-      ...report.ambiguous.map((a) => `not confident: ${code(a.query)} drew ${code(a.chose)}; alternatives ${a.alternatives.join(', ')}`),
+      ...report.ambiguous.map((a) => `not confident: ${whose(a)} drew ${code(a.chose)} for ${code(a.query)}`
+        + `${a.alternatives.length ? `; alternatives ${a.alternatives.join(', ')}` : ''}`),
       ...report.needsFetch.map((n) => `on demand, not drawn: ${brief(n)}`),
       ...report.sameArtwork.map((s) => `one artwork for several marks: ${brief(s)}`),
       ...report.lifecycle.map((l) => `lifecycle: ${brief(l)}`),
@@ -89,8 +96,18 @@ function iconLines(engine, report) {
   ];
 }
 
-function buildLines(engine, report) {
+// The style a replay drew in, named: an applied kind or token changes what the
+// build reports, and the diagram does not record which style drew it (#429).
+function styleWords(style) {
+  if (style.source === 'override') return 'in the applied style';
+  return style.reason === '--defaults' ? 'in the house style (--defaults)' : 'in the house style';
+}
+
+function buildLines(engine, report, style) {
   return [
+    // Ignored whole, as every build here ignores it: said, not presented as
+    // the convention the person applied.
+    ...(style.errors.length ? [`style: the applied style is ignored, as a build here ignores it: ${style.errors.join('; ')}`] : []),
     ...report.unknownKinds.map((u) => `unknownKinds: ${brief(u)}`),
     ...report.unknownFields.map((u) => `unknownFields: ${brief(u)}`),
     ...report.looksLikeBoundary.map((b) => `looksLikeBoundary: ${brief(b)}`),
@@ -99,11 +116,14 @@ function buildLines(engine, report) {
   ];
 }
 
-// The draft as Markdown, or { error } for a usage problem.
-export function draftReport(file, { spec: specPath = null } = {}) {
+// The draft as Markdown, or { error } for a usage problem. `style` is the one
+// the replay draws in: the builders' API never reads the person's store, so it
+// is the house style unless the caller passes one, as the CLI does (#429).
+export function draftReport(file, { spec: specPath = null, style = null } = {}) {
   const engine = engineOf(file);
   if (!engine) return { error: `${file} is not a diagram: --draft reads a .drawio, .dio, .xml or .excalidraw file` };
   const { builder, validator, name, other } = ENGINES[engine];
+  style ??= builder.resolveStyle();
   let text;
   try { text = readFileSync(file, 'utf8'); } catch (e) { return { error: `cannot read the diagram ${file}: ${e.code ?? e.message}` }; }
   const result = validator.validateFile(file);
@@ -112,7 +132,7 @@ export function draftReport(file, { spec: specPath = null } = {}) {
   let spec = null;
   let from = null;
   if (specPath) {
-    try { spec = JSON.parse(readFileSync(specPath, 'utf8')); } catch (e) {
+    try { spec = readJson(specPath); } catch (e) {
       return { error: e instanceof SyntaxError ? `${specPath} is not valid JSON` : `cannot read the spec ${specPath}: ${e.code ?? e.message}` };
     }
     from = code(specPath);
@@ -122,13 +142,14 @@ export function draftReport(file, { spec: specPath = null } = {}) {
   }
   let built = null;
   if (spec) {
-    try { built = builder.buildDiagram(spec).report; } catch (e) {
+    try { built = builder.buildDiagram(spec, { style }).report; } catch (e) {
       if (!(e instanceof builder.SpecError)) throw e;
       return { error: `the spec ${specPath ?? `${file} carries`} does not build:\n  ${e.errors.join('\n  ')}` };
     }
   }
 
   const icons = built ? iconLines(engine, built) : [];
+  const replay = built ? buildLines(engine, built, style) : [];
   const out = [
     '**File**', '', ...fileSection(file, engine, result), '',
     '**Engine**', '', fill(`why ${name} rather than ${other}, from the audience and the request; or that the user named it`), '',
@@ -146,7 +167,7 @@ export function draftReport(file, { spec: specPath = null } = {}) {
     ...list(result.errors.map((e) => `error: ${e}`)),
     ...list(result.warnings.map((w) => `warning: ${w}`)),
     ...((result.notes ?? []).length ? ['', 'Its notes, for a person to check:', '', ...list(result.notes)] : []),
-    ...(built && buildLines(engine, built).length ? ['', 'The build report for the spec:', '', ...list(buildLines(engine, built))] : []),
+    ...(replay.length ? ['', `The build report for the spec, replayed now ${styleWords(style)}:`, '', ...list(replay)] : []),
     '',
     '**Render**', '', fill('what was rendered and that you looked at the PNG, or that it failed and why; add each defect seen and left to Validation, by page'), '',
     '**Deviations**', '', fill('each departure from the style guide, or none'), '',
@@ -157,12 +178,13 @@ export function draftReport(file, { spec: specPath = null } = {}) {
 export function report(argv, { stdin = () => readFileSync(0, 'utf8'), log = console.log, error = console.error } = {}) {
   let parsed;
   try {
-    parsed = parseCli(argv, { switches: ['--png-viewed', '--draft'], values: { '--spec': null } });
+    parsed = parseCli(argv, { switches: ['--png-viewed', '--draft', '--defaults'], values: { '--spec': null } });
     if (!parsed.help && parsed.positionals.length !== 1) {
       const what = parsed.options.draft ? 'diagram' : 'report file';
       throw new UsageError(parsed.positionals.length ? `expected one ${what}, got ${parsed.positionals.length}` : `expected a ${what}${parsed.options.draft ? '' : ', or - for stdin'}`);
     }
     if (!parsed.help && parsed.options.spec !== undefined && !parsed.options.draft) throw new UsageError('--spec goes with --draft');
+    if (!parsed.help && parsed.options.defaults && !parsed.options.draft) throw new UsageError('--defaults goes with --draft');
     if (!parsed.help && parsed.options.draft && parsed.options['png-viewed']) throw new UsageError('--png-viewed checks a report; --draft writes one');
   } catch (e) {
     if (!(e instanceof UsageError)) throw e;
@@ -172,7 +194,11 @@ export function report(argv, { stdin = () => readFileSync(0, 'utf8'), log = cons
   if (parsed.help) { log(USAGE); return 0; }
   const [file] = parsed.positionals;
   if (parsed.options.draft) {
-    const draft = draftReport(file, { spec: parsed.options.spec ?? null });
+    // The style this engine's build loads from the same store, or the house
+    // style under --defaults, as build --defaults draws (#429).
+    const engine = engineOf(file);
+    const style = engine ? ENGINES[engine].builder.loadStyle({ defaults: Boolean(parsed.options.defaults) }) : null;
+    const draft = draftReport(file, { spec: parsed.options.spec ?? null, style });
     if (draft.error) { error(`${draft.error}\n${USAGE}`); return 2; }
     log(draft.markdown);
     return 0;
