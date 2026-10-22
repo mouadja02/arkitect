@@ -302,6 +302,21 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
       warnings.push(`frame ${who(fr.id)} comes before ${late} of its children; Excalidraw expects children first. `
         + 'A scene built before 2.0.0 does this: rebuild it from its spec');
     }
+    // A frame clips its members to its box. The builder sized one before it
+    // routed the edges inside it, and a loop or a detour, or its label, that
+    // ran past the edge was cut off (#427).
+    const box = elementBox(fr);
+    const past = live.filter((el) => el.frameId === fr.id).filter((el) => {
+      const b = elementBox(el);
+      return b.x < box.x - 1 || b.y < box.y - 1
+        || b.x + b.width > box.x + box.width + 1 || b.y + b.height > box.y + box.height + 1;
+    });
+    if (past.length) {
+      const one = past.length === 1;
+      warnings.push(`frame ${who(fr.id)} has ${past.length} member${one ? '' : 's'} drawn past its edge, which the app cuts off: `
+        + `${past.slice(0, 5).map((el) => who(el.id)).join(', ')}; move ${one ? 'it' : 'them'} inside, or rebuild from the spec, `
+        + 'which sizes a frame to hold its own edges and their labels');
+    }
   }
 
   // A node drawn inside or across a boundary it is not a member of (#378). The
@@ -372,6 +387,31 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
         if (overlaps <= 10) {
           warnings.push(`elements ${who(leaves[i].id)} and ${who(leaves[j].id)} overlap by ${Math.round(ox)}x${Math.round(oy)}px`);
         }
+      }
+    }
+  }
+
+  // A boundary's name drawn over a node. The builder's top inset held one
+  // line at the default size, so a larger name, or a second line, ran into
+  // the first row, and a free text over a shape was nobody's check (#428).
+  const drawnNodes = new Map();
+  for (const el of live) {
+    const node = tagOf(el)?.node;
+    if (typeof node !== 'string' || el.type === 'text'
+      || (el.strokeColor === 'transparent' && el.backgroundColor === 'transparent')) continue;
+    drawnNodes.set(node, [...(drawnNodes.get(node) ?? []), el]);
+  }
+  const boundaryNames = live.filter((el) => el.type === 'text' && !el.containerId && typeof tagOf(el)?.boundary === 'string');
+  let covered = 0;
+  for (const t of boundaryNames) {
+    const a = elementBox(t);
+    for (const drawn of drawnNodes.values()) {
+      const b = bbox(drawn);
+      const ox = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const oy = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+      if (ox > 1 && oy > 1 && ++covered <= 10) {
+        warnings.push(`text ${who(t.id)} names a boundary and overlaps ${who(drawn[0].id)} by ${Math.round(ox)}x${Math.round(oy)}px; `
+          + 'move the node clear of it, or rebuild from the spec, which leaves room for the name');
       }
     }
   }

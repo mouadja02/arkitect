@@ -238,7 +238,10 @@ Also `accent`, `sublabel`, `width`, `height`, `size`, `fontSize`,
 
 **Boundaries** are `scope` (a dashed rectangle, nestable) or `frame` (an
 Excalidraw frame, top level). Both are sized from everything their nodes draw,
-captions included.
+captions included. A scope's top inset is never less than its inside label
+needs, at any size and on any number of lines, whatever `padTop` asks (#428),
+and a frame holds the edges between its own members, loops and detours and
+their labels included (#427).
 
 **Edges** take `kind` (`flow`, `async`, `branch`, `error`, `success`, `data`,
 `light`), `label`, and a route:

@@ -1047,6 +1047,8 @@ function assemble(spec, style) {
   // wide box or a long caption cannot poke out of its own scope.
 
   const INSET = 14;                // an inside label's distance from the left edge
+  const HEADING_TOP = 12;          // and from the top edge
+  const HEADING_GAP = 9;           // between it and the contents: 46px less one default line
   const FRAME_NAME = 24;           // the strip the app draws a frame's name in, above it
   // Where an `outside` label sits: above the box's top-left corner, at a large
   // size unless the spec names one. Null for any other label.
@@ -1056,6 +1058,32 @@ function assemble(spec, style) {
     const m = measureText(b.label, size, S.fontFamily);
     return { size, x: Math.round(box.x), y: Math.round(box.y - m.height - 10), width: m.width, height: m.height };
   };
+  // An inside label's measure, null for any other.
+  const insideLabel = (b) => (b.label && b.kind !== 'frame' && (b.labelPlacement ?? 'inside') === 'inside'
+    ? measureText(b.label, b.fontSize ?? FONT.M, S.fontFamily) : null);
+  // The room a boundary leaves round what it holds. The top holds its inside
+  // label at any size and on any number of lines: a fixed 46px held one line
+  // at the default size, and a larger one ran into the first row (#428). A
+  // larger padTop still stands.
+  const padOf = (b) => {
+    const name = insideLabel(b);
+    return {
+      left: b.padLeft ?? 34, right: b.padRight ?? 34,
+      top: Math.max(b.padTop ?? 46, name ? HEADING_TOP + Math.ceil(name.height) + HEADING_GAP : 0),
+      bottom: b.padBottom ?? 30,
+    };
+  };
+  // What a parent holds of a child boundary. The app draws a frame's name in a
+  // strip above its top edge, which is where the parent's own label went: the
+  // two names overlapped (#236). A child scope's outside label stands clear of
+  // that scope, but it is still inside the parent, and it crossed a parent
+  // frame's border (#392).
+  const heldOf = (child, box) => {
+    const held = [child.kind === 'frame' && child.label ? { ...box, y: box.y - FRAME_NAME, height: box.height + FRAME_NAME } : box];
+    const label = outsideLabel(child, box);
+    if (label) held.push(label);
+    return held;
+  };
   const boundaryBox = new Map();
   const resolveBoundary = (b, seen = new Set()) => {
     if (boundaryBox.has(b.id)) return boundaryBox.get(b.id);
@@ -1064,19 +1092,9 @@ function assemble(spec, style) {
     const kids = [...(childrenOf.get(b.id) ?? [])];
     for (const other of boundaries) {
       if (other.parent !== b.id) continue;
-      const kid = resolveBoundary(other, seen);
-      // The app draws a frame's name in a strip above its top edge, which is
-      // where this scope's own label went: the two names overlapped (#236).
-      kids.push(other.kind === 'frame' && other.label ? { ...kid, y: kid.y - FRAME_NAME, height: kid.height + FRAME_NAME } : kid);
-      // A child scope's outside label stands clear of that scope, but it is
-      // still inside this one, and it crossed a parent frame's border (#392).
-      const label = outsideLabel(other, kid);
-      if (label) kids.push(label);
+      kids.push(...heldOf(other, resolveBoundary(other, seen)));
     }
-    const pad = {
-      left: b.padLeft ?? 34, right: b.padRight ?? 34,
-      top: b.padTop ?? 46, bottom: b.padBottom ?? 30,
-    };
+    const pad = padOf(b);
     let box;
     if (kids.length) {
       const u = bbox(kids.map((k) => ({ ...k, isDeleted: false, type: 'rectangle' })));
@@ -1096,8 +1114,9 @@ function assemble(spec, style) {
     // Its own name has to fit as well. The box widens about its middle, so the
     // contents stay centred. A frame's name is the app's to draw, and an
     // outside label stands clear of the box on purpose (#191).
-    if (b.label && b.kind !== 'frame' && (b.labelPlacement ?? 'inside') === 'inside') {
-      const need = Math.ceil(measureText(b.label, b.fontSize ?? FONT.M, S.fontFamily).width) + 2 * INSET;
+    const name = insideLabel(b);
+    if (name) {
+      const need = Math.ceil(name.width) + 2 * INSET;
       if (box.width < need) {
         box.x = Math.round(box.x - (need - box.width) / 2);
         box.width = need;
@@ -1152,20 +1171,12 @@ function assemble(spec, style) {
         textAlign: 'left', strokeColor: look.stroke,
         width: m.width, height: m.height,
         x: outside ? outside.x : Math.round(box.x + INSET),
-        y: outside ? outside.y : Math.round(box.y + 12),
+        y: outside ? outside.y : Math.round(box.y + HEADING_TOP),
         groupIds: [group],
       }));
     }
     for (const el of scopes.slice(drawnScopes)) boundaryOf.set(el.id, b.id);
   }
-
-  // A non-member set between two members is drawn inside the boundary (#378).
-  const strays = strayMembers([
-    ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boundaryBox.get(b.id), boundary: true })),
-    ...(spec.nodes ?? []).filter((n) => n.kind !== 'text' && geom.has(n.id))
-      .map((n) => ({ id: n.id, parent: n.parent, box: geom.get(n.id) })),
-  ]);
-  for (const stray of strays) report.notes.push(strayNote(stray));
 
   // ------------------------------------------------------------ edges
 
@@ -1353,6 +1364,82 @@ function assemble(spec, style) {
     }
   }
 
+  // ------------------------------------------------------------ frames
+  //
+  // A frame clips what belongs to it, and an edge with both ends in one belongs
+  // to it. Boundaries are sized before any edge is routed, so a loop or a
+  // detour that ran past a frame's edge, or its label, was cut off in the app
+  // and validate passed (#427). The frame holds them with the room it leaves
+  // round a node, and each boundary round it grows to hold the frame.
+
+  // The nearest frame at or above a boundary. A scope nested in a frame is a
+  // member of it, or dragging the frame would leave the scope's own box and
+  // caption behind. validateSpec refuses a boundary cycle; the seen set only
+  // keeps a malformed call from spinning.
+  const parentOfBoundary = new Map(boundaries.map((b) => [b.id, b.parent]));
+  const frameAbove = (id) => {
+    const seen = new Set();
+    for (let at = id; at !== undefined && at !== null && !seen.has(at); at = parentOfBoundary.get(at)) {
+      seen.add(at);
+      if (frameIdFor.has(at)) return frameIdFor.get(at);
+    }
+    return null;
+  };
+  const frameOfNode = new Map((spec.nodes ?? []).map((n) => [n.id, frameAbove(n.parent)]));
+  // An edge that leaves the frame is not part of it: dragging the frame would
+  // pull one end away from the shape it is bound to.
+  const frameOfEdge = (id) => {
+    const [from, to] = edgeEnds.get(id);
+    const fid = frameOfNode.get(from);
+    return fid && fid === frameOfNode.get(to) ? fid : null;
+  };
+  const redraw = (id) => {
+    const b = byBoundary.get(id);
+    const box = boundaryBox.get(id);
+    if (b.kind === 'frame') {
+      Object.assign(frames.find((fr) => fr.id === frameIdFor.get(id)), box);
+      return;
+    }
+    for (const el of scopes) {
+      if (boundaryOf.get(el.id) !== id) continue;
+      if (el.type === 'rectangle') {
+        Object.assign(el, box);
+      } else {
+        const outside = outsideLabel(b, box);
+        el.x = outside ? outside.x : Math.round(box.x + INSET);
+        el.y = outside ? outside.y : Math.round(box.y + HEADING_TOP);
+      }
+    }
+  };
+  const grow = (id, held) => {
+    const box = boundaryBox.get(id);
+    const pad = padOf(byBoundary.get(id));
+    const u = bbox(held.map((r) => ({ ...r, isDeleted: false, type: 'rectangle' })));
+    const x0 = Math.min(box.x, Math.round(u.x - pad.left));
+    const y0 = Math.min(box.y, Math.round(u.y - pad.top));
+    const x1 = Math.max(box.x + box.width, Math.round(u.x + u.width + pad.right));
+    const y1 = Math.max(box.y + box.height, Math.round(u.y + u.height + pad.bottom));
+    if (x0 === box.x && y0 === box.y && x1 === box.x + box.width && y1 === box.y + box.height) return;
+    Object.assign(box, { x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
+    redraw(id);
+    const parent = byBoundary.get(id).parent;
+    if (parent != null) grow(parent, heldOf(byBoundary.get(id), box));
+  };
+  for (const b of boundaries) {
+    if (b.kind !== 'frame') continue;
+    const inner = edgeLayer.filter((el) => frameOfEdge(el.id) === frameIdFor.get(b.id));
+    if (inner.length) grow(b.id, inner.map(elementBox));
+  }
+
+  // A non-member set between two members is drawn inside the boundary (#378),
+  // and a frame grown to hold its edges can take one in.
+  const strays = strayMembers([
+    ...boundaries.map((b) => ({ id: b.id, parent: b.parent, box: boundaryBox.get(b.id), boundary: true })),
+    ...(spec.nodes ?? []).filter((n) => n.kind !== 'text' && geom.has(n.id))
+      .map((n) => ({ id: n.id, parent: n.parent, box: geom.get(n.id) })),
+  ]);
+  for (const stray of strays) report.notes.push(strayNote(stray));
+
   // ------------------------------------------------------------ chrome
 
   const contentBox = bbox([...frames, ...scopes, ...nodeLayer, ...edgeLayer]);
@@ -1415,20 +1502,6 @@ function assemble(spec, style) {
   // lost the frame their node's parent declared, while an unrelated node that
   // merely overlapped the box could gain one (#158).
   if (frameIdFor.size) {
-    const parentOfBoundary = new Map(boundaries.map((b) => [b.id, b.parent]));
-    // The nearest frame at or above a boundary. A scope nested in a frame is a
-    // member of it, or dragging the frame would leave the scope's own box and
-    // caption behind. validateSpec refuses a boundary cycle; the seen set only
-    // keeps a malformed call from spinning.
-    const frameAbove = (id) => {
-      const seen = new Set();
-      for (let at = id; at !== undefined && at !== null && !seen.has(at); at = parentOfBoundary.get(at)) {
-        seen.add(at);
-        if (frameIdFor.has(at)) return frameIdFor.get(at);
-      }
-      return null;
-    };
-
     // Excalidraw has no nested frames. The inner one is still drawn and still
     // owns what is parented to it; it is simply not a member of the outer one.
     for (const b of boundaries) {
@@ -1440,7 +1513,6 @@ function assemble(spec, style) {
       }
     }
 
-    const frameOfNode = new Map((spec.nodes ?? []).map((n) => [n.id, frameAbove(n.parent)]));
     for (const el of [...scopes, ...nodeLayer, ...edgeLayer]) {
       if (nodeOf.has(el.id)) {
         const fid = frameOfNode.get(nodeOf.get(el.id));
@@ -1449,11 +1521,8 @@ function assemble(spec, style) {
         const fid = frameAbove(boundaryOf.get(el.id));
         if (fid) el.frameId = fid;
       } else if (edgeEnds.has(el.id)) {
-        // An edge that leaves the frame is not part of it: dragging the frame
-        // would pull one end away from the shape it is bound to.
-        const [from, to] = edgeEnds.get(el.id);
-        const fid = frameOfNode.get(from);
-        if (fid && fid === frameOfNode.get(to)) el.frameId = fid;
+        const fid = frameOfEdge(el.id);
+        if (fid) el.frameId = fid;
       }
     }
   }
