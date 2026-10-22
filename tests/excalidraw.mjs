@@ -5010,6 +5010,8 @@ test('Excalidraw analyze and build refuse an --out that is another name for thei
   for (const [file, text] of Object.entries(before)) eq(readFileSync(file, 'utf8'), text, `${file} untouched`);
   eq(readdirSync(dir).filter((f) => f.includes('.backup-')).length, 0, 'no backup');
   eq(arkitect('analyze', scene, '--out', join(dir, 'own.json')).status, 0, 'a summary with its own file still writes');
+  // `claude plugin eval` refuses a plugin that holds a hard link anywhere.
+  rmSync(dir, { recursive: true, force: true });
 });
 
 // Run from the skill folder, as the Codex skill used to say, a relative --out

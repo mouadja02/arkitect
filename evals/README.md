@@ -328,6 +328,10 @@ Caveats:
   a later version fixes it, run an earlier one from
   `~/.local/share/claude/versions/` first on `PATH`: link it as `claude` in an
   empty directory `<dir>`, then `PATH=<dir>:$PATH scripts/eval.sh …`.
+- `claude plugin eval` refuses every case of a plugin that holds a hard link
+  anywhere in it: "a file in the plugin has more than one name". The test
+  suite's two #391 tests make such links under `tests/output/`; they remove
+  them, and a test fails if one is left. The preflight names any other.
 - A background run started from `wsl.exe` with `nohup` and `&` is killed when
   the WSL session closes. Use `setsid -f`, or keep the session open.
 - `context.scaffold_script` is the **path to a script file** inside the case

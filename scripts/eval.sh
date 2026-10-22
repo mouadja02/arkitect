@@ -205,7 +205,8 @@ if [ "$PREFLIGHT" -eq 1 ]; then
   elif grep -qs 'Read-only file system' "$PRE"/traces/*.jsonl; then
     die "a case cannot write its own working directory: this Claude Code runs eval cases read-only (2.1.308 does, 2.1.302 does not; evals/README.md), so every case that builds a file would fail for that. The suite was not run; the check is in $PRE"
   else
-    die "the preflight case did not pass, so the suite was not run: see $PRE/summary.txt and run.log, or skip it with --no-preflight"
+    why="$(grep -m1 -E '^ +(ERROR|CRIT|FAIL)' "$PRE/summary.txt" 2>/dev/null | sed 's/^ *//')"
+    die "the preflight case did not pass, so the suite was not run${why:+: $why}. See $PRE/summary.txt and run.log, or skip it with --no-preflight"
   fi
 fi
 

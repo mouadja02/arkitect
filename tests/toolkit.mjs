@@ -2249,11 +2249,26 @@ test('scripts/eval.sh runs one case that writes a file first, and stops there if
   eq(other.status, 2, 'a preflight that failed for another reason stops it too');
   eq(other.calls, 'preflight', 'before the suite');
   assert(other.stderr.includes('preflight/summary.txt') && !other.stderr.includes('read-only'), `pointing at its summary:\n${other.stderr}`);
+  assert(other.stderr.includes('FAIL  wrote-its-working-directory'), `and quoting what failed:\n${other.stderr}`);
 
   const skipped = run(0, ['--no-preflight']);
   eq(skipped.status, 0, skipped.stderr);
   eq(skipped.calls, 'suite', '--no-preflight skips it');
   rmSync(dir, { recursive: true, force: true });
+});
+
+// `claude plugin eval` refuses every case of a plugin that holds a file with a
+// second name: "a file in the plugin has more than one name (a hard link)". The
+// two #391 tests made such names under tests/output/ and left them, so an eval
+// run after the suite errored on every case. The runner runs this file after
+// theirs, so a link either leaves behind is caught here.
+test('the suite leaves no hard link behind, which claude plugin eval refuses', () => {
+  const out = join(ROOT, 'tests', 'output');
+  if (!existsSync(out)) return;
+  const linked = readdirSync(out, { recursive: true }).map((f) => join(out, f)).filter((f) => {
+    try { const s = statSync(f); return s.isFile() && s.nlink > 1; } catch { return false; }
+  });
+  assert(!linked.length, `these have a second name, and claude plugin eval refuses the plugin:\n        ${linked.map((f) => relative(ROOT, f)).join('\n        ')}`);
 });
 
 // A .sh authored on Windows is recorded 0644 by default, and the working-tree
