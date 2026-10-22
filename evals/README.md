@@ -127,6 +127,14 @@ script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. A
 variable left in your shell, or a default that moves, cannot change a score
 unseen, and the summary's first line and the scoreboard name the effort.
 
+Before the suite it runs one case of its own, `scripts/eval-preflight/can-write`,
+once on Haiku for about a cent: the agent writes a file in its working
+directory and a regex grader reads it back. If the file is not there, nothing
+else runs and the script exits 2, saying so when the trace shows a read-only
+file system, as every case on Claude Code 2.1.308 did (below). `--no-preflight`
+skips it. The case lives outside `evals/`, so it is never part of the suite or
+a scoreboard.
+
 The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
 its own. Its shape, with made-up numbers:
 
@@ -310,6 +318,16 @@ Caveats:
   help - `~/.docker` is read either way. `scripts/eval.sh` runs with `HOME` set
   to a temporary directory linking only `~/.claude` and `~/.claude.json`, so
   `~/.docker` is not there to be refused and your real one is never touched.
+- **Claude Code 2.1.308 runs every case read-only.** The case's working
+  directory, its `TMPDIR` and its `HOME` are all mounted read-only in the
+  sandbox, so nothing a case builds can be written, and every Bash call
+  reports `Exit code 1`, even one that printed its output. A full Haiku run
+  scored 0.69 on tier 1, where its board holds 1.00; the same case, plugin and
+  model on 2.1.302 scored 1.00 with no read-only error, and moving `TMPDIR` out
+  of the isolated `HOME` changed nothing. The preflight stops such a run. Until
+  a later version fixes it, run an earlier one from
+  `~/.local/share/claude/versions/` first on `PATH`: link it as `claude` in an
+  empty directory `<dir>`, then `PATH=<dir>:$PATH scripts/eval.sh …`.
 - A background run started from `wsl.exe` with `nohup` and `&` is killed when
   the WSL session closes. Use `setsid -f`, or keep the session open.
 - `context.scaffold_script` is the **path to a script file** inside the case

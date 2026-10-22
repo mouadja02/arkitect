@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/eval.sh` runs one case of its own before the suite, once on Haiku for about a cent. The case writes a file in its working directory; if the file is not there, the suite is not run and the script exits 2, naming a read-only sandbox when the trace shows one. Claude Code 2.1.308 runs every eval case with a read-only working directory and `TMPDIR`, so a full Haiku run scored 0.69 on tier 1 against its board's 1.00 and measured nothing; 2.1.302 runs the same case clean. `--no-preflight` skips the check, and `evals/README.md` says how to run an earlier Claude Code meanwhile.
+
 ### Changed
 
 - `scripts/eval.sh` runs the model under test at medium effort unless given `--effort`. `claude plugin eval` takes no `--effort` and ignores one given before `plugin`, so the script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. Medium is Claude Code's default on Haiku, Sonnet and Opus, so a run measures what a user gets, and a variable left in the shell or a default that moves no longer changes a score unseen. The summary's first line and the scoreboard's `run.effort` name it; a board written before says `effort ?`.

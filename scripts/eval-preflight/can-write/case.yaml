@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: preflight-case-can-write
+description: >
+  Not part of the suite. scripts/eval.sh runs this one case before every run:
+  if a case cannot write its own working directory, every case that builds a
+  file fails for that rather than for the plugin, so the suite is not started.
+  Claude Code 2.1.308 ran every case that way.
+tags: [preflight]
+runs: 1
+
+execution:
+  max_turns: 4
+  timeout_seconds: 180
+  allowed_tools: [Bash]
+  prompt: |
+    Run this exact command with the Bash tool, once, and reply with only its output:
+
+    mkdir -p eval-output && printf 'written' > eval-output/preflight.txt && cat eval-output/preflight.txt
+
+graders:
+  - type: tool_used
+    name: ran-the-command
+    tool: Bash
+    input_match: preflight\.txt
+
+  # The file is the check: a reply can say "written" whatever happened.
+  - type: regex
+    name: wrote-its-working-directory
+    target: { source: file, path: ./eval-output/preflight.txt }
+    pattern: '^written$'
