@@ -2323,6 +2323,51 @@ test("a scope is at least as wide as its own inside label, contents kept centred
   eq(width(out), width(plain), 'an outside label leaves the width alone');
 });
 
+// The top inset was a fixed 46px, one line at the default size: a larger or a
+// two-line name ran into the first row, and validate passed (#428).
+test("a scope's top inset holds its inside label at any size and on any number of lines (#428)", () => {
+  const build = (boundary) => builder.buildDiagram({
+    boundaries: [{ id: 's', ...boundary }], nodes: [{ id: 'n', parent: 's', label: 'Worker' }],
+  }, { seed: 1 }).scene;
+  const parts = (scene) => ({
+    scope: scene.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed'),
+    name: scene.elements.find((el) => el.type === 'text' && el.customData?.arkitect?.boundary === 's'),
+    node: scene.elements.find((el) => el.type === 'rectangle' && el.customData?.arkitect?.node === 'n'),
+  });
+  const box = (el) => `${el.x},${el.y} ${el.width}x${el.height}`;
+  for (const [label, fontSize] of [['Orders', 48], ['Orders\nand returns', undefined], ['Orders\nand returns', 48], ['Orders', 20]]) {
+    const what = `${JSON.stringify(label)} at ${fontSize ?? 'the default size'}`;
+    const scene = build({ label, fontSize });
+    const { scope, name, node } = parts(scene);
+    eq(node.y - (name.y + name.height), 9, `${what}: the name ends 9px above the first row, as one default line does`);
+    assert(name.x < node.x + node.width && node.x < name.x + name.width, `${what}: the name is over the node, not beside it`);
+    assert(name.x >= scope.x + 14 && name.x + name.width <= scope.x + scope.width - 14, `${what}: and inside the scope across`);
+    eq(validator.validateScene(scene).warnings.join('; '), '', `${what}: validates clean`);
+  }
+  eq(box(parts(build({ label: 'Orders' })).scope), box(parts(build({ label: 'Orders', padTop: 46 })).scope),
+    'one default line keeps the 46px it always had');
+  const roomy = parts(build({ label: 'Orders', fontSize: 48, padTop: 120 }));
+  eq(roomy.node.y - roomy.scope.y, 120, 'a larger padTop still stands');
+  const tight = parts(build({ label: 'Orders', padTop: 10 }));
+  eq(tight.node.y - (tight.name.y + tight.name.height), 9, 'a smaller one is raised to hold the name');
+  // An outside label sits above the box and a frame's name is the app's; the
+  // inset of neither moves.
+  eq(box(parts(build({ label: 'Orders\nand returns', fontSize: 48, labelPlacement: 'outside' })).scope), box(parts(build({})).scope),
+    'an outside label leaves the box alone');
+  const frameOfLabel = (label) => frameOf(build({ kind: 'frame', label, fontSize: 48 }));
+  eq(box(frameOfLabel('Orders\nand returns')), box(frameOfLabel('Orders')), "a frame's name leaves the frame alone");
+
+  // A scene built before the fix, or a node dragged up under the name.
+  const scene = build({ label: 'Orders', fontSize: 48 });
+  const { name, node } = parts(scene);
+  const covered = structuredClone(scene);
+  covered.elements.find((el) => el.id === node.id).y = name.y;
+  const warned = validator.validateScene(covered).warnings.filter((w) => w.includes('names a boundary'));
+  eq(warned.join('; '), `text "${name.id}" (boundary "s") names a boundary and overlaps "${node.id}" (node "n") by `
+    + `${Math.round(Math.min(name.x + name.width, node.x + node.width) - Math.max(name.x, node.x))}x${Math.round(name.height)}px; `
+    + 'move the node clear of it, or rebuild from the spec, which leaves room for the name', 'validate names the label and the node');
+});
+
 // An edge from a node to itself used to be two points at the node's centre,
 // drawn as a bare arrowhead over its label (#159).
 const loopsOf = (scene) => scene.elements.filter((el) => el.type === 'arrow'
@@ -2401,6 +2446,69 @@ test('a loop is an elbow arrow whatever the routing asks for (#159)', () => {
   const spec = { nodes: [{ id: 'a', label: 'A' }], edges: [{ from: 'a', to: 'a' }, { from: 'a', to: 'a' }] };
   eq(JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene), JSON.stringify(builder.buildDiagram(spec, { seed: 7 }).scene),
     'a seeded build with loops is identical');
+});
+
+// A frame was sized before its edges were routed, so a loop or a detour, or
+// its label, ran past the edge the app clips at, and validate passed (#427).
+test('a frame holds the edges between its own members, loops and detours and their labels, and grows what holds it (#427)', () => {
+  const inside = (el, b, pad, what) => {
+    const e = core.elementBox(el);
+    assert(e.x - b.x >= pad && e.y - b.y >= pad && b.x + b.width - (e.x + e.width) >= pad && b.y + b.height - (e.y + e.height) >= pad,
+      `${what}: ${el.type} at ${Math.round(e.x)},${Math.round(e.y)} ${Math.round(e.width)}x${Math.round(e.height)} `
+      + `is not ${pad}px inside ${b.x},${b.y} ${b.width}x${b.height}`);
+  };
+  const frame = { id: 'f', kind: 'frame', label: 'Orders' };
+  const cases = {
+    'a loop': { boundaries: [frame], nodes: [{ id: 'a', parent: 'f', label: 'Worker' }], edges: [{ from: 'a', to: 'a', label: 'retry' }] },
+    'a detour': {
+      boundaries: [frame],
+      nodes: [{ id: 'a', parent: 'f', label: 'A' }, { id: 'm', parent: 'f', label: 'Middle', col: 1 }, { id: 'b', parent: 'f', label: 'B', col: 2 }],
+      edges: [{ from: 'a', to: 'm' }, { from: 'm', to: 'b' }, { from: 'a', to: 'b', route: 'avoid', label: 'bypass' }],
+    },
+  };
+  for (const [what, spec] of Object.entries(cases)) {
+    const { scene } = builder.buildDiagram(spec, { seed: 1 });
+    const fr = frameOf(scene);
+    const edges = scene.elements.filter((el) => el.customData?.arkitect?.edge);
+    assert(edges.length >= 2 && edges.every((el) => el.frameId === fr.id), `${what}: every edge and label is a member`);
+    // The room a frame leaves round a node, the least of its four sides.
+    for (const el of scene.elements.filter((x) => x.frameId === fr.id)) inside(el, fr, 30, what);
+    eq(validator.validateScene(scene).warnings.join('; '), '', `${what}: validates clean`);
+  }
+
+  // A frame inside a scope: the scope holds the grown frame and its name, and
+  // keeps its own name in its corner.
+  const { scene } = builder.buildDiagram({ ...cases['a loop'], boundaries: [{ id: 'acct', label: 'Account' }, { ...frame, parent: 'acct' }] }, { seed: 1 });
+  const fr = frameOf(scene);
+  const scope = scene.elements.find((el) => el.type === 'rectangle' && el.strokeStyle === 'dashed');
+  const strip = { ...core.elementBox(fr), type: 'rectangle', y: fr.y - 24, height: fr.height + 24 };
+  inside(strip, scope, 30, 'the frame and its name in the scope');
+  const name = textNamed(scene, 'Account');
+  eq(`${name.x},${name.y}`, `${scope.x + 14},${scope.y + 12}`, "the scope's name stays in its corner");
+  eq(validator.validateScene(scene).warnings.join('; '), '', 'nested: validates clean');
+
+  // An edge that stays among its nodes moves nothing, and one that leaves the
+  // frame is no member of it.
+  const plain = (edges) => frameOf(builder.buildDiagram({ boundaries: [frame], edges,
+    nodes: [{ id: 'a', parent: 'f', label: 'A' }, { id: 'b', parent: 'f', label: 'B', col: 1 }] }, { seed: 1 }).scene);
+  const at = (b) => `${b.x},${b.y} ${b.width}x${b.height}`;
+  eq(at(plain([{ from: 'a', to: 'b', label: 'calls' }])), at(plain([])), 'an ordinary edge leaves the frame as it was');
+  const framed = builder.buildDiagram(FRAMED, { seed: 1 }).scene;
+  eq(textNamed(framed, 'across').frameId, null, 'an edge between frames belongs to neither');
+  eq(validator.validateScene(framed).warnings.filter((w) => w.includes('past its edge')).join('; '), '', 'and is no member cut off');
+
+  // A scene built before the fix, or a member dragged out.
+  const loop = builder.buildDiagram(cases['a loop'], { seed: 1 }).scene;
+  const moved = structuredClone(loop);
+  const label = moved.elements.find((el) => el.text === 'retry');
+  label.x += 1000;
+  const arrow = moved.elements.find((el) => el.type === 'arrow');
+  const outer = moved.elements.find((el) => el.type === 'frame');
+  outer.width = core.elementBox(arrow).x + core.elementBox(arrow).width - outer.x - 8;
+  eq(validator.validateScene(moved).warnings.filter((w) => w.includes('past its edge')).join('; '),
+    `frame "${outer.id}" (boundary "f") has 2 members drawn past its edge, which the app cuts off: "${arrow.id}" (edge "a->a"), `
+    + `"${label.id}" (edge "a->a"); move them inside, or rebuild from the spec, which sizes a frame to hold its own edges and their labels`,
+    'validate names the frame and each member it cuts off');
 });
 
 test('a zero-length connector is a warning, never an error (#159)', () => {
