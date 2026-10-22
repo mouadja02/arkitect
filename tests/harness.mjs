@@ -55,3 +55,52 @@ export function createHarness({ log = console.log } = {}) {
 
   return { test, sourceTest, finish, counts, failures };
 }
+
+// fetch() for the downloaders, with no network (#444). `routes` maps a URL to
+// { status, headers, body } or { size } for a body streamed in 64 KB chunks, or
+// { stall: true } for a server that never answers. A redirect is followed the
+// way fetch() follows one, plain http included, unless the caller asks for
+// 'manual'. `calls` holds each request's URL and options, `pulled` the body
+// bytes a reader actually took.
+export function fakeWeb(routes) {
+  const web = { calls: [], pulled: 0 };
+  const respond = (url, opts) => {
+    const route = routes[url];
+    if (!route) return new Response('not found', { status: 404, statusText: 'Not Found' });
+    if (route.stall) {
+      // An open socket keeps the process alive; AbortSignal.timeout() does not.
+      const socket = setInterval(() => {}, 1000);
+      return new Promise((_, reject) => opts.signal?.addEventListener('abort', () => {
+        clearInterval(socket);
+        reject(opts.signal.reason);
+      }));
+    }
+    let body = route.body ?? null;
+    if (route.size) {
+      let sent = 0;
+      body = new ReadableStream({
+        pull(controller) {
+          if (sent >= route.size) { controller.close(); return; }
+          const n = Math.min(65536, route.size - sent);
+          sent += n; web.pulled += n;
+          controller.enqueue(new Uint8Array(n).fill(0x20));
+        },
+      });
+    }
+    return new Response(body, { status: route.status ?? 200, headers: route.headers });
+  };
+  web.fetch = async (url, opts = {}) => {
+    web.calls.push({ url, opts });
+    let at = url;
+    let res = await respond(at, opts);
+    for (let hops = 0; opts.redirect !== 'manual' && res.status >= 300 && res.status < 400; hops++) {
+      if (hops === 20) throw new TypeError('fetch failed: redirect count exceeded');
+      at = new URL(res.headers.get('location'), at).href;
+      web.calls.push({ url: at, opts });
+      res = await respond(at, opts);
+    }
+    Object.defineProperty(res, 'url', { value: at });
+    return res;
+  };
+  return web;
+}

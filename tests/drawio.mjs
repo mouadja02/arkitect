@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 import { repoFiles } from './repo-files.mjs';
 import * as readJsonLib from '../skills/arkitect-drawio/scripts/lib/read-json.mjs';
-import { createHarness, settle } from './harness.mjs';
+import { createHarness, settle, fakeWeb } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -80,6 +80,36 @@ test('mxfile preserves raw decoded/compressed pages and wrapper bytes while igno
   eq(mx.pages[1].xml, inner, 'decoded compressed XML API');
   eq(mx.pages[1].compressed, true, 'compressed metadata');
   eq(mx.pages[2].xml, '', 'empty page XML');
+});
+
+// #445: a compressed page was inflated with no limit, so a few KB that expand
+// to hundreds of MB took validate and analyze down with them. The file here is
+// synthetic: one page of nothing but the letter a.
+const BOMB = join(TMP, 'inflates-past-the-cap.drawio');
+writeFileSync(BOMB, '<mxfile host="test"><diagram id="p" name="P">'
+  + deflateRawSync(Buffer.alloc(64 * 1024 * 1024 + 1, 0x61)).toString('base64') + '</diagram></mxfile>');
+
+test('a page that inflates past the cap is refused in one line, not read (#445)', () => {
+  const packed = readFileSync(BOMB, 'utf8').match(/name="P">([^<]+)</)[1];
+  let threw = null;
+  try { core.decompressPage(packed); } catch (error) { threw = error; }
+  assert(threw, 'a page that inflates past the cap is read');
+  eq(threw.code, 'ARKITECT_PAGE_TOO_LARGE', 'the refusal says what it is');
+  assert(/inflates past 64 MB/.test(threw.message), `the message names the cap: ${threw.message}`);
+
+  const validate = spawnSync(process.execPath, [join(SCRIPTS, 'validate-drawio.mjs'), BOMB], { encoding: 'utf8' });
+  eq(validate.status, 1, 'validate fails the file');
+  assert(/page 0: cannot decode page \(inflates past 64 MB/.test(validate.stdout + validate.stderr),
+    `validate names the page: ${validate.stdout}${validate.stderr}`);
+
+  const analyze = spawnSync(process.execPath, [join(SCRIPTS, 'analyze-drawio.mjs'), BOMB], { encoding: 'utf8' });
+  eq(analyze.status, 1, 'analyze fails the file');
+  eq(analyze.stdout, '', 'and prints no summary of a page it did not read');
+  eq(analyze.stderr.trim().split('\n').length, 1, `in one line, not a stack trace: ${analyze.stderr}`);
+  assert(/page 0 inflates past 64 MB/.test(analyze.stderr), `analyze names the page: ${analyze.stderr}`);
+
+  const small = deflateRawSync(Buffer.from(encodeURIComponent('<mxGraphModel><root/></mxGraphModel>'), 'binary')).toString('base64');
+  eq(core.decompressPage(small), '<mxGraphModel><root/></mxGraphModel>', 'a page under the cap still reads');
 });
 
 // ------------------------------------------------------------- portable rendering
@@ -5269,7 +5299,7 @@ function makePng(w, h, colorType) {
   ]);
 }
 
-const LOGO_KEYS = ['arkitect-drawio-test-alpha', 'arkitect-drawio-test-opaque', 'arkitect-drawio-test-wide'];
+const LOGO_KEYS = ['arkitect-drawio-test-alpha', 'arkitect-drawio-test-opaque', 'arkitect-drawio-test-wide', 'arkitect-drawio-test-fetched'];
 function clearTestLogos() {
   for (const k of LOGO_KEYS) {
     for (const ext of ['.png', '.svg']) {
@@ -5323,6 +5353,70 @@ test('non-images and oversized files are refused', () => {
   try { logos.storeLogo('arkitect-drawio-test-bad', Buffer.from('<html>nope</html>'), { force: true }); }
   catch { threw = true; }
   assert(threw, 'an HTML page was accepted as a logo');
+});
+
+// #444: a logo download followed every redirect, plain http included, read the
+// whole body before its 2 MB limit and set no time limit. Offline, against a
+// fake fetch: nothing here reaches the network.
+const LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><circle cx="5" cy="5" r="4"/></svg>';
+const LOGO_LIMIT = 2 * 1024 * 1024;
+const logoFetch444 = await (async () => {
+  const realFetch = globalThis.fetch;
+  const fetchWith = async (routes, url) => {
+    const web = fakeWeb(routes);
+    globalThis.fetch = web.fetch;
+    try { return { ...(await settle(logos.fetchLogo(LOGO_KEYS[3], url, { force: true }))), web }; }
+    finally { globalThis.fetch = realFetch; }
+  };
+  const big = 12 * 1024 * 1024;
+  return {
+    toHttp: await fetchWith({
+      'https://logo.invalid/a.svg': { status: 302, headers: { location: 'http://logo.invalid/a.svg' } },
+      'http://logo.invalid/a.svg': { body: LOGO_SVG },
+    }, 'https://logo.invalid/a.svg'),
+    cachedAfterHttp: logos.getLogo(LOGO_KEYS[3]),
+    streamed: await fetchWith({ 'https://logo.invalid/big.svg': { size: big } }, 'https://logo.invalid/big.svg'),
+    declared: await fetchWith({ 'https://logo.invalid/big.svg': { size: big, headers: { 'content-length': String(big) } } },
+      'https://logo.invalid/big.svg'),
+    loop: await fetchWith({ 'https://logo.invalid/loop.svg': { status: 302, headers: { location: '/loop.svg' } } },
+      'https://logo.invalid/loop.svg'),
+    hop: await fetchWith({
+      'https://logo.invalid/latest.svg': { status: 301, headers: { location: '/v2/a.svg' } },
+      'https://logo.invalid/v2/a.svg': { body: LOGO_SVG },
+    }, 'https://logo.invalid/latest.svg'),
+  };
+})();
+const downloads = await import(`file://${join(SCRIPTS, 'lib', 'download.mjs').replace(/\\/g, '/')}`);
+const stalled444 = await (async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = fakeWeb({ 'https://logo.invalid/slow.svg': { stall: true } }).fetch;
+  try { return await settle(downloads.download('https://logo.invalid/slow.svg', { limit: 1024, timeout: 20 })); }
+  finally { globalThis.fetch = realFetch; }
+})();
+
+test('a logo download stays on https, stops at its limit and gives up on a stalled server (#444)', () => {
+  const { toHttp, cachedAfterHttp, streamed, declared, loop, hop } = logoFetch444;
+  assert(toHttp.error, 'a redirect to http is followed and cached');
+  assert(/refused a redirect to http:\/\/logo\.invalid\/a\.svg/.test(toHttp.error.message), `it says why: ${toHttp.error.message}`);
+  eq(toHttp.web.calls.map((c) => c.url).join(' '), 'https://logo.invalid/a.svg', 'and never requests the http URL');
+  eq(cachedAfterHttp, null, 'nothing is cached');
+
+  assert(/too large/.test(streamed.error?.message), `a 12 MB body is refused: ${streamed.error?.message}`);
+  assert(streamed.web.pulled <= LOGO_LIMIT + 2 * 65536, `reading stops at the 2 MB limit, not after ${streamed.web.pulled} bytes`);
+  assert(/too large: 12582912 bytes/.test(declared.error?.message), `a declared length over the limit is refused: ${declared.error?.message}`);
+  assert(declared.web.pulled <= 65536, `before its body is read: ${declared.web.pulled} bytes`);
+
+  assert(/more than 5 redirects/.test(loop.error?.message), `a redirect loop ends: ${loop.error?.message}`);
+  eq(loop.web.calls.length, 6, 'after five hops');
+
+  assert(!hop.error, `an https redirect is followed: ${hop.error?.message}`);
+  eq(hop.value.source, 'https://logo.invalid/v2/a.svg', 'and the logo records the URL its bytes came from');
+  const opts = hop.web.calls[0].opts;
+  eq(opts.redirect, 'manual', 'each hop is checked before it is requested');
+  assert(opts.signal instanceof AbortSignal, 'every request carries a time limit');
+  eq(hop.web.calls[1].opts.signal, opts.signal, 'one limit for the whole download');
+
+  assert(/timed out after 0\.02 s/.test(stalled444.error?.message), `a stalled server is given up on: ${stalled444.error?.message}`);
 });
 
 test('a generated diagram embeds logos and reports missing ones', () => {

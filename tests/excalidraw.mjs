@@ -21,7 +21,7 @@ import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { repoFiles } from './repo-files.mjs';
 import * as xml from '../skills/arkitect-drawio/scripts/lib/xml-check.mjs';
-import { createHarness, settle } from './harness.mjs';
+import { createHarness, settle, fakeWeb } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -4611,6 +4611,89 @@ test('a library that does not parse never replaces the installed one (#152)', ()
   assert(r.entryAfterOk !== r.goodEntry, 'and updates the registry with it');
 
   eq(r.strays.join(' '), '', 'no staging file is left behind');
+});
+
+// #444: an icon made from a URL, a library install and the catalogue index each
+// followed every redirect, plain http included, read the whole body before any
+// size check (the library and the index had none) and set no time limit.
+// Offline, against a fake fetch: nothing here reaches the network.
+const download444 = await (async () => {
+  const slug = 'arkitect-test-444';
+  const key = `${TEST_PREFIX}fetched-444`;
+  const realFetch = globalThis.fetch;
+  const index = join(browse.LIB_DIR, 'index.json');
+  const priorIndex = existsSync(index) ? readFileSync(index) : null;
+  const big = 24 * 1024 * 1024;
+  const fetchWith = async (routes, run) => {
+    const web = fakeWeb(routes);
+    globalThis.fetch = web.fetch;
+    try { return { ...(await settle(run())), web }; } finally { globalThis.fetch = realFetch; }
+  };
+  const out = {};
+  try {
+    out.iconToHttp = await fetchWith({
+      'https://logo.invalid/a.svg': { status: 302, headers: { location: 'http://logo.invalid/a.svg' } },
+      'http://logo.invalid/a.svg': { body: DONUT_SVG },
+    }, () => icons.fetchIcon(key, 'https://logo.invalid/a.svg', { force: true }));
+    out.iconAfterHttp = icons.loadIndex()[key];
+    out.iconStreamed = await fetchWith({ 'https://logo.invalid/big.svg': { size: big } },
+      () => icons.fetchIcon(key, 'https://logo.invalid/big.svg', { force: true }));
+    out.iconHop = await fetchWith({
+      'https://logo.invalid/latest.svg': { status: 307, headers: { location: 'https://cdn.logo.invalid/a.svg' } },
+      'https://cdn.logo.invalid/a.svg': { body: DONUT_SVG },
+    }, () => icons.fetchIcon(key, 'https://logo.invalid/latest.svg', { force: true }));
+
+    const library = JSON.stringify({ type: 'excalidrawlib', version: 2, libraryItems: [] });
+    out.libToHttp = await fetchWith({
+      [`https://libraries.excalidraw.com/libraries/${slug}.excalidrawlib`]:
+        { status: 301, headers: { location: `http://libraries.excalidraw.com/libraries/${slug}.excalidrawlib` } },
+      [`http://libraries.excalidraw.com/libraries/${slug}.excalidrawlib`]: { body: library },
+    }, () => browse.installLibrary(`${slug}.excalidrawlib`, { force: true }));
+    out.libFileAfterHttp = existsSync(join(browse.LIB_DIR, `${slug}.excalidrawlib`));
+    out.libStreamed = await fetchWith({ [`https://libraries.excalidraw.com/libraries/${slug}.excalidrawlib`]: { size: big } },
+      () => browse.installLibrary(`${slug}.excalidrawlib`, { force: true }));
+    out.indexStreamed = await fetchWith({
+      'https://raw.githubusercontent.com/excalidraw/excalidraw-libraries/main/libraries.json': { size: big },
+    }, () => browse.updateIndex());
+  } finally {
+    globalThis.fetch = realFetch;
+    try { icons.removeIcon(key); } catch { /* never made */ }
+    rmSync(join(browse.LIB_DIR, `${slug}.excalidrawlib`), { force: true });
+    if (priorIndex) writeFileSync(index, priorIndex);
+    else rmSync(index, { force: true });
+  }
+  return out;
+})();
+
+test('an icon, a library and the catalogue download only over https, up to a limit, with a time limit (#444)', () => {
+  const r = download444;
+  const limitOf = (mb) => mb * 1024 * 1024 + 2 * 65536;
+
+  assert(/refused a redirect to http:/.test(r.iconToHttp.error?.message), `an icon redirected to http is refused: ${r.iconToHttp.error?.message}`);
+  eq(r.iconToHttp.web.calls.length, 1, 'before the http URL is requested');
+  eq(r.iconAfterHttp, undefined, 'and no icon is made');
+  assert(/too large/.test(r.iconStreamed.error?.message), `a 24 MB icon is refused: ${r.iconStreamed.error?.message}`);
+  assert(r.iconStreamed.web.pulled <= limitOf(3), `reading stops at the 3 MB limit, not after ${r.iconStreamed.web.pulled} bytes`);
+  assert(!r.iconHop.error, `an https redirect is followed: ${r.iconHop.error?.message}`);
+  eq(r.iconHop.value.entry.source, 'https://cdn.logo.invalid/a.svg', 'and the icon records the URL its bytes came from');
+  const opts = r.iconHop.web.calls[0].opts;
+  eq(opts.redirect, 'manual', 'each hop is checked before it is requested');
+  assert(opts.signal instanceof AbortSignal, 'with a time limit');
+
+  assert(/refused a redirect to http:/.test(r.libToHttp.error?.message), `a library redirected to http is refused: ${r.libToHttp.error?.message}`);
+  eq(r.libFileAfterHttp, false, 'and nothing is installed');
+  assert(/too large/.test(r.libStreamed.error?.message), `a 24 MB library is refused: ${r.libStreamed.error?.message}`);
+  assert(r.libStreamed.web.pulled <= limitOf(20), `reading stops at the 20 MB limit, not after ${r.libStreamed.web.pulled} bytes`);
+  assert(r.libStreamed.web.calls[0].opts.signal instanceof AbortSignal, 'with a time limit');
+  assert(/too large/.test(r.indexStreamed.error?.message), `a 24 MB catalogue index is refused: ${r.indexStreamed.error?.message}`);
+  assert(r.indexStreamed.web.pulled <= limitOf(20), `reading stops at the 20 MB limit, not after ${r.indexStreamed.web.pulled} bytes`);
+
+  // The page said the catalogue came from libraries.excalidraw.com alone.
+  const privacy = readFileSync(join(ROOT, 'docs', 'privacy.md'), 'utf8');
+  for (const host of ['raw.githubusercontent.com', 'libraries.excalidraw.com']) {
+    assert(privacy.includes(`\`${host}\``), `docs/privacy.md names ${host}, a host the catalogue is fetched from`);
+  }
+  assert(/redirect only to another https URL/.test(privacy), 'docs/privacy.md says a redirect stays on https');
 });
 
 test('the docker compose file pins the official image and a port', () => {
