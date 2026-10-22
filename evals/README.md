@@ -120,12 +120,19 @@ them with its temp dirs, so the script runs it with `--keep-temp` in a private
 `TMPDIR`, copies the traces out and removes the rest. `-- --keep-temp` keeps
 the dirs where they always were (#374).
 
+It runs the model at medium effort unless given `--effort`: Claude Code's
+default on Haiku, Sonnet and Opus, and what a user gets. `claude plugin eval`
+takes no effort of its own and ignores `--effort` given before `plugin`, so the
+script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. A
+variable left in your shell, or a default that moves, cannot change a score
+unseen, and the summary's first line and the scoreboard name the effort.
+
 The summary is `scripts/eval-summary.mjs`, which reads any `--json` output on
 its own. Its shape, with made-up numbers:
 
 ```
-3 cases · 298s · $0.122 · model claude-haiku-5-5 · judge claude-sonnet-5-5
-baseline: 2026-10-16 · model claude-haiku-5-5 · plugin 2.3.2 · 30 cases
+3 cases · 298s · $0.122 · model claude-haiku-5-5 · effort medium · judge claude-sonnet-5-5
+baseline: 2026-10-16 · model claude-haiku-5-5 · effort medium · plugin 2.3.2 · 30 cases
 
 tier-1
 ok  drawio-generate-architecture   1.00   runs: 1.00 1.00 1.00   12 turns · 20 KB   +0.00 on 1.00
@@ -160,11 +167,11 @@ gate: pass
 
 ## The scoreboard
 
-`evals/scoreboard.json` is the run to beat: the whole suite on the model and
-judge it names, with each case's default number of runs. Compare a change
-against it with `--baseline evals/scoreboard.json`. Replace it when a change
-is meant to move the scores, in the same pull request, from a full run on the
-same model, and say in the pull request what moved and why. A case it does
+`evals/scoreboard.json` is the run to beat: the whole suite on the model,
+effort and judge it names, with each case's default number of runs. Compare a
+change against it with `--baseline evals/scoreboard.json`. Replace it when a
+change is meant to move the scores, in the same pull request, from a full run
+on the same model at the same effort, and say in the pull request what moved and why. A case it does
 not hold yet is printed as `new`, and a test fails until the board names every
 case that exists.
 
@@ -225,7 +232,9 @@ tier-2 and tier-3 cases. Compare a run on that model with
 All three were judged by Sonnet on 2026-10-16 and 17. The account's session
 limit stopped the Opus run after 22 of its 42 runs, so the seven cases it
 left were run again in full on Claude Code 2.1.302 and merged in; the cost
-counts both. The figures are what the runs would cost at API prices.
+counts both. The figures are what the runs would cost at API prices. They
+were run before the script set an effort, at Claude Code's default; on 2.1.308
+that is medium on all three models, the effort it now sets.
 
 Two cases score below 1.00 on every model, and they point at the plugin:
 

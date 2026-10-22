@@ -2135,6 +2135,62 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   rmSync(dir, { recursive: true, force: true });
 });
 
+// The effort a run is made at moves its score, and `claude plugin eval` takes
+// none: it refuses --effort after `plugin eval` and ignores one before it.
+// CLAUDE_CODE_EFFORT_LEVEL is what reaches its runs, so the script sets it,
+// medium unless told, the default on Haiku, Sonnet and Opus. A variable left
+// in the shell, or a default that moves, no longer changes a score unseen, and
+// the summary and the scoreboard name the effort so a board is read at its own.
+test('scripts/eval.sh runs the model at medium effort unless told, and the scoreboard names it', () => {
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(/EFFORT="medium"/.test(sh) && sh.includes('CLAUDE_CODE_EFFORT_LEVEL="$EFFORT" claude "${args[@]}"'),
+    'scripts/eval.sh no longer sets the effort of its runs');
+  assert(sh.includes('--scoreboard "$OUT/scoreboard.json" --effort "$EFFORT"'), 'the effort is not passed to the summary');
+
+  const summary = join(ROOT, 'scripts', 'eval-summary.mjs');
+  const dir = join(TMP, 'eval-effort');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const result = join(dir, 'result.json');
+  writeFileSync(result, JSON.stringify({ startedAt: '2026-10-23T08:00:00.000Z', claudeVersion: '2.1.308', costUsd: 0.1,
+    suite: { modelOverride: 'claude-sonnet-5-5', judgeModel: 'claude-sonnet-5-5' },
+    cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }], aggregates: {} }));
+  const sum = (...args) => spawnSync(process.execPath, [summary, result, ...args], { encoding: 'utf8' });
+  const board = join(dir, 'board.json');
+  const named = sum('--effort', 'medium', '--scoreboard', board);
+  eq(named.status, 0, `${named.stdout}${named.stderr}`);
+  assert(named.stdout.includes('· model claude-sonnet-5-5 · effort medium · judge'), `the first line names the effort:\n${named.stdout}`);
+  eq(JSON.parse(readFileSync(board, 'utf8')).run.effort, 'medium', 'the scoreboard names the effort');
+  assert(sum('--baseline', board).stdout.includes('baseline: 2026-10-23 · model claude-sonnet-5-5 · effort medium ·'), 'the baseline line names its effort');
+  assert(sum().stdout.includes('· effort ? ·'), 'a summary told no effort does not guess one');
+  eq(sum('--effort', 'fast').status, 2, 'an effort Claude Code does not take is refused');
+
+  // The script refuses Windows itself, so here only the text above is checked.
+  if (process.platform === 'win32') { rmSync(dir, { recursive: true, force: true }); return; }
+  const bin = join(dir, 'bin');
+  mkdirSync(bin, { recursive: true });
+  const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
+  stub('claude', ['echo "${CLAUDE_CODE_EFFORT_LEVEL:-unset}" > "$STUB_SEEN"',
+    'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$STUB_RESULT" "$2"; shift; done; exit 0'].join('\n'));
+  stub('bwrap', 'exit 0');
+  stub('socat', 'exit 0');
+  const seen = join(dir, 'seen');
+  const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`, STUB_RESULT: result, STUB_SEEN: seen };
+  const run = (args, more = {}) => spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args],
+    { cwd: ROOT, encoding: 'utf8', env: { ...env, ...more } });
+  const plain = run([], { CLAUDE_CODE_EFFORT_LEVEL: 'max' });
+  eq(plain.status, 0, `a clean run passes:\n${plain.stdout.slice(-400)}${plain.stderr}`);
+  eq(readFileSync(seen, 'utf8').trim(), 'medium', 'the runs are at medium, whatever the shell exported');
+  const high = run(['--effort', 'high']);
+  eq(readFileSync(seen, 'utf8').trim(), 'high', '--effort sets it');
+  assert(high.stdout.includes('effort high'), `the summary names it:\n${high.stdout.slice(-400)}`);
+  eq(JSON.parse(readFileSync(join(dir, 'out', 'scoreboard.json'), 'utf8')).run.effort, 'high', 'and so does the scoreboard');
+  rmSync(seen);
+  eq(run(['--effort', 'fast']).status, 2, 'an effort Claude Code does not take is refused');
+  assert(!existsSync(seen), 'before anything runs');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // A .sh authored on Windows is recorded 0644 by default, and the working-tree
 // mode says nothing on Windows - only the mode git stores travels to a clone.
 // evals/README.md documents `scripts/eval.sh` as a command, so it has to be one
@@ -2294,7 +2350,7 @@ test('the eval summary scores tiers and competencies, gates on tier 1, and keeps
   eq(sum(result(1, 0.5), ['--scoreboard', board]).status, 0, 'writing a scoreboard changes no verdict');
   const written = JSON.parse(readFileSync(board, 'utf8'));
   eq(written.schema, 'arkitect-eval-scoreboard/1', 'the scoreboard names its schema');
-  eq(JSON.stringify(written.run), JSON.stringify({ date: '2026-10-16', claude: '2.1.300', plugin: '2.3.2', model: 'claude-haiku-5-5', judge: 'claude-sonnet-5-5', costUsd: 0.1 }), 'the run it records');
+  eq(JSON.stringify(written.run), JSON.stringify({ date: '2026-10-16', claude: '2.1.300', plugin: '2.3.2', model: 'claude-haiku-5-5', effort: null, judge: 'claude-sonnet-5-5', costUsd: 0.1 }), 'the run it records');
   eq(written.cases['drawio-headroom'].score, 0.75, 'a case score');
   eq(written.cases['drawio-headroom'].tier, 'tier-2', 'a case tier');
   const strings = JSON.stringify(written).match(/"[^"]*"/g);
