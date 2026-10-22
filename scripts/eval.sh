@@ -200,7 +200,7 @@ if [ "$PREFLIGHT" -eq 1 ]; then
   echo
   echo "preflight: can a case write its working directory? one haiku run, in $PRE"
   ( cd "$ROOT" && HOME="$SANDBOX_HOME" TMPDIR="$RUN_TMP" CLAUDE_CODE_EFFORT_LEVEL="$EFFORT" claude "${pre[@]}" ) > "$PRE/run.log" 2>&1
-  if node "$HERE/eval-summary.mjs" "$PRE/result.json" --traces "$PRE/traces" > "$PRE/summary.txt" 2>&1; then
+  if node "$HERE/eval-summary.mjs" "$PRE/result.json" --traces "$PRE/traces" --effort "$EFFORT" > "$PRE/summary.txt" 2>&1; then
     echo "preflight: ok"
   elif grep -qs 'Read-only file system' "$PRE"/traces/*.jsonl; then
     die "a case cannot write its own working directory: this Claude Code runs eval cases read-only (2.1.308 does, 2.1.302 does not; evals/README.md), so every case that builds a file would fail for that. The suite was not run; the check is in $PRE"
