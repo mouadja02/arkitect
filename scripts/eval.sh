@@ -18,7 +18,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
-TAGS=(); CASE=""; RUNS=""; MODEL="haiku"; JUDGE="sonnet"
+TAGS=(); CASE=""; RUNS=""; MODEL="haiku"; JUDGE="sonnet"; EFFORT="medium"
 MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
 BASELINE=""; TOLERANCE=""
 
@@ -34,6 +34,7 @@ Options:
   --case <glob>        only cases whose name matches
   --runs <n>           runs per case (default: each case's own runs:)
   --model <model>      model under test (default haiku)
+  --effort <level>     low, medium, high, xhigh or max (default medium; see below)
   --judge-model <m>    LLM-grader model (default sonnet; see below)
   --max-cost-usd <n>   hard ceiling, aborts past it (default 5)
   -j, --concurrency <n>  parallel agent runs (default 2)
@@ -49,6 +50,11 @@ Options:
 The judge defaults to sonnet deliberately. A haiku judge disagrees with itself
 and with sonnet on identical output, in both directions - see #135.
 
+The effort is medium unless told otherwise: Claude Code's own default on
+Haiku, Sonnet and Opus, and the one a user gets. It is set, not left to the
+default, so a default that moves or a CLAUDE_CODE_EFFORT_LEVEL in your shell
+cannot move a score unseen; the summary and the scoreboard name it.
+
 The run fails if a tier-1 case scores below 1, a run errors, or a case falls
 below its baseline; tiers 2 and 3 are expected below 1 (evals/README.md).
 USAGE
@@ -61,6 +67,7 @@ while [ $# -gt 0 ]; do
     --case) [ $# -ge 2 ] || die "--case needs a value"; CASE="$2"; shift 2 ;;
     --runs) [ $# -ge 2 ] || die "--runs needs a value"; RUNS="$2"; shift 2 ;;
     --model) [ $# -ge 2 ] || die "--model needs a value"; MODEL="$2"; shift 2 ;;
+    --effort) [ $# -ge 2 ] || die "--effort needs a value"; EFFORT="$2"; shift 2 ;;
     --judge-model) [ $# -ge 2 ] || die "--judge-model needs a value"; JUDGE="$2"; shift 2 ;;
     --max-cost-usd) [ $# -ge 2 ] || die "--max-cost-usd needs a value"; MAX_COST="$2"; shift 2 ;;
     -j|--concurrency) [ $# -ge 2 ] || die "--concurrency needs a value"; CONCURRENCY="$2"; shift 2 ;;
@@ -74,6 +81,10 @@ while [ $# -gt 0 ]; do
     *) die "unknown option: $1 (see --help)" ;;
   esac
 done
+case "$EFFORT" in
+  low|medium|high|xhigh|max) ;;
+  *) die "--effort takes low, medium, high, xhigh or max, not $EFFORT" ;;
+esac
 
 # ---------------------------------------------------------------- prerequisites
 
@@ -183,11 +194,13 @@ for t in ${TAGS+"${TAGS[@]}"}; do args+=(--tag "$t"); done
 args+=(${PASSTHROUGH+"${PASSTHROUGH[@]}"})
 if [ "$KEEP" -eq 0 ]; then args+=(--keep-temp); run_tmp="$RUN_TMP"; else run_tmp="${TMPDIR:-/tmp}"; fi
 
+# `claude plugin eval` takes no --effort, and ignores one given before
+# `plugin`: the variable is the one route that reaches its runs.
 echo
-echo "running: claude ${args[*]}"
+echo "running: CLAUDE_CODE_EFFORT_LEVEL=$EFFORT claude ${args[*]}"
 echo "results: $OUT"
 echo
-( cd "$ROOT" && HOME="$SANDBOX_HOME" TMPDIR="$run_tmp" claude "${args[@]}" ) 2>&1 | tee "$OUT/run.log"
+( cd "$ROOT" && HOME="$SANDBOX_HOME" TMPDIR="$run_tmp" CLAUDE_CODE_EFFORT_LEVEL="$EFFORT" claude "${args[@]}" ) 2>&1 | tee "$OUT/run.log"
 status=${PIPESTATUS[0]}
 
 # ---------------------------------------------------------------- summary
@@ -198,7 +211,7 @@ status=${PIPESTATUS[0]}
 # batch whose every run errored (#369).
 # A missing baseline is a typo, not a reason to throw the run's spend away.
 if [ -n "$BASELINE" ] && [ ! -f "$BASELINE" ]; then echo "no baseline at $BASELINE; summarising without one" >&2; BASELINE=""; fi
-summary=("$OUT/result.json" --traces "$OUT/traces" --scoreboard "$OUT/scoreboard.json")
+summary=("$OUT/result.json" --traces "$OUT/traces" --scoreboard "$OUT/scoreboard.json" --effort "$EFFORT")
 [ -n "$BASELINE" ] && summary+=(--baseline "$BASELINE")
 [ -n "$TOLERANCE" ] && summary+=(--tolerance "$TOLERANCE")
 if [ -f "$OUT/result.json" ]; then

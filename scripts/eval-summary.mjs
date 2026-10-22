@@ -5,6 +5,7 @@
 //
 //   node scripts/eval-summary.mjs evals/results/<stamp>/result.json
 //        [--traces DIR] [--baseline FILE] [--scoreboard FILE] [--tolerance N]
+//        [--effort LEVEL]
 //
 // `--traces DIR` copies each run's trace.jsonl, which `claude plugin eval`
 // deletes with its temp dir unless told --keep-temp, into DIR, and names it
@@ -17,6 +18,10 @@
 // score, perfect runs, turns, cost and context, and nothing else - no path, no
 // prompt, no reply - so one can be committed. `--baseline FILE` reads one (or
 // another result.json) and prints each case against it (#415).
+//
+// `--effort LEVEL` names the effort the runs were made at, which the result
+// does not record; scripts/eval.sh passes the one it set. The first line and
+// the scoreboard carry it, so a board is read at the effort it was measured at.
 //
 // Each case's tags come from its case.yaml. Tier 1 is the floor and tiers 2
 // and 3 the headroom (evals/README.md), so the gate is: exit 1 if a tier-1
@@ -31,9 +36,10 @@ import { readJson } from '../skills/arkitect-drawio/scripts/lib/read-json.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA = 'arkitect-eval-scoreboard/1';
-const USAGE = 'usage: node scripts/eval-summary.mjs <result.json> [--traces DIR] [--baseline FILE] [--scoreboard FILE] [--tolerance N]';
+const USAGE = 'usage: node scripts/eval-summary.mjs <result.json> [--traces DIR] [--baseline FILE] [--scoreboard FILE] [--tolerance N] [--effort LEVEL]';
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
-const VALUED = ['--traces', '--baseline', '--scoreboard', '--tolerance'];
+const VALUED = ['--traces', '--baseline', '--scoreboard', '--tolerance', '--effort'];
 const opts = {};
 const positional = [];
 let help = false;
@@ -51,6 +57,8 @@ for (let i = 0; i < argv.length; i++) {
 }
 const tolerance = opts.tolerance === undefined ? 0.2 : Number(opts.tolerance);
 if (!Number.isFinite(tolerance) || tolerance < 0) bad ??= '--tolerance takes a number of 0 or more';
+if (opts.effort !== undefined && !EFFORTS.includes(opts.effort)) bad ??= `--effort takes ${EFFORTS.join(', ')}`;
+const effort = opts.effort ?? null;
 const path = positional[0];
 if (help || !path || bad || positional.length > 1) {
   if (bad) console.error(bad);
@@ -175,8 +183,8 @@ const rows = cases.map((c) => {
 });
 
 // The baseline, as a scoreboard: one written by --scoreboard, or a result.json
-// turned into one.
-function boardOf(rowsIn, source) {
+// turned into one, whose effort nothing records.
+function boardOf(rowsIn, source, effortOf = null) {
   const cs = {};
   for (const r of rowsIn) {
     cs[r.name] = {
@@ -192,6 +200,7 @@ function boardOf(rowsIn, source) {
       claude: source.claudeVersion ?? null,
       plugin: plugin?.version ?? null,
       model: source.suite?.modelOverride ?? null,
+      effort: effortOf,
       judge: source.suite?.judgeModel ?? null,
       costUsd: round(Number(source.costUsd) || 0, 3),
     },
@@ -220,10 +229,10 @@ const before = (name) => {
 
 const out = [];
 out.push(`${cases.length} cases · ${run.durationSeconds ?? '?'}s · ${money(run.costUsd)}`
-  + ` · model ${run.suite?.modelOverride ?? 'default'} · judge ${run.suite?.judgeModel ?? 'default'}`);
+  + ` · model ${run.suite?.modelOverride ?? 'default'} · effort ${effort ?? '?'} · judge ${run.suite?.judgeModel ?? 'default'}`);
 if (baseline) {
   const r = baseline.run ?? {};
-  out.push(`baseline: ${r.date ?? '?'} · model ${r.model ?? '?'} · plugin ${r.plugin ?? '?'} · ${Object.keys(baseline.cases).length} cases`);
+  out.push(`baseline: ${r.date ?? '?'} · model ${r.model ?? '?'} · effort ${r.effort ?? '?'} · plugin ${r.plugin ?? '?'} · ${Object.keys(baseline.cases).length} cases`);
 }
 
 const regressions = [];
@@ -309,7 +318,7 @@ if (regressions.length) reasons.push(`${regressions.length} regressed more than 
 out.push(reasons.length ? `gate: FAIL - ${reasons.join(', ')}` : 'gate: pass');
 
 if (opts.scoreboard) {
-  const board = boardOf(rows, run);
+  const board = boardOf(rows, run, effort);
   try {
     mkdirSync(dirname(opts.scoreboard), { recursive: true });
     writeFileSync(opts.scoreboard, JSON.stringify(board, null, 2) + '\n');

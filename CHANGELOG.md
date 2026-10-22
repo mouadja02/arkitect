@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- `scripts/eval.sh` runs the model under test at medium effort unless given `--effort`. `claude plugin eval` takes no `--effort` and ignores one given before `plugin`, so the script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. Medium is Claude Code's default on Haiku, Sonnet and Opus, so a run measures what a user gets, and a variable left in the shell or a default that moves no longer changes a score unseen. The summary's first line and the scoreboard's `run.effort` name it; a board written before says `effort ?`.
+
 ### Fixed
 
 - An Excalidraw boundary holds what is drawn inside it, and `validate` warns where it does not. A scope's top inset was a fixed 46px, one line at the default size, so an inside label set larger or on two lines ran into the first row (#428); a frame was sized before its edges were routed, so a loop or an `avoid` detour between its own members, or that edge's label, ran past the edge the app clips at (#427). The top inset now holds the measured label, 9px clear of the contents, and a frame grows to hold its own edges and their labels with the room it leaves round a node, every boundary round it growing to match. `validate` names a frame member drawn past the frame's edge and a boundary's name over a node. **This changes what existing specs draw**: such a scope is taller, a smaller `padTop` is raised to what the label needs, and such a frame, with whatever holds it, is larger. One default line keeps its 46px, and the four Excalidraw template specs build byte for byte as before.
