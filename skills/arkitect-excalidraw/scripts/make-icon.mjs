@@ -37,6 +37,7 @@ import { parseSvg, simplify, signedArea } from './lib/svg-path.mjs';
 // picks up a child's, or `stroke-width`, and sizes the mark wrong (#96).
 import { svgDimensions } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { download } from '../../arkitect-drawio/scripts/lib/download.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -357,14 +358,11 @@ export function storeIcon(name, bytes, opts = {}) {
 }
 
 export async function fetchIcon(name, url, opts = {}) {
-  if (!/^https:\/\//i.test(url)) throw new Error('only https URLs are accepted');
-  const res = await fetch(url, {
-    redirect: 'follow',
+  const got = await download(url, {
+    limit: MAX_BYTES,
     headers: { 'user-agent': 'arkitect-excalidraw/1.0 (+diagram icon fetch)' },
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-  const bytes = Buffer.from(await res.arrayBuffer());
-  return storeIcon(name, bytes, { ...opts, source: url });
+  return storeIcon(name, got.bytes, { ...opts, source: got.url });
 }
 
 // Removed from whichever folder holds it: asked to remove an icon made before

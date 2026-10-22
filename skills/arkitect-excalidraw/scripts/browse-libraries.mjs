@@ -23,6 +23,7 @@ import {
   FONT, FONT_FAMILY,
 } from './lib/excalidraw-core.mjs';
 import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { download } from '../../arkitect-drawio/scripts/lib/download.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -36,13 +37,15 @@ const INDEX_URL = 'https://raw.githubusercontent.com/excalidraw/excalidraw-libra
 const FILE_BASE = 'https://libraries.excalidraw.com/libraries/';
 
 const UA = { 'user-agent': 'arkitect-excalidraw/1.0 (+library browse)' };
+// The index is about 200 KB and the largest bundled library 2.2 MB; neither
+// download had a limit before #444.
+const MAX_BYTES = 20 * 1024 * 1024;
 
 // ---------------------------------------------------------------- index
 
 export async function updateIndex() {
-  const res = await fetch(INDEX_URL, { headers: UA, redirect: 'follow' });
-  if (!res.ok) throw new Error(`HTTP ${res.status} fetching the library index`);
-  const list = await res.json();
+  const { bytes } = await download(INDEX_URL, { limit: MAX_BYTES, headers: UA });
+  const list = JSON.parse(bytes.toString('utf8'));
   if (!Array.isArray(list)) throw new Error('library index is not an array');
   mkdirSync(LIB_DIR, { recursive: true });
   writeFileSync(INDEX_FILE, `${JSON.stringify(list, null, 2)}\n`);
@@ -130,10 +133,8 @@ export async function installLibrary(sourceOrId, { force = false } = {}) {
     throw new Error(`"${sourceOrId}" is not a library source path; run --search first and pass the exact "source" value`);
   }
 
-  const url = /^https:\/\//i.test(source) ? source : FILE_BASE + source;
-  const res = await fetch(url, { headers: UA, redirect: 'follow' });
-  if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
-  const body = Buffer.from(await res.arrayBuffer());
+  const { bytes: body, url } = await download(/^https:\/\//i.test(source) ? source : FILE_BASE + source,
+    { limit: MAX_BYTES, headers: UA });
 
   const slug = slugFor(source);
   const path = join(LIB_DIR, `${slug}.excalidrawlib`);

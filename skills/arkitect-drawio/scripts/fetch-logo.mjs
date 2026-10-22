@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, extname } from 'node:path';
 import { sha256, parseDataUri, imageDimensions, fitCell } from './lib/drawio-core.mjs';
 import { cacheDir, mergedRegistry } from './lib/store.mjs';
+import { download } from './lib/download.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -126,14 +127,11 @@ export function storeLogo(name, bytes, { source = 'local', force = false } = {})
 }
 
 export async function fetchLogo(name, url, { force = false } = {}) {
-  if (!/^https:\/\//i.test(url)) throw new Error('only https URLs are accepted');
-  const res = await fetch(url, {
-    redirect: 'follow',
+  const got = await download(url, {
+    limit: MAX_BYTES,
     headers: { 'user-agent': 'arkitect-drawio/1.0 (+diagram icon fetch)' },
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-  const bytes = Buffer.from(await res.arrayBuffer());
-  return storeLogo(name, bytes, { source: url, force });
+  return storeLogo(name, got.bytes, { source: got.url, force });
 }
 
 export function getLogo(name) {

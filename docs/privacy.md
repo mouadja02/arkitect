@@ -21,8 +21,12 @@ customer. Using an agent to draw one shouldn't mean shipping it anywhere.
 | the Excalidraw container | your machine, on 127.0.0.1; excalidraw.com's app, served under a policy that lets the page reach this container only | none: Share, Live collaboration, the AI tools and the app's font and analytics fetches are refused by the browser (#348) |
 | the Draw.io MCP server, as Arkitect uses it | your machine, over stdio | none |
 | the five hooks | your machine; they read the prompt, the last reply, the session's tool calls, a `*.spec.json` the prompt names, the size of a diagram about to be read and the path a command or edit is about to write | none |
-| fetching a logo | your machine | one HTTPS GET to the URL you named |
-| the library catalogue | your machine | HTTPS GET to `libraries.excalidraw.com` |
+| fetching a logo | your machine | an HTTPS GET to the URL you named |
+| the library catalogue | your machine | HTTPS GETs: the index from `raw.githubusercontent.com`, a library from `libraries.excalidraw.com` or the https `.excalidrawlib` URL you name |
+
+A download follows a redirect only to another https URL, five at most. It
+stops reading at its limit, 2 MB for a logo, 3 MB for an Excalidraw icon and
+20 MB for a library or the index, and gives up after 30 seconds.
 
 There are no npm dependencies, so no dependency tree calls out either.
 Installing Arkitect itself from npm, and `npx @drawio/mcp` for the MCP server,

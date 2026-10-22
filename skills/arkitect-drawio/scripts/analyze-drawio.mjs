@@ -366,6 +366,10 @@ if (process.argv[1] && process.argv[1].endsWith('analyze-drawio.mjs')) {
   try {
     main(process.argv.slice(2));
   } catch (e) {
+    if (e?.code === 'ARKITECT_PAGE_TOO_LARGE') {
+      console.error(`cannot read ${e.path}: page ${e.page} ${e.message}`);
+      process.exit(1);
+    }
     if (e?.code !== 'ENOENT') throw e;
     console.error(`cannot read ${e.path}: ENOENT`);
     process.exit(2);

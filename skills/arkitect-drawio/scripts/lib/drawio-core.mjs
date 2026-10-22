@@ -200,9 +200,20 @@ export function isCompressedPage(inner) {
   return inner.indexOf('<mxGraphModel') === -1 && /[A-Za-z0-9+/=]{40,}/.test(inner);
 }
 
+// Memory followed the inflated size, not the file's: 174 KB that inflated to
+// 128 MB took validate and analyze to 572 MB (#445). A real diagram with every
+// icon embedded is 4-7 MB on disk, so the cap leaves an order of magnitude.
+export const MAX_PAGE_BYTES = 64 * 1024 * 1024;
+
 export function decompressPage(b64) {
-  const raw = inflateRawSync(Buffer.from(b64.trim(), 'base64')).toString('binary');
-  return decodeURIComponent(raw);
+  let raw;
+  try {
+    raw = inflateRawSync(Buffer.from(b64.trim(), 'base64'), { maxOutputLength: MAX_PAGE_BYTES });
+  } catch (error) {
+    if (error?.code !== 'ERR_BUFFER_TOO_LARGE') throw error;
+    throw Object.assign(new Error(`inflates past ${MAX_PAGE_BYTES / 1024 / 1024} MB: not read`), { code: 'ARKITECT_PAGE_TOO_LARGE' });
+  }
+  return decodeURIComponent(raw.toString('binary'));
 }
 
 export const readMxfile = (path) => parseMxfile(readFileSync(path, 'utf8'), path);
@@ -219,13 +230,20 @@ export function parseMxfile(text, path = null) {
     const a = parseAttrs(page.raw);
     const inner = tag.selfClosing ? '' : text.slice(page.end, tag.start);
     const compressed = isCompressedPage(inner);
+    const index = pages.length;
     pages.push({
       raw: text.slice(page.start, tag.end),
       name: a.name ?? '',
       id: a.id ?? '',
       compressed,
       get xml() {
-        return compressed ? decompressPage(inner) : inner;
+        if (!compressed) return inner;
+        try {
+          return decompressPage(inner);
+        } catch (error) {
+          // Which page of which file, for a reader that reports it in one line.
+          throw Object.assign(error, { page: index, path });
+        }
       },
     });
     page = undefined;
