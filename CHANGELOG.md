@@ -17,6 +17,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Changed
 
+- The three eval boards hold a run of the whole suite on plugin 2.4.1, at medium effort with Sonnet judging, on Claude Code 2.1.302, and are the first to name their effort. Haiku: tier 1 1.00, tier 2 0.85, tier 3 0.90, $1.66. Sonnet: tiers 2 and 3 at 0.99, $14.42 for all 32 cases. Opus: 0.97 and 0.98, $36.10. Two Haiku edit cases fell because the eval sandbox refused the agent's listing of the plugin's `evals/` folder, not because of the plugin; `evals/README.md` says what moved and why.
 - `scripts/eval.sh` runs the model under test at medium effort unless given `--effort`. `claude plugin eval` takes no `--effort` and ignores one given before `plugin`, so the script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. Medium is Claude Code's default on Haiku, Sonnet and Opus, so a run measures what a user gets, and a variable left in the shell or a default that moves no longer changes a score unseen. The summary's first line and the scoreboard's `run.effort` name it; a board written before says `effort ?`.
 
 ### Fixed
