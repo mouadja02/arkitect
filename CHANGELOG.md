@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.4.2] — 2026-10-23
+
 ### Added
 
 - `scripts/eval.sh` runs one case of its own before the suite, once on Haiku for about a cent. The case writes a file in its working directory; if the file is not there, the suite is not run and the script exits 2, naming a read-only sandbox when the trace shows one. Claude Code 2.1.308 runs every eval case with a read-only working directory and `TMPDIR`, so a full Haiku run scored 0.69 on tier 1 against its board's 1.00 and measured nothing; 2.1.302 runs the same case clean. `--no-preflight` skips the check, and `evals/README.md` says how to run an earlier Claude Code meanwhile.
