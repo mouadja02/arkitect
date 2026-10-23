@@ -35,7 +35,7 @@ graders:
   - type: tool_order
     name: spec-before-the-build
     before: { tool: Bash, input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+spec\b' }
-    after: { tool: Bash, input_match: 'build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+build\b' }
+    after: { tool: Bash, input_match: '(build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+build\b)(?![^|;&\n]*\s--(print-style|help)\b)' }
 
   # The point of the case: the builder drew the cache and its arrow, and the
   # spec the scene now carries holds them. Hand-written elements carry no stamp.

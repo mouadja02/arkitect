@@ -1464,6 +1464,36 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
   }
 });
 
+// `build --print-style` builds nothing, and AGENTS.md asks for it before the
+// spec is written. A Haiku run that printed the style, then the carried spec,
+// then built, failed drawio-edit-built-diagram's spec-before-the-build: the
+// style lookup was read as the build. The interview cases' no-build-yet would
+// fail one the same way. A grader that counts a build counts only a build.
+test('no eval grader counts a build that builds nothing', () => {
+  let builds = 0;
+  for (const { id, dir } of evalCases()) {
+    const yaml = readFileSync(join(dir, 'case.yaml'), 'utf8').replace(/\r\n/g, '\n');
+    const patterns = yaml.split(/\n  - type: /).slice(1).flatMap((block) => [
+      ...(/^    tool: Bash$/m.test(block) ? [block.match(/^    input_match: '((?:[^']|'')*)'$/m)?.[1]] : []),
+      ...[...block.matchAll(/^    (?:before|after): \{ tool: Bash, input_match: '((?:[^']|'')*)' \}$/gm)].map((m) => m[1]),
+    ]).filter(Boolean).map((p) => new RegExp(p.replace(/''/g, "'")));
+    for (const engine of ['drawio', 'excalidraw']) {
+      const script = `node /opt/ark/skills/arkitect-${engine}/scripts/build-diagram.mjs`;
+      for (const re of patterns.filter((p) => p.test(`node $A ${engine} build a.spec.json --out a.${engine}`))) {
+        builds++;
+        for (const nothing of [`${script} --print-style`, `node $A ${engine} build --print-style --defaults`,
+          `node /opt/ark/bin/arkitect.mjs ${engine} build --help`, `ls diagrams/ && ${script} --print-style | head -40`]) {
+          assert(!re.test(nothing), `${id}: ${re.source} counts as a build: ${nothing}`);
+        }
+        for (const build of [`${script} a.spec.json --out a.${engine}`, `${script} --print-style; ${script} a.spec.json --out a.${engine}`]) {
+          assert(re.test(build), `${id}: ${re.source} misses a build: ${build}`);
+        }
+      }
+    }
+  }
+  assert(builds >= 4, `expected the four graders that count a build, found ${builds}`);
+});
+
 // A step run through a shell variable holding the dispatcher's path
 // (`A=…/bin/arkitect.mjs; node $A report --draft …`) is still that step. The
 // graders matched only the word `arkitect` before it, so a run of the suite

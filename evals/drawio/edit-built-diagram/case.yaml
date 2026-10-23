@@ -37,7 +37,7 @@ graders:
   - type: tool_order
     name: spec-before-the-build
     before: { tool: Bash, input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+spec\b' }
-    after: { tool: Bash, input_match: 'build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+build\b' }
+    after: { tool: Bash, input_match: '(build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+build\b)(?![^|;&\n]*\s--(print-style|help)\b)' }
 
   # The point of the case. Only the builder writes its stamp and a spec that
   # holds the new node; an XML edit leaves the old spec on <mxfile>, which a
