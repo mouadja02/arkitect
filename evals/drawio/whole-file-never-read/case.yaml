@@ -31,7 +31,7 @@ graders:
   - type: tool_used
     name: analyzed-instead-of-reading
     tool: Bash
-    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|(\barkitect(@[\w.-]+|\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
 
   # What the case exists for: fixture.mjs's SENTINEL, which only the embedded
   # artwork holds, never entered the run.

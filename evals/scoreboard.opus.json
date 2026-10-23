@@ -1,12 +1,13 @@
 {
   "schema": "arkitect-eval-scoreboard/1",
   "run": {
-    "date": "2026-10-17",
-    "claude": "2.1.300, 2.1.302",
-    "plugin": "2.3.2",
+    "date": "2026-10-23",
+    "claude": "2.1.302",
+    "plugin": "2.4.1",
     "model": "opus",
+    "effort": "medium",
     "judge": "sonnet",
-    "costUsd": 17.099
+    "costUsd": 36.102
   },
   "cases": {
     "drawio-edit-built-diagram": {
@@ -15,11 +16,11 @@
         "editing"
       ],
       "runs": 3,
-      "score": 1,
-      "perfect": 3,
-      "turns": 10,
-      "costUsd": 0.3229,
-      "contextKb": 11.5
+      "score": 0.976,
+      "perfect": 2,
+      "turns": 8,
+      "costUsd": 0.2483,
+      "contextKb": 11.2
     },
     "drawio-edit-saved-by-desktop": {
       "tier": "tier-3",
@@ -31,8 +32,8 @@
       "score": 1,
       "perfect": 3,
       "turns": 14,
-      "costUsd": 0.3985,
-      "contextKb": 21.6
+      "costUsd": 0.3838,
+      "contextKb": 20.1
     },
     "drawio-instructions-in-a-spec": {
       "tier": "tier-3",
@@ -42,11 +43,11 @@
         "safety"
       ],
       "runs": 3,
-      "score": 1,
-      "perfect": 3,
-      "turns": 9,
-      "costUsd": 0.2696,
-      "contextKb": 8.7
+      "score": 0.979,
+      "perfect": 2,
+      "turns": 7,
+      "costUsd": 0.2503,
+      "contextKb": 7.4
     },
     "drawio-interview-continues": {
       "tier": "tier-3",
@@ -58,7 +59,7 @@
       "score": 0.9,
       "perfect": 2,
       "turns": 3,
-      "costUsd": 0.1352,
+      "costUsd": 0.1394,
       "contextKb": 0
     },
     "drawio-interview-when-vague": {
@@ -70,7 +71,7 @@
       "score": 0.926,
       "perfect": 1,
       "turns": 4,
-      "costUsd": 0.1459,
+      "costUsd": 0.1428,
       "contextKb": 1.1
     },
     "drawio-lifecycle-target-state": {
@@ -83,9 +84,9 @@
       "runs": 3,
       "score": 1,
       "perfect": 3,
-      "turns": 10,
-      "costUsd": 0.4708,
-      "contextKb": 28.5
+      "turns": 13,
+      "costUsd": 0.4332,
+      "contextKb": 22.1
     },
     "drawio-refused-spec-is-repaired": {
       "tier": "tier-2",
@@ -96,9 +97,9 @@
       "runs": 3,
       "score": 1,
       "perfect": 3,
-      "turns": 8,
-      "costUsd": 0.2582,
-      "contextKb": 8
+      "turns": 7,
+      "costUsd": 0.2405,
+      "contextKb": 8.2
     },
     "drawio-scale-multi-region": {
       "tier": "tier-3",
@@ -111,8 +112,8 @@
       "score": 1,
       "perfect": 3,
       "turns": 18,
-      "costUsd": 0.9731,
-      "contextKb": 30
+      "costUsd": 0.888,
+      "contextKb": 40.2
     },
     "drawio-whole-file-never-read": {
       "tier": "tier-2",
@@ -123,9 +124,9 @@
       "runs": 3,
       "score": 1,
       "perfect": 3,
-      "turns": 8,
-      "costUsd": 0.2743,
-      "contextKb": 13.5
+      "turns": 6,
+      "costUsd": 0.2024,
+      "contextKb": 7.6
     },
     "excalidraw-edit-built-scene": {
       "tier": "tier-2",
@@ -133,11 +134,11 @@
         "editing"
       ],
       "runs": 3,
-      "score": 0.974,
-      "perfect": 2,
-      "turns": 10,
-      "costUsd": 0.3354,
-      "contextKb": 17.4
+      "score": 0.923,
+      "perfect": 0,
+      "turns": 9,
+      "costUsd": 0.299,
+      "contextKb": 17.5
     },
     "excalidraw-edit-follows-the-scene": {
       "tier": "tier-2",
@@ -146,11 +147,11 @@
         "style"
       ],
       "runs": 3,
-      "score": 1,
-      "perfect": 3,
-      "turns": 8,
-      "costUsd": 0.3712,
-      "contextKb": 36.1
+      "score": 0.976,
+      "perfect": 2,
+      "turns": 9,
+      "costUsd": 0.3586,
+      "contextKb": 25.3
     },
     "excalidraw-edit-next-turn": {
       "tier": "tier-2",
@@ -161,9 +162,9 @@
       "runs": 3,
       "score": 1,
       "perfect": 3,
-      "turns": 9,
-      "costUsd": 0.3326,
-      "contextKb": 22
+      "turns": 12,
+      "costUsd": 0.3427,
+      "contextKb": 23.3
     },
     "excalidraw-legend-for-two-kinds": {
       "tier": "tier-2",
@@ -174,9 +175,9 @@
       "runs": 3,
       "score": 0.972,
       "perfect": 2,
-      "turns": 9,
-      "costUsd": 0.3709,
-      "contextKb": 20
+      "turns": 11,
+      "costUsd": 0.4191,
+      "contextKb": 24
     },
     "excalidraw-portable-report-check": {
       "tier": "tier-2",
@@ -185,11 +186,11 @@
         "portable"
       ],
       "runs": 3,
-      "score": 0.848,
+      "score": 0.97,
       "perfect": 2,
-      "turns": 12,
-      "costUsd": 0.4601,
-      "contextKb": 36.5
+      "turns": 13,
+      "costUsd": 0.4968,
+      "contextKb": 45.7
     }
   }
 }

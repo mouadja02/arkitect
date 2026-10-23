@@ -31,13 +31,13 @@ graders:
   - type: tool_used
     name: printed-the-carried-spec
     tool: Bash
-    input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+spec\b'
+    input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+spec\b'
 
   # The spec first, then the build: a build before it is a new diagram.
   - type: tool_order
     name: spec-before-the-build
-    before: { tool: Bash, input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+spec\b' }
-    after: { tool: Bash, input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+build\b' }
+    before: { tool: Bash, input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+spec\b' }
+    after: { tool: Bash, input_match: 'build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+build\b' }
 
   # The point of the case. Only the builder writes its stamp and a spec that
   # holds the new node; an XML edit leaves the old spec on <mxfile>, which a
@@ -80,7 +80,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+    input_match: 'validate-drawio|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
 
   - type: regex
     name: says-it-rebuilt-from-the-spec

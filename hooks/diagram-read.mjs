@@ -20,7 +20,9 @@ const DIAGRAM = /\.(drawio|dio|excalidraw)$/i;
 export const LARGE = 64 * 1024;
 const SHELLS = ['Bash', 'PowerShell'];
 // The edit eval's `analyzed-instead-of-reading` grader matches the same (#368).
-export const ANALYZE = /analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b/;
+// A shell variable holding the dispatcher's path is the dispatcher:
+// `A=…/bin/arkitect.mjs; node $A drawio analyze …` analyzed the file.
+export const ANALYZE = /analyze-(drawio|excalidraw)\.mjs|(\barkitect(@[\w.-]+|\.mjs)?|\$\{?\w+\}?)["']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b/;
 
 export function analyzeCommand(file) {
   const engine = /\.excalidraw$/i.test(file) ? 'excalidraw' : 'drawio';

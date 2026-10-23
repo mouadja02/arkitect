@@ -30,12 +30,12 @@ graders:
   - type: tool_used
     name: printed-the-carried-spec
     tool: Bash
-    input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+spec\b'
+    input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+spec\b'
 
   - type: tool_order
     name: spec-before-the-build
-    before: { tool: Bash, input_match: '\bspec\.mjs\b|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+spec\b' }
-    after: { tool: Bash, input_match: 'build-diagram\.mjs|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+build\b' }
+    before: { tool: Bash, input_match: '\bspec\.mjs\b|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+spec\b' }
+    after: { tool: Bash, input_match: 'build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+build\b' }
 
   # The point of the case: the builder drew the cache and its arrow, and the
   # spec the scene now carries holds them. Hand-written elements carry no stamp.
@@ -70,7 +70,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+    input_match: 'validate-excalidraw|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+validate\b'
 
   - type: regex
     name: says-it-rebuilt-from-the-spec

@@ -1440,6 +1440,51 @@ test('evals/README.md counts and lists exactly the cases that exist (#177)', () 
   }
 });
 
+// A step run through a shell variable holding the dispatcher's path
+// (`A=…/bin/arkitect.mjs; node $A report --draft …`) is still that step. The
+// graders matched only the word `arkitect` before it, so a run of the suite
+// on three models failed eight steps the agents had run, every one in the
+// portable report cases, and the Opus board's "skipped the draft and the
+// validator" was the same miss. Each Bash pattern that accepts the dispatcher
+// accepts the variable too, and the report cases' patterns read the commands
+// those runs used.
+test('every eval grader that accepts the dispatcher accepts it through a shell variable', () => {
+  const VAR = String.raw`\$\{?\w+\}?`;
+  for (const { id, dir } of evalCases()) {
+    for (const line of readFileSync(join(dir, 'case.yaml'), 'utf8').split(/\r?\n/)) {
+      if (!/input_match:.*arkitect.*\\s\+/.test(line)) continue;
+      assert(line.includes(VAR), `${id}: accepts the dispatcher but not a variable holding it: ${line.trim()}`);
+    }
+  }
+  const order = (yaml, side) => {
+    const m = yaml.replace(/\r\n/g, '\n').match(new RegExp(`^    ${side}: \\{ tool: Bash, input_match: '((?:[^']|'')*)' \\}`, 'm'));
+    assert(m, `the ${side} side of a tool_order grader is gone`);
+    return new RegExp(m[1].replace(/''/g, "'"));
+  };
+  for (const engine of ['drawio', 'excalidraw']) {
+    const yaml = readFileSync(join(ROOT, 'evals', engine, 'portable-report-check', 'case.yaml'), 'utf8');
+    const validate = new RegExp(evalGrader(yaml, 'ran-the-validator').pattern);
+    for (const cmd of [`A=/opt/ark/bin/arkitect.mjs; node $A ${engine} validate out/a.${engine}`, `node "\${A}" ${engine} validate out/a.${engine}`,
+      `node /opt/ark/bin/arkitect.mjs ${engine} validate out/a.${engine}`, `node /opt/ark/skills/arkitect-${engine}/scripts/validate-${engine}.mjs out/a.${engine}`]) {
+      assert(validate.test(cmd), `${engine} ran-the-validator misses: ${cmd}`);
+    }
+    assert(!validate.test(`node $A ${engine} build out/a.spec.json --out out/a.${engine}`), `${engine} ran-the-validator takes a build`);
+    const check = new RegExp(evalGrader(yaml, 'ran-the-portable-report-check').pattern);
+    for (const cmd of ['node $A report out/report.md', 'node /opt/ark/bin/arkitect.mjs report out/report.md']) {
+      assert(check.test(cmd), `${engine} ran-the-portable-report-check misses: ${cmd}`);
+    }
+    if (engine !== 'excalidraw') continue;
+    // Only the Excalidraw case grades the draft, and that it came first.
+    const draft = new RegExp(evalGrader(yaml, 'drafted-the-report').pattern);
+    const [before, after] = [order(yaml, 'before'), order(yaml, 'after')];
+    for (const cmd of ['B=/opt/ark/bin/arkitect.mjs; node $B report --draft out/a.excalidraw --spec out/a.spec.json',
+      'node /opt/ark/bin/arkitect.mjs report --draft out/a.excalidraw --spec out/a.spec.json']) {
+      assert(draft.test(cmd) && before.test(cmd) && !after.test(cmd), `the draft is not read as the draft: ${cmd}`);
+    }
+    assert(after.test('node $B report out/report.md') && !draft.test('node $B report out/report.md'), 'the check is not read as the check');
+  }
+});
+
 // Every case carries exactly one tier, and only tags evals/README.md documents:
 // the summary scores each tag, and an undocumented one is a score nobody can
 // read. A tier-2 or tier-3 case marks the grader it exists for with weight 3,
@@ -3003,11 +3048,13 @@ test('the report check counts a build by the installed, npx or script command, u
       'npx arkitect drawio build a.json --out a.drawio', 'npx -y arkitect@2.2.0 excalidraw build a.json --out a.excalidraw',
       'cd docs && arkitect dio build a.json --out a.drawio', 'arkitect draw.io build a.json', 'arkitect ex build a.json',
       'node "C:\\Program Files\\arkitect\\bin\\arkitect.mjs" excali build a.json', "node '/opt/arkitect/bin/arkitect.mjs' drawio build a.json",
-      'node bin/arkitect.mjs drawio build a.json --out a.drawio', 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs a.json']) {
+      'node bin/arkitect.mjs drawio build a.json --out a.drawio', 'node skills/arkitect-excalidraw/scripts/build-diagram.mjs a.json',
+      // The dispatcher through a shell variable holding its path.
+      'A=/opt/arkitect/bin/arkitect.mjs; node $A drawio build a.json --out a.drawio', 'node "${A}" excalidraw build a.json']) {
       assert(built('Bash', command), `not a build: ${command}`);
     }
     assert(built('PowerShell', 'arkitect drawio build a.json --out a.drawio'), 'a build in the PowerShell tool');
-    for (const command of ['arkitect drawio validate a.drawio', 'arkitect excalidraw render a.excalidraw --format svg',
+    for (const command of ['arkitect drawio validate a.drawio', 'arkitect excalidraw render a.excalidraw --format svg', 'node $A drawio validate a.drawio',
       'npx arkitect drawio icon build', 'node skills/arkitect-drawio/scripts/validate-drawio.mjs a.drawio', 'ls arkitect-drawio build']) {
       assert(!built('Bash', command), `a build: ${command}`);
     }
@@ -3230,6 +3277,9 @@ test('a whole Read of a diagram is refused until it is analyzed, and always when
     eq(read(small), null, 'a small file, once analyzed');
     ran('arkitect drawio analyze other.drawio --cells');
     assert(read(small), 'an analysis of another file does not count');
+    ran(`A=/opt/ark/bin/arkitect.mjs; node "$A" drawio analyze ${small} --page 0 --cells`);
+    eq(read(small), null, 'analyzed through a variable holding the dispatcher');
+    ran('ls');
     ran(`npx arkitect excalidraw analyze ${large} --cells`);
     const big = read(large);
     assert(/big\.excalidraw is \d+ KB/.test(big ?? '') && big.includes('analyze-excalidraw.mjs') && !big.includes('--page'), `large: ${big}`);

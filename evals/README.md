@@ -183,29 +183,34 @@ on the same model at the same effort, and say in the pull request what moved and
 not hold yet is printed as `new`, and a test fails until the board names every
 case that exists.
 
-The board now committed is the second, 2026-10-16, Haiku under test and
-Sonnet judging, 94 runs of 32 cases for $1.56. The first, from the same day,
-had 30 cases and 88 runs:
+The board now committed is the third, from 2026-10-22: Haiku under test at
+medium effort and Sonnet judging, on Claude Code 2.1.302 and plugin 2.4.1, 94
+runs of 32 cases for $1.66. The second, 2026-10-16 on plugin 2.3.2, ran with
+no effort set, which Claude Code resolves to medium:
 
-| | cases | score | all runs perfect | first board |
+| | cases | score | all runs perfect | second board |
 |---|---|---|---|---|
-| tier 1 | 18 | 1.00 | 18 | 1.00 |
-| tier 2 | 9 | 0.93 | 4 | 0.89 of 8 |
-| tier 3 | 5 | 0.89 | 3 | 0.96 of 4 |
+| tier 1 | 18 | 1.00 | 17 | 1.00 |
+| tier 2 | 9 | 0.85 | 2 | 0.93 |
+| tier 3 | 5 | 0.90 | 2 | 0.89 |
 
 What moved, and why:
 
-- `drawio-interview-when-vague` loaded the skill in all three runs, where the
-  first board's runs never did: the prompt router now takes "I'd like an
-  architecture diagram of ..." (#416). Every run still asked several
-  questions at once, so the case's key grader still fails.
-- No run was refused a `sed` on a plugin file; 47 calls printed a pattern
-  with `pattern N` instead (#417). No write reached the plugin either: the
-  hook refused 7, from `cd` into a skill folder, and each of those runs
-  recovered and scored 1.00 (#404).
-- The two conversation cases are new (#418): `excalidraw-edit-next-turn`
-  scored 0.97 and `drawio-interview-continues` 0.53. No run of the
-  interview case loaded the skill on its later turn.
+- `drawio-edit-built-diagram` (0.33, from 0.95) and
+  `excalidraw-edit-built-scene` (0.74, from 1.00) changed nothing in four of
+  their six runs. In each, the first command also listed the plugin's
+  `evals/` folder, the eval sandbox refused it, and the agent called the whole
+  shell unavailable, as on the first board (below). Nothing outside an eval
+  refuses that folder, so these two scores measure the eval: read a later
+  miss there against its trace.
+- `drawio-interview-when-vague` scored 1.00, from 0.89: every run asked one
+  thing at a time.
+- `drawio-interview-continues` scored 0.67, from 0.53. Still no run loaded the
+  skill on the later turn (#423).
+- `drawio-whole-file-never-read` scored 0.89, from 0.74: one run read the file
+  without analyzing it first.
+- The two portable report cases were run again on graders that read the
+  dispatcher through a shell variable (Graders, below).
 
 What the first board's headroom showed:
 
@@ -233,31 +238,37 @@ tier-2 and tier-3 cases. Compare a run on that model with
 
 | model | board | tier 2 (9) | tier 3 (5) | all runs perfect | runs | cost |
 |---|---|---|---|---|---|---|
-| Haiku | [scoreboard.json](scoreboard.json) | 0.93 | 0.89 | 7 of 14 | 42 of 94 | $1.56 for all 32 cases |
-| Sonnet | [scoreboard.sonnet.json](scoreboard.sonnet.json) | 0.99 | 0.99 | 11 of 14 | 42 | $6.47 |
-| Opus | [scoreboard.opus.json](scoreboard.opus.json) | 0.97 | 0.98 | 9 of 14 | 42 | $17.10 |
+| Haiku | [scoreboard.json](scoreboard.json) | 0.85 | 0.90 | 4 of 14 | 42 of 94 | $1.66 for all 32 cases |
+| Sonnet | [scoreboard.sonnet.json](scoreboard.sonnet.json) | 0.99 | 0.99 | 11 of 14 | 42 of 94 | $14.42 for all 32 cases |
+| Opus | [scoreboard.opus.json](scoreboard.opus.json) | 0.97 | 0.98 | 6 of 14 | 42 of 94 | $36.10 for all 32 cases |
 
-All three were judged by Sonnet on 2026-10-16 and 17. The account's session
-limit stopped the Opus run after 22 of its 42 runs, so the seven cases it
-left were run again in full on Claude Code 2.1.302 and merged in; the cost
-counts both. The figures are what the runs would cost at API prices. They
-were run before the script set an effort, at Claude Code's default; on 2.1.308
-that is medium on all three models, the effort it now sets.
+All three ran the whole suite on 2026-10-22 and 23, at medium effort with
+Sonnet judging, on plugin 2.4.1 and Claude Code 2.1.302: 2.1.308 runs every
+case read-only (above). The larger models' boards keep tiers 2 and 3; their
+tier 1 scored 0.99 and 1.00. The session limit cut 2 Sonnet runs and 40 Opus
+runs, so those cases were run again in full and merged in, and the two
+portable report cases were run again on all three models once their graders
+were fixed (Graders, below). Each cost counts every run, and is what the runs
+would cost at API prices. The boards before these, from 2026-10-16 and 17 on
+plugin 2.3.2, ran with no effort set, which resolves to medium.
 
-Two cases score below 1.00 on every model, and they point at the plugin:
+Two cases fall short on more than one model, and they point at the plugin:
 
-- `drawio-interview-when-vague` (0.89, 0.93, 0.93): with the skill loaded,
-  most runs on every model still ask several questions at once (#422).
-- `drawio-interview-continues` (0.53, 0.97, 0.90): one Opus run asked two
-  things; Haiku never loaded the skill on the later turn, which the router
-  could fix by reading the session (#423).
+- `drawio-interview-when-vague` (1.00, 0.96, 0.93): one Sonnet run and two
+  Opus runs asked several things at once (#422). No Haiku run did.
+- `drawio-interview-continues` (0.67, 0.97, 0.90): no Haiku run, and one
+  Sonnet run, loaded the skill on the later turn, which the router could fix
+  by reading the session (#423). One Opus run did not ask the next question.
 
 Everything else Haiku misses, a larger model does not: the whole-file read,
-the scene's own look, the full estate. Those are the small-model gap the
-plugin's scripts and hooks exist to close. Opus scored below Haiku on three
-cases, each from one run: in `excalidraw-portable-report-check` it skipped
-the draft and the validator, and in `excalidraw-edit-built-scene` and
-`excalidraw-legend-for-two-kinds` it missed one grader each.
+the scene's own look, and the refused `evals/` listing above. Those are the
+small-model gap the plugin's scripts and hooks exist to close. Opus scored
+below Haiku on three cases: `drawio-interview-when-vague`, and one grader in
+one run each of `drawio-instructions-in-a-spec` and
+`excalidraw-engine-choice-is-explained`. The previous Opus board's run did
+not skip the draft and the validator in `excalidraw-portable-report-check`,
+as this section said: it ran both through a shell variable holding the
+dispatcher's path, which the graders did not read.
 
 ## Cases that continue a conversation
 
@@ -413,6 +424,17 @@ failed:
 
 If a grader's question is answerable from an artifact on disk, it does not go
 to a judge.
+
+A grader that checks a step accepts it however an agent runs it: the script,
+the dispatcher, or either through a shell variable holding its path
+(`A=…/bin/arkitect.mjs; node $A report --draft …`). The graders read only
+the word `arkitect`, so they failed eight steps that agents on all three
+models had run, every one in the two portable report cases. Replaying the
+fixed patterns against the 282 runs of 2026-10-22 changed exactly those eight
+verdicts and no other, and a test holds the rule. A `tool_order` grader still
+cannot see order inside one Bash call: a run that drafts and checks the report
+in a single command fails `drafted-before-the-check`, as one Haiku and one
+Opus run did on the rerun.
 
 ## What a good result looks like
 

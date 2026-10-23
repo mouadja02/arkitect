@@ -56,7 +56,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+    input_match: 'validate-drawio|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
 
   # The report names what it changed: the typo by name.
   - type: regex
