@@ -2096,9 +2096,10 @@ test('scripts/eval.sh exits with the verdict, and refuses Node 20 (#369)', () =>
   stub('bwrap', 'exit 0');
   stub('socat', 'exit 0');
   const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin` };
+  // The preflight case has a test of its own; these are runs of the suite.
   const run = (result, args = [], more = {}) => {
     writeFileSync(join(dir, 'result.json'), JSON.stringify(result));
-    return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], {
+    return spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), '--no-preflight', ...args], {
       cwd: ROOT, encoding: 'utf8', env: { ...env, STUB_RESULT: join(dir, 'result.json'), STUB_SEEN: join(dir, 'seen'), ...more },
     });
   };
@@ -2176,7 +2177,7 @@ test('scripts/eval.sh runs the model at medium effort unless told, and the score
   stub('socat', 'exit 0');
   const seen = join(dir, 'seen');
   const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`, STUB_RESULT: result, STUB_SEEN: seen };
-  const run = (args, more = {}) => spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args],
+  const run = (args, more = {}) => spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), '--no-preflight', ...args],
     { cwd: ROOT, encoding: 'utf8', env: { ...env, ...more } });
   const plain = run([], { CLAUDE_CODE_EFFORT_LEVEL: 'max' });
   eq(plain.status, 0, `a clean run passes:\n${plain.stdout.slice(-400)}${plain.stderr}`);
@@ -2189,6 +2190,85 @@ test('scripts/eval.sh runs the model at medium effort unless told, and the score
   eq(run(['--effort', 'fast']).status, 2, 'an effort Claude Code does not take is refused');
   assert(!existsSync(seen), 'before anything runs');
   rmSync(dir, { recursive: true, force: true });
+});
+
+// Claude Code 2.1.308 ran every case in a sandbox whose working directory was
+// read-only, so a full Haiku run scored 0.69 on tier 1, where its board holds
+// 1.00, and the spend measured nothing. One case that writes a file now runs
+// first, outside the suite; a run it fails stops there with exit 2, and says
+// why when the trace shows a read-only file system. Run for real against a
+// stub `claude` that answers the preflight and the suite apart.
+test('scripts/eval.sh runs one case that writes a file first, and stops there if it cannot', () => {
+  const sh = readFileSync(join(ROOT, 'scripts', 'eval.sh'), 'utf8');
+  assert(sh.includes('--eval-dir scripts/eval-preflight'), 'scripts/eval.sh no longer runs the preflight case');
+  const yaml = readFileSync(join(ROOT, 'scripts', 'eval-preflight', 'can-write', 'case.yaml'), 'utf8');
+  assert(yaml.includes('target: { source: file, path: ./eval-output/preflight.txt }') && /^runs: 1$/m.test(yaml),
+    'the preflight case no longer checks, once, a file it wrote');
+  assert(!/type: llm/.test(yaml), 'the preflight case asks a judge; a file is a fact');
+  assert(evalCases().every(({ id }) => id.startsWith('evals/') && !id.includes('preflight')), 'the preflight case became part of the suite');
+
+  // The script refuses Windows itself, so here only the text above is checked.
+  if (process.platform === 'win32') return;
+  const dir = join(TMP, 'eval-preflight');
+  const bin = join(dir, 'bin');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(bin, { recursive: true });
+  const stub = (name, body) => { writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`); chmodSync(join(bin, name), 0o755); };
+  stub('claude', ['case " $* " in *" --eval-dir "*) r="$STUB_PREFLIGHT"; echo preflight >> "$STUB_CALLS" ;; *) r="$STUB_RESULT"; echo suite >> "$STUB_CALLS" ;; esac',
+    'while [ $# -gt 0 ]; do [ "$1" = --json ] && cp "$r" "$2"; shift; done; exit 0'].join('\n'));
+  stub('bwrap', 'exit 0');
+  stub('socat', 'exit 0');
+  const calls = join(dir, 'calls');
+  const trace = join(dir, 'trace.jsonl');
+  writeFileSync(join(dir, 'suite.json'), JSON.stringify({ cases: [{ name: 'c', arms: { with: [{ score: 1, graders: [{ name: 'g', passed: true }] }] } }], aggregates: {} }));
+  const env = { ...process.env, HOME: dir, PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    STUB_RESULT: join(dir, 'suite.json'), STUB_PREFLIGHT: join(dir, 'preflight.json'), STUB_CALLS: calls };
+  const run = (score, args = []) => {
+    writeFileSync(join(dir, 'preflight.json'), JSON.stringify({ cases: [{ name: 'preflight-case-can-write', arms: { with: [{ score, tracePath: trace,
+      graders: [{ name: 'wrote-its-working-directory', passed: score === 1 }] }] } }], aggregates: {} }));
+    rmSync(calls, { force: true });
+    const r = spawnSync('bash', ['scripts/eval.sh', '--out', join(dir, 'out'), ...args], { cwd: ROOT, encoding: 'utf8', env });
+    return { ...r, calls: existsSync(calls) ? readFileSync(calls, 'utf8').trim().split('\n').join(' ') : '' };
+  };
+
+  writeFileSync(trace, `${JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', content: 'written' }] } })}\n`);
+  const passed = run(1);
+  eq(passed.status, 0, `a preflight that wrote its file lets the suite run:\n${passed.stdout.slice(-400)}${passed.stderr}`);
+  eq(passed.calls, 'preflight suite', 'the preflight goes first');
+  assert(passed.stdout.includes('preflight: ok'), passed.stdout.slice(-400));
+
+  writeFileSync(trace, `${JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result', is_error: true,
+    content: "Exit code 1\nmkdir: cannot create directory './eval-output': Read-only file system" }] } })}\n`);
+  const readOnly = run(0);
+  eq(readOnly.status, 2, `a read-only sandbox stops the run:\n${readOnly.stderr}`);
+  eq(readOnly.calls, 'preflight', 'before the suite');
+  assert(readOnly.stderr.includes('a case cannot write its own working directory'), `and says why:\n${readOnly.stderr}`);
+
+  writeFileSync(trace, '');
+  const other = run(0);
+  eq(other.status, 2, 'a preflight that failed for another reason stops it too');
+  eq(other.calls, 'preflight', 'before the suite');
+  assert(other.stderr.includes('preflight/summary.txt') && !other.stderr.includes('read-only'), `pointing at its summary:\n${other.stderr}`);
+  assert(other.stderr.includes('FAIL  wrote-its-working-directory'), `and quoting what failed:\n${other.stderr}`);
+
+  const skipped = run(0, ['--no-preflight']);
+  eq(skipped.status, 0, skipped.stderr);
+  eq(skipped.calls, 'suite', '--no-preflight skips it');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// `claude plugin eval` refuses every case of a plugin that holds a file with a
+// second name: "a file in the plugin has more than one name (a hard link)". The
+// two #391 tests made such names under tests/output/ and left them, so an eval
+// run after the suite errored on every case. The runner runs this file after
+// theirs, so a link either leaves behind is caught here.
+test('the suite leaves no hard link behind, which claude plugin eval refuses', () => {
+  const out = join(ROOT, 'tests', 'output');
+  if (!existsSync(out)) return;
+  const linked = readdirSync(out, { recursive: true }).map((f) => join(out, f)).filter((f) => {
+    try { const s = statSync(f); return s.isFile() && s.nlink > 1; } catch { return false; }
+  });
+  assert(!linked.length, `these have a second name, and claude plugin eval refuses the plugin:\n        ${linked.map((f) => relative(ROOT, f)).join('\n        ')}`);
 });
 
 // A .sh authored on Windows is recorded 0644 by default, and the working-tree

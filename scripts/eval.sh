@@ -19,7 +19,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
 TAGS=(); CASE=""; RUNS=""; MODEL="haiku"; JUDGE="sonnet"; EFFORT="medium"
-MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
+MAX_COST="5"; CONCURRENCY=2; SCAFFOLD=1; PREFLIGHT=1; OUT=""; CHECK_ONLY=0; PASSTHROUGH=()
 BASELINE=""; TOLERANCE=""
 
 die() { echo "error: $*" >&2; exit 2; }
@@ -39,7 +39,8 @@ Options:
   --max-cost-usd <n>   hard ceiling, aborts past it (default 5)
   -j, --concurrency <n>  parallel agent runs (default 2)
   --no-scaffold        skip the cases' scaffold scripts
-  --out <dir>          results directory (default evals/results/<stamp>)
+  --no-preflight       skip the one-case check that a case can write (see below)
+  --out <dir>         results directory (default evals/results/<stamp>)
   --baseline <file>    compare with a scoreboard (evals/scoreboard.json) or a
                        result.json; a case further below it than the tolerance fails
   --tolerance <n>      how far below its baseline a case may score (default 0.2)
@@ -54,6 +55,11 @@ The effort is medium unless told otherwise: Claude Code's own default on
 Haiku, Sonnet and Opus, and the one a user gets. It is set, not left to the
 default, so a default that moves or a CLAUDE_CODE_EFFORT_LEVEL in your shell
 cannot move a score unseen; the summary and the scoreboard name it.
+
+Before the suite, one haiku run of scripts/eval-preflight writes a file in its
+working directory, for about a cent. If it cannot, nothing else runs and the
+script exits 2: Claude Code 2.1.308 ran every case read-only, and a full run
+then measured the sandbox, not the plugin.
 
 The run fails if a tier-1 case scores below 1, a run errors, or a case falls
 below its baseline; tiers 2 and 3 are expected below 1 (evals/README.md).
@@ -72,6 +78,7 @@ while [ $# -gt 0 ]; do
     --max-cost-usd) [ $# -ge 2 ] || die "--max-cost-usd needs a value"; MAX_COST="$2"; shift 2 ;;
     -j|--concurrency) [ $# -ge 2 ] || die "--concurrency needs a value"; CONCURRENCY="$2"; shift 2 ;;
     --no-scaffold) SCAFFOLD=0; shift ;;
+    --no-preflight) PREFLIGHT=0; shift ;;
     --out) [ $# -ge 2 ] || die "--out needs a value"; OUT="$2"; shift 2 ;;
     --baseline) [ $# -ge 2 ] || die "--baseline needs a value"; BASELINE="$2"; shift 2 ;;
     --tolerance) [ $# -ge 2 ] || die "--tolerance needs a value"; TOLERANCE="$2"; shift 2 ;;
@@ -176,6 +183,32 @@ for a in ${PASSTHROUGH+"${PASSTHROUGH[@]}"}; do [ "$a" = "--keep-temp" ] && KEEP
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 OUT="${OUT:-$ROOT/evals/results/$STAMP}"
 mkdir -p "$OUT" || die "cannot create $OUT"
+
+# Claude Code 2.1.308 ran every case in a sandbox whose working directory and
+# TMPDIR were read-only: nothing a case built could be written, every Bash call
+# reported exit 1, and a full Haiku run scored 0.69 on tier 1, where its board
+# holds 1.00. One case that writes a file goes first, so a sandbox like that stops
+# the run in a minute instead of after its spend. It always keeps its temp dir
+# in RUN_TMP, where the summary finds the trace and cleanup removes it.
+if [ "$PREFLIGHT" -eq 1 ]; then
+  PRE="$OUT/preflight"
+  mkdir -p "$PRE" || die "cannot create $PRE"
+  pre=(plugin eval "$ROOT" --eval-dir scripts/eval-preflight
+      --model haiku --ablation none --threshold 0 --runs 1 --max-cost-usd 0.25
+      --allow-tools Bash --trust-plugin --no-publish --keep-temp
+      --output-dir "$PRE" --json "$PRE/result.json" --report "$PRE/report.html")
+  echo
+  echo "preflight: can a case write its working directory? one haiku run, in $PRE"
+  ( cd "$ROOT" && HOME="$SANDBOX_HOME" TMPDIR="$RUN_TMP" CLAUDE_CODE_EFFORT_LEVEL="$EFFORT" claude "${pre[@]}" ) > "$PRE/run.log" 2>&1
+  if node "$HERE/eval-summary.mjs" "$PRE/result.json" --traces "$PRE/traces" --effort "$EFFORT" > "$PRE/summary.txt" 2>&1; then
+    echo "preflight: ok"
+  elif grep -qs 'Read-only file system' "$PRE"/traces/*.jsonl; then
+    die "a case cannot write its own working directory: this Claude Code runs eval cases read-only (2.1.308 does, 2.1.302 does not; evals/README.md), so every case that builds a file would fail for that. The suite was not run; the check is in $PRE"
+  else
+    why="$(grep -m1 -E '^ +(ERROR|CRIT|FAIL)' "$PRE/summary.txt" 2>/dev/null | sed 's/^ *//')"
+    die "the preflight case did not pass, so the suite was not run${why:+: $why}. See $PRE/summary.txt and run.log, or skip it with --no-preflight"
+  fi
+fi
 
 args=(plugin eval "$ROOT"
   --model "$MODEL" --judge-model "$JUDGE"

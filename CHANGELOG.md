@@ -11,11 +11,17 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/eval.sh` runs one case of its own before the suite, once on Haiku for about a cent. The case writes a file in its working directory; if the file is not there, the suite is not run and the script exits 2, naming a read-only sandbox when the trace shows one. Claude Code 2.1.308 runs every eval case with a read-only working directory and `TMPDIR`, so a full Haiku run scored 0.69 on tier 1 against its board's 1.00 and measured nothing; 2.1.302 runs the same case clean. `--no-preflight` skips the check, and `evals/README.md` says how to run an earlier Claude Code meanwhile.
+
 ### Changed
 
 - `scripts/eval.sh` runs the model under test at medium effort unless given `--effort`. `claude plugin eval` takes no `--effort` and ignores one given before `plugin`, so the script sets `CLAUDE_CODE_EFFORT_LEVEL`, the one route that reaches its runs. Medium is Claude Code's default on Haiku, Sonnet and Opus, so a run measures what a user gets, and a variable left in the shell or a default that moves no longer changes a score unseen. The summary's first line and the scoreboard's `run.effort` name it; a board written before says `effort ?`.
 
 ### Fixed
+
+- `claude plugin eval` refused every case after the test suite had run in the same checkout: the two #391 tests left hard links under `tests/output/`, and a plugin holding one is refused ("a file in the plugin has more than one name"). Both remove them now, and a test fails if the suite leaves one.
 
 - An Excalidraw boundary holds what is drawn inside it, and `validate` warns where it does not. A scope's top inset was a fixed 46px, one line at the default size, so an inside label set larger or on two lines ran into the first row (#428); a frame was sized before its edges were routed, so a loop or an `avoid` detour between its own members, or that edge's label, ran past the edge the app clips at (#427). The top inset now holds the measured label, 9px clear of the contents, and a frame grows to hold its own edges and their labels with the room it leaves round a node, every boundary round it growing to match. `validate` names a frame member drawn past the frame's edge and a boundary's name over a node. **This changes what existing specs draw**: such a scope is taller, a smaller `padTop` is raised to what the label needs, and such a frame, with whatever holds it, is larger. One default line keeps its 46px, and the four Excalidraw template specs build byte for byte as before.
 - `drawio logo`, `excalidraw make-icon --url` and `excalidraw browse` download only over https, up to a limit and within a time limit. Each redirect is checked before it is followed, five at most, where one to plain http was followed and the logo cached under the https URL it was asked for. The body stops being read at its limit, where all of it was read first: 2 MB for a logo, 3 MB for an icon, and now 20 MB for a library or the catalogue index, which had none. A download gives up after 30 seconds. A logo or icon records as its `source` the URL its bytes came from, and an installed library its `url`, the last one after a redirect; an HTTP error names the URL. `docs/privacy.md` names `raw.githubusercontent.com`, where the index comes from (#444).
