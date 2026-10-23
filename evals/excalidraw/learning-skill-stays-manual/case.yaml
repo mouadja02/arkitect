@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 600
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Have a look at ./eval-input/existing.excalidraw and tell me what style it is
+    Have a look at ./diagrams/existing.excalidraw and tell me what style it is
     drawn in - the colours, the stroke, how the boundaries are done.
 
 graders:
@@ -81,12 +81,12 @@ graders:
   # starter template's element count - and no tool wrote to it.
   - type: regex
     name: input-unchanged
-    target: { source: file, path: ./eval-input/existing.excalidraw }
+    target: { source: file, path: ./diagrams/existing.excalidraw }
     pattern: '^(?=[\s\S]*"arkitectSpec")(?=[\s\S]*"strokeStyle": "dashed")'
 
   - type: regex
     name: input-keeps-its-elements
-    target: { source: file, path: ./eval-input/existing.excalidraw }
+    target: { source: file, path: ./diagrams/existing.excalidraw }
     pattern: '"versionNonce"'
     match: count:68
 

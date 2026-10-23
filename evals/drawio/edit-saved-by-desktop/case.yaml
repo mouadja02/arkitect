@@ -18,7 +18,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    eval-input/payments.drawio was first drawn with Arkitect. Add a fraud-check
+    diagrams/payments.drawio was first drawn with Arkitect. Add a fraud-check
     service, with the id fraud, between the Payments API and the payment
     processor: the API calls the fraud check, and the fraud check calls the
     processor in place of the API's direct call. Keep everything else as it is.
@@ -33,30 +33,30 @@ graders:
   # What the case exists for: the two changes made in Desktop survive.
   - type: regex
     name: kept-the-hand-added-text
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: 'PCI DSS scope: owned by the payments team'
     weight: 3
 
   - type: regex
     name: kept-the-colour-set-in-desktop
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '<mxCell\b(?=[^>]*\bid="psp")[^>]*\bfillColor=#FFE6CC'
     weight: 3
 
   - type: regex
     name: fraud-check-wired-in
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '^(?=[\s\S]*<mxCell\b(?=[^>]*\bid="fraud")[^>]*\bvertex="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="fraud")[^>]*\bedge="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="fraud")(?=[^>]*\btarget="psp")[^>]*\bedge="1")'
 
   - type: regex
     name: direct-call-replaced
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="psp")'
     match: not_contains
 
   - type: regex
     name: nothing-else-lost
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '^(?=[\s\S]*<mxCell\b[^>]*\bid="web")(?=[\s\S]*<mxCell\b[^>]*\bid="ledger")(?=[\s\S]*<mxCell\b[^>]*\bid="note")'
 
   # Never overwrite blind: `drawio backup` or the builder's own copy.

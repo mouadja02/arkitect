@@ -16,7 +16,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Build eval-input/pipeline.spec.json into ./eval-output/pipeline.drawio.
+    Build diagrams/pipeline.spec.json into ./eval-output/pipeline.drawio.
     The layout was agreed with the team, so build the spec exactly as it is:
     don't move, add or remove anything in it. Validate it, look at it, and
     tell me how it came out.

@@ -8,5 +8,5 @@ set -euo pipefail
 root="$PWD"
 [ -d "$root/skills/arkitect-excalidraw" ] || root="$(cd "$(dirname "$0")/../../.." && pwd)"
 
-mkdir -p eval-input
-cp "$root/skills/arkitect-excalidraw/assets/templates/starter-architecture.excalidraw" eval-input/existing.excalidraw
+mkdir -p diagrams
+cp "$root/skills/arkitect-excalidraw/assets/templates/starter-architecture.excalidraw" diagrams/existing.excalidraw

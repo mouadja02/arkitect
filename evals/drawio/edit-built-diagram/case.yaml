@@ -16,7 +16,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    eval-input/payments.drawio was drawn with Arkitect. Add a fraud-check
+    diagrams/payments.drawio was drawn with Arkitect. Add a fraud-check
     service, with the id fraud, between the Payments API and the payment
     processor: the API calls the fraud check, and the fraud check calls the
     processor in place of the API's direct call. Keep everything else as it is.
@@ -44,24 +44,24 @@ graders:
   # later rebuild would quietly revert the edit to.
   - type: regex
     name: rebuilt-from-the-carried-spec
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '<mxfile [^>]*\bagent="arkitect-drawio"[^>]*\barkitect-spec="[^"]*&quot;fraud&quot;'
     weight: 3
 
   - type: regex
     name: fraud-check-wired-in
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '^(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="fraud")[^>]*\bedge="1")(?=[\s\S]*<mxCell\b(?=[^>]*\bsource="fraud")(?=[^>]*\btarget="psp")[^>]*\bedge="1")'
 
   - type: regex
     name: direct-call-replaced
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '<mxCell\b(?=[^>]*\bsource="api")(?=[^>]*\btarget="psp")'
     match: not_contains
 
   - type: regex
     name: nothing-else-lost
-    target: { source: file, path: ./eval-input/payments.drawio }
+    target: { source: file, path: ./diagrams/payments.drawio }
     pattern: '^(?=[\s\S]*<mxCell id="web")(?=[\s\S]*<mxCell id="ledger")(?=[\s\S]*<mxCell id="note")(?=[\s\S]*source="web" target="api")(?=[\s\S]*source="api" target="ledger")'
 
   # The builder backs the file up before it replaces it.

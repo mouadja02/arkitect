@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildFixture, runAsScript } from '../../fixtures.mjs';
 
-export const FILE = 'eval-input/platform.drawio';
+export const FILE = 'diagrams/platform.drawio';
 
 export const SPEC = {
   title: 'Commerce platform',

@@ -4,8 +4,8 @@
 # namesAProduct with the node to paste over it (#287).
 set -euo pipefail
 
-mkdir -p eval-input
-cat > eval-input/orders.spec.json <<'EOF'
+mkdir -p diagrams
+cat > diagrams/orders.spec.json <<'EOF'
 {
   "title": "Orders",
   "nodes": [

@@ -4,8 +4,8 @@
 # the file keeps those; an edit that reaches for the style guide will not.
 set -euo pipefail
 
-mkdir -p eval-input
-cat > eval-input/checkout.drawio <<'EOF'
+mkdir -p diagrams
+cat > diagrams/checkout.drawio <<'EOF'
 <mxfile host="Electron" version="29.0.3">
   <diagram name="Checkout" id="p1">
     <mxGraphModel dx="1400" dy="900" grid="0" pageWidth="1600" pageHeight="900">

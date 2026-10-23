@@ -22,6 +22,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- The eval cases keep their fixtures in `diagrams/`, where they were in `eval-input/`. Haiku took that name for the plugin's own `evals/` folder: in 15 of the 40 runs of the 14 cases that had one, against 6 of the other 54, it looked there, the eval sandbox refused it, and the run called the whole shell unavailable. Sonnet and Opus never did. A test keeps a fixture out of any folder named for the eval.
 - The dispatcher run through a shell variable holding its path, as agents write it (`A=…/bin/arkitect.mjs; node $A drawio analyze …`), is now the dispatcher everywhere Arkitect looks for it. The read hook refused a whole Read of a diagram analyzed that way, and the report check skipped the report of a diagram built that way: three builds in 282 eval runs. The eval graders that accept the dispatcher accept the variable too. They had failed eight steps the agents ran, all in the two portable report cases and on all three models; the Opus board's "skipped the draft and the validator" was the same miss.
 - `claude plugin eval` refused every case after the test suite had run in the same checkout: the two #391 tests left hard links under `tests/output/`, and a plugin holding one is refused ("a file in the plugin has more than one name"). Both remove them now, and a test fails if the suite leaves one.
 

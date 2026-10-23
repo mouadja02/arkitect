@@ -3,8 +3,8 @@
 # case directory, so this must stay a real script, not inline YAML.
 set -euo pipefail
 
-mkdir -p eval-input
-cat > eval-input/existing.drawio <<'EOF'
+mkdir -p diagrams
+cat > diagrams/existing.drawio <<'EOF'
 <mxfile host="Electron" version="29.0.3">
   <diagram name="Page-1" id="p1">
     <mxGraphModel dx="800" dy="600" grid="0" pageWidth="850" pageHeight="1100">

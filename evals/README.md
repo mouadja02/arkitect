@@ -351,7 +351,7 @@ Caveats:
   `path "mkdir -p eval-input ..." does not exist`. The four cases that need a
   fixture keep it in `scaffold.sh` beside their `case.yaml`.
 - Those scaffolds only run under `--scaffold`. Without that flag, create the
-  `eval-input/` fixture by hand first; `scaffold.sh` shows what it needs.
+  `diagrams/` fixture by hand first; `scaffold.sh` shows what it needs.
 
 ## What renders inside the sandbox
 

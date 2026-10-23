@@ -16,7 +16,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    eval-input/orders.excalidraw was drawn with Arkitect. Add a Redis cache,
+    diagrams/orders.excalidraw was drawn with Arkitect. Add a Redis cache,
     with the id cache, that the Orders API reads from before it goes to the
     database. Keep everything else as it is.
 
@@ -41,18 +41,18 @@ graders:
   # spec the scene now carries holds them. Hand-written elements carry no stamp.
   - type: regex
     name: rebuilt-from-the-carried-spec
-    target: { source: file, path: ./eval-input/orders.excalidraw }
+    target: { source: file, path: ./diagrams/orders.excalidraw }
     pattern: '^(?=[\s\S]*"node": "cache")(?=[\s\S]*"edge": "(?:api->cache|cache->api)")(?=[\s\S]*"arkitectSpec")'
     weight: 3
 
   - type: regex
     name: nothing-else-lost
-    target: { source: file, path: ./eval-input/orders.excalidraw }
+    target: { source: file, path: ./diagrams/orders.excalidraw }
     pattern: '^(?=[\s\S]*"node": "web")(?=[\s\S]*"node": "db")(?=[\s\S]*"node": "note")(?=[\s\S]*"edge": "web->api")'
 
   - type: regex
     name: names-it-redis
-    target: { source: file, path: ./eval-input/orders.excalidraw }
+    target: { source: file, path: ./diagrams/orders.excalidraw }
     pattern: '"text": "[^"]*[Rr]edis'
 
   - type: regex

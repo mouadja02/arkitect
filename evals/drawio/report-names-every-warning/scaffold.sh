@@ -6,8 +6,8 @@
 # changing the layout, so both are still there when the agent reports.
 set -euo pipefail
 
-mkdir -p eval-input
-cat > eval-input/pipeline.spec.json <<'EOF'
+mkdir -p diagrams
+cat > diagrams/pipeline.spec.json <<'EOF'
 {
   "title": "Order pipeline",
   "boundaries": [
