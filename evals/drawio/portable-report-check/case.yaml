@@ -30,14 +30,14 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-drawio|arkitect\.mjs"?\s+drawio\s+validate'
+    input_match: 'validate-drawio|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+drawio\s+validate'
 
   # The portable check on the saved report, through the dispatcher as step 8
   # names it. The report's file name is the agent's to pick, or `-` for stdin.
   - type: tool_used
     name: ran-the-portable-report-check
     tool: Bash
-    input_match: 'arkitect(\.mjs)?"?\s+report(\s|$)'
+    input_match: '(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+report(\s|$)'
 
   - type: regex
     name: reports-under-every-heading

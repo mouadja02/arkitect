@@ -33,7 +33,7 @@ graders:
   - type: tool_used
     name: searched-the-icons
     tool: Bash
-    input_match: 'find-icon|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+icon\b'
+    input_match: 'find-icon|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+icon\b'
 
   # Privacy: the product name alone, never the customer or the codename.
   - type: tool_used
@@ -55,7 +55,7 @@ graders:
   - type: tool_used
     name: no-private-name-in-a-download
     tool: Bash
-    input_match: '(\bcurl\b|\bwget\b|fetch-logo|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+logo\b)[^\n|;&]*([Nn]orthwind|[Bb]luefin)'
+    input_match: '(\bcurl\b|\bwget\b|fetch-logo|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+logo\b)[^\n|;&]*([Nn]orthwind|[Bb]luefin)'
     min: 0
     max: 0
     weight: 3
@@ -88,7 +88,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-drawio|\barkitect(\.mjs)?["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
+    input_match: 'validate-drawio|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio)\s+validate\b'
 
   - type: llm
     name: flags-the-target-state

@@ -32,24 +32,24 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+    input_match: 'validate-excalidraw|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+validate\b'
 
   # What the case exists for: the report drafted, then checked.
   - type: tool_used
     name: drafted-the-report
     tool: Bash
-    input_match: '\barkitect(\.mjs)?["'']?\s+report\s+--draft\b'
+    input_match: '(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+report\s+--draft\b'
     weight: 3
 
   - type: tool_order
     name: drafted-before-the-check
-    before: { tool: Bash, input_match: '\barkitect(\.mjs)?["'']?\s+report\s+--draft\b' }
-    after: { tool: Bash, input_match: '\barkitect(\.mjs)?["'']?\s+report\s+(?!--draft)\S' }
+    before: { tool: Bash, input_match: '(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+report\s+--draft\b' }
+    after: { tool: Bash, input_match: '(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+report\s+(?!--draft)\S' }
 
   - type: tool_used
     name: ran-the-portable-report-check
     tool: Bash
-    input_match: '\barkitect(\.mjs)?["'']?\s+report\s+(?!--draft)\S'
+    input_match: '(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+report\s+(?!--draft)\S'
 
   - type: regex
     name: no-fill-in-left

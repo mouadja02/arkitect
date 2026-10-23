@@ -33,7 +33,7 @@ graders:
   - type: tool_used
     name: analyzed-instead-of-reading
     tool: Bash
-    input_match: 'analyze-(drawio|excalidraw)\.mjs|\barkitect(@[\w.-]+|\.mjs)?["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
+    input_match: 'analyze-(drawio|excalidraw)\.mjs|(\barkitect(@[\w.-]+|\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+analyze\b'
 
   - type: regex
     name: audit-log-added-nothing-lost
@@ -86,7 +86,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+    input_match: 'validate-excalidraw|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+validate\b'
 
   # The same wordings drawio-edit-existing-diagram accepts (#368).
   - type: regex

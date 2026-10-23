@@ -70,7 +70,7 @@ graders:
   - type: tool_used
     name: ran-the-validator
     tool: Bash
-    input_match: 'validate-excalidraw|\barkitect(\.mjs)?["'']?\s+(excalidraw|excali|ex)\s+validate\b'
+    input_match: 'validate-excalidraw|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(excalidraw|excali|ex)\s+validate\b'
 
   - type: regex
     name: did-not-ask-which-file
