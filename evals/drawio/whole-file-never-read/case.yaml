@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Which services in eval-input/platform.drawio send events to the event
+    Which services in diagrams/platform.drawio send events to the event
     bus, and which ones receive events from it? Answer from the file, and
     don't change it.
 

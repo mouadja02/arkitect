@@ -185,24 +185,28 @@ case that exists.
 
 The board now committed is the third, from 2026-10-22: Haiku under test at
 medium effort and Sonnet judging, on Claude Code 2.1.302 and plugin 2.4.1, 94
-runs of 32 cases for $1.66. The second, 2026-10-16 on plugin 2.3.2, ran with
-no effort set, which Claude Code resolves to medium:
+runs of 32 cases for $1.80. Its four edit cases ran again on 2026-10-23 with
+their fixture in `diagrams/` (below). The second, 2026-10-16 on plugin 2.3.2,
+ran with no effort set, which Claude Code resolves to medium:
 
 | | cases | score | all runs perfect | second board |
 |---|---|---|---|---|
 | tier 1 | 18 | 1.00 | 17 | 1.00 |
-| tier 2 | 9 | 0.85 | 2 | 0.93 |
-| tier 3 | 5 | 0.90 | 2 | 0.89 |
+| tier 2 | 9 | 0.97 | 3 | 0.93 |
+| tier 3 | 5 | 0.92 | 3 | 0.89 |
 
 What moved, and why:
 
-- `drawio-edit-built-diagram` (0.33, from 0.95) and
-  `excalidraw-edit-built-scene` (0.74, from 1.00) changed nothing in four of
-  their six runs. In each, the first command also listed the plugin's
-  `evals/` folder, the eval sandbox refused it, and the agent called the whole
-  shell unavailable, as on the first board (below). Nothing outside an eval
-  refuses that folder, so these two scores measure the eval: read a later
-  miss there against its trace.
+- The four edit cases' fixture sat in `eval-input/`, and Haiku took that name
+  for the plugin's own `evals/` folder. Ten of their twelve runs listed it, the
+  eval sandbox refused the listing, and in six the agent called the whole
+  shell unavailable and changed nothing: `drawio-edit-built-diagram` scored
+  0.33 and `excalidraw-edit-built-scene` 0.74. Run again with the fixture in
+  `diagrams/`, four of twelve runs still listed it and every one went on.
+  `drawio-edit-built-diagram` scores 1.00, `excalidraw-edit-built-scene`
+  0.97, `drawio-edit-saved-by-desktop` 1.00 (from 0.88) and
+  `excalidraw-edit-follows-the-scene` 0.98 (from 0.81). The ten other
+  cases with that fixture keep their run, in which 5 of 28 runs listed it.
 - `drawio-interview-when-vague` scored 1.00, from 0.89: every run asked one
   thing at a time.
 - `drawio-interview-continues` scored 0.67, from 0.53. Still no run loaded the
@@ -224,7 +228,8 @@ What the first board's headroom showed:
   (one) changed nothing. Each run's first command also listed the plugin's
   `evals/` folder, which the eval sandbox refuses; the agent then called the
   whole shell unavailable and stopped. A refused command is not a refused
-  tool, and a small model needs telling so.
+  tool, and a small model needs telling so. The fixture's folder name sent it
+  there (above).
 
 ### One board per model
 
@@ -238,7 +243,7 @@ tier-2 and tier-3 cases. Compare a run on that model with
 
 | model | board | tier 2 (9) | tier 3 (5) | all runs perfect | runs | cost |
 |---|---|---|---|---|---|---|
-| Haiku | [scoreboard.json](scoreboard.json) | 0.85 | 0.90 | 4 of 14 | 42 of 94 | $1.66 for all 32 cases |
+| Haiku | [scoreboard.json](scoreboard.json) | 0.97 | 0.92 | 6 of 14 | 42 of 94 | $1.80 for all 32 cases |
 | Sonnet | [scoreboard.sonnet.json](scoreboard.sonnet.json) | 0.99 | 0.99 | 11 of 14 | 42 of 94 | $14.42 for all 32 cases |
 | Opus | [scoreboard.opus.json](scoreboard.opus.json) | 0.97 | 0.98 | 6 of 14 | 42 of 94 | $36.10 for all 32 cases |
 
@@ -248,7 +253,8 @@ case read-only (above). The larger models' boards keep tiers 2 and 3; their
 tier 1 scored 0.99 and 1.00. The session limit cut 2 Sonnet runs and 40 Opus
 runs, so those cases were run again in full and merged in, and the two
 portable report cases were run again on all three models once their graders
-were fixed (Graders, below). Each cost counts every run, and is what the runs
+were fixed (Graders, below), and Haiku's four edit cases once their fixture
+moved (above). Each cost counts every run, and is what the runs
 would cost at API prices. The boards before these, from 2026-10-16 and 17 on
 plugin 2.3.2, ran with no effort set, which resolves to medium.
 
@@ -261,11 +267,12 @@ Two cases fall short on more than one model, and they point at the plugin:
   by reading the session (#423). One Opus run did not ask the next question.
 
 Everything else Haiku misses, a larger model does not: the whole-file read,
-the scene's own look, and the refused `evals/` listing above. Those are the
-small-model gap the plugin's scripts and hooks exist to close. Opus scored
-below Haiku on three cases: `drawio-interview-when-vague`, and one grader in
-one run each of `drawio-instructions-in-a-spec` and
-`excalidraw-engine-choice-is-explained`. The previous Opus board's run did
+the eight nested boundaries, and changing the worker in place on the next
+turn. Those are the small-model gap the plugin's scripts and hooks exist to
+close. Opus scored below Haiku on five cases: `drawio-interview-when-vague`,
+one grader in one run each of `drawio-instructions-in-a-spec` and
+`excalidraw-engine-choice-is-explained`, and the two edit-built cases, where
+four runs' style lookup was read as their build (Graders, below). The previous Opus board's run did
 not skip the draft and the validator in `excalidraw-portable-report-check`,
 as this section said: it ran both through a shell variable holding the
 dispatcher's path, which the graders did not read.
@@ -351,7 +358,7 @@ Caveats:
   `path "mkdir -p eval-input ..." does not exist`. The four cases that need a
   fixture keep it in `scaffold.sh` beside their `case.yaml`.
 - Those scaffolds only run under `--scaffold`. Without that flag, create the
-  `eval-input/` fixture by hand first; `scaffold.sh` shows what it needs.
+  `diagrams/` fixture by hand first; `scaffold.sh` shows what it needs.
 
 ## What renders inside the sandbox
 
@@ -435,6 +442,16 @@ verdicts and no other, and a test holds the rule. A `tool_order` grader still
 cannot see order inside one Bash call: a run that drafts and checks the report
 in a single command fails `drafted-before-the-check`, as one Haiku and one
 Opus run did on the rerun.
+
+A grader that counts a build counts only a build. `build --print-style` and
+`build --help` build nothing, and AGENTS.md asks for the first before a spec
+is written. Read as a build, the style lookup failed `spec-before-the-build`
+in four Opus runs and one Haiku run that printed the carried spec, looked the
+style up before it or in the same command, and built after. The interview
+cases' `no-build-yet` would fail a run that only looked. Replaying 444 Bash
+grader results, the fix changes those five and no other; the Opus board keeps
+its four as they were scored, so its two edit-built cases sit below what the
+runs did.
 
 ## What a good result looks like
 

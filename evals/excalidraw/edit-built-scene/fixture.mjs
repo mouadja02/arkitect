@@ -3,7 +3,7 @@
 // spec file is left beside it.
 import { buildFixture, runAsScript } from '../../fixtures.mjs';
 
-export const FILE = 'eval-input/orders.excalidraw';
+export const FILE = 'diagrams/orders.excalidraw';
 
 export const SPEC = {
   title: 'Orders',

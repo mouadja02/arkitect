@@ -18,7 +18,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    eval-input/shop.excalidraw has a storefront, a checkout service, an orders
+    diagrams/shop.excalidraw has a storefront, a checkout service, an orders
     database and a stock service. Add an audit log service that the checkout
     service writes to, in place, and keep the rest of the scene as it is.
 
@@ -37,14 +37,14 @@ graders:
 
   - type: regex
     name: audit-log-added-nothing-lost
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '^(?=[\s\S]*"text": "[^"]*[Aa]udit)(?=[\s\S]*"text": "Storefront")(?=[\s\S]*"text": "Checkout service")(?=[\s\S]*"text": "Orders DB")(?=[\s\S]*"text": "Stock service")'
 
   # What the case exists for: nothing in the scene is rough, so nothing added
   # to it may be. The builder's default is roughness 1.
   - type: regex
     name: followed-the-scene-not-the-style-guide
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '"roughness": [1-9]'
     match: not_contains
     weight: 3
@@ -52,7 +52,7 @@ graders:
   # Every stroke in the scene is teal; the house text and stroke colour is #1e1e1e.
   - type: regex
     name: no-house-stroke-colour
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '"strokeColor": "#1e1e1e"'
     match: not_contains
 
@@ -61,13 +61,13 @@ graders:
   # bindings, so a bound end is exactly an object here.
   - type: regex
     name: new-arrow-bound-at-the-start
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '"startBinding": \{'
     match: count:4
 
   - type: regex
     name: new-arrow-bound-at-the-end
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '"endBinding": \{'
     match: count:4
 
@@ -79,7 +79,7 @@ graders:
   # The scene is the app's: a builder's stamp means it was redrawn from a new spec.
   - type: regex
     name: not-redrawn-from-a-new-spec
-    target: { source: file, path: ./eval-input/shop.excalidraw }
+    target: { source: file, path: ./diagrams/shop.excalidraw }
     pattern: '"arkitect": \{'
     match: not_contains
 

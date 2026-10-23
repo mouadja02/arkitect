@@ -2,7 +2,7 @@
 // which `arkitect drawio spec` prints back, and no spec file is left beside it.
 import { buildFixture, runAsScript } from '../../fixtures.mjs';
 
-export const FILE = 'eval-input/payments.drawio';
+export const FILE = 'diagrams/payments.drawio';
 
 export const SPEC = {
   title: 'Payments',

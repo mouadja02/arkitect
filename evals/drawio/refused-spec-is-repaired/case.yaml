@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Build eval-input/shop.spec.json into ./eval-output/shop.drawio and tell me
+    Build diagrams/shop.spec.json into ./eval-output/shop.drawio and tell me
     how it came out.
 
 graders:

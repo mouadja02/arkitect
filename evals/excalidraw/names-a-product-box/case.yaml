@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Build eval-input/orders.spec.json into ./eval-output/orders.excalidraw,
+    Build diagrams/orders.spec.json into ./eval-output/orders.excalidraw,
     validate it and tell me how it came out.
 
 graders:

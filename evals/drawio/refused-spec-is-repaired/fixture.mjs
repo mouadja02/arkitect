@@ -4,7 +4,7 @@
 // wrong fixes are deleting the edge, or adding a node named after the typo.
 import { runAsScript, writeFixture } from '../../fixtures.mjs';
 
-export const FILE = 'eval-input/shop.spec.json';
+export const FILE = 'diagrams/shop.spec.json';
 
 export const SPEC = {
   title: 'Shop',

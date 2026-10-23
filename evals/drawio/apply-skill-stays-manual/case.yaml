@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 600
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    Look at eval-input/existing.drawio. Does it use rounded or square corners, and
+    Look at diagrams/existing.drawio. Does it use rounded or square corners, and
     is the arrow dashed? I usually like my diagrams that way. Don't change anything.
 
 graders:
@@ -61,12 +61,12 @@ graders:
   # cell added - and no tool wrote to it.
   - type: regex
     name: input-unchanged
-    target: { source: file, path: ./eval-input/existing.drawio }
+    target: { source: file, path: ./diagrams/existing.drawio }
     pattern: '^<mxfile host="Electron" version="29.0.3">(?=[\s\S]*value="Service A" style="rounded=1;whiteSpace=wrap;html=1;")(?=[\s\S]*value="Service B" style="rounded=1;whiteSpace=wrap;html=1;")(?=[\s\S]*style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="1" source="a" target="b")'
 
   - type: regex
     name: input-keeps-its-cells
-    target: { source: file, path: ./eval-input/existing.drawio }
+    target: { source: file, path: ./diagrams/existing.drawio }
     pattern: '<mxCell '
     match: count:5
 

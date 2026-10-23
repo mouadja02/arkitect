@@ -37,7 +37,7 @@ graders:
   - type: tool_used
     name: no-build-yet
     tool: Bash
-    input_match: 'build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b'
+    input_match: '(build-diagram\.mjs|(\barkitect(\.mjs)?|\$\{?\w+\}?)["'']?\s+(drawio|draw\.io|dio|excalidraw|excali|ex)\s+build\b)(?![^|;&\n]*\s--(print-style|help)\b)'
     min: 0
     max: 0
 

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { buildFixture, runAsScript } from '../../fixtures.mjs';
 import { SPEC } from '../edit-built-diagram/fixture.mjs';
 
-export const FILE = 'eval-input/payments.drawio';
+export const FILE = 'diagrams/payments.drawio';
 export const DESKTOP_AGENT = '5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/138.0.7204.100 Electron/37.2.1 Safari/537.36';
 export const ADDED = 'PCI DSS scope: owned by the payments team';
 export const FILL = 'fillColor=#FFE6CC;';

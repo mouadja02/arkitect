@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildFixture, runAsScript } from '../../fixtures.mjs';
 
-export const FILE = 'eval-input/shop.excalidraw';
+export const FILE = 'diagrams/shop.excalidraw';
 export const STROKE = '#0b7285';
 export const FILL = '#e3fafc';
 

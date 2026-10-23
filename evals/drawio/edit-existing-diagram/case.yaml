@@ -17,7 +17,7 @@ execution:
   timeout_seconds: 900
   allowed_tools: [Skill, Read, Glob, Grep, Bash, Write, Edit]
   prompt: |
-    eval-input/checkout.drawio has a web app, a checkout API and an orders DB.
+    diagrams/checkout.drawio has a web app, a checkout API and an orders DB.
     Add a Redis cache that the Checkout API reads from, in place, and keep the
     rest of the diagram as it is.
 
@@ -40,7 +40,7 @@ graders:
   # The edit lands in the same file, keeping everything that was there.
   - type: regex
     name: cache-added-nothing-lost
-    target: { source: file, path: ./eval-input/checkout.drawio }
+    target: { source: file, path: ./diagrams/checkout.drawio }
     pattern: '^(?=[\s\S]*[Rr]edis)(?=[\s\S]*Web App)(?=[\s\S]*Checkout API)(?=[\s\S]*Orders DB)(?=[\s\S]*edge="1")'
 
   # The file draws rounded boxes in #1A1A1A. Matching the file means the new
@@ -48,7 +48,7 @@ graders:
   # and #232F3E, which is the failure this case is looking for.
   - type: regex
     name: followed-the-file-not-the-style-guide
-    target: { source: file, path: ./eval-input/checkout.drawio }
+    target: { source: file, path: ./diagrams/checkout.drawio }
     pattern: 'rounded=0;whiteSpace=wrap'
     match: not_contains
 
@@ -57,7 +57,7 @@ graders:
   # of 6, and the wording a report uses cannot tell that apart (#366).
   - type: regex
     name: no-icon-in-a-file-of-plain-boxes
-    target: { source: file, path: ./eval-input/checkout.drawio }
+    target: { source: file, path: ./diagrams/checkout.drawio }
     pattern: 'shape=image|image=data:'
     match: not_contains
 
@@ -97,7 +97,7 @@ graders:
   # "**Validation** ✓ Passes". The 2.3.1 full suite failed one that named the
   # script between the two: "`validate-drawio.mjs --page 0` passes", and the
   # rerun ones with words after it: "`validate-drawio.mjs` on page 0 passed",
-  # "... on `eval-input/checkout.drawio` passed". So: a pass on the line that
+  # "... on `diagrams/checkout.drawio` passed". So: a pass on the line that
   # names validation, unless that line also says something failed (#368).
   - type: regex
     name: reports-the-validation
