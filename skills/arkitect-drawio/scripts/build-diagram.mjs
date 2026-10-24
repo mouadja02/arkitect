@@ -332,9 +332,22 @@ export const pagesOf = (spec) => (Array.isArray(spec.pages)
   }))
   : [{ at: '', page: spec, name: spec.page ?? 'Architecture', id: spec.pageId ?? 'generated-page-1' }]);
 
+// No node and no boundary. A list that is not an array has its own error.
+const drawsNothing = (page) => ['nodes', 'boundaries'].every((key) => page[key] === undefined
+  || (Array.isArray(page[key]) && !page[key].length));
+
 export function validateSpec(spec) {
   if (!isObject(spec)) return ['spec: expected a JSON object'];
-  if (spec.pages === undefined) return pageProblems(spec, '', { layout: true });
+  if (spec.pages === undefined) {
+    const errors = pageProblems(spec, '', { layout: true });
+    // `{}` built an empty page that validated (#433). A spec of boundaries
+    // alone still builds: the pattern fragments are some.
+    if (drawsNothing(spec)) {
+      errors.unshift(`nodes: the spec draws nothing; ${spec.node !== undefined
+        ? `\`node\` is ${SPEC_HINTS.node}` : 'list each component in `nodes`'}`);
+    }
+    return errors;
+  }
 
   const errors = [];
   if (!Array.isArray(spec.pages) || !spec.pages.length || !spec.pages.every(isObject)) {
@@ -364,6 +377,7 @@ export function validateSpec(spec) {
     }
   });
   spec.pages.forEach((page, n) => errors.push(...pageProblems(page, `pages[${n}].`, { pageOf, n })));
+  if (spec.pages.every(drawsNothing)) errors.push('pages: no page draws anything; list each component in its page\'s `nodes`');
   return errors;
 }
 
