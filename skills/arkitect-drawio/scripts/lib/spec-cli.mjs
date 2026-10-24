@@ -10,8 +10,9 @@ import { parseCliOrExit, exitUsage } from './drawio-core.mjs';
 
 // `savedSince(text)` is true when an editor has saved the file since the
 // build: a colour or a position changed there is not in the spec, and a
-// rebuild draws the spec's.
-export function specCli(argv, { specOf, savedSince = () => false, kind }) {
+// rebuild draws the spec's. `read(file)` gives the text an exported image
+// holds, so the spec comes out of a README picture too (#439, #447).
+export function specCli(argv, { specOf, savedSince = () => false, kind, read = (file) => readFileSync(file, 'utf8') }) {
   const usage = `usage: spec.mjs <file.${kind}>\n`
     + '  prints the spec the file was built from, to change and rebuild with build --out <the same file>;\n'
     + '  exit 1 when the file carries none: Arkitect did not build it, or built it before builds carried one';
@@ -19,7 +20,7 @@ export function specCli(argv, { specOf, savedSince = () => false, kind }) {
   if (positionals.length !== 1) exitUsage(positionals.length ? `expected one file, got ${positionals.length}` : 'expected a file', usage);
   const [file] = positionals;
   let text;
-  try { text = readFileSync(file, 'utf8'); } catch (e) {
+  try { text = read(file); } catch (e) {
     console.error(`cannot read ${file}: ${e.code ?? e.message}`);
     return 2;
   }

@@ -1,7 +1,7 @@
 # Rendering a diagram
 
-Read this when an export fails, a page comes out wrong, or you need to explain
-how rendering works. The everyday command is in `SKILL.md` step 7. Paths are
+Read this when an export fails, a page comes out wrong, the user wants the
+diagram as an image in a README, or you need to explain how rendering works. The everyday command is in `SKILL.md` step 7. Paths are
 relative to the skill; scripts are in `scripts/`.
 
 ```bash
@@ -27,6 +27,14 @@ discovery works as it does here; pass it to pin a build.
 For a PDF, say for a review board, add `--format pdf`: the same Desktop export
 writes `<base>.p<N>.pdf`, one page per file, with its text kept as text. It is a
 copy to hand round; the `.drawio` stays the deliverable.
+
+For a README or a wiki page, add `--embed --format svg` (or `png`): it writes
+`<base>.drawio.svg`, the page's picture holding the whole file, every page and
+the spec, as Desktop's own `-e` export does. GitHub shows it, Draw.io Desktop
+and the VS Code extension open it as the diagram, and `spec`, `analyze` and
+`validate` read it. A file of several pages gives `<base>.p<N>.drawio.svg`,
+each holding them all. It is a deliverable the user asked for, so it goes where
+they say, not into `.analysis/`.
 
 To open a diagram for the user on Windows:
 `& 'C:\Program Files\draw.io\draw.io.exe' "<file>"`.
@@ -58,7 +66,8 @@ repository.
 ## Renders and pull requests
 
 A render of a real or user diagram stays local — never commit it, never attach
-it to a PR, never upload it. Generator changes need a build, render and visual
+it to a PR, never upload it. The one exception is an `--embed` image the user
+asked for, committed to their own repository. Generator changes need a build, render and visual
 inspection before a PR. The deliberate exception is the committed template PNGs
 and contact sheets under `assets/`: refresh those in the same PR whenever
 generator output changes (see `docs/maintenance.md`); only those public,

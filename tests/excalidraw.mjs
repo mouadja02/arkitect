@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
-import { deflateSync } from 'node:zlib';
+import { deflateSync, inflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { repoFiles } from './repo-files.mjs';
 import * as xml from '../skills/arkitect-drawio/scripts/lib/xml-check.mjs';
@@ -5178,6 +5178,94 @@ test('the build report notes a scene with no canvas note, or a legend turned off
   const written = (spec) => JSON.stringify(builder.buildDiagram(spec, { seed: 1 }).scene, null, 2);
   assert(grader.test(written(starter)), 'the grader finds a note');
   assert(!grader.test(written({ ...starter, nodes: starter.nodes.filter((n) => n.kind !== 'note') })), 'and fails a scene without one');
+});
+
+// "For the README" routes to Excalidraw, and GitHub cannot show a .excalidraw.
+// --embed writes the scene into the picture the way the app's own export with
+// "Embed scene" does, so the image a README shows opens back in the app (#447).
+// The decoder here follows the app's own steps (decodeSvgBase64Payload,
+// decodePngMetadata, decode), not Arkitect's reader.
+test('render --embed writes an .excalidraw.svg and .excalidraw.png the app reads back as the scene, and the readers open them (#447)', () => {
+  const dir = join(TMP, 'p447');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const scenePath = join(dir, 'arch.excalidraw');
+  core.writeScene(scenePath, built.scene);
+  const text = readFileSync(scenePath, 'utf8');
+  const MIME = 'application/vnd.excalidraw+json';
+  const decode = (json) => {
+    const data = JSON.parse(json);
+    eq(`${data.encoding} ${data.compressed}`, 'bstring true', 'a compressed byte string');
+    return inflateSync(Buffer.from(data.encoded, 'latin1')).toString('utf8');
+  };
+  const fromSvg = (svg) => {
+    assert(svg.includes(`payload-type:${MIME}`) && svg.includes('<!-- svg-source:excalidraw -->'), 'marked as the app marks it');
+    const found = svg.match(/<!-- payload-start -->\s*(.+?)\s*<!-- payload-end -->/);
+    eq(svg.match(/<!-- payload-version:(\d+) -->/)?.[1], '2', 'payload version 2: base64 of a byte string');
+    return decode(Buffer.from(found[1], 'base64').toString('latin1'));
+  };
+  // The app takes the first tEXt chunk, whatever its keyword.
+  const fromPng = (png) => {
+    for (let at = 8; at < png.length;) {
+      const length = png.readUInt32BE(at);
+      if (png.toString('latin1', at + 4, at + 8) === 'tEXt') {
+        const data = png.subarray(at + 8, at + 8 + length).toString('latin1');
+        eq(data.slice(0, data.indexOf('\0')), MIME, 'keyed by the scene MIME type');
+        return decode(data.slice(data.indexOf('\0') + 1));
+      }
+      at += 12 + length;
+    }
+    throw new Error('no tEXt chunk');
+  };
+  const lines = [];
+  const errors = [];
+  const deps = {
+    platform: 'linux', env: { PATH: '' }, isExecutable: (p) => p === '/usr/bin/chromium', log: (s) => lines.push(s), error: (s) => errors.push(s),
+    runner: (exe, args) => writeFileSync(args.find((a) => a.startsWith('--screenshot=')).slice('--screenshot='.length), makePng({ alpha: false, w: 800, h: 311 })),
+  };
+
+  eq(renderer.run([scenePath, '--embed', '--format', 'svg', '--out-dir', dir], deps), 0, `svg: ${errors.join(' | ')}`);
+  const svgOut = join(dir, 'arch.excalidraw.svg');
+  eq(JSON.parse(lines.at(-1)).wrote, svgOut, 'named <scene>.excalidraw.svg');
+  eq(JSON.parse(lines.at(-1)).embedded, 'scene', 'and the report says the scene is in it');
+  const svg = readFileSync(svgOut, 'utf8');
+  eq(fromSvg(svg), text, 'the SVG holds the scene file byte for byte');
+  eq(svg.replace(/\n {2}<!-- svg-source:excalidraw -->\n {2}<metadata>[^\n]*<\/metadata>/, ''),
+    renderer.sceneToSvg(built.scene), 'and draws exactly what a plain render draws');
+
+  eq(renderer.run([scenePath, '--embed', '--out-dir', dir, '--width', '800'], deps), 0, `png: ${errors.join(' | ')}`);
+  const pngOut = join(dir, 'arch.excalidraw.png');
+  const png = readFileSync(pngOut);
+  eq(fromPng(png), text, 'the PNG holds the scene file byte for byte');
+  assert(png.includes(makePng({ alpha: false, w: 800, h: 311 }).subarray(33)), 'after the browser\'s own chunks, untouched');
+  eq(renderer.parseRenderArgs([scenePath, '--embed', '--out', join(dir, 'x.png')]).out, join(dir, 'x.png'), '--out names it as given');
+  eq(renderer.parseRenderArgs([scenePath]).out, join(dir, 'arch.svg'), 'without --embed, the name is unchanged');
+
+  // The readers, through the dispatcher.
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8' });
+  const spec = cli('spec', scenePath).stdout;
+  for (const [image, kind] of [[svgOut, 'SVG'], [pngOut, 'PNG']]) {
+    const printed = cli('spec', image);
+    eq(`${printed.status}|${printed.stdout === spec}`, '0|true', `${kind}: spec prints the scene's spec`);
+    const checked = cli('validate', image);
+    eq(checked.status, 0, `${kind}: validate passes: ${checked.stdout}`);
+    assert(checked.stdout.includes(`read the scene embedded in this ${kind}`), `${kind}: and says what it read`);
+    eq(JSON.parse(cli('analyze', image).stdout).embeddedIn, kind.toLowerCase(), `${kind}: analyze says where the scene was`);
+  }
+  // Rendered again from the image, the scene it holds is the one embedded.
+  eq(renderer.run([svgOut, '--embed', '--format', 'svg', '--out', join(dir, 'again.svg')], deps), 0, 'renders from an embedded image');
+  eq(fromSvg(readFileSync(join(dir, 'again.svg'), 'utf8')), text, 'and carries the same scene on');
+
+  // An image that holds nothing says so.
+  writeFileSync(join(dir, 'plain.png'), makePng({ alpha: false }));
+  writeFileSync(join(dir, 'plain.svg'), renderer.sceneToSvg(built.scene));
+  for (const [image, said] of [['plain.png', 'a PNG with no scene embedded in it'], ['plain.svg', 'an SVG with no scene embedded in it']]) {
+    const checked = cli('validate', join(dir, image));
+    assert(checked.status === 1 && checked.stdout.includes(said), `${image}: ${checked.stdout}`);
+    const none = cli('spec', join(dir, image));
+    assert(none.status === 1 && /carries no spec/.test(none.stderr), `${image}: ${none.stderr}`);
+  }
+  rmSync(dir, { recursive: true, force: true });
 });
 
 cleanTestIcons();

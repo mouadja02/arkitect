@@ -21,7 +21,7 @@ Read only what the task needs.
 | Two pages, e.g. as-is and to-be | add `assets/templates/as-is-to-be.spec.json` and its PNGs |
 | Edit an existing `.drawio` | `references/editing.md` |
 | An icon the search cannot settle, a product logo, the pack list | `references/icons.md` |
-| Rendering fails, or you must explain how pages export | `references/rendering.md` |
+| Rendering fails, a README image, or how pages export | `references/rendering.md` |
 | Hand-written XML, or a deliberate deviation from the house style | `references/style-guide.md` |
 
 If `~/.arkitect/drawio/style-notes.md` or `patterns.md` exist

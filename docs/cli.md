@@ -269,7 +269,19 @@ arkitect drawio render docs/arch.drawio --page-index 0 --width 2200 --out-dir .a
 arkitect drawio render docs/arch.drawio --all --format pdf
 arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders --width 2200
 arkitect excalidraw render docs/arch.excalidraw --out preview.svg
+arkitect drawio render docs/arch.drawio --embed --format svg --out-dir docs        # docs/arch.drawio.svg
+arkitect excalidraw render docs/arch.excalidraw --embed --format svg --out-dir docs  # docs/arch.excalidraw.svg
 ```
+
+**For a README**, `--embed` writes an SVG or PNG that holds its source: the
+whole `.drawio` in the SVG root's `content` attribute or a PNG `zTXt` chunk,
+as Draw.io's `-e` export does, or the scene in the SVG's `<metadata>` or a PNG
+`tEXt` chunk, as Excalidraw's "Embed scene" does. GitHub shows the picture;
+Draw.io, its VS Code extension or the Excalidraw app opens it as the diagram;
+`spec`, `analyze` and `validate` read it, and say so. Draw.io's is named
+`<base>.drawio.svg` (`<base>.p<N>.drawio.svg` for a file of several pages, each
+holding them all), Excalidraw's `<scene>.excalidraw.svg`. Either holds the
+source byte for byte; a re-render after the next build replaces it.
 
 | | Draw.io | Excalidraw |
 |---|---|---|

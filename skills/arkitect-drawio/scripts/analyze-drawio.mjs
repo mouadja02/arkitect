@@ -278,6 +278,7 @@ function analyzeFile(path) {
   return {
     file: meta,
     mxfile: { host: mx.attrs.host, version: mx.attrs.version, declaredPages: mx.attrs.pages ?? String(mx.pages.length) },
+    ...(mx.image ? { embeddedIn: mx.image } : {}),
     pageNames: mx.pages.map((p) => p.name),
     pages: mx.pages.map(analyzePage),
   };

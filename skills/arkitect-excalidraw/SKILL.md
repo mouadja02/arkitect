@@ -21,7 +21,7 @@ Read only what the task needs.
 | Draw a new scene | this file, the one pattern you pick in step 2, and one worked example (step 4) |
 | Edit an existing `.excalidraw` | `references/editing.md` |
 | An item the search cannot find, an unnamed library item, a logo, a public library | `references/icons.md` |
-| Rendering fails, or the user wants the real app | `references/rendering.md` |
+| Rendering fails, a README image, or the real app | `references/rendering.md` |
 | Hand-written scene JSON | `references/excalidraw-format.md` |
 | A deliberate deviation from the house style, or its evidence | `references/style-guide.md` |
 

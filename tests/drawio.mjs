@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync
 import { fileURLToPath } from 'node:url';
 import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
+import * as zlib from 'node:zlib';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 import { repoFiles } from './repo-files.mjs';
 import * as readJsonLib from '../skills/arkitect-drawio/scripts/lib/read-json.mjs';
@@ -51,6 +52,7 @@ const core = await import(`file://${join(SCRIPTS, 'lib', 'drawio-core.mjs').repl
 const finder = await import(`file://${join(SCRIPTS, 'find-icon.mjs').replace(/\\/g, '/')}`);
 const builder = await import(`file://${join(SCRIPTS, 'build-diagram.mjs').replace(/\\/g, '/')}`);
 const logos = await import(`file://${join(SCRIPTS, 'fetch-logo.mjs').replace(/\\/g, '/')}`);
+const pngChunks = await import(`file://${join(SCRIPTS, 'lib', 'png-chunks.mjs').replace(/\\/g, '/')}`);
 const validator = await import(`file://${join(SCRIPTS, 'validate-drawio.mjs').replace(/\\/g, '/')}`);
 const styleTokens = await import(`file://${join(SCRIPTS, 'lib', 'style-tokens.mjs').replace(/\\/g, '/')}`);
 const store = await import(`file://${join(SCRIPTS, 'lib', 'store.mjs').replace(/\\/g, '/')}`);
@@ -125,7 +127,7 @@ function rejects(fn, pattern) {
 test('renderer parses defaults, explicit options and rejects invalid CLI input', () => {
   assert(typeof renderer.parseArgs === 'function', 'renderer parseArgs is missing');
   const defaults = renderer.parseArgs(['a.drawio']);
-  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, padding: 20, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false }), 'defaults');
+  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, padding: 20, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false }), 'defaults');
   const opts = renderer.parseArgs(['--all', 'a.drawio', '--page-index', '2', '--width', '800', '--out-dir', 'with spaces', '--format', 'svg', '--drawio-exe', '/custom app', '--disable-gpu', '--no-sandbox']);
   eq(opts.pageIndex, 2, 'page index'); eq(opts.width, 800, 'width');
   eq(opts.outDir, 'with spaces', 'directory'); eq(opts.format, 'svg', 'format');
@@ -3967,7 +3969,7 @@ test('declarations, comments, CDATA and quoting stay acceptable (#155)', () => {
   writeFileSync(wrong, '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>');
   const w = validator.validateFile(wrong);
   eq(w.ok, false, 'a well-formed non-mxfile document must not pass');
-  assert(w.errors.some((e) => e === 'the root element is <svg>, not <mxfile>'), `errors: ${w.errors.join('; ')}`);
+  assert(w.errors.some((e) => e === 'the root element is <svg>, not <mxfile>, and no diagram is embedded in it'), `errors: ${w.errors.join('; ')}`);
 });
 
 test('a compressed page is checked after it is decoded (#155)', () => {
@@ -6070,6 +6072,110 @@ test('the build report notes a diagram with no canvas note, or a legend turned o
   const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
   assert(grader.test(builder.buildDiagram({ nodes: [...nodes, note], edges }).xml), 'the grader finds a note');
   assert(!grader.test(builder.buildDiagram({ nodes, edges }).xml), 'and fails a diagram without one');
+});
+
+// GitHub shows neither a .drawio nor an .excalidraw, so a README got a preview
+// that went stale, or nothing. --embed writes the picture with the whole file
+// in it, as Draw.io's own -e export does: the SVG root's content attribute,
+// the PNG's zTXt chunk. spec, analyze and validate read either (#439).
+test('render --embed writes a .drawio.svg and .drawio.png holding the whole file, and spec, analyze and validate read them (#439)', () => {
+  const dir = join(TMP, 'p439');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const chunk = (type, data) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'latin1');
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(pngChunks.crc32(Buffer.concat([head.subarray(4), data])), 0);
+    return Buffer.concat([head, data, crc]);
+  };
+  const ihdr = Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0]);
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(Buffer.from([0, 0, 0, 0, 0]))), chunk('IEND', Buffer.alloc(0))]);
+  const svg = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n'
+    + '<svg xmlns="http://www.w3.org/2000/svg" width="10px" height="10px" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', ...args], { encoding: 'utf8' });
+  const exportAs = (file, format, extra = [], wrote = format === 'png' ? png : svg) => {
+    const calls = [];
+    const lines = [];
+    const result = renderer.render(renderer.parseArgs([file, '--embed', '--format', format, '--out-dir', dir, '--drawio-exe', '/drawio', ...extra]), {
+      platform: 'win32', env: {}, isExecutable: (p) => p === '/drawio', log: (s) => lines.push(s),
+      runner: (exe, args) => { calls.push(args); writeFileSync(args[args.indexOf('-o') + 1], wrote); return { status: 0 }; },
+    });
+    return { result, calls, lines };
+  };
+
+  // Two pages: one image per page, each holding every page.
+  const file = join(dir, 'arch.drawio');
+  writeFileSync(file, readFileSync(join(SKILL, 'assets', 'templates', 'as-is-to-be.drawio')));
+  const text = readFileSync(file, 'utf8');
+  assert(text.includes('\n') && text.includes('&quot;'), 'the file has line breaks and entities for the attribute to carry');
+  for (const format of ['svg', 'png']) {
+    const { result, calls, lines } = exportAs(file, format, ['--all']);
+    assert(result.ok, `${format}: ${lines.join(' | ')}`);
+    eq(result.pages.map((p) => basename(p.output)).join(' '), `arch.p0.drawio.${format} arch.p1.drawio.${format}`, `${format}: names`);
+    assert(calls.every((args) => !args.includes('-e')), `${format}: the payload is Arkitect's, not left to the Desktop build`);
+    assert(lines.every((l) => l.includes('with the file embedded')), `${format}: the log says so`);
+    for (const { output } of result.pages) {
+      const read = core.readDiagram(output);
+      eq(read.image, format, `${basename(output)}: read as an image`);
+      eq(read.text, text, `${basename(output)}: holds the file byte for byte`);
+    }
+  }
+  const out = join(dir, 'arch.p1.drawio.png');
+  const bytes = readFileSync(out);
+  // Every chunk's CRC, checked against Node's own where it has one (22.2+).
+  for (let at = 8; at < bytes.length;) {
+    const length = bytes.readUInt32BE(at);
+    const body = bytes.subarray(at + 4, at + 8 + length);
+    const crc = bytes.readUInt32BE(at + 8 + length);
+    eq(crc, typeof zlib.crc32 === 'function' ? zlib.crc32(body) : pngChunks.crc32(body), `${body.toString('latin1', 0, 4)} CRC`);
+    at += 12 + length;
+  }
+  assert(bytes.includes(chunk('IDAT', deflateSync(Buffer.from([0, 0, 0, 0, 0])))), 'the picture itself is untouched');
+  const zt = bytes.indexOf('zTXtmxGraphModel\0\0', 0, 'latin1');
+  assert(zt === 33 + 4, 'the zTXt chunk follows IHDR, keyed mxGraphModel, method 0');
+  eq(decodeURIComponent(inflateSync(bytes.subarray(zt + 18, zt + 18 + bytes.readUInt32BE(zt - 4) - 14)).toString('latin1')), text,
+    'Draw.io\'s encoding: the file URI-encoded, then zlib');
+
+  // The readers, through the dispatcher.
+  const spec = cli('spec', file).stdout;
+  for (const image of ['arch.p0.drawio.svg', 'arch.p1.drawio.png']) {
+    const printed = cli('spec', join(dir, image));
+    eq(`${printed.status}|${printed.stdout === spec}`, '0|true', `${image}: spec prints the file's spec`);
+    const checked = cli('validate', join(dir, image));
+    eq(checked.status, 0, `${image}: validate passes: ${checked.stdout}`);
+    assert(checked.stdout.includes(`read the diagram embedded in this ${image.endsWith('png') ? 'PNG' : 'SVG'}`), `${image}: and says what it read`);
+    const analyzed = JSON.parse(cli('analyze', join(dir, image)).stdout).files[0];
+    eq(`${analyzed.embeddedIn} ${analyzed.pages.length}`, `${image.slice(-3)} 2`, `${image}: analyze reads both pages`);
+  }
+
+  // One page: Draw.io's own name, with no page index.
+  const one = join(dir, 'starter.drawio');
+  writeFileSync(one, readFileSync(join(SKILL, 'assets', 'templates', 'starter-architecture.drawio')));
+  eq(basename(exportAs(one, 'svg').result.pages[0].output), 'starter.drawio.svg', 'a one-page file');
+
+  // Refused, and never half done.
+  for (const format of ['pdf', 'jpg', 'xml']) {
+    rejects(() => renderer.parseArgs([file, '--embed', '--format', format]), /--embed writes svg or png/);
+  }
+  const broken = exportAs(one, 'svg', [], 'not an image');
+  assert(!broken.result.ok && /could not embed the file/.test(broken.lines[0]), `an export it cannot embed into fails: ${broken.lines}`);
+  assert(!existsSync(join(dir, 'starter.drawio.svg.tmp')) && readFileSync(join(dir, 'starter.drawio.svg'), 'utf8').includes('content='),
+    'and the previous image is put back');
+
+  // An image that holds nothing says so.
+  writeFileSync(join(dir, 'plain.png'), png);
+  writeFileSync(join(dir, 'plain.svg'), svg);
+  const plain = cli('validate', join(dir, 'plain.png'));
+  assert(plain.status === 1 && plain.stdout.includes('a PNG with no diagram embedded in it'), plain.stdout);
+  assert(cli('validate', join(dir, 'plain.svg')).stdout.includes('no diagram is embedded in it'), 'a plain SVG');
+  for (const image of ['plain.png', 'plain.svg']) {
+    const none = cli('spec', join(dir, image));
+    assert(none.status === 1 && /carries no spec/.test(none.stderr), `${image}: ${none.stderr}`);
+  }
+  rmSync(dir, { recursive: true, force: true });
 });
 
 // -------------------------------------------------------------

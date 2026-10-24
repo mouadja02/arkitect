@@ -16,7 +16,7 @@
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import {
-  readScene, elementBox, bbox, decodeDataUrl, sha256, parseCliOrExit, exitUsage, readProblem,
+  readScene, readSceneText, elementBox, bbox, decodeDataUrl, sha256, parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
 import { outProblem, DIAGRAM_EXTS } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 
@@ -329,10 +329,12 @@ function main(argv) {
   const results = files.map((f) => {
     const scene = load(f);
     const raw = readFileSync(f);
+    const { image } = readSceneText(f);
     return {
       // The file name can itself carry a customer or project name, so only its
       // digest travels into any record derived from this.
       file: { bytes: statSync(f).size, sha256: sha256(raw) },
+      ...(image ? { embeddedIn: image } : {}),
       ...analyzeScene(scene, { name: basename(f) }),
     };
   });
