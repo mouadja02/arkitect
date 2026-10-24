@@ -3611,6 +3611,13 @@ test('the example freshness check sees a moved caption or a changed mark, not ne
   assert(swap?.startsWith('files'), `a changed embedded file was not named: ${swap}`);
 });
 
+// The committed examples build with one fixed seed, so an unchanged spec
+// rebuilds to the same bytes and a one-field change rewrites that field, not
+// every stroke and id (#407). The projection above still names what drifted.
+const TEMPLATE_SEED = 1;
+const rebuildHint = (name) => `node bin/arkitect.mjs excalidraw build skills/arkitect-excalidraw/assets/templates/${name}.spec.json `
+  + `--out <tmp> --defaults --seed ${TEMPLATE_SEED}`;
+
 // Both shipped examples are read by the agent before it writes a spec, so a
 // stale one teaches the wrong thing. The PNG matters as much as the JSON here:
 // it is the thing that actually gets looked at.
@@ -3624,11 +3631,15 @@ for (const name of ['starter-architecture', 'aws-data-platform']) {
     const r = validator.validateFile(scenePath);
     assert(r.ok, `${name} scene errors: ${r.errors.join('; ')}`);
     const spec = JSON.parse(readFileSync(specPath, 'utf8'));
-    const rebuilt = builder.buildDiagram(spec);
+    const rebuilt = builder.buildDiagram(spec, { seed: TEMPLATE_SEED });
     const drift = firstDifference(projectScene(JSON.parse(readFileSync(scenePath, 'utf8'))), projectScene(rebuilt.scene));
-    assert(!drift, `the committed ${name}.excalidraw is stale at ${drift}. Rebuild it (node bin/arkitect.mjs excalidraw build `
-      + `skills/arkitect-excalidraw/assets/templates/${name}.spec.json --out <tmp> --defaults), copy it over, and re-render ${name}.png `
-      + 'in the same pull request.');
+    assert(!drift, `the committed ${name}.excalidraw is stale at ${drift}. Rebuild it (${rebuildHint(name)}), copy it over, `
+      + `and re-render ${name}.png in the same pull request.`);
+    mkdirSync(TMP, { recursive: true });
+    const seeded = core.writeScene(join(TMP, `${name}.seeded.excalidraw`), rebuilt.scene);
+    assert(readFileSync(seeded, 'utf8') === readFileSync(scenePath, 'utf8'),
+      `the committed ${name}.excalidraw draws what its spec does, but not with seed ${TEMPLATE_SEED}, so its next rebuild `
+      + `redraws every stroke. Rebuild it (${rebuildHint(name)}), copy it over, and re-render ${name}.png.`);
     assert(!rebuilt.report.missingIcons.length,
       `${name} has unresolved icons: ${rebuilt.report.missingIcons.join(', ')}`);
     assert(!rebuilt.report.unknownKinds.length,
@@ -3801,9 +3812,10 @@ test('both committed Excalidraw examples build exactly even with a personal over
     const committed = join(TEMPLATES, `${name}.excalidraw`);
     eq(driftFrom(committed, builder.buildDiagram(readScene(specPath)).scene), null, `${name}: buildDiagram() ignores the store`);
     const forced = join(TMP, `${name}.forced-defaults.excalidraw`);
-    const r = buildCli(specPath, '--out', forced, '--defaults');
+    const r = buildCli(specPath, '--out', forced, '--defaults', '--seed', String(TEMPLATE_SEED));
     eq(r.status, 0, `${name}: --defaults build: ${r.stderr}`);
     eq(driftFrom(committed, readScene(forced)), null, `${name}: --defaults draws the committed example although an override is present`);
+    assert(readFileSync(forced, 'utf8') === readFileSync(committed, 'utf8'), `${name}: the documented rebuild leaves the committed bytes unchanged (#407)`);
     eq(JSON.parse(r.stdout).style.reason, '--defaults', `${name}: and says why`);
   }
   const personal = join(TMP, 'personal.excalidraw');
@@ -3812,6 +3824,20 @@ test('both committed Excalidraw examples build exactly even with a personal over
   assert(driftFrom(STARTER, readScene(personal)), 'without --defaults the override is picked up automatically');
   eq(JSON.parse(p.stdout).style.source, 'override', 'and the report says so');
   clearStore();
+});
+
+// The maintainer's rebuild loop is what actually rewrites the committed
+// examples, so it carries the same --defaults and seed the checks above build
+// with (#89, #90, #407).
+test('the documented Excalidraw example rebuild passes --defaults and the template seed (#407)', () => {
+  const md = readFileSync(join(ROOT, 'docs', 'maintenance.md'), 'utf8');
+  const rebuilds = md.split('\n').filter((line) => /\bbuild\b.*--out\s+\S*arkitect-excalidraw\/assets\/templates\/\S+\.excalidraw/.test(line));
+  assert(rebuilds.length, 'docs/maintenance.md no longer says how the committed Excalidraw examples are rebuilt');
+  for (const line of rebuilds) {
+    assert(/\s--defaults\b/.test(line), `this rebuild lets a personal style reach a committed example: ${line.trim()}`);
+    assert(new RegExp(`\\s--seed ${TEMPLATE_SEED}\\b`).test(line), `this rebuild redraws every stroke; pass --seed ${TEMPLATE_SEED}: ${line.trim()}`);
+  }
+  assert(md.includes(`--seed ${TEMPLATE_SEED}\``), 'the "Examples stay fresh" rule no longer names the template seed');
 });
 
 test('an Excalidraw override restyles tokens and kinds, adds a kind, and never outranks the spec (#90)', () => {

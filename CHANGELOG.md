@@ -18,6 +18,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Fixed
 
 - A spec that draws nothing, with neither a node nor a boundary, is refused in both engines (exit 1, nothing written, no backup), where it built an empty diagram that `validate` passed. That covers `{}` and a Draw.io spec with `pages` built by Excalidraw, which dropped every node and edge: the refusal names `pages` and points at one file per page, or patterns 5 and 16 for two diagrams on one canvas. A Draw.io spec whose pages all draw nothing is refused the same way. A spec of boundaries alone still builds, as the pattern fragments do (#433).
+- The committed Excalidraw examples are built with `--seed 1`, and the rebuild loop in `docs/maintenance.md` passes it, so rebuilding an unchanged spec leaves the scene and its PNG byte for byte and a one-field change shows as one field, where every rebuild redrew every id and stroke. This rebuild redraws both examples' strokes once; nothing they show changed. The example tests now also require the committed bytes to match a seeded rebuild, and name the seed in their rebuild hint (#407).
 
 ## [2.4.2] — 2026-10-23
 

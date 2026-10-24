@@ -172,7 +172,10 @@ A number a check compares against says here how it was chosen.
   so a stale one teaches the old output. The suite fails when a committed
   example no longer matches its spec (#50). Rebuild examples with
   `--defaults`, in either engine, so a personal style override on your machine
-  never reaches them (#89, #90).
+  never reaches them (#89, #90). Build Excalidraw's with `--seed 1` as well:
+  Draw.io output is deterministic, but an unseeded Excalidraw build draws new
+  ids and strokes, so a one-field change would rewrite every element and its
+  PNG. Seeded, an unchanged spec rebuilds to the same bytes (#407).
 - **Rendered and looked at.** A Draw.io generator change is built, validated,
   rendered and inspected before its pull request. A render of a real or user
   diagram stays local: never commit it, never attach it to a pull request. The
@@ -259,7 +262,7 @@ Then:
    so the shipped examples are in the learned style:
    ```bash
    for n in starter-architecture aws-data-platform; do
-     node skills/arkitect-excalidraw/scripts/build-diagram.mjs skills/arkitect-excalidraw/assets/templates/$n.spec.json --out skills/arkitect-excalidraw/assets/templates/$n.excalidraw --defaults
+     node skills/arkitect-excalidraw/scripts/build-diagram.mjs skills/arkitect-excalidraw/assets/templates/$n.spec.json --out skills/arkitect-excalidraw/assets/templates/$n.excalidraw --defaults --seed 1
      node bin/arkitect.mjs excalidraw render skills/arkitect-excalidraw/assets/templates/$n.excalidraw --out-dir skills/arkitect-excalidraw/assets/templates
    done
    ```
