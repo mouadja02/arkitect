@@ -6,9 +6,8 @@
 // Errors block delivery; warnings are judgement calls to look at in the render.
 // Nothing here prints cell labels - only ids, counts and geometry.
 
-import { readFileSync } from 'node:fs';
 import {
-  readMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs,
+  readDiagram, parseMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs,
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { checkXml } from './lib/xml-check.mjs';
@@ -74,12 +73,19 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
   const info = {};
   let catalog = null;
   let text;
+  let image;
   try {
-    text = readFileSync(path, 'utf8');
+    ({ text, image } = readDiagram(path));
   } catch (e) {
     const problem = e?.code === 'ENOENT' ? `no file at ${path}` : `cannot read ${path}: ${e?.code ?? e?.message}`;
     return { path, ok: false, errors: [problem], warnings, notes, info };
   }
+  // A .drawio.svg or .drawio.png is checked as the file it holds (#439).
+  if (image === 'png' && !text) {
+    errors.push('a PNG with no diagram embedded in it');
+    return { path, ok: false, errors, warnings, notes, info };
+  }
+  if (image) notes.push(`read the diagram embedded in this ${image.toUpperCase()}`);
 
   // A forgiving tag scanner is what extractCells needs - it has to keep going
   // through a page it only half understands - but it cannot tell a native
@@ -97,13 +103,13 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
   // The wrapper string checks this replaces could not see a declaration or a
   // comment around the root, both of which XML allows; the parse can.
   if (wrapper.root.name !== 'mxfile') {
-    errors.push(`the root element is <${wrapper.root.name}>, not <mxfile>`);
+    errors.push(`the root element is <${wrapper.root.name}>, not <mxfile>${wrapper.root.name === 'svg' ? ', and no diagram is embedded in it' : ''}`);
     return { path, ok: false, errors, warnings, notes, info };
   }
 
   let mx;
   try {
-    mx = readMxfile(path);
+    mx = parseMxfile(text, path);
   } catch (e) {
     return { path, ok: false, errors: [`unparseable: ${e.message}`], warnings, notes, info };
   }

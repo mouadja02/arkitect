@@ -7,7 +7,7 @@
 // not platform rules: split pages and omit the unstable flag by default.
 import { accessSync, constants, statSync, readFileSync, writeFileSync, mkdtempSync, rmSync, mkdirSync, existsSync, copyFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { readMxfile } from './lib/drawio-core.mjs';
+import { readMxfile, readDiagram, embedDiagram } from './lib/drawio-core.mjs';
 import { posix, win32, resolve, basename, extname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -39,9 +39,17 @@ export function render(options, { platform = process.platform, env = process.env
   mkdirSync(outDir, { recursive: true });
 
   const indexes = options.all ? Array.from({ length: count }, (_, i) => i) : [options.pageIndex];
+  // --embed writes the picture with the whole file inside it, every page, so
+  // the image a README shows is also the diagram to open and edit (#439).
+  // Draw.io's own name for one is <name>.drawio.svg; a page beyond one file
+  // keeps its index.
+  const whole = options.embed ? readDiagram(source).text : null;
+  const stem = basename(source, extname(source));
   const pages = [];
   for (const index of indexes) {
-    const output = join(outDir, `${basename(source, extname(source))}.p${index}.${options.format}`);
+    const output = join(outDir, options.embed
+      ? `${stem.replace(/\.drawio$/i, '')}${count > 1 ? `.p${index}` : ''}.drawio.${options.format}`
+      : `${stem}.p${index}.${options.format}`);
     const temporary = options.pageIndexPassthrough ? null : mkdtempSync(join(tmpdir(), 'arkitect-drawio-'));
     try {
       const input = temporary ? join(temporary, 'page.drawio') : source;
@@ -64,13 +72,26 @@ export function render(options, { platform = process.platform, env = process.env
       catch (error) { result = { error }; }
       let size = 0;
       try { const stat = statSync(output); if (stat.isFile()) size = stat.size; } catch {}
-      const ok = size > 0;
+      let ok = size > 0;
+      let why = '';
+      if (ok && whole !== null) {
+        try {
+          const bytes = embedDiagram(readFileSync(output), options.format, whole);
+          writeFileSync(output, bytes);
+          size = bytes.length;
+        } catch (error) {
+          // Never a picture that only looks like it holds the file.
+          ok = false;
+          why = `could not embed the file: ${error.message}`;
+          rmSync(output, { force: true });
+        }
+      }
       if (!ok && backup) copyFileSync(backup, output);
       // A fresh nonempty export is still the only success signal; stderr is
       // read only on failure, so the log can say why instead of just FAILED.
-      const why = ok ? '' : exportFailure(result);
+      if (!ok && !why) why = exportFailure(result);
       const reason = why ? ` (${why})` : '';
-      log(`${ok ? `rendered page ${index}` : `page ${index} FAILED`} -> ${output} (${size} bytes)${reason}`);
+      log(`${ok ? `rendered page ${index}${whole !== null ? ' with the file embedded' : ''}` : `page ${index} FAILED`} -> ${output} (${size} bytes)${reason}`);
       pages.push({ index, output, size, ok, backup, status: result.status });
     } finally {
       if (temporary) rmSync(temporary, { recursive: true, force: true });
@@ -174,8 +195,10 @@ export function discoverDrawio(override, deps) {
 
 export const USAGE = `usage: render-drawio.mjs <file> [--page-index N] [--all]
   [--width N] [--padding N] [--out-dir DIR] [--format png|jpg|svg|pdf|vsdx|xml|html]
-  [--drawio-exe PATH] [--disable-gpu] [--no-sandbox] [--page-index-passthrough]
+  [--embed] [--drawio-exe PATH] [--disable-gpu] [--no-sandbox] [--page-index-passthrough]
 Page indexes are zero-based; defaults: page 0, width 2200, padding 20, directory ., PNG.
+--embed (svg or png) writes <name>.drawio.svg|png holding the whole file: an image a
+README shows that Draw.io opens as the diagram, and spec, analyze and validate read.
 --padding 0 crops flush to the drawing, as Desktop does on its own.
 Default export splits pages without decoding/re-encoding their contents.
 Debug --page-index-passthrough sends the original file and raw index to Desktop.
@@ -183,9 +206,9 @@ Electron flags are opt-in; --no-sandbox disables Chromium sandbox protection.`;
 
 export function parseArgs(args) {
   const options = { file: undefined, pageIndex: 0, all: false, width: 2200, padding: 20,
-    outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false };
+    outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false };
   const values = { '--page-index': 'pageIndex', '--width': 'width', '--padding': 'padding', '--out-dir': 'outDir', '--format': 'format', '--drawio-exe': 'drawioExe' };
-  const switches = { '--all': 'all', '--disable-gpu': 'disableGpu', '--no-sandbox': 'noSandbox', '--page-index-passthrough': 'pageIndexPassthrough' };
+  const switches = { '--all': 'all', '--disable-gpu': 'disableGpu', '--no-sandbox': 'noSandbox', '--page-index-passthrough': 'pageIndexPassthrough', '--embed': 'embed' };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') return { help: true };
@@ -207,6 +230,7 @@ export function parseArgs(args) {
   }
   if (!options.file) throw new Error(USAGE);
   if (!['png', 'jpg', 'jpeg', 'svg', 'pdf', 'vsdx', 'xml', 'html'].includes(options.format)) throw new Error('Unsupported format');
+  if (options.embed && !['png', 'svg'].includes(options.format)) throw new Error(`--embed writes svg or png, not ${options.format}`);
   return options;
 }
 

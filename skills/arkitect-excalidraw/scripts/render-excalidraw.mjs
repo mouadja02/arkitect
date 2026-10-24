@@ -6,16 +6,20 @@
 //   node render-excalidraw.mjs scene.excalidraw --out preview.svg --style clean
 //   node render-excalidraw.mjs scene.excalidraw --out preview.png --width 2200
 //   node render-excalidraw.mjs scene.excalidraw --out-dir .analysis/renders   scene.png
+//   node render-excalidraw.mjs scene.excalidraw --embed --out-dir docs        scene.excalidraw.svg
 //
 // --style rough (default) reproduces the hand-drawn stroke; --style clean draws
 // exact geometry, which is the better choice when the question is whether the
 // layout collides. Neither is pixel-identical to Excalidraw's own export: the
 // hand-drawn fonts are not installed here and fills are flat. Open the scene in
 // the local container when exact appearance matters.
+//
+// --embed writes the scene into the picture, the way the app's own export does,
+// so a README image opens back in the app as the scene (#447).
 
 import { writeFileSync, statSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
-import { readScene, elementBox, bbox, LINE_HEIGHT } from './lib/excalidraw-core.mjs';
+import { readScene, readSceneText, embedScene, elementBox, bbox, LINE_HEIGHT } from './lib/excalidraw-core.mjs';
 import { locateBrowser, rasteriseSvg, workRootFor } from './lib/browser.mjs';
 import { roughPath, roughRect, roughDiamond, roughEllipse, roundedRectPath, adaptiveRadius } from './lib/rough.mjs';
 
@@ -304,9 +308,11 @@ export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', ba
 }
 
 export const RENDER_USAGE = `usage: render-excalidraw.mjs <scene.excalidraw> [--out FILE.svg|FILE.png | --out-dir DIR [--format png|svg]]
-  [--style rough|clean] [--scale N] [--padding PX] [--background COLOUR] [--width PX] [--browser PATH] [--no-sandbox]
+  [--embed] [--style rough|clean] [--scale N] [--padding PX] [--background COLOUR] [--width PX] [--browser PATH] [--no-sandbox]
 With no output flag it writes <scene>.svg beside the scene; --out-dir writes PNG unless --format svg.
 A PNG needs a local Edge, Chrome or Chromium (--browser or ARKITECT_BROWSER pins one) and is --width px wide (default 2200).
+--embed puts the scene in the image, named <scene>.excalidraw.svg|png: a picture a README shows
+that the app opens as the scene, and spec, analyze and validate read.
 --no-sandbox is opt-in, for a Linux host where Chromium cannot start its sandbox.`;
 
 export class RenderUsageError extends Error {}
@@ -323,6 +329,7 @@ export function parseRenderArgs(argv) {
     const arg = argv[i];
     if (arg === '-h' || arg === '--help') return { help: true };
     if (arg === '--no-sandbox') { given.noSandbox = true; continue; }
+    if (arg === '--embed') { given.embed = true; continue; }
     if (VALUE_FLAGS.includes(arg)) {
       const value = argv[++i];
       if (value === undefined || value.startsWith('--')) throw new RenderUsageError(`${arg} needs a value`);
@@ -373,7 +380,8 @@ export function parseRenderArgs(argv) {
     target = out;
   } else {
     kind = format ?? (outDir !== undefined ? 'png' : 'svg');
-    target = join(outDir ?? dirname(scene), `${basename(scene).replace(/\.excalidraw$/i, '')}.${kind}`);
+    const name = basename(scene).replace(/\.excalidraw(?:\.(?:svg|png))?$/i, '');
+    target = join(outDir ?? dirname(scene), `${name}${given.embed ? '.excalidraw' : ''}.${kind}`);
   }
   if (kind === 'svg') {
     for (const flag of ['--width', '--browser']) {
@@ -381,7 +389,7 @@ export function parseRenderArgs(argv) {
     }
     if (given.noSandbox) throw new RenderUsageError('--no-sandbox only applies to PNG output');
   }
-  return { scene, out: target, format: kind, style, scale, padding, width, background, browser: given['--browser'], noSandbox: Boolean(given.noSandbox) };
+  return { scene, out: target, format: kind, style, scale, padding, width, background, browser: given['--browser'], noSandbox: Boolean(given.noSandbox), embed: Boolean(given.embed) };
 }
 
 // Exit 0 written, 1 when the PNG could not be made (nothing replaced), 2 on a
@@ -445,6 +453,9 @@ export function run(argv, { log = console.log, error = console.error, platform =
     browser = { path: found.path, source: found.source };
   }
 
+  // The scene file's own text, byte for byte, so the image restores it exactly.
+  if (options.embed) bytes = embedScene(bytes, options.format, readSceneText(options.scene).text);
+
   // Only now is the previous preview replaced, and atomically: a crash part-way
   // through a write never leaves a truncated file under its name.
   mkdirSync(dirname(options.out), { recursive: true });
@@ -465,6 +476,7 @@ export function run(argv, { log = console.log, error = console.error, platform =
     width: dims.width,
     height: dims.height,
     ...(browser ? { browser } : {}),
+    ...(options.embed ? { embedded: 'scene' } : {}),
     elements: live.length,
     files: Object.keys(scene.files ?? {}).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,

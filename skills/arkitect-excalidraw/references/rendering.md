@@ -1,7 +1,8 @@
 # Rendering and the real app
 
-Read this when a render fails or looks off, or when the user wants to see or
-edit the scene in Excalidraw itself. The everyday command is in `SKILL.md`
+Read this when a render fails or looks off, when the user wants the diagram as
+an image in a README, or when they want to see or edit the scene in Excalidraw
+itself. The everyday command is in `SKILL.md`
 step 7. Paths are relative to the skill; scripts are in `scripts/`.
 
 ## The preview
@@ -32,6 +33,14 @@ settles nothing about spacing, collisions or how the diagram reads. `--style cle
 (`-Style clean` in the PowerShell helper) drops the hand-drawn stroke and is
 easier to read when the question is whether something collides.
 
+For a README, add `--embed`: with `--format svg` (or a PNG) it writes
+`<name>.excalidraw.svg`, the preview holding the scene byte for byte, as the
+app's own export with "Embed scene" writes one. GitHub shows it; dropped onto
+the app or the local container it opens as the scene; `spec`, `analyze` and
+`validate` read it. The picture keeps the preview's substituted fonts and flat
+fills; the scene inside is exact. It is a deliverable the user asked for, so it
+goes where they say, not into `.analysis/`.
+
 ## The local container
 
 The ground truth for appearance: the real app, the real fonts, the real renderer.
@@ -58,6 +67,7 @@ to drag onto the canvas.
 ## Renders and pull requests
 
 A render of a real or user scene stays local — never commit it, never attach it
-to a PR, never upload it. The committed template PNGs under `assets/templates/`
+to a PR, never upload it. The one exception is an `--embed` image the user asked
+for, committed to their own repository. The committed template PNGs under `assets/templates/`
 are the only renders that belong in the repository; refresh them in the same PR
 whenever generator output changes (see `docs/maintenance.md`).

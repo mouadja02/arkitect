@@ -7,7 +7,9 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from '../../../arkitect-drawio/scripts/lib/backups.mjs';
-import { readJson } from '../../../arkitect-drawio/scripts/lib/read-json.mjs';
+import { readJson, parseJson } from '../../../arkitect-drawio/scripts/lib/read-json.mjs';
+import { isPng, textChunk, withTextChunk } from '../../../arkitect-drawio/scripts/lib/png-chunks.mjs';
+import { deflateSync, inflateSync } from 'node:zlib';
 export { parseCliOrExit, exitUsage, UsageError } from '../../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { CHARS, ADVANCE } from './text-widths.mjs';
@@ -582,8 +584,76 @@ export function reindex(elements) {
   return elements;
 }
 
+// ---------------------------------------------------------------- embedded scenes
+
+// An .excalidraw.svg or .excalidraw.png is a picture that also holds its scene,
+// written the way the app's own export with "Embed scene" writes one, so the
+// image a README shows opens back in the app as the scene (#447). The SVG
+// carries a base64 payload in <metadata>, the PNG a tEXt chunk keyed by the
+// scene's MIME type; both hold {version, encoding, compressed, encoded}, the
+// scene text zlib-deflated into a byte string. Read from the app's
+// encodeSvgBase64Payload, encodePngMetadata and encode().
+export const SCENE_MIME = 'application/vnd.excalidraw+json';
+const MAX_SCENE_BYTES = 256 * 1024 * 1024;
+
+const payloadOf = (text) => JSON.stringify({
+  version: '1', encoding: 'bstring', compressed: true, encoded: deflateSync(Buffer.from(text, 'utf8')).toString('latin1'),
+});
+
+export function embedScene(image, format, text) {
+  const payload = Buffer.from(payloadOf(text), 'latin1');
+  if (format === 'png') return withTextChunk(image, 'tEXt', SCENE_MIME, payload);
+  const svg = image.toString('utf8');
+  const open = /<svg\b[^>]*>/.exec(svg);
+  if (!open) throw new Error('not an SVG');
+  const at = open.index + open[0].length;
+  return Buffer.from(`${svg.slice(0, at)}\n  <!-- svg-source:excalidraw -->\n  <metadata><!-- payload-type:${SCENE_MIME} -->`
+    + `<!-- payload-version:2 --><!-- payload-start -->${payload.toString('base64')}<!-- payload-end --></metadata>${svg.slice(at)}`);
+}
+
+function decodePayload(json) {
+  const data = JSON.parse(json);
+  // The app's oldest exports held the scene JSON itself.
+  if (!('encoded' in data)) return data.type === SCENE_TYPE ? json : null;
+  if (data.encoding !== 'bstring') return null;
+  const bytes = Buffer.from(data.encoded, 'latin1');
+  return (data.compressed ? inflateSync(bytes, { maxOutputLength: MAX_SCENE_BYTES }) : bytes).toString('utf8');
+}
+
+// The scene text an exported image holds, or null when it holds none.
+export function sceneInImage(bytes) {
+  try {
+    if (isPng(bytes)) {
+      const body = textChunk(bytes, 'tEXt', SCENE_MIME);
+      return body && decodePayload(body.toString('latin1'));
+    }
+    const svg = bytes.toString('utf8');
+    if (!svg.includes(`payload-type:${SCENE_MIME}`)) return null;
+    const found = /<!-- payload-start -->\s*(.+?)\s*<!-- payload-end -->/.exec(svg);
+    if (!found) return null;
+    const raw = Buffer.from(found[1], 'base64');
+    const version = /<!-- payload-version:(\d+) -->/.exec(svg)?.[1] ?? '1';
+    return decodePayload(raw.toString(version === '1' ? 'utf8' : 'latin1'));
+  } catch {
+    return null;
+  }
+}
+
+// The scene text at a path, and `image`: 'svg' or 'png' when the file is an
+// exported image, null for a scene file. An image holding no scene reads as no
+// text at all.
+export function readSceneText(path) {
+  const bytes = readFileSync(path);
+  const image = isPng(bytes) ? 'png' : /^\s*</.test(bytes.subarray(0, 256).toString('utf8')) ? 'svg' : null;
+  return { text: image ? sceneInImage(bytes) ?? '' : bytes.toString('utf8'), image };
+}
+
+export const noSceneIn = (image) => `${image === 'png' ? 'a PNG' : 'an SVG'} with no scene embedded in it`;
+
 export function readScene(path) {
-  const scene = readJson(path);
+  const { text, image } = readSceneText(path);
+  if (image && !text) throw new Error(`${path} is ${noSceneIn(image)}`);
+  const scene = parseJson(text);
   if (scene.type !== SCENE_TYPE) throw new Error(`not an excalidraw scene: ${path} (type "${scene.type}")`);
   scene.elements ??= [];
   scene.files ??= {};

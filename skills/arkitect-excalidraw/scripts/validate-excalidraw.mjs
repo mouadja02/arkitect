@@ -10,10 +10,10 @@
 //
 // Nothing here prints element text, only ids, counts and geometry.
 
-import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
+import { parseJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
   elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
-  parseCliOrExit, exitUsage, readProblem,
+  parseCliOrExit, exitUsage, readProblem, readSceneText, noSceneIn,
 } from './lib/excalidraw-core.mjs';
 import { catalog, unattended } from './find-icon.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
@@ -705,16 +705,23 @@ export function validateLibrary(doc, { path = '<library>' } = {}) {
 
 export function validateFile(path) {
   let doc;
+  let image;
   try {
-    doc = readJson(path);
+    let text;
+    // An .excalidraw.svg or .excalidraw.png is checked as the scene it holds (#447).
+    ({ text, image } = readSceneText(path));
+    if (image && !text) return { path, ok: false, errors: [noSceneIn(image)], warnings: [], info: {} };
+    doc = parseJson(text);
   } catch (e) {
     // Never Node's JSON message: it quotes the file's own text.
     return { path, ok: false, errors: [readProblem(path, e)], warnings: [], info: {} };
   }
   try {
-    return isObject(doc) && doc.type === 'excalidrawlib'
+    const result = isObject(doc) && doc.type === 'excalidrawlib'
       ? validateLibrary(doc, { path })
       : validateScene(doc, { path });
+    if (image) result.info.embeddedIn = image;
+    return result;
   } catch (error) {
     // A backstop, not the mechanism: shape is checked before anything reads it.
     // Whatever gets past that, one malformed file must not cost the caller the
@@ -752,6 +759,7 @@ function main(argv) {
       } else if (i.items !== undefined) {
         console.log(`   library v${i.version}, ${i.items} items`);
       }
+      if (i.embeddedIn) console.log(`   read the scene embedded in this ${i.embeddedIn.toUpperCase()}`);
       for (const e of r.errors) console.log(`   ERROR  ${e}`);
       for (const w of r.warnings) console.log(`   warn   ${w}`);
       if (r.warnings.length) console.log(WARNINGS_LEFT);

@@ -5,7 +5,8 @@
 import { readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import { createHash } from 'node:crypto';
-import { inflateRawSync } from 'node:zlib';
+import { inflateRawSync, inflateSync, deflateSync } from 'node:zlib';
+import { isPng, textChunk, withTextChunk } from './png-chunks.mjs';
 
 export function sha256(buf) {
   return createHash('sha256').update(buf).digest('hex');
@@ -216,7 +217,62 @@ export function decompressPage(b64) {
   return decodeURIComponent(raw.toString('binary'));
 }
 
-export const readMxfile = (path) => parseMxfile(readFileSync(path, 'utf8'), path);
+// ---------------------------------------------------------------- embedded
+
+// A .drawio.svg or .drawio.png is a picture that also holds the whole file, the
+// way Draw.io's own export with -e writes one: the SVG in its root's content
+// attribute, the PNG in a zTXt chunk keyed mxGraphModel holding the file
+// URI-encoded and deflated. GitHub shows either; Draw.io and its VS Code
+// extension open either as the diagram; spec, analyze and validate read them
+// here (#439).
+const MX_KEYWORD = 'mxGraphModel';
+const SVG_ROOT = /^\s*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg\b/;
+// Escaped down to the line breaks, so the attribute reads back as the very text.
+const attrText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  .replace(/\n/g, '&#10;').replace(/\r/g, '&#13;').replace(/\t/g, '&#9;');
+
+export function embedDiagram(image, format, text) {
+  if (format === 'png') return withTextChunk(image, 'zTXt', MX_KEYWORD, deflateSync(encodeURIComponent(text)));
+  const svg = image.toString('utf8');
+  const root = SVG_ROOT.exec(svg);
+  if (!root) throw new Error('not an SVG');
+  return Buffer.from(`${root[0]} content="${attrText(text)}"${svg.slice(root[0].length)}`);
+}
+
+// The file an exported image holds, or null when it holds none.
+export function diagramInImage(bytes) {
+  if (isPng(bytes)) {
+    const body = textChunk(bytes, 'zTXt', MX_KEYWORD);
+    if (!body) return null;
+    let raw;
+    try { raw = inflateSync(body, { maxOutputLength: MAX_PAGE_BYTES }); } catch (error) {
+      if (error?.code !== 'ERR_BUFFER_TOO_LARGE') return null;
+      throw Object.assign(new Error(`inflates past ${MAX_PAGE_BYTES / 1024 / 1024} MB: not read`), { code: 'ARKITECT_PAGE_TOO_LARGE' });
+    }
+    try { return decodeURIComponent(raw.toString('latin1')); } catch { return null; }
+  }
+  if (!SVG_ROOT.test(bytes.subarray(0, 4096).toString('utf8'))) return null;
+  const root = scanTags(bytes.toString('utf8')).next().value;
+  const content = root?.name === 'svg' ? parseAttrs(root.raw).content : undefined;
+  if (content?.startsWith('<')) return content;
+  if (content?.startsWith('%')) try { return decodeURIComponent(content); } catch { /* not the file */ }
+  return null;
+}
+
+// The mxfile text at a path, and `image`: 'svg' or 'png' when it came out of an
+// exported image, null for the file itself. A PNG that holds nothing reads as
+// no text at all, so each reader says it found no diagram.
+export function readDiagram(path) {
+  const bytes = readFileSync(path);
+  const held = diagramInImage(bytes);
+  if (held != null) return { text: held, image: isPng(bytes) ? 'png' : 'svg' };
+  return isPng(bytes) ? { text: '', image: 'png' } : { text: bytes.toString('utf8'), image: null };
+}
+
+export function readMxfile(path) {
+  const { text, image } = readDiagram(path);
+  return Object.assign(parseMxfile(text, path), { image });
+}
 
 export function parseMxfile(text, path = null) {
   let opening = null;
