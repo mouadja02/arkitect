@@ -1072,6 +1072,46 @@ test('an unknown top-level spec key is named, and a _comment is not (#221)', () 
   eq(JSON.stringify(out.unknownFields.map((u) => u.field)), JSON.stringify(['legned', 'pages', 'edge']), 'the CLI prints them');
 });
 
+// A spec whose nodes all sat under Draw.io's `pages` built an empty scene that
+// validate passed, and so did `{}`: every component was dropped (#433).
+test('a spec that would draw nothing is refused, and one with pages says why (#433)', () => {
+  const refused = (spec) => { try { builder.buildDiagram(spec, { seed: 1 }); } catch (e) { return e; } return null; };
+  for (const spec of [{}, { title: 'T' }, { nodes: [], boundaries: [], edges: [] }]) {
+    const e = refused(spec);
+    assert(e instanceof builder.SpecError, `${JSON.stringify(spec)} must be refused`);
+    eq(JSON.stringify(e.errors), JSON.stringify(['nodes: the spec draws nothing; list each component in `nodes`']), `${JSON.stringify(spec)} is told why`);
+  }
+
+  const paged = {
+    pages: [
+      { name: 'As-is', nodes: [{ id: 'api', label: 'Orders API' }, { id: 'db', label: 'Orders DB', col: 1 }], edges: [{ from: 'api', to: 'db' }] },
+      { name: 'To-be', nodes: [{ id: 'api2', label: 'Orders API' }, { id: 'q', label: 'Queue', col: 1 }], edges: [{ from: 'api2', to: 'q' }] },
+    ],
+  };
+  const errors = builder.validateSpec(paged);
+  eq(errors.length, 1, 'one problem');
+  assert(/^nodes: the spec draws nothing; `pages` is not a field: an Excalidraw scene is one canvas; build one file per page/.test(errors[0]), errors[0]);
+  assert(/pattern 5/.test(errors[0]) && /pattern 16/.test(errors[0]), 'it names the patterns that put two diagrams on one canvas');
+  assert(/`node` is not a field: nodes go in `nodes`/.test(builder.validateSpec({ node: [{ id: 'a' }] })[0] ?? ''), 'a misspelled nodes list is named');
+  eq(builder.validateSpec({ nodes: 'a' }).join(), 'nodes: expected an array', 'a nodes value that is not a list is told that, once');
+  eq(builder.validateSpec({ nodes: [{ id: 'a' }] }).length, 0, 'control: one node builds');
+  eq(builder.validateSpec({ boundaries: [{ id: 'b', label: 'B' }] }).length, 0, 'control: boundaries alone build, as pattern fragments do');
+
+  // Through the dispatcher, with the committed Draw.io example for two pages:
+  // exit 1, the file already there untouched and no backup beside it.
+  const dir = join(TMP, 'no-node');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const out = join(dir, 'x.excalidraw');
+  writeFileSync(out, 'before');
+  const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', 'build',
+    join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', 'as-is-to-be.spec.json'), '--out', out, '--defaults'], { encoding: 'utf8' });
+  eq(r.status, 1, `exit 1, got ${r.status}: ${r.stdout}${r.stderr}`);
+  assert(/`pages` is not a field/.test(r.stderr), r.stderr);
+  eq(readFileSync(out, 'utf8'), 'before', 'nothing written');
+  eq(readdirSync(dir).join(), 'x.excalidraw', 'and no backup');
+});
+
 // A caption and a sublabel are free text under their node. Nothing tied them
 // to it, so dragging an icon in the app left its name behind (#190).
 test('a node and the text under it share one outer group, and no two nodes share one (#190)', () => {
@@ -1963,7 +2003,7 @@ test('numeric spec fields are checked in one run, each problem naming its field 
     'edges[0].strokeWidth: expected a number greater than 0, got -1',
   ];
   eq(problems.join('\n'), expected.join('\n'), 'every numeric problem; a string style token is left to the style checks');
-  eq(builder.validateSpec({ style: [] }).join(), 'style: expected an object', 'a style that is not an object');
+  eq(builder.validateSpec({ style: [], nodes: [{ id: 'a' }] }).join(), 'style: expected an object', 'a style that is not an object');
 
   // The issue's case: a string column used to build a scene that then failed validation.
   let thrown;

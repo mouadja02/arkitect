@@ -92,7 +92,8 @@ const SPEC_HINTS = {
   edge: 'not a field: arrows go in `edges`',
   node: 'not a field: nodes go in `nodes`',
   boundary: 'not a field: boundaries go in `boundaries`',
-  pages: 'not a field: an Excalidraw scene is one canvas; build one file per page',
+  pages: 'not a field: an Excalidraw scene is one canvas; build one file per page, '
+    + 'or draw them on one canvas (pattern 5, current vs proposed; pattern 16, section divider)',
   context: 'not read here: pick an icon by its exact id, e.g. "drawio:aws/aws-lambda"',
 };
 
@@ -581,6 +582,16 @@ export function validateSpec(spec) {
   const boundaries = listOf('boundaries');
   const nodes = listOf('nodes');
   const edges = listOf('edges');
+
+  // A spec that draws nothing built an empty scene that validated: Draw.io's
+  // `pages`, or a misspelled `nodes`, dropped every component (#433). A spec
+  // of boundaries alone still builds: the pattern fragments are some.
+  if (['nodes', 'boundaries'].every((key) => spec[key] === undefined || (Array.isArray(spec[key]) && !spec[key].length))) {
+    const why = ['pages', 'node'].filter((key) => spec[key] !== undefined);
+    errors.push(`nodes: the spec draws nothing; ${why.length
+      ? why.map((key) => `\`${key}\` is ${SPEC_HINTS[key]}`).join('; ')
+      : 'list each component in `nodes`'}`);
+  }
 
   // One id space: an edge or a parent naming an id must mean exactly one thing.
   const declaredBy = new Map();

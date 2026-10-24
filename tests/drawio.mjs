@@ -4286,6 +4286,37 @@ test('spec checks list every broken reference, id clash and cycle in one run (#3
   eq(thrown.errors.length, errors.length, 'the thrown error carries every problem');
 });
 
+// `{}` built an empty page that validate passed (#433).
+test('a spec that would draw nothing is refused, on one page or across pages (#433)', () => {
+  const refused = (spec) => { try { builder.buildDiagram(spec); } catch (e) { return e; } return null; };
+  for (const spec of [{}, { title: 'T' }, { nodes: [], boundaries: [], edges: [] }]) {
+    const e = refused(spec);
+    assert(e instanceof builder.SpecError, `${JSON.stringify(spec)} must be refused`);
+    eq(JSON.stringify(e.errors), JSON.stringify(['nodes: the spec draws nothing; list each component in `nodes`']), `${JSON.stringify(spec)} is told why`);
+  }
+  eq(JSON.stringify(builder.validateSpec({ pages: [{ name: 'A', nodes: [] }, { name: 'B', title: 'T' }] })),
+    JSON.stringify(['pages: no page draws anything; list each component in its page\'s `nodes`']), 'pages that all draw nothing');
+  assert(/`node` is not a field: nodes go in `nodes`/.test(builder.validateSpec({ node: [{ id: 'a' }] })[0] ?? ''), 'a misspelled nodes list is named');
+  eq(builder.validateSpec({ nodes: 'a' }).join(), 'nodes: expected an array', 'a nodes value that is not a list is told that, once');
+  eq(builder.validateSpec({ nodes: [{ id: 'a' }] }).length, 0, 'control: one node builds');
+  eq(builder.validateSpec({ boundaries: [{ id: 'b', label: 'B' }] }).length, 0, 'control: boundaries alone build, as pattern fragments do');
+  eq(builder.validateSpec({ pages: [{ name: 'A', nodes: [] }, { name: 'B', nodes: [{ id: 'a' }] }] }).length, 0,
+    'control: one page with a node builds');
+
+  const dir = join(TMP, 'no-node');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 'empty.spec.json');
+  const out = join(dir, 'x.drawio');
+  writeFileSync(spec, '{}');
+  writeFileSync(out, 'before');
+  const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', spec, '--out', out, '--defaults'], { encoding: 'utf8' });
+  eq(r.status, 1, `exit 1, got ${r.status}: ${r.stdout}${r.stderr}`);
+  assert(/draws nothing/.test(r.stderr), r.stderr);
+  eq(readFileSync(out, 'utf8'), 'before', 'nothing written');
+  eq(readdirSync(dir).sort().join(), 'empty.spec.json,x.drawio', 'and no backup');
+});
+
 // ------------------------------------------------------------- UTF-8 BOM (#156)
 
 // Windows PowerShell 5.1's `Set-Content -Encoding UTF8` writes a byte order
@@ -4432,7 +4463,7 @@ test('numeric spec fields are checked in one run, each problem naming its field 
     'edges[0].labelPos: expected a finite number, got "mid"',
   ];
   eq(problems.join('\n'), expected.join('\n'), 'every numeric problem, and a null row taken as absent');
-  eq(builder.validateSpec({ layout: 'wide' }).join(), 'layout: expected an object', 'a layout that is not an object');
+  eq(builder.validateSpec({ layout: 'wide', nodes: [{ id: 'a' }] }).join(), 'layout: expected an object', 'a layout that is not an object');
   eq(builder.validateSpec({ nodes: [{ id: 'a', col: Infinity, row: NaN }] }).length, 2, 'Infinity and NaN from the API are refused too');
   let thrown;
   try { builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', col: 'oops', row: 0 }] }); } catch (e) { thrown = e; }
@@ -5250,7 +5281,7 @@ test('a spec with pages builds one Draw.io page each, and refuses what cannot be
     JSON.stringify(['pages: nodes, title belong on a page in a spec with pages']), 'top-level page content beside pages');
   eq(JSON.stringify(refused({ pages: [{ nodes: [box('a')], edges: [{ from: 'a', to: 'b' }] }, { nodes: [box('b')] }] })),
     JSON.stringify(['pages[0].edges[0].to: "b" is on pages[1]; an edge cannot cross pages']), 'an edge across pages');
-  eq(JSON.stringify(refused({ pages: [{ name: 'X', id: 'p' }, { name: 'X', id: 'p' }] })), JSON.stringify([
+  eq(JSON.stringify(refused({ pages: [{ name: 'X', id: 'p', nodes: [box('a')] }, { name: 'X', id: 'p' }] })), JSON.stringify([
     'pages[1].id: "p" is already the id of pages[0]', 'pages[1].name: "X" is already the name of pages[0]',
   ]), 'two pages with one id or one name');
   eq(JSON.stringify(refused({ pages: [] })), JSON.stringify(['pages: expected a non-empty array of page objects']), 'no pages');

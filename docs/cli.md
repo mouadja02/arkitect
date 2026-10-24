@@ -121,8 +121,9 @@ changes one (#388).
   writes its summary anywhere but over a diagram.
 - **A bad spec is refused whole.** An edge or `parent` naming something that
   doesn't exist, a missing, repeated or reserved id, a string where a number
-  goes, a size of 0 or less: every problem is listed at once, exit `1`, nothing
-  written.
+  goes, a size of 0 or less, a spec with neither a node nor a boundary (an
+  Excalidraw spec whose nodes sit under `pages` is one): every problem is
+  listed at once, exit `1`, nothing written.
 - **An unknown kind or field still builds,** and the report lists it under
   `unknownKinds` or `unknownFields`. Treat a non-empty list as something to fix.
 - **Backups.** A build copies an existing target to

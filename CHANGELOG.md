@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Fixed
+
+- A spec that draws nothing, with neither a node nor a boundary, is refused in both engines (exit 1, nothing written, no backup), where it built an empty diagram that `validate` passed. That covers `{}` and a Draw.io spec with `pages` built by Excalidraw, which dropped every node and edge: the refusal names `pages` and points at one file per page, or patterns 5 and 16 for two diagrams on one canvas. A Draw.io spec whose pages all draw nothing is refused the same way. A spec of boundaries alone still builds, as the pattern fragments do (#433).
+
 ## [2.4.2] — 2026-10-23
 
 ### Added
