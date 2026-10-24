@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Removed
+
+- `docs/audit-prompt.md` is no longer part of the repository, and the README's documentation table no longer lists it.
+
 ## [2.4.2] — 2026-10-23
 
 ### Added

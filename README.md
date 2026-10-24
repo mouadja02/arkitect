@@ -137,7 +137,6 @@ has the full statement.
 | [privacy.md](docs/privacy.md) | exactly what touches the network |
 | [testing.md](docs/testing.md) | the offline suite, the redaction check, the evals |
 | [maintenance.md](docs/maintenance.md) | the contract for changing this repository, releases |
-| [audit-prompt.md](docs/audit-prompt.md) | the prompt that finds the next round of work |
 | [status.md](docs/status.md) | how work gets done, and decisions that can look unfinished |
 
 What changed in each release: [CHANGELOG.md](CHANGELOG.md).
