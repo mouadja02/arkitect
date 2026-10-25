@@ -40,7 +40,7 @@ Start from a worked spec, and look at its PNG first:
 | | |
 |---|---|
 | `skills/arkitect-excalidraw/assets/templates/starter-architecture.spec.json` | every node kind, every connector kind, a generated legend |
-| `skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json` | a real-sized answer: 48 nodes, phase regions, an error lane |
+| `skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json` | a real-sized answer: 43 nodes, phase regions, an error lane |
 | `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json` | the same tour in Draw.io |
 | `skills/arkitect-drawio/assets/templates/as-is-to-be.spec.json` | two pages in one file |
 

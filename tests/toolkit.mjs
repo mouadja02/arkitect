@@ -611,6 +611,49 @@ test('the count guard catches a drifted number and a dropped sentence (#78)', ()
   });
   assert(dropped.some((p) => p.startsWith('docs/icons.md: no longer says answer-key queries with an expected answer')),
     `a dropped sentence went unreported: ${dropped.join(' | ')}`);
+
+  // The badge's comma is URL-encoded, and the fix it names is too (#438).
+  const bundled = live.bundled.toLocaleString('en-US').replace(/,/g, '%2C');
+  const badge = checkDocCounts({
+    live,
+    read: (rel) => (rel === 'README.md' ? docText(rel).replace(`icons-${bundled}%20`, 'icons-6%2C005%20') : docText(rel)),
+  });
+  assert(badge.some((p) => p.startsWith('README.md: quotes 6%2C005 marks bundled across both engines')
+    && p.endsWith(`so write ${bundled}`)), `a stale icon badge went unreported: ${badge.join(' | ')}`);
+});
+
+// The README's Node badge said ≥20 two majors after the floor became 22, and
+// three docs called the 43-node example a 48-node one (#438). Both are read
+// from what they describe: `engines.node`, and the example spec itself.
+const EXAMPLE_SPEC = 'skills/arkitect-excalidraw/assets/templates/aws-data-platform.spec.json';
+const EXAMPLE_NODE_CLAIMS = [
+  ['README.md', /Built from a (\d+)-node spec/],
+  ['docs/getting-started.md', /`skills\/arkitect-excalidraw\/assets\/templates\/aws-data-platform\.spec\.json` \| a real-sized answer: (\d+) nodes/],
+  ['docs/cli.md', /`aws-data-platform\.spec\.json` \((\d+) nodes\)/],
+];
+function readmeFactProblems(read) {
+  const problems = [];
+  const floor = /^>=(\d+)$/.exec(pkg.engines.node)?.[1];
+  if (!floor) problems.push(`package.json engines.node is ${pkg.engines.node}, which this check does not read; update it`);
+  const node = /img\.shields\.io\/badge\/node-%E2%89%A5(\d+)-/.exec(read('README.md'));
+  if (!node) problems.push('README.md has no "node-%E2%89%A5<N>" badge');
+  else if (floor && node[1] !== floor) problems.push(`README.md's Node badge says ≥${node[1]}; engines.node is ${pkg.engines.node}, so write ${floor}`);
+  const nodes = JSON.parse(read(EXAMPLE_SPEC)).nodes.length;
+  for (const [rel, re] of EXAMPLE_NODE_CLAIMS) {
+    const m = re.exec(read(rel));
+    if (!m) problems.push(`${rel} no longer quotes the example's node count the way ${re} reads it; update this test`);
+    else if (Number(m[1]) !== nodes) problems.push(`${rel} says the example has ${m[1]} nodes; ${EXAMPLE_SPEC} has ${nodes}`);
+  }
+  return problems;
+}
+
+test('the README Node badge and the example node count match what they describe (#438)', () => {
+  eq(readmeFactProblems(docText).join('\n        '), '', 'stale README facts');
+  const bent = readmeFactProblems((rel) => (rel === 'README.md'
+    ? docText(rel).replace(/node-%E2%89%A5\d+-/, 'node-%E2%89%A520-').replace(/Built from a \d+-node/, 'Built from a 48-node')
+    : docText(rel)));
+  assert(bent.some((p) => p.startsWith("README.md's Node badge says ≥20")), `a stale Node badge went unreported: ${bent.join(' | ')}`);
+  assert(bent.some((p) => p.startsWith('README.md says the example has 48 nodes')), `a stale node count went unreported: ${bent.join(' | ')}`);
 });
 
 test('all six skills are well formed, and only the learning and apply ones are manual', () => {
@@ -2735,6 +2778,55 @@ test('no committed template spec reports an unknown field (#205)', () => {
     }
   }
   assert(checked > 0, 'no template specs were checked');
+});
+
+// docs/cli.md is the spec reference for a person writing a spec by hand, and
+// it left out 34 fields the builders accept, found only through the error a
+// wrong guess gets (#441). Each builder's lists are read as unknownFields()
+// reports them: a key no part takes, put in every part, comes back with that
+// part's `valid` list. A field counts as named when it is in inline code in
+// the engine's spec section; the JSON examples do not count. Excalidraw's
+// `style` takes the tokens `--print-style` lists, which are not spec fields.
+const PROBE = '\u0000probe';
+const specFieldLists = (engine) => {
+  const item = { [PROBE]: 1 };
+  const parts = { boundaries: [item], nodes: [item], edges: [item] };
+  const spec = engine === 'arkitect-drawio'
+    ? { [PROBE]: 1, layout: item, context: item, pages: [{ [PROBE]: 1, ...parts }] }
+    : { [PROBE]: 1, layout: item, ...parts };
+  const lists = new Map();
+  for (const { field, valid } of specBuilders[engine].unknownFields(spec)) {
+    lists.set(field.slice(0, -PROBE.length).replace(/\[\d+\]/g, '').replace(/\.$/, '') || 'spec', valid);
+  }
+  return lists;
+};
+const SPEC_SECTION = { 'arkitect-drawio': 'Draw.io spec', 'arkitect-excalidraw': 'Excalidraw spec' };
+const undocumentedFields = (engine, cliMd) => {
+  const md = cliMd.replace(/\r\n/g, '\n');
+  const start = md.indexOf(`\n## ${SPEC_SECTION[engine]}\n`);
+  if (start < 0) return [`docs/cli.md has no "## ${SPEC_SECTION[engine]}" section`];
+  const end = md.indexOf('\n## ', start + 1);
+  const prose = md.slice(start, end < 0 ? md.length : end).replace(/```[\s\S]*?```/g, '');
+  const named = new Set([...prose.matchAll(/`([^`\n]+)`/g)].flatMap((m) => m[1].match(/[A-Za-z_]\w*/g) ?? []));
+  return [...specFieldLists(engine)].flatMap(([part, valid]) => valid.filter((field) => !named.has(field))
+    .map((field) => `${part}: \`${field}\``));
+};
+
+test('docs/cli.md names every spec field each builder accepts (#441)', () => {
+  const cliMd = readFileSync(join(ROOT, 'docs', 'cli.md'), 'utf8');
+  for (const engine of Object.keys(SPEC_SECTION)) {
+    const lists = specFieldLists(engine);
+    for (const part of ['spec', 'layout', 'boundaries', 'nodes', 'edges']) {
+      const key = engine === 'arkitect-drawio' && !['spec', 'layout'].includes(part) ? `pages.${part}` : part;
+      assert(lists.get(key)?.length > 0, `${engine}: the probe found no field list for ${key}: ${[...lists.keys()].join(', ')}`);
+    }
+    const missing = undocumentedFields(engine, cliMd);
+    eq(missing.join(', '), '', `${engine}: fields the builder takes that the "${SPEC_SECTION[engine]}" section of docs/cli.md never names`);
+  }
+  // And a field dropped from the reference is caught.
+  const bent = cliMd.replace(/`labelSize` \(16\), /, '');
+  assert(bent !== cliMd, 'the Excalidraw edge row no longer reads "`labelSize` (16), "; update this test');
+  eq(undocumentedFields('arkitect-excalidraw', bent).join(', '), 'edges: `labelSize`', 'a field dropped from docs/cli.md');
 });
 
 // GitHub forces an action declaring Node 20 onto Node 24 and annotates every

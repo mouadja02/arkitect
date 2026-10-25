@@ -182,12 +182,13 @@ the builder stamps on everything it draws (#353).
 
 | part | fields |
 |---|---|
-| spec | `title`, `subtitle`, `context.packs`, `layout`, `pages`, `legend`, `legendX`, `legendY` |
+| spec | `title`, `subtitle`, `titleColor` (the title's colour), `context.packs`, `layout`, `pages`, `legend`, `legendX`, `legendY`; a one-page spec also takes `page` (its tab's name, `Architecture` by default) and `pageId` |
+| `layout` | `originX`, `originY` (where column 0, row 0 sits: 80, 100), `colPitch`, `rowPitch` (320, 190) |
 | node `kind` | `icon` (a bundled mark, by name or id), `logo` (a fetched logo), `aws4` (a built-in shape), `box`, `note`, `text` |
-| node | `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line) |
-| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
+| node | `id`, `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line); a `text` node takes `color`, `fontSize`, `bold` and `align`, an `aws4` node `resIcon` (its `mxgraph.aws4.*` shape) and `color` (its fill) |
+| boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `id`, `label`, `parent`, `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`, `color` (the outline), and `dashed`, which `false` draws solid on a scope. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
 | edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used; `legend: false` turns it off, and the report notes it (#384) |
-| edge | `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
+| edge | `id`, `from`, `to`, `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
 
 The builder chooses every edge's sides from the grid: between columns an edge
 leaves and enters sideways, within a column it runs vertically below the
@@ -201,8 +202,9 @@ longest clear stretch of its route, at least 30px before the arrowhead (#237,
 { "from": "a", "to": "b", "exit": "bottom", "entry": { "side": "left", "at": 0.25 } }
 ```
 
-More than one page is `pages`: each carries its own `name`, `title`,
-`boundaries`, `nodes`, `edges` and `legend`; `layout` and `context` are shared,
+More than one page is `pages`: each carries its own `name`, `id`, `title`,
+`subtitle`, `titleColor`, `boundaries`, `nodes`, `edges`, `legend`, `legendX`
+and `legendY`; `layout` and `context` are shared,
 ids are per page, and an edge can't cross pages.
 
 Worked examples: `skills/arkitect-drawio/assets/templates/starter-architecture.spec.json`
@@ -234,8 +236,13 @@ and `as-is-to-be.spec.json` (two pages), each with its PNG. Pattern fragments:
 | `placeholder` | an empty slot for a mark to drop in later |
 | `note`, `text` | a sticky note; bare text |
 
-Also `accent`, `sublabel`, `width`, `height`, `size`, `fontSize`,
-`strokeStyle`, `fillStyle`.
+| part | fields |
+|---|---|
+| spec | `title`, `layout`, `boundaries`, `nodes`, `edges`, `legend` (`false` turns it off), `legendX`, `legendY`, `canvasBackground` (`white`, `grey`, `blue`, `yellow`, `pink` or a `#rrggbb`), and `style`, which takes the tokens `build --print-style` lists, for this scene alone |
+| `layout` | `originX`, `originY` (0, 0), `colPitch`, `rowPitch` (320, 200), `cell` (the square a node is centred in, 100), `route` |
+| node | `id`, `kind`, `label`, `col`, `row` (missing is 0), `parent`, `width`, `height`, `size` (an icon's), `icon`, `sublabel`, `accent` (a palette name or a `#rrggbb`), `fill` (a colour, or `false` for none), `fillStyle`, `strokeStyle`, `strokeWidth`, `roughness`, `fontSize`, `fontFamily`, `labelColor`; a `text` node also takes `align` |
+| boundary | `id`, `kind`, `label`, `parent`, `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `color` or `accent`, `fill`, `dashed` (`false` draws it solid), `strokeStyle`, `strokeWidth`, `roughness`, `labelPlacement` (`inside`, or `outside`: a large name above the top-left corner), `fontSize` |
+| edge | `id`, `from`, `to`, `kind`, `label`, `route`, `routing`, `color`, `strokeStyle`, `strokeWidth`, `roughness`, `startArrowhead` (none by default), `endArrowhead` (`arrow`; `null` for none), `gap` (between an end and its node, 8), `labelColor`, `labelSize` (16), `labelBound` (`true` binds the label to the arrow). An edge whose `color`, `strokeStyle` or `strokeWidth` differs from its kind's is named in `notes`, since the legend no longer matches it |
 
 **Boundaries** are `scope` (a dashed rectangle, nestable) or `frame` (an
 Excalidraw frame, top level). Both are sized from everything their nodes draw,
@@ -259,7 +266,7 @@ arrow when a node moves) or `points`. An edge from a node to itself loops over
 a corner.
 
 Worked examples: `skills/arkitect-excalidraw/assets/templates/starter-architecture.spec.json`
-(one of every kind) and `aws-data-platform.spec.json` (48 nodes). Look at the
+(one of every kind) and `aws-data-platform.spec.json` (43 nodes). Look at the
 PNG beside each before writing your first spec.
 
 ## Rendering

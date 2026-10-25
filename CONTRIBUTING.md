@@ -9,7 +9,7 @@ useful by staying small — so the bar for *adding* is higher than the bar for
 ```bash
 git clone https://github.com/mouadja02/arkitect.git
 cd arkitect
-node tests/run-tests.mjs        # offline, no dependencies, about 20 seconds
+node tests/run-tests.mjs        # offline, no dependencies
 node bin/arkitect.mjs doctor
 ```
 
