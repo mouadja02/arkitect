@@ -21,6 +21,7 @@
 //   node build-diagram.mjs --print-style                             what a build would use
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
 import {
   emptyScene, writeScene, backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS, reindex,
@@ -33,7 +34,7 @@ import {
 import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES } from './validate-excalidraw.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
-import { outProblem, replacesForeign, foreignNote, droppedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
+import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import { strayMembers, strayNote } from '../../arkitect-drawio/scripts/lib/stray-members.mjs';
@@ -689,22 +690,64 @@ export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {})
 // instead of hand-writing bound scene JSON (#388). The app writes only an
 // element's customData through a save, never a key at the top of the scene
 // or one appState does not know, so the spec rides on the first element the
-// first spec node drew. `arkitectBuilt` is what the build wrote: the app moves
-// an element's version whenever it changes one, so a scene changed in an
-// editor since no longer matches it. Every label in the spec is already in
-// the scene.
+// first spec node drew, and a copy on the title or legend, or else another
+// node, so deleting that node keeps it (#408). `arkitectBuilt` is what the
+// build wrote: the app moves an element's version whenever it changes one, so
+// a scene changed in an editor since no longer matches it. Every label in the
+// spec is already in the scene.
 export const SPEC_KEY = 'arkitectSpec';
 const builtPrint = (elements) => {
   const live = elements.filter((el) => el && !el.isDeleted);
   return `${live.length}:${live.reduce((n, el) => n + (Number(el.version) || 0), 0)}`;
 };
+// What one element looked like when it was built, `customData.arkitect.built`,
+// so a rebuild can name an element restyled or moved since (#403). The app
+// recomputes some fields on its own when it opens a scene, so they are left
+// out: versions and indices, a text's size and place, measured in the
+// browser's font, and an arrow's route. A text counts by its words and font,
+// an arrow or line by its stroke and heads, anything else by its stroke, fill
+// and box too.
+const LOOK = ['strokeColor', 'backgroundColor', 'fillStyle', 'strokeWidth', 'strokeStyle', 'roughness', 'opacity'];
+const LINEAR = new Set(['arrow', 'line']);
+function elementPrint(el) {
+  const round = (n, by = 1) => Math.round((Number(n) || 0) * by) / by;
+  const fields = el.type === 'text' ? [el.originalText ?? el.text, el.fontSize, el.fontFamily, el.textAlign, el.strokeColor, el.opacity]
+    : LINEAR.has(el.type) ? [...LOOK.map((k) => el[k]), el.startArrowhead, el.endArrowhead]
+      : [...LOOK.map((k) => el[k]), round(el.x), round(el.y), round(el.width), round(el.height), round(el.angle, 100), el.roundness?.type, el.fileId, el.name];
+  return createHash('sha256').update(JSON.stringify([el.type, ...fields])).digest('base64url').slice(0, 8);
+}
+const entryOf = (tag) => (tag.node != null ? { id: String(tag.node), label: 'node' }
+  : tag.boundary != null ? { id: String(tag.boundary), label: 'boundary' }
+    : tag.edge != null ? { id: String(tag.edge), label: 'edge' } : { id: 'title or legend', label: '' });
 function carry(built, spec, carried) {
   const { elements } = built.scene;
+  for (const el of elements) {
+    if (el.customData?.arkitect) el.customData = { ...el.customData, arkitect: { ...el.customData.arkitect, built: elementPrint(el) } };
+  }
   const first = (spec.nodes ?? [])[0]?.id;
   const carrier = elements.find((el) => first != null && el.customData?.arkitect?.node === first)
     ?? elements.find((el) => el.customData?.arkitect);
-  if (carrier) carrier.customData = { ...carrier.customData, [SPEC_KEY]: JSON.parse(carried), arkitectBuilt: builtPrint(elements) };
+  const entry = (el) => JSON.stringify(entryOf(el.customData.arkitect));
+  const other = (el) => el.customData?.arkitect && entry(el) !== entry(carrier);
+  const copy = carrier && (elements.find((el) => other(el) && el.customData.arkitect.chrome)
+    ?? elements.find((el) => other(el) && el.customData.arkitect.node != null) ?? elements.find(other));
+  for (const el of [carrier, copy]) {
+    if (el) el.customData = { ...el.customData, [SPEC_KEY]: JSON.parse(carried), arkitectBuilt: builtPrint(elements) };
+  }
   return built;
+}
+// The spec entries whose elements no longer look as the build drew them,
+// `{ id, label }`, once each. A scene built before elements recorded what they
+// drew names none.
+export function changedElements(oldText) {
+  const changed = new Map();
+  for (const el of JSON.parse(oldText).elements ?? []) {
+    const tag = el && typeof el === 'object' && !el.isDeleted ? el.customData?.arkitect : null;
+    if (!tag || typeof tag.built !== 'string' || tag.built === elementPrint(el)) continue;
+    const e = entryOf(tag);
+    changed.set(JSON.stringify(e), e);
+  }
+  return [...changed.values()];
 }
 const carrierOf = (text) => (JSON.parse(text).elements ?? []).find((el) => el && !el.isDeleted && el.customData?.[SPEC_KEY]);
 // The spec a scene was built from, or null when it carries none.
@@ -1672,15 +1715,21 @@ function main(argv) {
   mkdirSync(dirname(out), { recursive: true });
   const foreign = replacesForeign(out, isArkitectScene);
   // A scene someone added to since it was built: name what this build drops,
-  // and keep the backup that holds it out of retention (#376).
+  // and keep the backup that holds it out of retention (#376). An element
+  // restyled or moved there is named the same way (#403).
   let dropped = [];
+  let changed = [];
   if (existsSync(out)) {
-    try { dropped = droppedElements(readFileSync(out, 'utf8'), scene); } catch { /* not a scene: it drops nothing it can name */ }
+    try {
+      const old = readFileSync(out, 'utf8');
+      dropped = droppedElements(old, scene);
+      changed = changedElements(old);
+    } catch { /* not a scene: it drops nothing it can name */ }
   }
-  const backup = backupExisting(out, { kept: dropped.length > 0 });
+  const backup = backupExisting(out, { kept: dropped.length + changed.length > 0 });
   writeScene(out, scene);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
-  else if (dropped.length) report.notes.unshift(droppedNote(out, backup, dropped));
+  else report.notes.unshift(...(dropped.length ? [droppedNote(out, backup, dropped)] : []), ...(changed.length ? [changedNote(out, backup, changed)] : []));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

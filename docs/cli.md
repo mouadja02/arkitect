@@ -76,7 +76,11 @@ with the same style. It exits 1 when the file carries none, and says on stderr
 when an editor has saved the file since (its `agent` is no longer Arkitect's):
 a colour or position changed there is not in the spec. A file that carries the
 spec still counts as Arkitect's, so a rebuild names cells added since in
-`notes` and keeps their backup (#376, #388).
+`notes` and keeps their backup (#376, #388). Beside it, `arkitect-built` holds
+a short hash of each cell's style, label, ends and geometry as built, so a
+rebuild names a cell restyled, moved or relabelled since the same way; what a
+save only spells differently, such as attribute or style-key order, does not
+count (#403).
 
 ## Excalidraw
 
@@ -101,14 +105,20 @@ arkitect excalidraw apply --list
 ```
 
 Every build writes its spec under `customData.arkitectSpec` of the first
-element the first spec node drew, with `arkitectBuilt`, the element count and
-version sum the build wrote. The app keeps an element's `customData` through a
-save; a key at the top of the scene or in `appState` it does not know, it drops.
-`spec` prints the spec, and building it with the same `--seed` and style
-reproduces the scene byte for byte. It exits 1 when the scene carries none,
-the first node deleted included, and says on stderr when the scene no longer
-matches `arkitectBuilt`: the app moves an element's `version` whenever it
-changes one (#388).
+element the first spec node drew, and a copy on the title or legend, or else
+another node's element, so deleting the first node keeps it (#408). Each
+carries `arkitectBuilt`, the element count and version sum the build wrote.
+The app keeps an element's `customData` through a save; a key at the top of
+the scene or in `appState` it does not know, it drops. `spec` prints the
+spec, and building it with the same `--seed` and style reproduces the scene
+byte for byte. It exits 1 when the scene carries none, saying so when the
+scene is Arkitect's but both carriers were deleted, and says on stderr when
+the scene no longer matches `arkitectBuilt`: the app moves an element's
+`version` whenever it changes one (#388). Every element the build stamps
+also records `customData.arkitect.built`, a short hash of how it looked, so a
+rebuild names the spec entry of an element restyled, moved or retitled since.
+What the app recomputes when it opens a scene is left out: versions, indices,
+a text's size and place, an arrow's route (#403).
 
 ## Behaviour both engines share
 
@@ -129,9 +139,10 @@ changes one (#388).
 - **Backups.** A build copies an existing target to
   `<name>.backup-YYYYMMDD-HHMMSS.<ext>` first, then keeps the oldest backup and
   the newest five (`--keep-backups N`, `0` keeps all). When the target holds
-  shapes the build does not draw, added by hand since it was built, `notes`
-  names them and the backup is `<name>.backup-YYYYMMDD-HHMMSS-kept.<ext>`,
-  which retention never deletes. `arkitect <engine>
+  shapes the build does not draw, added by hand since it was built, or shapes
+  it drew that were restyled, moved or relabelled since, `notes` names them
+  and the backup is `<name>.backup-YYYYMMDD-HHMMSS-kept.<ext>`, which
+  retention never deletes (#376, #403). `arkitect <engine>
   backup <file>` does the same for any other edit. Add `*.backup-*` to your
   `.gitignore`, and `.$*.bkp`: the autosave Draw.io Desktop leaves beside a
   file it has open.

@@ -38,11 +38,13 @@ graders:
     pattern: '"icon": "[^"]*(?:[Ll]ambda|aws-architecture-icons:87|aws-serverless-icons-v2:0)"'
     weight: 3
 
+  # Six nodes in each of the two copies of the spec the scene carries (#408);
+  # a node added beside the worker makes fourteen.
   - type: regex
     name: changed-the-worker-not-added-one
     target: { source: file, path: ./docs/orders.excalidraw }
     pattern: '"kind": "'
-    match: count:6
+    match: count:12
 
   - type: regex
     name: nothing-else-lost

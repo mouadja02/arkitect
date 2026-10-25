@@ -36,7 +36,8 @@
       "index": "a0",
       "customData": {
         "arkitect": {
-          "boundary": "sources"
+          "boundary": "sources",
+          "built": "zXHk3G0T"
         }
       }
     },
@@ -80,7 +81,8 @@
       "index": "a1",
       "customData": {
         "arkitect": {
-          "boundary": "sources"
+          "boundary": "sources",
+          "built": "kXDVmKwj"
         }
       }
     },
@@ -117,7 +119,8 @@
       "index": "a2",
       "customData": {
         "arkitect": {
-          "boundary": "aws"
+          "boundary": "aws",
+          "built": "_Yk-QC4u"
         }
       }
     },
@@ -161,7 +164,8 @@
       "index": "a3",
       "customData": {
         "arkitect": {
-          "boundary": "aws"
+          "boundary": "aws",
+          "built": "9tg_lTyz"
         }
       }
     },
@@ -199,7 +203,8 @@
       "customData": {
         "arkitect": {
           "boundary": "edge",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "fXMhcpSS"
         }
       }
     },
@@ -244,7 +249,8 @@
       "customData": {
         "arkitect": {
           "boundary": "edge",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "_Qo18DxA"
         }
       }
     },
@@ -282,7 +288,8 @@
       "customData": {
         "arkitect": {
           "boundary": "ingest",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "qYeWe7-d"
         }
       }
     },
@@ -327,7 +334,8 @@
       "customData": {
         "arkitect": {
           "boundary": "ingest",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "qK3T7PVU"
         }
       }
     },
@@ -365,7 +373,8 @@
       "customData": {
         "arkitect": {
           "boundary": "backbone",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "L_uhlQYf"
         }
       }
     },
@@ -410,7 +419,8 @@
       "customData": {
         "arkitect": {
           "boundary": "backbone",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "kBfDSos4"
         }
       }
     },
@@ -448,7 +458,8 @@
       "customData": {
         "arkitect": {
           "boundary": "process",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "0fVTpD3l"
         }
       }
     },
@@ -493,7 +504,8 @@
       "customData": {
         "arkitect": {
           "boundary": "process",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "w730TLz4"
         }
       }
     },
@@ -531,7 +543,8 @@
       "customData": {
         "arkitect": {
           "boundary": "storage",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "bqtP25v-"
         }
       }
     },
@@ -576,7 +589,8 @@
       "customData": {
         "arkitect": {
           "boundary": "storage",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "dGzB-rw9"
         }
       }
     },
@@ -614,7 +628,8 @@
       "customData": {
         "arkitect": {
           "boundary": "serving",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "NYvYVVjN"
         }
       }
     },
@@ -659,7 +674,8 @@
       "customData": {
         "arkitect": {
           "boundary": "serving",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "YKeyHaIA"
         }
       }
     },
@@ -697,7 +713,8 @@
       "customData": {
         "arkitect": {
           "boundary": "errors",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "gbpV2_Ue"
         }
       }
     },
@@ -742,7 +759,8 @@
       "customData": {
         "arkitect": {
           "boundary": "errors",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "qKV04L2k"
         }
       }
     },
@@ -780,7 +798,8 @@
       "customData": {
         "arkitect": {
           "boundary": "ops",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "QfbK8wyL"
         }
       }
     },
@@ -825,7 +844,8 @@
       "customData": {
         "arkitect": {
           "boundary": "ops",
-          "parent": "aws"
+          "parent": "aws",
+          "built": "bVxaTJSC"
         }
       }
     },
@@ -866,7 +886,8 @@
       "customData": {
         "arkitect": {
           "node": "web",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "1CV1tdBL"
         },
         "arkitectSpec": {
           "_comment": "Second worked example: a large, detailed cloud architecture, where starter-architecture.spec.json is the small tour of every node and connector kind. Everything here is drawn from one bundled library (aws-architecture-icons), which is why the marks look like a set rather than a collection. Worth copying the shape of: column-per-phase regions sized from their contents, a caption naming the ROLE under an icon that already draws its own product name, a sublabel carrying the scaling or availability fact, an error lane along the bottom with the recovery loop closed back into the flow, a cross-cutting band that is labelled rather than wired to everything, assumptions in a note on the canvas, and fractional col/row values used to place things off the main grid. Note the handful of route:\"straight\" edges - each one is an elbow that would otherwise have been routed through another icon. The error lane's padLeft lines it up with the band below it, which also keeps its name clear of the straight edge into the dead-letter queue.",
@@ -1658,7 +1679,8 @@
       "customData": {
         "arkitect": {
           "node": "web",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "lz2H2VHr"
         }
       }
     },
@@ -1703,7 +1725,8 @@
       "customData": {
         "arkitect": {
           "node": "web",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "ITMTqy5R"
         }
       }
     },
@@ -1748,7 +1771,8 @@
       "customData": {
         "arkitect": {
           "node": "web",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "pRZLAUAJ"
         }
       }
     },
@@ -1790,7 +1814,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "uUrj8HnA"
         }
       }
     },
@@ -1837,7 +1862,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "BeHj1FwL"
         }
       }
     },
@@ -1878,7 +1904,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "XpqVozje"
         }
       }
     },
@@ -1999,7 +2026,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -2039,7 +2067,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "auSlTWPl"
         }
       }
     },
@@ -2132,7 +2161,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -2225,7 +2255,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -2282,7 +2313,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -2339,7 +2371,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -2396,7 +2429,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -2453,7 +2487,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -2570,7 +2605,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "HTGjkmOZ"
         }
       }
     },
@@ -2615,7 +2651,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "WPbUesXP"
         }
       }
     },
@@ -2660,7 +2697,8 @@
       "customData": {
         "arkitect": {
           "node": "oltp",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "-XqBgxI0"
         }
       }
     },
@@ -2702,7 +2740,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "J2stYFkW"
         }
       }
     },
@@ -2749,7 +2788,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "OLG0tlhY"
         }
       }
     },
@@ -2901,7 +2941,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "zzT63NTA"
         }
       }
     },
@@ -2960,7 +3001,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "JgVhqEQS"
         }
       }
     },
@@ -2999,7 +3041,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "QNHA-KhL"
         }
       }
     },
@@ -3043,7 +3086,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "AlP6cy0K"
         }
       }
     },
@@ -3105,7 +3149,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "zzT63NTA"
         }
       }
     },
@@ -3150,7 +3195,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "guvmmv9x"
         }
       }
     },
@@ -3195,7 +3241,8 @@
       "customData": {
         "arkitect": {
           "node": "fleet",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "AD4vP6X3"
         }
       }
     },
@@ -3236,7 +3283,8 @@
       "customData": {
         "arkitect": {
           "node": "saas",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "juJiy0x7"
         }
       }
     },
@@ -3277,7 +3325,8 @@
       "customData": {
         "arkitect": {
           "node": "saas",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "7UqrZL9b"
         }
       }
     },
@@ -3322,7 +3371,8 @@
       "customData": {
         "arkitect": {
           "node": "saas",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "2Jzta1hK"
         }
       }
     },
@@ -3367,7 +3417,8 @@
       "customData": {
         "arkitect": {
           "node": "saas",
-          "parent": "sources"
+          "parent": "sources",
+          "built": "uPER-tjS"
         }
       }
     },
@@ -3413,7 +3464,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "KXFB1DKN"
         }
       }
     },
@@ -3460,7 +3512,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "HuRT4fJ2"
         }
       }
     },
@@ -3501,7 +3554,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "6vVAitWv"
         }
       }
     },
@@ -3549,7 +3603,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "E0qT_T85"
         }
       }
     },
@@ -3641,7 +3696,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -3733,7 +3789,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -3809,7 +3866,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -3885,7 +3943,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -3989,7 +4048,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -4093,7 +4153,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -4138,7 +4199,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "54hus3OX"
         }
       }
     },
@@ -4183,7 +4245,8 @@
       "customData": {
         "arkitect": {
           "node": "r53",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "-Fr0Dctr"
         }
       }
     },
@@ -4229,7 +4292,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "lBpUN3SQ"
         }
       }
     },
@@ -4270,7 +4334,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "TBf_RE-r"
         }
       }
     },
@@ -4310,7 +4375,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "7PdnqvSg"
         }
       }
     },
@@ -4350,7 +4416,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "bedmKv_a"
         }
       }
     },
@@ -4390,7 +4457,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "DkcO60Oj"
         }
       }
     },
@@ -4430,7 +4498,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "qnREBCrn"
         }
       }
     },
@@ -4491,7 +4560,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4552,7 +4622,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4613,7 +4684,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4674,7 +4746,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4735,7 +4808,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4796,7 +4870,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4857,7 +4932,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4918,7 +4994,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -4979,7 +5056,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -5026,7 +5104,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "9wvRZiha"
         }
       }
     },
@@ -5071,7 +5150,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "2pf6qTEi"
         }
       }
     },
@@ -5116,7 +5196,8 @@
       "customData": {
         "arkitect": {
           "node": "cf",
-          "parent": "edge"
+          "parent": "edge",
+          "built": "zrIQtEq4"
         }
       }
     },
@@ -5162,7 +5243,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "6vzUkO6q"
         }
       }
     },
@@ -5201,7 +5283,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "O3EpaxfP"
         }
       }
     },
@@ -5255,7 +5338,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "sEy-L2zb"
         }
       }
     },
@@ -5309,7 +5393,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "sEy-L2zb"
         }
       }
     },
@@ -5375,7 +5460,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -5441,7 +5527,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -5495,7 +5582,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -5553,7 +5641,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -5611,7 +5700,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -5658,7 +5748,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "g0fKJJXx"
         }
       }
     },
@@ -5703,7 +5794,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "j2T3I_xt"
         }
       }
     },
@@ -5748,7 +5840,8 @@
       "customData": {
         "arkitect": {
           "node": "apigw",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "iARhhsXT"
         }
       }
     },
@@ -5794,7 +5887,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "U9jCTPbG"
         }
       }
     },
@@ -5841,7 +5935,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "dAYNMUxH"
         }
       }
     },
@@ -5882,7 +5977,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "kZC68cqC"
         }
       }
     },
@@ -6004,7 +6100,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -6045,7 +6142,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "PPhb-jOk"
         }
       }
     },
@@ -6138,7 +6236,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -6231,7 +6330,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -6286,7 +6386,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "wX1c6cxz"
         }
       }
     },
@@ -6341,7 +6442,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "wX1c6cxz"
         }
       }
     },
@@ -6396,7 +6498,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "wX1c6cxz"
         }
       }
     },
@@ -6451,7 +6554,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "wX1c6cxz"
         }
       }
     },
@@ -6496,7 +6600,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "SSgidrKp"
         }
       }
     },
@@ -6541,7 +6646,8 @@
       "customData": {
         "arkitect": {
           "node": "dms",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "rKk4v5_w"
         }
       }
     },
@@ -6587,7 +6693,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "4ymInt5G"
         }
       }
     },
@@ -6634,7 +6741,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "owebq1-2"
         }
       }
     },
@@ -6675,7 +6783,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "k8utyCJQ"
         }
       }
     },
@@ -6820,7 +6929,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -6862,7 +6972,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "qBKd3B3r"
         }
       }
     },
@@ -6904,7 +7015,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "GySnVshP"
         }
       }
     },
@@ -6946,7 +7058,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "QB-MqtNM"
         }
       }
     },
@@ -7003,7 +7116,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7062,7 +7176,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7121,7 +7236,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7198,7 +7314,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7275,7 +7392,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7368,7 +7486,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -7413,7 +7532,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "mKRNd5z5"
         }
       }
     },
@@ -7458,7 +7578,8 @@
       "customData": {
         "arkitect": {
           "node": "iot",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "Q-V8DTSE"
         }
       }
     },
@@ -7504,7 +7625,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "uJgcXjFh"
         }
       }
     },
@@ -7551,7 +7673,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "17QmVGnc"
         }
       }
     },
@@ -7590,7 +7713,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "rBgpETIW"
         }
       }
     },
@@ -7661,7 +7785,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "Q5Bu6L28"
         }
       }
     },
@@ -7732,7 +7857,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "Q5Bu6L28"
         }
       }
     },
@@ -7777,7 +7903,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "FXJDS9lV"
         }
       }
     },
@@ -7822,7 +7949,8 @@
       "customData": {
         "arkitect": {
           "node": "appflow",
-          "parent": "ingest"
+          "parent": "ingest",
+          "built": "0LogcVKH"
         }
       }
     },
@@ -7876,7 +8004,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "ElCGVl7P"
         }
       }
     },
@@ -7918,7 +8047,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "-TtqQMTj"
         }
       }
     },
@@ -7987,7 +8117,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8056,7 +8187,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8125,7 +8257,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8194,7 +8327,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8255,7 +8389,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8316,7 +8451,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -8358,7 +8494,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "WPLC6Y6J"
         }
       }
     },
@@ -8398,7 +8535,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "41ooYqt4"
         }
       }
     },
@@ -8438,7 +8576,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "agKvcUNR"
         }
       }
     },
@@ -8493,7 +8632,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8548,7 +8688,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8603,7 +8744,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8658,7 +8800,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8713,7 +8856,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8768,7 +8912,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8823,7 +8968,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -8870,7 +9016,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "sqjEAhlU"
         }
       }
     },
@@ -8915,7 +9062,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "v43FZZt0"
         }
       }
     },
@@ -8960,7 +9108,8 @@
       "customData": {
         "arkitect": {
           "node": "kds",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "wQ7bq6Xx"
         }
       }
     },
@@ -9010,7 +9159,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "r6eBLC0S"
         }
       }
     },
@@ -9049,7 +9199,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "XHu6nd6b"
         }
       }
     },
@@ -9124,7 +9275,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9164,7 +9316,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "fiLefYmO"
         }
       }
     },
@@ -9219,7 +9372,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9259,7 +9413,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "5JieQrgT"
         }
       }
     },
@@ -9314,7 +9469,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9354,7 +9510,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "RB6sSf5J"
         }
       }
     },
@@ -9394,7 +9551,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "L2QDgy1u"
         }
       }
     },
@@ -9453,7 +9611,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9512,7 +9671,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9571,7 +9731,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9630,7 +9791,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -9677,7 +9839,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "M_j1ATwv"
         }
       }
     },
@@ -9722,7 +9885,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "TaCjM6ic"
         }
       }
     },
@@ -9767,7 +9931,8 @@
       "customData": {
         "arkitect": {
           "node": "ebus",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "ZuuO4210"
         }
       }
     },
@@ -9817,7 +9982,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "6A9cTbfK"
         }
       }
     },
@@ -9861,7 +10027,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "yUhQLvBe"
         }
       }
     },
@@ -9903,7 +10070,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "7WhXeOMc"
         }
       }
     },
@@ -9945,7 +10113,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "K7LTr0Lm"
         }
       }
     },
@@ -10014,7 +10183,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10083,7 +10253,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10152,7 +10323,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10221,7 +10393,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10288,7 +10461,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10355,7 +10529,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10440,7 +10615,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10525,7 +10701,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -10572,7 +10749,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "H09Kigwg"
         }
       }
     },
@@ -10617,7 +10795,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "7sHVSScA"
         }
       }
     },
@@ -10662,7 +10841,8 @@
       "customData": {
         "arkitect": {
           "node": "sqs",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "MrdQJbg5"
         }
       }
     },
@@ -10708,7 +10888,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "yTehCC2r"
         }
       }
     },
@@ -10748,7 +10929,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "hNN7mwwg"
         }
       }
     },
@@ -10788,7 +10970,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "ldjlwwKR"
         }
       }
     },
@@ -10828,7 +11011,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "71uqq9hy"
         }
       }
     },
@@ -10868,7 +11052,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "1pOPhMf7"
         }
       }
     },
@@ -10908,7 +11093,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "PUF399YZ"
         }
       }
     },
@@ -10948,7 +11134,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "VyWqtaY4"
         }
       }
     },
@@ -11005,7 +11192,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11062,7 +11250,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11119,7 +11308,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11176,7 +11366,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11233,7 +11424,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11290,7 +11482,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11347,7 +11540,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11404,7 +11598,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11461,7 +11656,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -11508,7 +11704,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "2IK0LHZv"
         }
       }
     },
@@ -11553,7 +11750,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "IGu1zLMA"
         }
       }
     },
@@ -11598,7 +11796,8 @@
       "customData": {
         "arkitect": {
           "node": "sfn",
-          "parent": "backbone"
+          "parent": "backbone",
+          "built": "Bv71fpCF"
         }
       }
     },
@@ -11644,7 +11843,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "tiNyY55I"
         }
       }
     },
@@ -11686,7 +11886,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "H6TrIas4"
         }
       }
     },
@@ -11751,7 +11952,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -11816,7 +12018,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "vPYUlGly"
         }
       }
     },
@@ -11877,7 +12080,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -11938,7 +12142,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -11999,7 +12204,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12060,7 +12266,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12100,7 +12307,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "nREA9Oho"
         }
       }
     },
@@ -12163,7 +12371,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12218,7 +12427,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12273,7 +12483,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12328,7 +12539,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12383,7 +12595,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12430,7 +12643,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "sOOMkPy0"
         }
       }
     },
@@ -12475,7 +12689,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "U_aSMJKQ"
         }
       }
     },
@@ -12520,7 +12735,8 @@
       "customData": {
         "arkitect": {
           "node": "firehose",
-          "parent": "process"
+          "parent": "process",
+          "built": "zA10Z1k3"
         }
       }
     },
@@ -12566,7 +12782,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "Mtz_KxVp"
         }
       }
     },
@@ -12613,7 +12830,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "Z53CCBPG"
         }
       }
     },
@@ -12654,7 +12872,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "FowUP6_l"
         }
       }
     },
@@ -12837,7 +13056,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -12880,7 +13100,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "oQ0_pGWP"
         }
       }
     },
@@ -12957,7 +13178,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "I79gYXBH"
         }
       }
     },
@@ -13034,7 +13256,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "I79gYXBH"
         }
       }
     },
@@ -13111,7 +13334,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "I79gYXBH"
         }
       }
     },
@@ -13156,7 +13380,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "JjC3Eqs1"
         }
       }
     },
@@ -13201,7 +13426,8 @@
       "customData": {
         "arkitect": {
           "node": "flink",
-          "parent": "process"
+          "parent": "process",
+          "built": "hE5igr_w"
         }
       }
     },
@@ -13247,7 +13473,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "X2Aui3Wn"
         }
       }
     },
@@ -13287,7 +13514,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "oc-LZI2E"
         }
       }
     },
@@ -13354,7 +13582,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -13437,7 +13666,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -13484,7 +13714,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "fL_tcb8y"
         }
       }
     },
@@ -13529,7 +13760,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "yAsjvv6s"
         }
       }
     },
@@ -13574,7 +13806,8 @@
       "customData": {
         "arkitect": {
           "node": "lam",
-          "parent": "process"
+          "parent": "process",
+          "built": "WKhA7ZsM"
         }
       }
     },
@@ -13624,7 +13857,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "LK9crIjt"
         }
       }
     },
@@ -13671,7 +13905,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "P0cXuhIB"
         }
       }
     },
@@ -13713,7 +13948,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "A3FsF_Z1"
         }
       }
     },
@@ -13772,7 +14008,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -13831,7 +14068,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -13886,7 +14124,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -13959,7 +14198,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -14020,7 +14260,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -14060,7 +14301,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "DCeON5uc"
         }
       }
     },
@@ -14100,7 +14342,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "zey1jKVR"
         }
       }
     },
@@ -14140,7 +14383,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "K9geGU0y"
         }
       }
     },
@@ -14214,7 +14458,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -14259,7 +14504,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "W2ZGi1Mc"
         }
       }
     },
@@ -14304,7 +14550,8 @@
       "customData": {
         "arkitect": {
           "node": "glue",
-          "parent": "process"
+          "parent": "process",
+          "built": "M8c52LYU"
         }
       }
     },
@@ -14354,7 +14601,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "66vveKTF"
         }
       }
     },
@@ -14395,7 +14643,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "NY11etmR"
         }
       }
     },
@@ -14436,7 +14685,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "corpFvD8"
         }
       }
     },
@@ -14512,7 +14762,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -14553,7 +14804,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "mojvF8KK"
         }
       }
     },
@@ -14625,7 +14877,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "_FqacsRF"
         }
       }
     },
@@ -14672,7 +14925,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "4ZJvq7ld"
         }
       }
     },
@@ -14717,7 +14971,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "kEMkXuha"
         }
       }
     },
@@ -14762,7 +15017,8 @@
       "customData": {
         "arkitect": {
           "node": "raw",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "YYvrGcuN"
         }
       }
     },
@@ -14816,7 +15072,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "OvWOx9Nx"
         }
       }
     },
@@ -14857,7 +15114,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "xFUyKhjA"
         }
       }
     },
@@ -14898,7 +15156,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "qnKWjbhE"
         }
       }
     },
@@ -14974,7 +15233,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -15015,7 +15275,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "RXxD9gKE"
         }
       }
     },
@@ -15087,7 +15348,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "_FqacsRF"
         }
       }
     },
@@ -15134,7 +15396,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "4ZJvq7ld"
         }
       }
     },
@@ -15179,7 +15442,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "bcqiOTHC"
         }
       }
     },
@@ -15224,7 +15488,8 @@
       "customData": {
         "arkitect": {
           "node": "curated",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "cGCthCFn"
         }
       }
     },
@@ -15274,7 +15539,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "CsIP0mij"
         }
       }
     },
@@ -15315,7 +15581,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "34Oprm80"
         }
       }
     },
@@ -15356,7 +15623,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "MukGV3g4"
         }
       }
     },
@@ -15432,7 +15700,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -15473,7 +15742,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "fDaWKYoe"
         }
       }
     },
@@ -15545,7 +15815,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "_FqacsRF"
         }
       }
     },
@@ -15592,7 +15863,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "4ZJvq7ld"
         }
       }
     },
@@ -15637,7 +15909,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "U0585OQu"
         }
       }
     },
@@ -15682,7 +15955,8 @@
       "customData": {
         "arkitect": {
           "node": "gold",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "dkvmoOM3"
         }
       }
     },
@@ -15732,7 +16006,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "jEi49-Ns"
         }
       }
     },
@@ -15771,7 +16046,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "MCI6_nyn"
         }
       }
     },
@@ -15850,7 +16126,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -15955,7 +16232,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16012,7 +16290,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16109,7 +16388,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16166,7 +16446,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16247,7 +16528,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16328,7 +16610,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16409,7 +16692,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16502,7 +16786,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16563,7 +16848,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16630,7 +16916,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16697,7 +16984,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16764,7 +17052,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -16811,7 +17100,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "9aQBjmy4"
         }
       }
     },
@@ -16856,7 +17146,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "OIxOD7Xs"
         }
       }
     },
@@ -16901,7 +17192,8 @@
       "customData": {
         "arkitect": {
           "node": "ddb",
-          "parent": "storage"
+          "parent": "storage",
+          "built": "9HzDjszf"
         }
       }
     },
@@ -16947,7 +17239,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "d3uQGEU4"
         }
       }
     },
@@ -16994,7 +17287,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "0eyzw3IT"
         }
       }
     },
@@ -17035,7 +17329,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "AAUK_Ejt"
         }
       }
     },
@@ -17157,7 +17452,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -17198,7 +17494,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "37eu0130"
         }
       }
     },
@@ -17238,7 +17535,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "yHB-emYQ"
         }
       }
     },
@@ -17278,7 +17576,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "BQ4SzQbM"
         }
       }
     },
@@ -17318,7 +17617,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "jNHXvaB9"
         }
       }
     },
@@ -17358,7 +17658,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "IjKUy3qt"
         }
       }
     },
@@ -17415,7 +17716,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -17472,7 +17774,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -17529,7 +17832,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -17574,7 +17878,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "bZogCA0s"
         }
       }
     },
@@ -17619,7 +17924,8 @@
       "customData": {
         "arkitect": {
           "node": "rs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "DdmYjPr9"
         }
       }
     },
@@ -17665,7 +17971,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "i3oQAMWp"
         }
       }
     },
@@ -17712,7 +18019,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "ffNWbloW"
         }
       }
     },
@@ -17754,7 +18062,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OG_i0cOn"
         }
       }
     },
@@ -17795,7 +18104,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "dWwO1HvI"
         }
       }
     },
@@ -17836,7 +18146,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "SJGZQ5a3"
         }
       }
     },
@@ -17906,7 +18217,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -17948,7 +18260,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "HzP7DmsE"
         }
       }
     },
@@ -18025,7 +18338,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -18067,7 +18381,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "VNKdArAi"
         }
       }
     },
@@ -18140,7 +18455,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "LIlluQFU"
         }
       }
     },
@@ -18185,7 +18501,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "NBTp36zD"
         }
       }
     },
@@ -18230,7 +18547,8 @@
       "customData": {
         "arkitect": {
           "node": "athena",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "iERGTff8"
         }
       }
     },
@@ -18276,7 +18594,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "AEDURYPe"
         }
       }
     },
@@ -18315,7 +18634,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "HCOtyeUh"
         }
       }
     },
@@ -18363,7 +18683,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "bzlfDuzh"
         }
       }
     },
@@ -18407,7 +18728,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "YogZGkXz"
         }
       }
     },
@@ -18451,7 +18773,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "xoDPO1Lu"
         }
       }
     },
@@ -18505,7 +18828,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "3VLZZf1a"
         }
       }
     },
@@ -18559,7 +18883,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "3VLZZf1a"
         }
       }
     },
@@ -18613,7 +18938,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "3VLZZf1a"
         }
       }
     },
@@ -18707,7 +19033,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "AQu-Zh-n"
         }
       }
     },
@@ -18801,7 +19128,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "AQu-Zh-n"
         }
       }
     },
@@ -18859,7 +19187,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -18917,7 +19246,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -18964,7 +19294,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GuXxeLCr"
         }
       }
     },
@@ -19009,7 +19340,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "nE0NDkvJ"
         }
       }
     },
@@ -19054,7 +19386,8 @@
       "customData": {
         "arkitect": {
           "node": "appsync",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "E22TrQkb"
         }
       }
     },
@@ -19096,7 +19429,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "CW_s-OGk"
         }
       }
     },
@@ -19143,7 +19477,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "PlaQxfOA"
         }
       }
     },
@@ -19185,7 +19520,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "Tob58HFf"
         }
       }
     },
@@ -19226,7 +19562,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "xmTOOI6-"
         }
       }
     },
@@ -19267,7 +19604,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "8uxs0Esm"
         }
       }
     },
@@ -19337,7 +19675,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -19378,7 +19717,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "w_BH1e7a"
         }
       }
     },
@@ -19442,7 +19782,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -19506,7 +19847,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -19570,7 +19912,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -19634,7 +19977,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -19698,7 +20042,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -19743,7 +20088,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "pf84DI9P"
         }
       }
     },
@@ -19788,7 +20134,8 @@
       "customData": {
         "arkitect": {
           "node": "os",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "621bI32j"
         }
       }
     },
@@ -19830,7 +20177,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "1k8VL-vZ"
         }
       }
     },
@@ -19877,7 +20225,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "tMipLA87"
         }
       }
     },
@@ -19918,7 +20267,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "1bbpoaQ7"
         }
       }
     },
@@ -19977,7 +20327,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -20040,7 +20391,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -20080,7 +20432,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "ZdpmC7Ns"
         }
       }
     },
@@ -20120,7 +20473,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "Sp-9mhp_"
         }
       }
     },
@@ -20160,7 +20514,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "wtro8J9V"
         }
       }
     },
@@ -20200,7 +20555,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "H3aPpezq"
         }
       }
     },
@@ -20255,7 +20611,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -20310,7 +20667,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -20365,7 +20723,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -20410,7 +20769,8 @@
       "customData": {
         "arkitect": {
           "node": "qs",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "WGOac97I"
         }
       }
     },
@@ -20452,7 +20812,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "fsUwEpk0"
         }
       }
     },
@@ -20494,7 +20855,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "rzwDDF72"
         }
       }
     },
@@ -20617,7 +20979,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20676,7 +21039,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20739,7 +21103,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20794,7 +21159,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20853,7 +21219,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20916,7 +21283,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -20975,7 +21343,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21030,7 +21399,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21085,7 +21455,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21140,7 +21511,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21195,7 +21567,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21250,7 +21623,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21305,7 +21679,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21345,7 +21720,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "bKl1L48Y"
         }
       }
     },
@@ -21385,7 +21761,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "yoK4sB3i"
         }
       }
     },
@@ -21425,7 +21802,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "flT5wXse"
         }
       }
     },
@@ -21465,7 +21843,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "BHXgaKlp"
         }
       }
     },
@@ -21520,7 +21899,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "K9L3xqps"
         }
       }
     },
@@ -21568,7 +21948,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "vmaJEsLm"
         }
       }
     },
@@ -21613,7 +21994,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "CRBr3yiF"
         }
       }
     },
@@ -21658,7 +22040,8 @@
       "customData": {
         "arkitect": {
           "node": "sm",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "-fMnM74L"
         }
       }
     },
@@ -21699,7 +22082,8 @@
       "customData": {
         "arkitect": {
           "node": "apps",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "tBZ7l_CT"
         }
       }
     },
@@ -21740,7 +22124,8 @@
       "customData": {
         "arkitect": {
           "node": "apps",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "ZI0R0PwL"
         }
       }
     },
@@ -21785,7 +22170,8 @@
       "customData": {
         "arkitect": {
           "node": "apps",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "xjqo4LlH"
         }
       }
     },
@@ -21830,7 +22216,8 @@
       "customData": {
         "arkitect": {
           "node": "apps",
-          "parent": "serving"
+          "parent": "serving",
+          "built": "iZw9gZON"
         }
       }
     },
@@ -21871,7 +22258,8 @@
       "index": "b5F",
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "F8MwFLA4"
         }
       }
     },
@@ -21908,7 +22296,8 @@
       "locked": false,
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "pZ3GNWy3"
         }
       }
     },
@@ -21955,7 +22344,8 @@
       "lineHeight": 1.25,
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "QNHL8rhY"
         }
       }
     },
@@ -21994,7 +22384,8 @@
       "locked": false,
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "-ptwCGmz"
         }
       }
     },
@@ -22049,7 +22440,8 @@
       ],
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22104,7 +22496,8 @@
       ],
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22171,7 +22564,8 @@
       ],
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22211,7 +22605,8 @@
       "locked": false,
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "SvOwEfs_"
         }
       }
     },
@@ -22255,7 +22650,8 @@
       "index": "b5N",
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "yJezSkJc"
         }
       }
     },
@@ -22299,7 +22695,8 @@
       "index": "b5O",
       "customData": {
         "arkitect": {
-          "node": "dr"
+          "node": "dr",
+          "built": "3N74st8W"
         }
       }
     },
@@ -22345,7 +22742,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "vDrXCWSO"
         }
       }
     },
@@ -22389,7 +22787,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "RqpzLBHk"
         }
       }
     },
@@ -22431,7 +22830,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "4GxptfPr"
         }
       }
     },
@@ -22473,7 +22873,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "XEzyiIt6"
         }
       }
     },
@@ -22542,7 +22943,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22611,7 +23013,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22680,7 +23083,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22749,7 +23153,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22816,7 +23221,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22883,7 +23289,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -22968,7 +23375,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -23053,7 +23461,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -23100,7 +23509,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "H09Kigwg"
         }
       }
     },
@@ -23145,7 +23555,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "BJoKqiRo"
         }
       }
     },
@@ -23190,7 +23601,8 @@
       "customData": {
         "arkitect": {
           "node": "dlq",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "X7GFbzxB"
         }
       }
     },
@@ -23240,7 +23652,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "GE_TPjWj"
         }
       }
     },
@@ -23280,7 +23693,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "DoUSB_Bh"
         }
       }
     },
@@ -23347,7 +23761,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -23430,7 +23845,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -23477,7 +23893,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "fL_tcb8y"
         }
       }
     },
@@ -23522,7 +23939,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "R94fzVne"
         }
       }
     },
@@ -23567,7 +23985,8 @@
       "customData": {
         "arkitect": {
           "node": "errh",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "uB3oYl1K"
         }
       }
     },
@@ -23617,7 +24036,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "3J7br_5z"
         }
       }
     },
@@ -23658,7 +24078,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "o94BnKwq"
         }
       }
     },
@@ -23699,7 +24120,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "d7HMb6aQ"
         }
       }
     },
@@ -23775,7 +24197,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -23816,7 +24239,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "7oajls5-"
         }
       }
     },
@@ -23888,7 +24312,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "_FqacsRF"
         }
       }
     },
@@ -23935,7 +24360,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "4ZJvq7ld"
         }
       }
     },
@@ -23980,7 +24406,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "2tRxyD3J"
         }
       }
     },
@@ -24025,7 +24452,8 @@
       "customData": {
         "arkitect": {
           "node": "quar",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "i2Fje4ds"
         }
       }
     },
@@ -24075,7 +24503,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "NbC4i56y"
         }
       }
     },
@@ -24118,7 +24547,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "Z2dNjR7w"
         }
       }
     },
@@ -24160,7 +24590,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "GF-w3yHo"
         }
       }
     },
@@ -24202,7 +24633,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "EDugLsl-"
         }
       }
     },
@@ -24244,7 +24676,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "LpCTK_0j"
         }
       }
     },
@@ -24286,7 +24719,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "4BB4vrWF"
         }
       }
     },
@@ -24343,7 +24777,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24400,7 +24835,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24457,7 +24893,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24514,7 +24951,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24556,7 +24994,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "RDNWouym"
         }
       }
     },
@@ -24627,7 +25066,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24684,7 +25124,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24761,7 +25202,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24838,7 +25280,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -24885,7 +25328,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "zTeS9Rp-"
         }
       }
     },
@@ -24930,7 +25374,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "OoyXTP_H"
         }
       }
     },
@@ -24975,7 +25420,8 @@
       "customData": {
         "arkitect": {
           "node": "alert",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "WjQOLD7Z"
         }
       }
     },
@@ -25016,7 +25462,8 @@
       "customData": {
         "arkitect": {
           "node": "oncall",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "eq04hHFw"
         }
       }
     },
@@ -25057,7 +25504,8 @@
       "customData": {
         "arkitect": {
           "node": "oncall",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "C-6gErr9"
         }
       }
     },
@@ -25102,7 +25550,8 @@
       "customData": {
         "arkitect": {
           "node": "oncall",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "54p6JQaF"
         }
       }
     },
@@ -25147,7 +25596,8 @@
       "customData": {
         "arkitect": {
           "node": "oncall",
-          "parent": "errors"
+          "parent": "errors",
+          "built": "o3CpNdMi"
         }
       }
     },
@@ -25184,7 +25634,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "lk0AfUyS"
         }
       }
     },
@@ -25231,7 +25682,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "8b0FbsAd"
         }
       }
     },
@@ -25271,7 +25723,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "MPx-5zdx"
         }
       }
     },
@@ -25312,7 +25765,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "XYrsVCcg"
         }
       }
     },
@@ -25390,7 +25844,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -25431,7 +25886,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "gVgG2mQz"
         }
       }
     },
@@ -25489,7 +25945,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "GGw9FUqS"
         }
       }
     },
@@ -25544,7 +26001,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25599,7 +26057,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25654,7 +26113,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25709,7 +26169,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25764,7 +26225,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25819,7 +26281,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25874,7 +26337,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -25914,7 +26378,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "4GOE98OM"
         }
       }
     },
@@ -25959,7 +26424,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "_SDfn4Ro"
         }
       }
     },
@@ -26004,7 +26470,8 @@
       "customData": {
         "arkitect": {
           "node": "iam",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "0VksC3am"
         }
       }
     },
@@ -26041,7 +26508,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "FY6YVL0W"
         }
       }
     },
@@ -26088,7 +26556,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "OV-cRn-l"
         }
       }
     },
@@ -26127,7 +26596,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "PZWFJ45K"
         }
       }
     },
@@ -26168,7 +26638,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "r6tt_A9J"
         }
       }
     },
@@ -26270,7 +26741,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -26376,7 +26848,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26438,7 +26911,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26478,7 +26952,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "EKnR7kuq"
         }
       }
     },
@@ -26518,7 +26993,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "f8LBQF6o"
         }
       }
     },
@@ -26581,7 +27057,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26636,7 +27113,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26691,7 +27169,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26746,7 +27225,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -26791,7 +27271,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "BYiwEKSV"
         }
       }
     },
@@ -26836,7 +27317,8 @@
       "customData": {
         "arkitect": {
           "node": "kms",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "AKMxYIDp"
         }
       }
     },
@@ -26873,7 +27355,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "ULAsGYpk"
         }
       }
     },
@@ -26920,7 +27403,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "RMd5N8vK"
         }
       }
     },
@@ -26959,7 +27443,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "BDqHESf9"
         }
       }
     },
@@ -27112,7 +27597,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27169,7 +27655,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27226,7 +27713,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27283,7 +27771,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27340,7 +27829,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27397,7 +27887,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27454,7 +27945,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27511,7 +28003,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27568,7 +28061,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27613,7 +28107,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "8c4bMbmD"
         }
       }
     },
@@ -27658,7 +28153,8 @@
       "customData": {
         "arkitect": {
           "node": "trail",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "M-v5olIc"
         }
       }
     },
@@ -27695,7 +28191,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "VEOdC6ST"
         }
       }
     },
@@ -27743,7 +28240,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "Uu6-fc1j"
         }
       }
     },
@@ -27784,7 +28282,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "G8GzrfhS"
         }
       }
     },
@@ -27937,7 +28436,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -27977,7 +28477,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "UZ7rJFmZ"
         }
       }
     },
@@ -28032,7 +28533,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -28087,7 +28589,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -28142,7 +28645,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -28197,7 +28701,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "46wFrU1C"
         }
       }
     },
@@ -28242,7 +28747,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "p1cNYuie"
         }
       }
     },
@@ -28287,7 +28793,8 @@
       "customData": {
         "arkitect": {
           "node": "xray",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "f6Yamx5r"
         }
       }
     },
@@ -28329,7 +28836,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "gDtKtHnw"
         }
       }
     },
@@ -28370,7 +28878,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "AEvJ2ysx"
         }
       }
     },
@@ -28410,7 +28919,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "0r6aKYRw"
         }
       }
     },
@@ -28450,7 +28960,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "PVgDwknh"
         }
       }
     },
@@ -28519,7 +29030,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -28648,7 +29160,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "OWXMkW4o"
         }
       }
     },
@@ -28695,7 +29208,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "eklfTyxV"
         }
       }
     },
@@ -28740,7 +29254,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "x_Ym4zvI"
         }
       }
     },
@@ -28785,7 +29300,8 @@
       "customData": {
         "arkitect": {
           "node": "cw",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "JrV1HU0x"
         }
       }
     },
@@ -28822,7 +29338,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "8pTTMsrL"
         }
       }
     },
@@ -28869,7 +29386,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "gInMV5X4"
         }
       }
     },
@@ -28911,7 +29429,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "q8_keq4F"
         }
       }
     },
@@ -28982,7 +29501,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "xgpGeIxK"
         }
       }
     },
@@ -29053,7 +29573,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "kDRfh5_g"
         }
       }
     },
@@ -29110,7 +29631,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "vv63ywh-"
         }
       }
     },
@@ -29167,7 +29689,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "vv63ywh-"
         }
       }
     },
@@ -29224,7 +29747,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "vv63ywh-"
         }
       }
     },
@@ -29280,7 +29804,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "vv63ywh-"
         }
       }
     },
@@ -29336,7 +29861,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "vv63ywh-"
         }
       }
     },
@@ -29381,7 +29907,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "MiiBz0BH"
         }
       }
     },
@@ -29426,7 +29953,8 @@
       "customData": {
         "arkitect": {
           "node": "catalog",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "3c_dAgJ8"
         }
       }
     },
@@ -29463,7 +29991,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "v984Pl6W"
         }
       }
     },
@@ -29510,7 +30039,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "mOSW1DdS"
         }
       }
     },
@@ -29552,7 +30082,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "4YW0AOBI"
         }
       }
     },
@@ -29613,7 +30144,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -29674,7 +30206,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -29731,7 +30264,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -29806,7 +30340,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -29869,7 +30404,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -29911,7 +30447,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "ZJ8oKOQH"
         }
       }
     },
@@ -29953,7 +30490,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "1RnYMWLN"
         }
       }
     },
@@ -29995,7 +30533,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "WRbWltFz"
         }
       }
     },
@@ -30071,7 +30610,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -30188,7 +30728,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -30269,7 +30810,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -30346,7 +30888,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -30423,7 +30966,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "aQb5EVpG"
         }
       }
     },
@@ -30468,7 +31012,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "yqn-qBCE"
         }
       }
     },
@@ -30513,7 +31058,8 @@
       "customData": {
         "arkitect": {
           "node": "lakef",
-          "parent": "ops"
+          "parent": "ops",
+          "built": "arxMeDsl"
         }
       }
     },
@@ -30553,7 +31099,8 @@
       "index": "b7o",
       "customData": {
         "arkitect": {
-          "node": "note"
+          "node": "note",
+          "built": "5EpKUkRf"
         }
       }
     },
@@ -30595,7 +31142,8 @@
       "index": "b7p",
       "customData": {
         "arkitect": {
-          "node": "note"
+          "node": "note",
+          "built": "HXHogHNl"
         }
       }
     },
@@ -30663,7 +31211,8 @@
       "index": "b7q",
       "customData": {
         "arkitect": {
-          "edge": "web->r53"
+          "edge": "web->r53",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -30705,7 +31254,8 @@
       "index": "b7r",
       "customData": {
         "arkitect": {
-          "edge": "web->r53"
+          "edge": "web->r53",
+          "built": "8PxgdCye"
         }
       }
     },
@@ -30773,7 +31323,8 @@
       "index": "b7s",
       "customData": {
         "arkitect": {
-          "edge": "r53->cf"
+          "edge": "r53->cf",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -30841,7 +31392,8 @@
       "index": "b7t",
       "customData": {
         "arkitect": {
-          "edge": "cf->apigw"
+          "edge": "cf->apigw",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -30883,7 +31435,8 @@
       "index": "b7u",
       "customData": {
         "arkitect": {
-          "edge": "cf->apigw"
+          "edge": "cf->apigw",
+          "built": "tqqrygJS"
         }
       }
     },
@@ -30951,7 +31504,8 @@
       "index": "b7v",
       "customData": {
         "arkitect": {
-          "edge": "oltp->dms"
+          "edge": "oltp->dms",
+          "built": "mT-nb266"
         }
       }
     },
@@ -30993,7 +31547,8 @@
       "index": "b7w",
       "customData": {
         "arkitect": {
-          "edge": "oltp->dms"
+          "edge": "oltp->dms",
+          "built": "y369b3HX"
         }
       }
     },
@@ -31069,7 +31624,8 @@
       "index": "b7x",
       "customData": {
         "arkitect": {
-          "edge": "fleet->iot"
+          "edge": "fleet->iot",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -31111,7 +31667,8 @@
       "index": "b7y",
       "customData": {
         "arkitect": {
-          "edge": "fleet->iot"
+          "edge": "fleet->iot",
+          "built": "g2TD-aXh"
         }
       }
     },
@@ -31179,7 +31736,8 @@
       "index": "b7z",
       "customData": {
         "arkitect": {
-          "edge": "saas->appflow"
+          "edge": "saas->appflow",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31221,7 +31779,8 @@
       "index": "b80",
       "customData": {
         "arkitect": {
-          "edge": "saas->appflow"
+          "edge": "saas->appflow",
+          "built": "wsgrK6TF"
         }
       }
     },
@@ -31289,7 +31848,8 @@
       "index": "b81",
       "customData": {
         "arkitect": {
-          "edge": "apigw->kds"
+          "edge": "apigw->kds",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -31331,7 +31891,8 @@
       "index": "b82",
       "customData": {
         "arkitect": {
-          "edge": "apigw->kds"
+          "edge": "apigw->kds",
+          "built": "S0glIbbn"
         }
       }
     },
@@ -31407,7 +31968,8 @@
       "index": "b83",
       "customData": {
         "arkitect": {
-          "edge": "dms->kds"
+          "edge": "dms->kds",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31449,7 +32011,8 @@
       "index": "b84",
       "customData": {
         "arkitect": {
-          "edge": "dms->kds"
+          "edge": "dms->kds",
+          "built": "LaRqAXQU"
         }
       }
     },
@@ -31506,7 +32069,8 @@
       "index": "b85",
       "customData": {
         "arkitect": {
-          "edge": "iot->ebus"
+          "edge": "iot->ebus",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31548,7 +32112,8 @@
       "index": "b86",
       "customData": {
         "arkitect": {
-          "edge": "iot->ebus"
+          "edge": "iot->ebus",
+          "built": "ew9trCZ8"
         }
       }
     },
@@ -31605,7 +32170,8 @@
       "index": "b87",
       "customData": {
         "arkitect": {
-          "edge": "appflow->ebus"
+          "edge": "appflow->ebus",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31647,7 +32213,8 @@
       "index": "b88",
       "customData": {
         "arkitect": {
-          "edge": "appflow->ebus"
+          "edge": "appflow->ebus",
+          "built": "EklHcqEL"
         }
       }
     },
@@ -31715,7 +32282,8 @@
       "index": "b89",
       "customData": {
         "arkitect": {
-          "edge": "ebus->sqs"
+          "edge": "ebus->sqs",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -31757,7 +32325,8 @@
       "index": "b8A",
       "customData": {
         "arkitect": {
-          "edge": "ebus->sqs"
+          "edge": "ebus->sqs",
+          "built": "RvowW1YW"
         }
       }
     },
@@ -31825,7 +32394,8 @@
       "index": "b8B",
       "customData": {
         "arkitect": {
-          "edge": "kds->firehose"
+          "edge": "kds->firehose",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31867,7 +32437,8 @@
       "index": "b8C",
       "customData": {
         "arkitect": {
-          "edge": "kds->firehose"
+          "edge": "kds->firehose",
+          "built": "tmlctsV0"
         }
       }
     },
@@ -31943,7 +32514,8 @@
       "index": "b8D",
       "customData": {
         "arkitect": {
-          "edge": "kds->flink"
+          "edge": "kds->flink",
+          "built": "mT-nb266"
         }
       }
     },
@@ -31985,7 +32557,8 @@
       "index": "b8E",
       "customData": {
         "arkitect": {
-          "edge": "kds->flink"
+          "edge": "kds->flink",
+          "built": "XCVLyT21"
         }
       }
     },
@@ -32053,7 +32626,8 @@
       "index": "b8F",
       "customData": {
         "arkitect": {
-          "edge": "sqs->lam"
+          "edge": "sqs->lam",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -32095,7 +32669,8 @@
       "index": "b8G",
       "customData": {
         "arkitect": {
-          "edge": "sqs->lam"
+          "edge": "sqs->lam",
+          "built": "MlKm3xTI"
         }
       }
     },
@@ -32171,7 +32746,8 @@
       "index": "b8H",
       "customData": {
         "arkitect": {
-          "edge": "sfn->glue"
+          "edge": "sfn->glue",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -32213,7 +32789,8 @@
       "index": "b8I",
       "customData": {
         "arkitect": {
-          "edge": "sfn->glue"
+          "edge": "sfn->glue",
+          "built": "hTTXIjGC"
         }
       }
     },
@@ -32281,7 +32858,8 @@
       "index": "b8J",
       "customData": {
         "arkitect": {
-          "edge": "firehose->raw"
+          "edge": "firehose->raw",
+          "built": "mT-nb266"
         }
       }
     },
@@ -32323,7 +32901,8 @@
       "index": "b8K",
       "customData": {
         "arkitect": {
-          "edge": "firehose->raw"
+          "edge": "firehose->raw",
+          "built": "u1wQBCq4"
         }
       }
     },
@@ -32399,7 +32978,8 @@
       "index": "b8L",
       "customData": {
         "arkitect": {
-          "edge": "flink->curated"
+          "edge": "flink->curated",
+          "built": "mT-nb266"
         }
       }
     },
@@ -32475,7 +33055,8 @@
       "index": "b8M",
       "customData": {
         "arkitect": {
-          "edge": "lam->curated"
+          "edge": "lam->curated",
+          "built": "mT-nb266"
         }
       }
     },
@@ -32517,7 +33098,8 @@
       "index": "b8N",
       "customData": {
         "arkitect": {
-          "edge": "lam->curated"
+          "edge": "lam->curated",
+          "built": "tl4uAZ7w"
         }
       }
     },
@@ -32585,7 +33167,8 @@
       "index": "b8O",
       "customData": {
         "arkitect": {
-          "edge": "raw->curated"
+          "edge": "raw->curated",
+          "built": "mT-nb266"
         }
       }
     },
@@ -32627,7 +33210,8 @@
       "index": "b8P",
       "customData": {
         "arkitect": {
-          "edge": "raw->curated"
+          "edge": "raw->curated",
+          "built": "B22VsYiY"
         }
       }
     },
@@ -32684,7 +33268,8 @@
       "index": "b8Q",
       "customData": {
         "arkitect": {
-          "edge": "glue->gold"
+          "edge": "glue->gold",
+          "built": "mj2BWg3N"
         }
       }
     },
@@ -32726,7 +33311,8 @@
       "index": "b8R",
       "customData": {
         "arkitect": {
-          "edge": "glue->gold"
+          "edge": "glue->gold",
+          "built": "lXTMawwx"
         }
       }
     },
@@ -32794,7 +33380,8 @@
       "index": "b8S",
       "customData": {
         "arkitect": {
-          "edge": "glue->quar"
+          "edge": "glue->quar",
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -32836,7 +33423,8 @@
       "index": "b8T",
       "customData": {
         "arkitect": {
-          "edge": "glue->quar"
+          "edge": "glue->quar",
+          "built": "XzM5ppcy"
         }
       }
     },
@@ -32904,7 +33492,8 @@
       "index": "b8U",
       "customData": {
         "arkitect": {
-          "edge": "gold->ddb"
+          "edge": "gold->ddb",
+          "built": "mT-nb266"
         }
       }
     },
@@ -32946,7 +33535,8 @@
       "index": "b8V",
       "customData": {
         "arkitect": {
-          "edge": "gold->ddb"
+          "edge": "gold->ddb",
+          "built": "78hkXWrb"
         }
       }
     },
@@ -33022,7 +33612,8 @@
       "index": "b8W",
       "customData": {
         "arkitect": {
-          "edge": "curated->rs"
+          "edge": "curated->rs",
+          "built": "mT-nb266"
         }
       }
     },
@@ -33064,7 +33655,8 @@
       "index": "b8X",
       "customData": {
         "arkitect": {
-          "edge": "curated->rs"
+          "edge": "curated->rs",
+          "built": "dqgwsXIc"
         }
       }
     },
@@ -33121,7 +33713,8 @@
       "index": "b8Y",
       "customData": {
         "arkitect": {
-          "edge": "gold->athena"
+          "edge": "gold->athena",
+          "built": "mT-nb266"
         }
       }
     },
@@ -33163,7 +33756,8 @@
       "index": "b8Z",
       "customData": {
         "arkitect": {
-          "edge": "gold->athena"
+          "edge": "gold->athena",
+          "built": "4XgS4ZFa"
         }
       }
     },
@@ -33220,7 +33814,8 @@
       "index": "b8a",
       "customData": {
         "arkitect": {
-          "edge": "ddb->appsync"
+          "edge": "ddb->appsync",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -33262,7 +33857,8 @@
       "index": "b8b",
       "customData": {
         "arkitect": {
-          "edge": "ddb->appsync"
+          "edge": "ddb->appsync",
+          "built": "usDxFOn6"
         }
       }
     },
@@ -33330,7 +33926,8 @@
       "index": "b8c",
       "customData": {
         "arkitect": {
-          "edge": "ddb->os"
+          "edge": "ddb->os",
+          "built": "mT-nb266"
         }
       }
     },
@@ -33372,7 +33969,8 @@
       "index": "b8d",
       "customData": {
         "arkitect": {
-          "edge": "ddb->os"
+          "edge": "ddb->os",
+          "built": "J6vhvX4N"
         }
       }
     },
@@ -33440,7 +34038,8 @@
       "index": "b8e",
       "customData": {
         "arkitect": {
-          "edge": "rs->qs"
+          "edge": "rs->qs",
+          "built": "mT-nb266"
         }
       }
     },
@@ -33508,7 +34107,8 @@
       "index": "b8f",
       "customData": {
         "arkitect": {
-          "edge": "athena->sm"
+          "edge": "athena->sm",
+          "built": "mT-nb266"
         }
       }
     },
@@ -33550,7 +34150,8 @@
       "index": "b8g",
       "customData": {
         "arkitect": {
-          "edge": "athena->sm"
+          "edge": "athena->sm",
+          "built": "VgpkxGqB"
         }
       }
     },
@@ -33618,7 +34219,8 @@
       "index": "b8h",
       "customData": {
         "arkitect": {
-          "edge": "appsync->apps"
+          "edge": "appsync->apps",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -33660,7 +34262,8 @@
       "index": "b8i",
       "customData": {
         "arkitect": {
-          "edge": "appsync->apps"
+          "edge": "appsync->apps",
+          "built": "p7FRAr5s"
         }
       }
     },
@@ -33728,7 +34331,8 @@
       "index": "b8j",
       "customData": {
         "arkitect": {
-          "edge": "raw->dr"
+          "edge": "raw->dr",
+          "built": "JIl3pP81"
         }
       }
     },
@@ -33770,7 +34374,8 @@
       "index": "b8k",
       "customData": {
         "arkitect": {
-          "edge": "raw->dr"
+          "edge": "raw->dr",
+          "built": "QqgrH4So"
         }
       }
     },
@@ -33827,7 +34432,8 @@
       "index": "b8l",
       "customData": {
         "arkitect": {
-          "edge": "sqs->dlq"
+          "edge": "sqs->dlq",
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -33869,7 +34475,8 @@
       "index": "b8m",
       "customData": {
         "arkitect": {
-          "edge": "sqs->dlq"
+          "edge": "sqs->dlq",
+          "built": "Q4jnsKTa"
         }
       }
     },
@@ -33937,7 +34544,8 @@
       "index": "b8n",
       "customData": {
         "arkitect": {
-          "edge": "dlq->errh"
+          "edge": "dlq->errh",
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -33979,7 +34587,8 @@
       "index": "b8o",
       "customData": {
         "arkitect": {
-          "edge": "dlq->errh"
+          "edge": "dlq->errh",
+          "built": "cXiQNHTW"
         }
       }
     },
@@ -34047,7 +34656,8 @@
       "index": "b8p",
       "customData": {
         "arkitect": {
-          "edge": "errh->quar"
+          "edge": "errh->quar",
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -34089,7 +34699,8 @@
       "index": "b8q",
       "customData": {
         "arkitect": {
-          "edge": "errh->quar"
+          "edge": "errh->quar",
+          "built": "e7EijRFD"
         }
       }
     },
@@ -34157,7 +34768,8 @@
       "index": "b8r",
       "customData": {
         "arkitect": {
-          "edge": "quar->alert"
+          "edge": "quar->alert",
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -34199,7 +34811,8 @@
       "index": "b8s",
       "customData": {
         "arkitect": {
-          "edge": "quar->alert"
+          "edge": "quar->alert",
+          "built": "2Ovhggi1"
         }
       }
     },
@@ -34267,7 +34880,8 @@
       "index": "b8t",
       "customData": {
         "arkitect": {
-          "edge": "alert->oncall"
+          "edge": "alert->oncall",
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -34309,7 +34923,8 @@
       "index": "b8u",
       "customData": {
         "arkitect": {
-          "edge": "alert->oncall"
+          "edge": "alert->oncall",
+          "built": "rfW1m9Zl"
         }
       }
     },
@@ -34377,7 +34992,8 @@
       "index": "b8v",
       "customData": {
         "arkitect": {
-          "edge": "errh->sfn"
+          "edge": "errh->sfn",
+          "built": "JIl3pP81"
         }
       }
     },
@@ -34419,7 +35035,8 @@
       "index": "b8w",
       "customData": {
         "arkitect": {
-          "edge": "errh->sfn"
+          "edge": "errh->sfn",
+          "built": "8ytvrk7k"
         }
       }
     },
@@ -34487,7 +35104,8 @@
       "index": "b8x",
       "customData": {
         "arkitect": {
-          "edge": "cw->alert"
+          "edge": "cw->alert",
+          "built": "0WUuN0NT"
         }
       }
     },
@@ -34529,7 +35147,8 @@
       "index": "b8y",
       "customData": {
         "arkitect": {
-          "edge": "cw->alert"
+          "edge": "cw->alert",
+          "built": "k7mNve1z"
         }
       }
     },
@@ -34571,8 +35190,760 @@
       "index": "b8z",
       "customData": {
         "arkitect": {
-          "chrome": true
-        }
+          "chrome": true,
+          "built": "7WYEgUrU"
+        },
+        "arkitectSpec": {
+          "_comment": "Second worked example: a large, detailed cloud architecture, where starter-architecture.spec.json is the small tour of every node and connector kind. Everything here is drawn from one bundled library (aws-architecture-icons), which is why the marks look like a set rather than a collection. Worth copying the shape of: column-per-phase regions sized from their contents, a caption naming the ROLE under an icon that already draws its own product name, a sublabel carrying the scaling or availability fact, an error lane along the bottom with the recovery loop closed back into the flow, a cross-cutting band that is labelled rather than wired to everything, assumptions in a note on the canvas, and fractional col/row values used to place things off the main grid. Note the handful of route:\"straight\" edges - each one is an elbow that would otherwise have been routed through another icon. The error lane's padLeft lines it up with the band below it, which also keeps its name clear of the straight edge into the dead-letter queue.",
+          "title": "AWS data platform — decoupled, distributed, scalable, highly available",
+          "canvasBackground": "white",
+          "style": {
+            "roughness": 1,
+            "fontFamily": 1,
+            "strokeWidth": 2,
+            "rounded": true
+          },
+          "layout": {
+            "originX": 0,
+            "originY": 0,
+            "colPitch": 360,
+            "rowPitch": 270
+          },
+          "boundaries": [
+            {
+              "id": "sources",
+              "kind": "scope",
+              "label": "Source systems",
+              "color": "black"
+            },
+            {
+              "id": "aws",
+              "kind": "scope",
+              "label": "AWS Region eu-west-1 · 3 Availability Zones",
+              "color": "slate",
+              "fontSize": 28,
+              "padTop": 62
+            },
+            {
+              "id": "edge",
+              "kind": "scope",
+              "label": "Global edge",
+              "color": "blue",
+              "parent": "aws"
+            },
+            {
+              "id": "ingest",
+              "kind": "scope",
+              "label": "Ingestion",
+              "color": "sky",
+              "parent": "aws"
+            },
+            {
+              "id": "backbone",
+              "kind": "scope",
+              "label": "Decoupling",
+              "color": "violet",
+              "parent": "aws"
+            },
+            {
+              "id": "process",
+              "kind": "scope",
+              "label": "Processing",
+              "color": "teal",
+              "parent": "aws"
+            },
+            {
+              "id": "storage",
+              "kind": "scope",
+              "label": "Lakehouse",
+              "color": "cyan",
+              "parent": "aws"
+            },
+            {
+              "id": "serving",
+              "kind": "scope",
+              "label": "Serving & consumption",
+              "color": "green",
+              "parent": "aws"
+            },
+            {
+              "id": "errors",
+              "kind": "scope",
+              "label": "Error handling & recovery",
+              "color": "red",
+              "parent": "aws",
+              "padLeft": 401
+            },
+            {
+              "id": "ops",
+              "kind": "scope",
+              "label": "Cross-cutting — attached to every component above",
+              "color": "grey",
+              "parent": "aws"
+            }
+          ],
+          "nodes": [
+            {
+              "id": "web",
+              "kind": "box",
+              "label": "Web & mobile apps",
+              "sublabel": "clickstream · app events",
+              "col": -0.35,
+              "row": 0,
+              "width": 210,
+              "parent": "sources"
+            },
+            {
+              "id": "oltp",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:52",
+              "label": "Operational databases",
+              "sublabel": "Aurora Multi-AZ · prod acct",
+              "col": -0.35,
+              "row": 2,
+              "parent": "sources"
+            },
+            {
+              "id": "fleet",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:123",
+              "label": "Edge device fleet",
+              "sublabel": "10k devices · MQTT",
+              "col": -0.35,
+              "row": 3,
+              "parent": "sources"
+            },
+            {
+              "id": "saas",
+              "kind": "box",
+              "label": "SaaS & partner APIs",
+              "sublabel": "CRM · ads · billing",
+              "col": -0.35,
+              "row": 4,
+              "width": 210,
+              "parent": "sources"
+            },
+            {
+              "id": "r53",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:211",
+              "label": "Failover DNS",
+              "sublabel": "health checks · latency",
+              "col": 1,
+              "row": 0,
+              "parent": "edge"
+            },
+            {
+              "id": "cf",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:209",
+              "label": "Edge cache + WAF",
+              "sublabel": "TLS · geo · rate limits",
+              "col": 1,
+              "row": 1,
+              "parent": "edge"
+            },
+            {
+              "id": "apigw",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:233",
+              "label": "Ingest API",
+              "sublabel": "throttling · usage plans",
+              "col": 2,
+              "row": 1,
+              "parent": "ingest"
+            },
+            {
+              "id": "dms",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:59",
+              "label": "CDC replication",
+              "sublabel": "Multi-AZ instance",
+              "col": 2,
+              "row": 2,
+              "parent": "ingest"
+            },
+            {
+              "id": "iot",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:118",
+              "label": "Device gateway",
+              "sublabel": "rules engine · mTLS",
+              "col": 2,
+              "row": 3,
+              "parent": "ingest"
+            },
+            {
+              "id": "appflow",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:115",
+              "label": "SaaS connectors",
+              "sublabel": "scheduled pulls",
+              "col": 2,
+              "row": 4,
+              "parent": "ingest"
+            },
+            {
+              "id": "kds",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:6",
+              "label": "Event stream",
+              "sublabel": "on-demand · 7-day replay",
+              "col": 3,
+              "row": 1,
+              "parent": "backbone"
+            },
+            {
+              "id": "ebus",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:110",
+              "label": "Event router",
+              "sublabel": "rules · schema registry",
+              "col": 3,
+              "row": 2,
+              "parent": "backbone"
+            },
+            {
+              "id": "sqs",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:106",
+              "label": "Work queue",
+              "sublabel": "backpressure · 5 retries",
+              "col": 3,
+              "row": 3,
+              "parent": "backbone"
+            },
+            {
+              "id": "sfn",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:109",
+              "label": "Orchestration",
+              "sublabel": "retry · catch · timeout",
+              "col": 3,
+              "row": 4,
+              "parent": "backbone"
+            },
+            {
+              "id": "firehose",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:7",
+              "label": "Buffered delivery",
+              "sublabel": "60 s / 128 MB · retry",
+              "col": 4,
+              "row": 1,
+              "parent": "process"
+            },
+            {
+              "id": "flink",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:9",
+              "label": "Stream enrichment",
+              "sublabel": "windowed · exactly-once",
+              "col": 4,
+              "row": 2,
+              "parent": "process"
+            },
+            {
+              "id": "lam",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:87",
+              "label": "Event transforms",
+              "sublabel": "reserved concurrency",
+              "col": 4,
+              "row": 3,
+              "parent": "process"
+            },
+            {
+              "id": "glue",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:10",
+              "label": "Spark ETL + quality",
+              "sublabel": "autoscaling DPUs",
+              "col": 4,
+              "row": 4,
+              "parent": "process"
+            },
+            {
+              "id": "raw",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:74",
+              "label": "Raw / bronze",
+              "sublabel": "immutable · partitioned",
+              "col": 5,
+              "row": 1,
+              "parent": "storage"
+            },
+            {
+              "id": "curated",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:74",
+              "label": "Curated / silver",
+              "sublabel": "Iceberg · compacted",
+              "col": 5,
+              "row": 2,
+              "parent": "storage"
+            },
+            {
+              "id": "gold",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:74",
+              "label": "Analytics / gold",
+              "sublabel": "marts · aggregates",
+              "col": 5,
+              "row": 3,
+              "parent": "storage"
+            },
+            {
+              "id": "ddb",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:54",
+              "label": "Low-latency store",
+              "sublabel": "global tables · DAX",
+              "col": 5,
+              "row": 4,
+              "parent": "storage"
+            },
+            {
+              "id": "rs",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:15",
+              "label": "Cloud warehouse",
+              "sublabel": "RA3 · multi-AZ · autoscale",
+              "col": 6,
+              "row": 1,
+              "parent": "serving"
+            },
+            {
+              "id": "athena",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:23",
+              "label": "Ad-hoc SQL",
+              "sublabel": "serverless · federated",
+              "col": 6,
+              "row": 2,
+              "parent": "serving"
+            },
+            {
+              "id": "appsync",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:108",
+              "label": "GraphQL data API",
+              "sublabel": "per-tenant auth",
+              "col": 6,
+              "row": 3,
+              "parent": "serving"
+            },
+            {
+              "id": "os",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:14",
+              "label": "Search & log analytics",
+              "sublabel": "3 AZ · dedicated masters",
+              "col": 6,
+              "row": 4,
+              "parent": "serving"
+            },
+            {
+              "id": "qs",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:16",
+              "label": "Executive dashboards",
+              "col": 7,
+              "row": 1,
+              "parent": "serving"
+            },
+            {
+              "id": "sm",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:31",
+              "label": "ML training & inference",
+              "sublabel": "feature store",
+              "col": 7,
+              "row": 2,
+              "parent": "serving"
+            },
+            {
+              "id": "apps",
+              "kind": "box",
+              "label": "Internal & partner apps",
+              "sublabel": "least-privilege, per tenant",
+              "col": 7,
+              "row": 3,
+              "width": 230,
+              "parent": "serving"
+            },
+            {
+              "id": "dr",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:241",
+              "label": "DR region — us-east-1",
+              "sublabel": "warm standby · RTO 1 h",
+              "col": 5,
+              "row": -1.15
+            },
+            {
+              "id": "dlq",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:106",
+              "label": "Dead-letter queue",
+              "sublabel": "maxReceiveCount = 5",
+              "accent": "red",
+              "col": 2,
+              "row": 5,
+              "parent": "errors"
+            },
+            {
+              "id": "errh",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:87",
+              "label": "Error handler",
+              "sublabel": "classify · enrich · decide",
+              "accent": "red",
+              "col": 3,
+              "row": 5,
+              "parent": "errors"
+            },
+            {
+              "id": "quar",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:74",
+              "label": "Quarantine zone",
+              "sublabel": "bad record + raw payload",
+              "accent": "red",
+              "col": 4,
+              "row": 5,
+              "parent": "errors"
+            },
+            {
+              "id": "alert",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:105",
+              "label": "Alert topic",
+              "sublabel": "chat · email · pager",
+              "accent": "red",
+              "col": 5,
+              "row": 5,
+              "parent": "errors"
+            },
+            {
+              "id": "oncall",
+              "kind": "box",
+              "label": "On-call + replay runbook",
+              "sublabel": "fix · replay · drop",
+              "accent": "red",
+              "col": 6,
+              "row": 5,
+              "width": 240,
+              "parent": "errors"
+            },
+            {
+              "id": "iam",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:192",
+              "label": "Least-privilege roles",
+              "sublabel": "per service, per account",
+              "col": 1,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "kms",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:196",
+              "label": "CMK encryption",
+              "sublabel": "at rest & in transit",
+              "col": 2,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "trail",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:165",
+              "label": "Audit trail",
+              "sublabel": "every API call",
+              "col": 3,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "xray",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:132",
+              "label": "Distributed tracing",
+              "sublabel": "end-to-end request ids",
+              "col": 4,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "cw",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:155",
+              "label": "Metrics · logs · alarms",
+              "sublabel": "SLO dashboards",
+              "col": 5,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "catalog",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:12",
+              "label": "Glue Data Catalog",
+              "sublabel": "schema · partitions",
+              "col": 6,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "lakef",
+              "kind": "icon",
+              "icon": "aws-architecture-icons:2",
+              "label": "Governed access",
+              "sublabel": "row & column filters",
+              "col": 7,
+              "row": 6,
+              "parent": "ops"
+            },
+            {
+              "id": "note",
+              "kind": "note",
+              "col": -0.35,
+              "row": 5.15,
+              "width": 400,
+              "label": "Assumptions\n\n1. Delivery is at-least-once end to end, so every transform is idempotent and keyed on event id.\n\n2. No synchronous service-to-service calls: components meet only at the stream, the bus or the queue, and each scales on its own backlog.\n\n3. All compute is serverless or auto-scaled. Nothing on the critical path is a single instance.\n\n4. Every queue has a DLQ (5 receives), every job a Step Functions catch, every write a retry with jitter.\n\n5. eu-west-1 across 3 AZs; RPO 15 min / RTO 1 h via S3 cross-region replication and Redshift snapshots to us-east-1.\n\n6. AWS Config, Secrets Manager and AWS Backup are enabled account-wide and left off the canvas."
+            }
+          ],
+          "edges": [
+            {
+              "from": "web",
+              "to": "r53",
+              "kind": "flow",
+              "label": "HTTPS"
+            },
+            {
+              "from": "r53",
+              "to": "cf",
+              "kind": "flow"
+            },
+            {
+              "from": "cf",
+              "to": "apigw",
+              "kind": "flow",
+              "label": "REST · WAF"
+            },
+            {
+              "from": "oltp",
+              "to": "dms",
+              "kind": "data",
+              "label": "CDC"
+            },
+            {
+              "from": "fleet",
+              "to": "iot",
+              "kind": "flow",
+              "label": "MQTT / TLS"
+            },
+            {
+              "from": "saas",
+              "to": "appflow",
+              "kind": "data",
+              "label": "scheduled pull"
+            },
+            {
+              "from": "apigw",
+              "to": "kds",
+              "kind": "flow",
+              "label": "PUT records"
+            },
+            {
+              "from": "dms",
+              "to": "kds",
+              "kind": "data",
+              "label": "change events"
+            },
+            {
+              "from": "iot",
+              "to": "ebus",
+              "kind": "data",
+              "label": "IoT rule",
+              "route": "straight"
+            },
+            {
+              "from": "appflow",
+              "to": "ebus",
+              "kind": "data",
+              "label": "SaaS events",
+              "route": "straight"
+            },
+            {
+              "from": "ebus",
+              "to": "sqs",
+              "kind": "flow",
+              "label": "routing rule"
+            },
+            {
+              "from": "kds",
+              "to": "firehose",
+              "kind": "data",
+              "label": "buffer"
+            },
+            {
+              "from": "kds",
+              "to": "flink",
+              "kind": "data",
+              "label": "enrich"
+            },
+            {
+              "from": "sqs",
+              "to": "lam",
+              "kind": "flow",
+              "label": "batch of 10"
+            },
+            {
+              "from": "sfn",
+              "to": "glue",
+              "kind": "flow",
+              "label": "run job · retry x3"
+            },
+            {
+              "from": "firehose",
+              "to": "raw",
+              "kind": "data",
+              "label": "raw parquet"
+            },
+            {
+              "from": "flink",
+              "to": "curated",
+              "kind": "data"
+            },
+            {
+              "from": "lam",
+              "to": "curated",
+              "kind": "data",
+              "label": "upsert"
+            },
+            {
+              "from": "raw",
+              "to": "curated",
+              "kind": "data",
+              "label": "Glue ETL"
+            },
+            {
+              "from": "glue",
+              "to": "gold",
+              "kind": "branch",
+              "label": "passes DQ rules",
+              "route": "straight"
+            },
+            {
+              "from": "glue",
+              "to": "quar",
+              "kind": "error",
+              "label": "fails DQ rules"
+            },
+            {
+              "from": "gold",
+              "to": "ddb",
+              "kind": "data",
+              "label": "hot aggregates"
+            },
+            {
+              "from": "curated",
+              "to": "rs",
+              "kind": "data",
+              "label": "COPY into RA3"
+            },
+            {
+              "from": "gold",
+              "to": "athena",
+              "kind": "data",
+              "label": "query in place",
+              "route": "straight"
+            },
+            {
+              "from": "ddb",
+              "to": "appsync",
+              "kind": "flow",
+              "label": "single-digit ms",
+              "route": "straight"
+            },
+            {
+              "from": "ddb",
+              "to": "os",
+              "kind": "data",
+              "label": "streams to index"
+            },
+            {
+              "from": "rs",
+              "to": "qs",
+              "kind": "data"
+            },
+            {
+              "from": "athena",
+              "to": "sm",
+              "kind": "data",
+              "label": "features"
+            },
+            {
+              "from": "appsync",
+              "to": "apps",
+              "kind": "flow",
+              "label": "GraphQL"
+            },
+            {
+              "from": "raw",
+              "to": "dr",
+              "kind": "async",
+              "label": "cross-region replication"
+            },
+            {
+              "from": "sqs",
+              "to": "dlq",
+              "kind": "error",
+              "label": "5 failed receives",
+              "route": "straight"
+            },
+            {
+              "from": "dlq",
+              "to": "errh",
+              "kind": "flow",
+              "label": "drain & classify"
+            },
+            {
+              "from": "errh",
+              "to": "quar",
+              "kind": "error",
+              "label": "persist payload"
+            },
+            {
+              "from": "quar",
+              "to": "alert",
+              "kind": "error",
+              "label": "S3 event notification"
+            },
+            {
+              "from": "alert",
+              "to": "oncall",
+              "kind": "error",
+              "label": "page on-call"
+            },
+            {
+              "from": "errh",
+              "to": "sfn",
+              "kind": "async",
+              "label": "trigger replay"
+            },
+            {
+              "from": "cw",
+              "to": "alert",
+              "kind": "light",
+              "label": "alarm breach"
+            }
+          ]
+        },
+        "arkitectBuilt": "633:752960"
       }
     },
     {
@@ -34615,7 +35986,8 @@
       "index": "b90",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "AaKshXzJ"
         }
       }
     },
@@ -34666,7 +36038,8 @@
       "index": "b91",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "KQC4Cixu"
         }
       }
     },
@@ -34710,7 +36083,8 @@
       "index": "b92",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "bku1pKjk"
         }
       }
     },
@@ -34761,7 +36135,8 @@
       "index": "b93",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "mT-nb266"
         }
       }
     },
@@ -34805,7 +36180,8 @@
       "index": "b94",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "Cdzm2N8-"
         }
       }
     },
@@ -34856,7 +36232,8 @@
       "index": "b95",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "mj2BWg3N"
         }
       }
     },
@@ -34900,7 +36277,8 @@
       "index": "b96",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "iKzfafdq"
         }
       }
     },
@@ -34951,7 +36329,8 @@
       "index": "b97",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "fkOqCgwb"
         }
       }
     },
@@ -34995,7 +36374,8 @@
       "index": "b98",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "SpgsZGNJ"
         }
       }
     },
@@ -35046,7 +36426,8 @@
       "index": "b99",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "JIl3pP81"
         }
       }
     },
@@ -35090,7 +36471,8 @@
       "index": "b9A",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "1wj7eXgP"
         }
       }
     },
@@ -35141,7 +36523,8 @@
       "index": "b9B",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "0WUuN0NT"
         }
       }
     },
@@ -35185,7 +36568,8 @@
       "index": "b9C",
       "customData": {
         "arkitect": {
-          "chrome": true
+          "chrome": true,
+          "built": "h_Sz2snE"
         }
       }
     }

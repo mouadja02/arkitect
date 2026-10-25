@@ -12,7 +12,9 @@ import { parseCliOrExit, exitUsage } from './drawio-core.mjs';
 // build: a colour or a position changed there is not in the spec, and a
 // rebuild draws the spec's. `read(file)` gives the text an exported image
 // holds, so the spec comes out of a README picture too (#439, #447).
-export function specCli(argv, { specOf, savedSince = () => false, kind, read = (file) => readFileSync(file, 'utf8') }) {
+// `isOurs(text)` is true for a file Arkitect built, which may still carry no
+// spec: built before builds carried one, or its carriers deleted (#408).
+export function specCli(argv, { specOf, savedSince = () => false, isOurs = () => false, kind, read = (file) => readFileSync(file, 'utf8') }) {
   const usage = `usage: spec.mjs <file.${kind}>\n`
     + '  prints the spec the file was built from, to change and rebuild with build --out <the same file>;\n'
     + '  exit 1 when the file carries none: Arkitect did not build it, or built it before builds carried one';
@@ -27,8 +29,10 @@ export function specCli(argv, { specOf, savedSince = () => false, kind, read = (
   let spec = null;
   try { spec = specOf(text); } catch { /* not a file of this kind: it carries no spec */ }
   if (!spec) {
-    console.error(`${file} carries no spec: it was not built by Arkitect, or not since specs were embedded. `
-      + 'Edit it in place as references/editing.md says');
+    let ours = false;
+    try { ours = isOurs(text); } catch { /* not a file of this kind */ }
+    console.error(`${file} carries no spec: ${ours ? 'Arkitect built it, but before builds carried one, or what carried it was deleted in an editor since'
+      : 'it was not built by Arkitect, or not since specs were embedded'}. Edit it in place as references/editing.md says`);
     return 1;
   }
   console.log(JSON.stringify(spec, null, 2));

@@ -763,7 +763,7 @@ test('no files grader names a file its scaffold wrote, and the fixture checks re
     ['drawio/learning-skill-stays-manual', heredoc('drawio/learning-skill-stays-manual'), 'input-keeps-its-cells',
       [(t) => t.replaceAll('rounded=0;whiteSpace', 'rounded=1;whiteSpace'), (t) => t.replace('html=1;" edge', 'html=1;dashed=1;" edge')]],
     ['excalidraw/apply-skill-stays-manual', template, 'input-keeps-its-elements',
-      [(t) => t.replaceAll('"strokeStyle": "dashed"', '"strokeStyle": "solid"'), (t) => t.replace(/"customData": \{\s*"arkitect": \{[^}]*\},\s*"arkitectSpec"/, '"customData": {"arkitect": {}, "x"')]],
+      [(t) => t.replaceAll('"strokeStyle": "dashed"', '"strokeStyle": "solid"'), (t) => t.replace(/"customData": \{\s*"arkitect": \{[^}]*\},\s*"arkitectSpec"/g, '"customData": {"arkitect": {}, "x"')]],
     ['excalidraw/learning-skill-stays-manual', template, 'input-keeps-its-elements',
       [(t) => t.replaceAll('"strokeStyle": "dashed"', '"strokeStyle": "solid"')]],
   ]) {

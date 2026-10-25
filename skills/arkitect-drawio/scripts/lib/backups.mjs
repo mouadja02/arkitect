@@ -66,13 +66,20 @@ export const foreignNote = (path, backup) => `${path} carries no sign of an Arki
 // the one backup holding them a few rebuilds later (#376). Each builder lists
 // what the replaced file has that its build does not draw, `{ id, label }`,
 // and backs the file up under a name retention never deletes.
-export const droppedNote = (path, backup, dropped) => {
-  const shown = dropped.slice(0, 10).map((d) => `"${d.id}"${d.label ? ` (${d.label})` : ''}`).join(', ');
-  const more = dropped.length > 10 ? ` and ${dropped.length - 10} more` : '';
-  return `${path} held ${dropped.length} shape${dropped.length > 1 ? 's' : ''} this build does not draw, added since it `
-    + `was built or dropped from the spec: ${shown}${more}. The replaced file is kept at ${backup}, which retention never `
-    + 'deletes. To change a diagram someone touched, edit it in place as references/editing.md says, and say so in the report';
-};
+const listed = (items) => items.slice(0, 10).map((d) => `"${d.id}"${d.label ? ` (${d.label})` : ''}`).join(', ')
+  + (items.length > 10 ? ` and ${items.length - 10} more` : '');
+const keptAt = (backup) => `The replaced file is kept at ${backup}, which retention never deletes. To change a diagram `
+  + 'someone touched, edit it in place as references/editing.md says, and say so in the report';
+export const droppedNote = (path, backup, dropped) => `${path} held ${dropped.length} shape${dropped.length > 1 ? 's' : ''} `
+  + `this build does not draw, added since it was built or dropped from the spec: ${listed(dropped)}. ${keptAt(backup)}`;
+
+// A shape the builder drew and someone then restyled, moved or relabelled in
+// an editor is drawn again as the spec says, so the change went with nothing
+// said, and so did the backup holding it (#403). Each builder records what it
+// drew and lists what no longer matches, `{ id, label }`, one per spec entry.
+export const changedNote = (path, backup, changed) => `${path} held ${changed.length} shape${changed.length > 1 ? 's' : ''} `
+  + `restyled, moved or relabelled in an editor since it was built, which this build draws as the spec says: ${listed(changed)}. `
+  + keptAt(backup);
 
 // Retention (#49). Every rebuild leaves a backup, so a build-look-fix loop used
 // to leave ten or twenty beside the user's diagram. After a successful write

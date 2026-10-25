@@ -5032,6 +5032,55 @@ test('a rebuild names a cell added to one page even when another page uses its i
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A rebuild over a file someone restyled or moved in an editor replaced the
+// change with nothing said, and its backup was an ordinary one, which
+// retention deletes (#403). The build records what each cell looked like on
+// <mxfile>, as it records the spec, and a rebuild compares the file with it.
+test('a rebuild names a cell restyled or moved since the build, and keeps its backup (#403)', () => {
+  const dir = join(TMP, 'p403');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.drawio');
+  writeFileSync(spec, JSON.stringify({ title: 'Orders', nodes: [{ id: 'api', label: 'API', kind: 'icon', icon: 'aws lambda' }, { id: 'db', label: 'Orders DB', col: 1 }],
+    edges: [{ from: 'api', to: 'db', label: 'writes' }] }));
+  const build = () => JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
+  const edit = (fn) => writeFileSync(out, fn(readFileSync(out, 'utf8')));
+  build();
+  assert(/ arkitect-built="[\w-]+:[\w-]+( [\w-]+:[\w-]+)*"/.test(readFileSync(out, 'utf8')), 'the build records its cells');
+  // Saved by Desktop without a change: its agent, its own attribute order and
+  // spacing.
+  edit((t) => {
+    const saved = t.replace('agent="arkitect-drawio"', 'agent="Mozilla/5.0 draw.io/29.0.3"').replace(/ \/>/g, '/>')
+      .replace(/<mxCell id="db" value="([^"]*)" style="([^"]*)" vertex="1" parent="1">/, '<mxCell id="db" parent="1" value="$1" vertex="1" style="$2">');
+    assert(saved.includes('<mxCell id="db" parent="1"'), 'the save reordered db');
+    return saved;
+  });
+  const plain = build();
+  eq(plain.notes.join(), '', 'a file only opened and saved says nothing');
+  assert(!/-kept/.test(plain.backup), plain.backup);
+  // Restyled one, moved another.
+  edit((t) => t.replace(/(<mxCell id="db"[^>]*style="[^"]*)fillColor=none;/, '$1fillColor=#FF0000;')
+    .replace(/(<mxCell id="api"[\s\S]*?<mxGeometry x=")(\d+)/, (_, a, x) => `${a}${Number(x) + 200}`));
+  const changed = build();
+  eq(changed.notes.length, 1, 'one note');
+  assert(changed.notes[0].includes('"api" (API)') && changed.notes[0].includes('"db" (Orders DB)') && changed.notes[0].includes(changed.backup)
+    && changed.notes[0].includes('references/editing.md'), changed.notes[0]);
+  assert(/\.backup-\d{8}-\d{6}-kept(-\d+)?\.drawio$/.test(changed.backup), changed.backup);
+  assert(readFileSync(changed.backup, 'utf8').includes('fillColor=#FF0000'), 'the kept backup holds the restyle');
+  assert(!readFileSync(out, 'utf8').includes('FF0000'), 'the rebuild drew the spec');
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} finds nothing more`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('FF0000')).length, 1,
+    'seven rebuilds later, a backup still holds the restyle');
+  // An edge rerouted and a relabelled title count too; a file built before
+  // builds recorded their cells says nothing, as before.
+  edit((t) => t.replace(/(<mxCell id="e1"[\s\S]*?<mxGeometry relative="1" as="geometry")\s*\/>/, '$1><Array as="points"><mxPoint x="300" y="40"/></Array></mxGeometry>')
+    .replace(/(<mxCell id="title" value=")[^"]*/, '$1Orders, renamed'));
+  eq(builder.changedCells(readFileSync(out, 'utf8')).map((c) => c.id).join(), 'title,e1', 'a rerouted edge and a relabelled title');
+  eq(builder.changedCells(readFileSync(out, 'utf8').replace(/ arkitect-built="[^"]*"/, '')).length, 0, 'no record, nothing compared');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The spec a diagram was built from lived in a separate file, often not
 // committed, so an edit meant hand-written XML, and an agent asked to add one
 // node wrote a new spec for the whole diagram (#339). Every build carries its
