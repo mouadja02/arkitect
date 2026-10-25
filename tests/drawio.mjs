@@ -53,6 +53,7 @@ const finder = await import(`file://${join(SCRIPTS, 'find-icon.mjs').replace(/\\
 const builder = await import(`file://${join(SCRIPTS, 'build-diagram.mjs').replace(/\\/g, '/')}`);
 const logos = await import(`file://${join(SCRIPTS, 'fetch-logo.mjs').replace(/\\/g, '/')}`);
 const pngChunks = await import(`file://${join(SCRIPTS, 'lib', 'png-chunks.mjs').replace(/\\/g, '/')}`);
+const todoLib = await import(`file://${join(SCRIPTS, 'lib', 'todo.mjs').replace(/\\/g, '/')}`);
 const validator = await import(`file://${join(SCRIPTS, 'validate-drawio.mjs').replace(/\\/g, '/')}`);
 const styleTokens = await import(`file://${join(SCRIPTS, 'lib', 'style-tokens.mjs').replace(/\\/g, '/')}`);
 const store = await import(`file://${join(SCRIPTS, 'lib', 'store.mjs').replace(/\\/g, '/')}`);
@@ -6121,6 +6122,62 @@ test('the build report notes a diagram with no canvas note, or a legend turned o
   const grader = new RegExp(yaml.match(/name: assumptions-on-the-canvas\n\s+target: .*\n\s+pattern: '([^']+)'/)[1]);
   assert(grader.test(builder.buildDiagram({ nodes: [...nodes, note], edges }).xml), 'the grader finds a note');
   assert(!grader.test(builder.buildDiagram({ nodes, edges }).xml), 'and fails a diagram without one');
+});
+
+// The agent had to run validate itself, then pick the keys to act on out of a
+// dozen; the skill's list left out icons.missing (#437). The build validates
+// what it wrote and ends with one list, empty when there is nothing to do.
+test('build validates what it wrote and ends its report with one todo line per thing to act on (#437)', () => {
+  const dir = join(TMP, 'p437');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const build = (spec, name) => {
+    const specPath = join(dir, `${name}.json`);
+    writeFileSync(specPath, JSON.stringify(spec));
+    const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', specPath, '--out', join(dir, `${name}.drawio`), '--defaults'], { encoding: 'utf8' });
+    eq(r.status, 0, `${name}: ${r.stderr}`);
+    return JSON.parse(r.stdout);
+  };
+  const report = build({
+    nodes: [
+      { id: 'q', kind: 'icon', icon: 'zqxwv plorbatron', label: 'Plorbatron', col: 0, row: 0 },
+      { id: 'b', kind: 'wibble', label: 'B', col: 1, row: 0, style: 'fillColor=#f00' },
+      { id: 'c', kind: 'box', label: 'Postgres', col: 2, row: 0 },
+      { id: 'd', kind: 'box', label: 'VPC', col: 0, row: 1 },
+      { id: 'e', kind: 'box', label: 'E', col: 1, row: 1 },
+    ],
+    edges: [{ from: 'q', to: 'b' }, { from: 'b', to: 'c', kind: 'zap' }],
+  }, 'bad');
+  const { todo } = report;
+  assert(Array.isArray(todo), 'the report has a todo list');
+  const lines = (prefix) => todo.filter((t) => t.startsWith(prefix));
+  eq(lines('unknownKinds: ').length, 2, `the node and the edge kind: ${todo.join(' | ')}`);
+  assert(lines('unknownKinds: ').some((t) => t.includes('nodes[1].kind') && t.includes('wibble') && t.includes('drawnAs box')), 'names the field, the value and what it drew');
+  eq(lines('unknownFields: ').length, 1, 'the style field');
+  assert(lines('unknownFields: ')[0].includes('nodes[1].style'), 'names it');
+  eq(lines('looksLikeBoundary: ').length, 1, 'the VPC box');
+  eq(lines('namesAProduct: ').length, 1, 'the Postgres box');
+  assert(!lines('namesAProduct: ')[0].includes('replace'), 'the line leaves out the fragment to paste, which stays under its key');
+  eq(lines('icons.missing: ').length, 1, 'the unresolved icon, which the skill\'s key list left out');
+  assert(lines('icons.missing: ')[0].includes('node q'), 'names its node');
+  eq(lines('notes: ').length, report.notes.length, 'every note');
+  // validate's own warnings, as validate prints them, beside the build's keys.
+  const validated = validator.validateFile(join(dir, 'bad.drawio'));
+  assert(validated.warnings.length > 0, 'the fixture draws a box validate warns on');
+  eq(lines('validate warning: ').join('\n'), validated.warnings.map((w) => `validate warning: ${w}`).join('\n'), 'every validate warning, as printed');
+  eq(report.validate, `PASS, ${validated.warnings.length} warning${validated.warnings.length > 1 ? 's' : ''}`, 'the verdict validate prints');
+  eq(todo.length, validated.warnings.length + 2 + 1 + 1 + 1 + 1 + report.notes.length, 'nothing else');
+
+  // A validate error comes first, then warnings, then the build's keys.
+  eq(todoLib.todoOf({ notes: ['n'], icons: { missing: [{ node: 'x', query: 'y' }] } }, { ok: false, errors: ['E'], warnings: ['W'] }).join('|'),
+    'validate error: E|validate warning: W|icons.missing: node x, query y|notes: n', 'the order');
+  eq(todoLib.verdict({ ok: false, errors: ['E'], warnings: [] }), 'FAIL', 'a failure');
+
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const clean = build(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8')), file.replace('.spec.json', ''));
+    eq(JSON.stringify(clean.todo), '[]', `${file}: ${clean.todo?.join(' | ')}`);
+    eq(clean.validate, 'PASS', file);
+  }
 });
 
 // GitHub shows neither a .drawio nor an .excalidraw, so a README got a preview

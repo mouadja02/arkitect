@@ -1705,6 +1705,31 @@ test('AGENTS.md stays under its ceiling, and maintainer work lives in docs/maint
   assert(maintenance.includes(`${AGENTS_BUDGET.toLocaleString('en-US')} bytes`), 'docs/maintenance.md does not state the AGENTS.md ceiling');
 });
 
+// Step 4 listed the report keys to act on, a different subset on each route,
+// and left out icons.missing; the build now ends with `todo` (#437). §5 was the
+// whole editing route on every non-Claude host and never named the spec a built
+// file carries, for want of bytes the key list now frees (#406).
+test('the build step names todo in place of a key list, and AGENTS.md §5 names the spec route (#437, #406)', () => {
+  const agents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8');
+  const step4 = agents.match(/\n4\. \*\*Write a spec, then build\.\*\*[\s\S]*?\n5\. /)[0];
+  const routes = { 'AGENTS.md §2.4': step4 };
+  for (const engine of ['drawio', 'excalidraw']) {
+    routes[`${engine} SKILL.md step 4`] = readFileSync(join(ROOT, 'skills', `arkitect-${engine}`, 'SKILL.md'), 'utf8').match(/\n4\. \*\*[\s\S]*?\n5\. /)[0];
+  }
+  for (const [where, text] of Object.entries(routes)) {
+    assert(text.includes('`todo`') && text.includes('`validate`'), `${where} does not name todo and the validation the build runs`);
+    for (const key of ['unknownKinds', 'unknownFields', 'looksLikeBoundary', 'namesAProduct']) {
+      assert(!text.includes(key), `${where} still lists ${key}, which todo carries`);
+    }
+  }
+  const editing = agents.match(/\n## 5\. Editing an existing diagram[\s\S]*?\n## 6\./)[0];
+  assert(editing.includes('`arkitect <engine> spec <file>`') && /rebuild/.test(editing), 'AGENTS.md §5 does not name the spec route');
+  for (const engine of ['drawio', 'excalidraw']) {
+    const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), engine, 'spec', '--help'], { encoding: 'utf8' });
+    eq(r.status, 0, `arkitect ${engine} spec is not a command: ${r.stderr}`);
+  }
+});
+
 // "Offer nothing Arkitect cannot do" (#183) has to be true itself: the Draw.io
 // skill said there was no PDF export while its renderer wrote one (#256).
 test('neither drawing skill denies an export format its renderer accepts (#256)', () => {

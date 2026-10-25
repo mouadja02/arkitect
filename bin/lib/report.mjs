@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 import { parseCli, UsageError } from '../../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { readJson } from '../../skills/arkitect-drawio/scripts/lib/read-json.mjs';
+import { brief } from '../../skills/arkitect-drawio/scripts/lib/todo.mjs';
 import { problems, FILL_IN } from '../../hooks/report-check.mjs';
 import * as drawioBuilder from '../../skills/arkitect-drawio/scripts/build-diagram.mjs';
 import * as drawioValidator from '../../skills/arkitect-drawio/scripts/validate-drawio.mjs';
@@ -50,10 +51,6 @@ export const engineOf = (file) => Object.keys(ENGINES).find((k) => ENGINES[k].ex
 
 const code = (s) => `\`${String(s).replace(/`/g, "'")}\``;
 const list = (items) => items.map((i) => `- ${i}`);
-// One build-report entry on a line, every field but the spec fragment to paste.
-const brief = (entry) => (typeof entry === 'string' ? entry : Object.entries(entry)
-  .filter(([k, v]) => k !== 'replace' && v != null && !(Array.isArray(v) && !v.length))
-  .map(([k, v]) => `${k} ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(', '));
 
 function fileSection(file, engine, result) {
   const i = result.info ?? {};

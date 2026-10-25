@@ -85,15 +85,12 @@ architecture", "for the client", "AWS" → Draw.io. "system design", "quick",
    edges or parents name something that does not exist, or whose numbers are
    not numbers (a string `col`, a size of 0 or less), is refused before
    anything is written, every problem listed; fix the spec, never drop the edge.
-   A missing `col` or `row` is 0.
-   A `kind` the builder does not know still builds, drawn as a default, and is
-   listed under `unknownKinds` in the report; a key no part of a spec takes —
-   a `style` on a node, edge or boundary above all — builds too and is
-   listed under `unknownFields`; a box faking a boundary is listed under
-   `looksLikeBoundary`, and a box naming a bundled product under
-   `namesAProduct`. Treat any non-empty list like an unresolved icon: fix
-   the spec, or report it. A field the builder dropped is
-   not a field that applied, whatever the diagram happens to look like. Run `drawio build --print-style`
+   A missing `col` or `row` is 0. The build then validates the file and ends
+   its report with `todo`, one line per thing to act on — an unknown `kind`,
+   a dropped field (a `style` on a node, edge or boundary above all), an
+   unresolved icon, a `validate` warning. Fix the spec, or report the line; a
+   dropped field never applied.
+   Run `drawio build --print-style`
    or `excalidraw build --print-style` before writing the spec: an install can
    carry the user's own applied style, where an edge `kind` may mean something
    else or extra kinds exist — pick kinds by their `meaning` there.
@@ -206,10 +203,11 @@ node bin/arkitect.mjs excalidraw analyze <file> --cells
 node bin/arkitect.mjs drawio backup <file>                       # before the first write
 ```
 
-Then make a targeted, backup-protected edit and re-validate. **Match the file
-you are editing, not the style guide** — if the existing diagram uses sharp
-corners and no roughness, so does your addition. Say in the report that you
-followed the file.
+A file Arkitect built carries its spec: `arkitect <engine> spec <file>` prints
+it; change it and rebuild over the file. Otherwise make a targeted,
+backup-protected edit and re-validate. **Match the file you are editing, not
+the style guide** — if the existing diagram uses sharp corners and no
+roughness, so does your addition. Say in the report that you followed the file.
 
 ## 6. Privacy — non-negotiable
 
