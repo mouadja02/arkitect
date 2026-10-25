@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.5.0] — 2026-10-25
+
 ### Added
 
 - `render --embed`, in both engines, writes an SVG or PNG for a README that holds its own source byte for byte: `<base>.drawio.svg` carries the whole `.drawio`, every page and the spec, the way Draw.io's `-e` export does, and `<scene>.excalidraw.svg` carries the scene the way Excalidraw's "Embed scene" export does. GitHub shows the picture, and Draw.io, its VS Code extension or the Excalidraw app opens it as the diagram. `spec`, `analyze` and `validate` in both engines now read such an image and say so; a PNG or SVG that holds nothing is reported as such. Without `--embed`, renders and their names are unchanged. Draw.io's `validate` error for a plain SVG now ends ", and no diagram is embedded in it". Each skill's reading table names the README image beside a failed render (#439, #447).
