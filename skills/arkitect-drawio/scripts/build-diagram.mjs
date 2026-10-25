@@ -23,12 +23,13 @@
 // deliberate normalisation, not an observed convention.
 
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
-import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
+import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, changedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, unattended, drawnMark, catalogId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf, EXCALIDRAW_ITEM } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
-import { parseCliOrExit, exitUsage, parseMxfile, extractCells } from './lib/drawio-core.mjs';
+import { parseCliOrExit, exitUsage, parseMxfile, extractCells, parseStyle, parseDataUri } from './lib/drawio-core.mjs';
 import { readJson } from './lib/read-json.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
@@ -840,9 +841,11 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
   }
   // The spec rides on <mxfile>, which Draw.io Desktop clones on save and keeps,
   // so an edit can print it, change it and rebuild instead of hand-writing XML
-  // (#388). Every label in it is already in the file.
-  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count} ${SPEC_ATTR}="${esc(carried)}">\n`
-    + diagrams.join('\n') + '\n</mxfile>\n';
+  // (#388). Every label in it is already in the file. Beside it, what each
+  // cell looked like, so a rebuild can tell a cell changed since (#403).
+  const pagesXml = diagrams.join('\n');
+  const xml = `<mxfile host="Electron" agent="arkitect-drawio" version="29.0.3"${count} ${SPEC_ATTR}="${esc(carried)}"`
+    + ` ${BUILT_ATTR}="${builtRecord(pagesXml)}">\n${pagesXml}\n</mxfile>\n`;
 
   return { xml, report };
 }
@@ -872,6 +875,36 @@ const plainText = (value) => value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>
 export function droppedCells(oldText, newXml) {
   const drawn = new Set(cellsOf(newXml).map((c) => c.at));
   return cellsOf(oldText).filter((c) => c.id && (c.vertex || c.edge) && !drawn.has(c.at) && !GENERATED.test(c.id))
+    .map((c) => ({ id: c.id, label: plainText(c.value) }));
+}
+
+// What each cell looked like when it was built (#403): `<key>:<print>` pairs,
+// a short hash of the cell's page and id, then one of its style, label, ends
+// and geometry. A rebuild names a cell whose print no longer matches, so a
+// colour or position changed in an editor is not replaced with nothing said.
+// Desktop keeps <mxfile>'s attributes on save, as it keeps the spec. What a
+// save may spell differently counts by value: the order of style keys and of
+// attributes, an x of 0 left out, an embedded image by its bytes, not by how
+// its data URI is written.
+export const BUILT_ATTR = 'arkitect-built';
+const short = (value) => createHash('sha256').update(value).digest('base64url').slice(0, 8);
+const num = (n) => Math.round((Number(n) || 0) * 10) / 10;
+function cellPrint(c) {
+  const s = parseStyle(c.style);
+  const style = Object.keys(s).sort().map((k) => {
+    const image = k === 'image' && typeof s[k] === 'string' ? parseDataUri(s[k]) : null;
+    return `${k}=${image ? image.hash : s[k]}`;
+  }).join(';');
+  const g = c.geometry ?? {};
+  const geometry = [g.x, g.y, g.width, g.height, g.offset?.x, g.offset?.y, ...c.points.flatMap((p) => [p.x, p.y])].map(num).join(',');
+  return short([style, c.value, c.parent, c.source ?? '', c.target ?? '', geometry].join('\u0000'));
+}
+const recordable = (c) => c.id && (c.vertex || c.edge);
+const builtRecord = (pagesXml) => cellsOf(pagesXml).filter(recordable).map((c) => `${short(c.at)}:${cellPrint(c)}`).join(' ');
+export function changedCells(oldText) {
+  const record = new Map((parseMxfile(oldText).attrs[BUILT_ATTR] ?? '').split(' ').filter(Boolean).map((pair) => pair.split(':')));
+  if (!record.size) return [];
+  return cellsOf(oldText).filter((c) => recordable(c) && record.has(short(c.at)) && record.get(short(c.at)) !== cellPrint(c))
     .map((c) => ({ id: c.id, label: plainText(c.value) }));
 }
 
@@ -932,15 +965,21 @@ function main(argv) {
   // A file someone added to since it was built: name what this build drops,
   // and keep the backup that holds it out of retention (#376). Draw.io Desktop
   // drops the mark on save but keeps cell ids, so a file only opened and saved
-  // drops nothing, and its backup is pruned as usual.
+  // drops nothing, and its backup is pruned as usual. A cell restyled or moved
+  // there is named the same way (#403).
   let dropped = [];
+  let changed = [];
   if (existsSync(out)) {
-    try { dropped = droppedCells(readFileSync(out, 'utf8'), xml); } catch { /* a page it cannot read drops nothing it can name */ }
+    try {
+      const old = readFileSync(out, 'utf8');
+      dropped = droppedCells(old, xml);
+      changed = changedCells(old).filter((c) => !dropped.some((d) => d.id === c.id));
+    } catch { /* a page it cannot read drops nothing it can name */ }
   }
-  const backup = backupExisting(out, { kept: dropped.length > 0 });
+  const backup = backupExisting(out, { kept: dropped.length + changed.length > 0 });
   writeFileSync(out, xml);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
-  else if (dropped.length) report.notes.unshift(droppedNote(out, backup, dropped));
+  else report.notes.unshift(...(dropped.length ? [droppedNote(out, backup, dropped)] : []), ...(changed.length ? [changedNote(out, backup, changed)] : []));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

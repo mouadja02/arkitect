@@ -1364,6 +1364,98 @@ test('a rebuild names a shape added on top of a drawn one, and keeps its backup 
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A rebuild over a scene someone restyled or moved in the app replaced the
+// change with nothing said, and its backup was an ordinary one, which
+// retention deletes (#403). Each element the build stamps records what it
+// looked like, and a rebuild compares the scene with it. What the app
+// recomputes on its own, versions, indices, text sizes and arrow routes, is
+// left out, so a scene only opened and saved says nothing.
+test('a rebuild names an element restyled or moved since the build, and keeps its backup (#403)', () => {
+  const dir = join(TMP, 'p403');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = join(dir, 's.json');
+  const out = join(dir, 'a.excalidraw');
+  writeFileSync(spec, JSON.stringify({ title: 'Orders', nodes: [{ id: 'api', label: 'API' }, { id: 'db', label: 'Orders DB', col: 1 }],
+    edges: [{ from: 'api', to: 'db', label: 'writes' }] }));
+  const build = () => JSON.parse(spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), spec, '--out', out, '--defaults'], { encoding: 'utf8' }).stdout);
+  const edit = (fn) => { const s = JSON.parse(readFileSync(out, 'utf8')); fn(s); writeFileSync(out, JSON.stringify(s)); };
+  const shape = (s, node) => s.elements.find((el) => el.type === 'rectangle' && el.customData?.arkitect?.node === node);
+  build();
+  assert(JSON.parse(readFileSync(out, 'utf8')).elements.every((el) => !el.customData?.arkitect || /^[\w-]{8}$/.test(el.customData.arkitect.built)),
+    'every stamped element records what it drew');
+  // Saved by the app without a change: versions moved, indices renumbered,
+  // empty bindings written as [], text measured in the browser's font and
+  // every arrow rerouted.
+  edit((s) => s.elements.forEach((el, i) => {
+    Object.assign(el, { version: el.version + 3, versionNonce: 7 + i, updated: 1761300000000, index: `b${i}`, boundElements: el.boundElements ?? [] });
+    if (el.type === 'text') Object.assign(el, { width: el.width + 3.2, x: el.x - 1.6, height: el.height + 1 });
+    if (el.type === 'arrow') Object.assign(el, { x: el.x + 2, points: el.points.map(([x, y]) => [x - 2, y + 1]) });
+  }));
+  const plain = build();
+  eq(plain.notes.join(), '', 'a scene only opened and saved says nothing');
+  assert(!/-kept/.test(plain.backup), plain.backup);
+  // Restyled one node, nudged the other 5px.
+  edit((s) => { shape(s, 'db').backgroundColor = '#ffc9c9'; shape(s, 'api').x += 5; });
+  const changed = build();
+  eq(changed.notes.length, 1, 'one note');
+  assert(changed.notes[0].includes('"api" (node)') && changed.notes[0].includes('"db" (node)') && changed.notes[0].includes(changed.backup)
+    && changed.notes[0].includes('references/editing.md'), changed.notes[0]);
+  assert(/\.backup-\d{8}-\d{6}-kept(-\d+)?\.excalidraw$/.test(changed.backup), changed.backup);
+  assert(readFileSync(changed.backup, 'utf8').includes('#ffc9c9'), 'the kept backup holds the restyle');
+  for (let i = 0; i < 7; i++) eq(build().notes.join(), '', `rebuild ${i + 1} finds nothing more`);
+  eq(readdirSync(dir).filter((f) => f.includes('.backup-') && readFileSync(join(dir, f), 'utf8').includes('#ffc9c9')).length, 1,
+    'seven rebuilds later, a backup still holds the restyle');
+  // A dashed arrow and a retitled scene count too; a scene built before
+  // elements recorded what they drew says nothing, as before.
+  const text = readFileSync(out, 'utf8');
+  const s = JSON.parse(text);
+  s.elements.find((el) => el.type === 'arrow').strokeStyle = 'dashed';
+  Object.assign(s.elements.find((el) => el.customData?.arkitect?.chrome), { text: 'Orders, renamed', originalText: 'Orders, renamed' });
+  eq(builder.changedElements(JSON.stringify(s)).map((c) => c.id).join(), 'api->db,title or legend', 'an edge and the title');
+  for (const el of s.elements) if (el.customData?.arkitect) delete el.customData.arkitect.built;
+  eq(builder.changedElements(JSON.stringify(s)).length, 0, 'no record, nothing compared');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// A scene kept its spec on one element, the first node's, so deleting that
+// node in the app left a scene of Arkitect's elements with no spec, and `spec`
+// called it not Arkitect's (#408). A second element carries a copy: the title
+// or legend, or else another node.
+test('a scene keeps its spec when the node that carried it is deleted (#408)', () => {
+  const dir = join(TMP, 'p408');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8' });
+  const out = join(dir, 'a.excalidraw');
+  const nodes = [{ id: 'api', label: 'API' }, { id: 'db', label: 'DB', col: 1 }, { id: 'queue', label: 'Queue', col: 2 }];
+  for (const [name, spec, second] of [['titled', { title: 'Orders', nodes }, (tag) => tag.chrome], ['untitled', { nodes }, (tag) => tag.node === 'db']]) {
+    const scene = builder.buildDiagram(spec, { seed: 1 }).scene;
+    const carriers = scene.elements.filter((el) => el.customData?.arkitectSpec);
+    eq(carriers.length, 2, `${name}: two elements carry it`);
+    assert(carriers[0].customData.arkitect.node === 'api' && second(carriers[1].customData.arkitect), `${name}: ${JSON.stringify(carriers.map((c) => c.customData.arkitect))}`);
+    // Deleted in the app: marked, or left out by the save.
+    for (const how of ['marked', 'dropped']) {
+      const cut = structuredClone(scene);
+      if (how === 'marked') for (const el of cut.elements) { if (el.customData?.arkitect?.node === 'api') el.isDeleted = true; }
+      else cut.elements = cut.elements.filter((el) => el.customData?.arkitect?.node !== 'api');
+      writeFileSync(out, JSON.stringify(cut));
+      const printed = cli('spec', out);
+      eq(printed.status, 0, `${name}, ${how}: ${printed.stderr}`);
+      eq(JSON.stringify(JSON.parse(printed.stdout)), JSON.stringify(spec), `${name}, ${how}: the spec`);
+      assert(/saved by an editor/.test(printed.stderr), `${name}, ${how}: said it changed`);
+    }
+  }
+  // Both carriers gone: still Arkitect's scene, and said so.
+  const scene = builder.buildDiagram({ title: 'Orders', nodes }, { seed: 1 }).scene;
+  scene.elements = scene.elements.filter((el) => el.customData?.arkitect?.node !== 'api' && !el.customData?.arkitect?.chrome);
+  writeFileSync(out, JSON.stringify(scene));
+  const none = cli('spec', out);
+  eq(none.status, 1, 'no carrier left');
+  assert(/Arkitect built it/.test(none.stderr) && /deleted/.test(none.stderr) && !/not built by Arkitect/.test(none.stderr), none.stderr);
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // The spec a scene was built from lived in a separate file, so an edit meant
 // hand-written scene JSON with both sides of every binding (#339). Every build
 // carries its spec on the first node's customData: the app keeps an element's
@@ -1382,8 +1474,9 @@ test('a built scene carries its spec through an app save, `excalidraw spec` prin
     eq(JSON.stringify(builder.specOf(text)), JSON.stringify(spec), `${name}: the carried spec`);
     eq(JSON.stringify(builder.buildDiagram(builder.specOf(text), { seed: 7 }).scene), text, `${name}: rebuilding the carried spec`);
     const carriers = JSON.parse(text).elements.filter((el) => el.customData?.arkitectSpec);
-    eq(carriers.length, 1, `${name}: one element carries it`);
+    eq(carriers.length, 2, `${name}: two elements carry it (#408)`);
     eq(carriers[0].customData.arkitect.node, spec.nodes[0].id, `${name}: the first node carries it`);
+    assert(carriers[1].customData.arkitect.node !== spec.nodes[0].id, `${name}: and something else carries a copy`);
     assert(!builder.changedSince(text), `${name}: a fresh build has not changed`);
   }
 
@@ -1416,13 +1509,13 @@ test('a built scene carries its spec through an app save, `excalidraw spec` prin
   eq(JSON.stringify(JSON.parse(after.stdout)), JSON.stringify(odd), 'the spec survives the save');
   writeFileSync(join(dir, 'saved.json'), after.stdout);
   const rebuilt = JSON.parse(cli('build', join(dir, 'saved.json'), '--out', out, '--defaults').stdout);
-  eq(rebuilt.notes.length, 1, 'one note');
-  assert(rebuilt.notes[0].includes('"added"') && /-kept\.excalidraw$/.test(rebuilt.backup), rebuilt.notes[0]);
-  // The node that carried it deleted: no spec, said so.
+  eq(rebuilt.notes.length, 2, 'the added box, and the moved node (#403)');
+  assert(rebuilt.notes[0].includes('"added"') && rebuilt.notes[1].includes('"b" (node)') && /-kept\.excalidraw$/.test(rebuilt.backup), rebuilt.notes.join('\n'));
+  // The node that carried it deleted: the title's copy prints it (#408).
   const gone = JSON.parse(readFileSync(out, 'utf8'));
   gone.elements = gone.elements.filter((el) => el.customData?.arkitect?.node !== 'a');
   writeFileSync(out, JSON.stringify(gone));
-  eq(cli('spec', out).status, 1, 'the carrier deleted');
+  eq(cli('spec', out).status, 0, 'the first carrier deleted');
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -1528,7 +1621,8 @@ test('every built element names its spec entry, and validate names it after the 
   eq(tags('edge', 'warm').map((el) => el.type).join(), 'arrow', 'or by its own id');
   const legend = scene.elements.find((el) => el.type === 'text' && el.text === 'Legend');
   // Stamped as the builder's own chrome, so a rebuild knows it from added work (#376).
-  eq(JSON.stringify(legend?.customData), '{"arkitect":{"chrome":true}}', 'the legend is no spec entry');
+  // It records what it drew (#403) and may carry the spec's copy (#408).
+  eq(JSON.stringify({ ...legend?.customData?.arkitect, built: undefined }), '{"chrome":true}', 'the legend is no spec entry');
 
   const w = validator.validateScene(scene).warnings;
   const overlap = w.find((x) => x.includes(' overlap by '));
