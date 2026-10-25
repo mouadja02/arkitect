@@ -44,6 +44,8 @@ import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
 import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 import { planEdges, readEnd, SIDES } from './lib/edge-plan.mjs';
 import { captionBox } from './lib/routes.mjs';
+import { todoOf, verdict } from './lib/todo.mjs';
+import { validateFile } from './validate-drawio.mjs';
 
 // ---------------------------------------------------------------- tokens
 
@@ -983,7 +985,7 @@ function main(argv) {
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 
-  console.log(JSON.stringify({
+  const printed = {
     wrote: out, bytes: Buffer.byteLength(xml), backup, pruned,
     icons: {
       resolved: report.used.length,
@@ -1011,7 +1013,11 @@ function main(argv) {
     notes: report.notes,
     // Which style drew this: the house style, or this install's override (#89).
     style: styleSummary(style),
-  }, null, 2));
+  };
+  // The file as written, checked as `validate` checks it, and every line above
+  // that needs acting on, in one list (#437).
+  const validated = validateFile(out);
+  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated) }, null, 2));
 }
 
 if (process.argv[1] && process.argv[1].endsWith('build-diagram.mjs')) main(process.argv.slice(2));

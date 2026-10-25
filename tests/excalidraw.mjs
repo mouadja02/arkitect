@@ -3865,7 +3865,12 @@ test('a build report names each shared mark by ref and pack, its source only wit
   const out = join(TMP, 'shared-icon-packs-386.excalidraw');
   const gallery = buildCli(join(SKILL, 'assets/templates/shared-icon-gallery.spec.json'), '--out', out, '--defaults');
   eq(gallery.status, 0, `build: ${gallery.stderr}`);
-  assert(gallery.stdout.length < 4096, `the gallery report is ${gallery.stdout.length} B`);
+  // The 4 KB is what #386 set for the keys it measured. `todo` (#437) repeats
+  // the gallery's one note and adds nothing of its own.
+  const { validate, todo, ...measured } = JSON.parse(gallery.stdout);
+  assert(JSON.stringify(measured, null, 2).length < 4096, `the gallery report is ${JSON.stringify(measured, null, 2).length} B`);
+  eq(JSON.stringify(todo), JSON.stringify(measured.notes.map((n) => `notes: ${n}`)), 'the gallery\'s todo is its note');
+  eq(validate, 'PASS', 'and validate passes it');
   const report = JSON.parse(buildCli(spec, '--out', out, '--defaults').stdout);
   assert(!/sha256|licence/.test(JSON.stringify(report)), 'no hash or licence without --verbose');
   eq(report.icons.embedded.find((i) => i.ref === 'drawio:databases/postgresql')?.pack, 'databases', 'each mark names its pack');
@@ -5273,6 +5278,59 @@ test('the build report notes a scene with no canvas note, or a legend turned off
   const written = (spec) => JSON.stringify(builder.buildDiagram(spec, { seed: 1 }).scene, null, 2);
   assert(grader.test(written(starter)), 'the grader finds a note');
   assert(!grader.test(written({ ...starter, nodes: starter.nodes.filter((n) => n.kind !== 'note') })), 'and fails a scene without one');
+});
+
+// The agent had to run validate itself, then pick the keys to act on out of a
+// dozen (#437). The build validates what it wrote and ends with one list,
+// empty when there is nothing to do.
+test('build validates what it wrote and ends its report with one todo line per thing to act on (#437)', () => {
+  const dir = join(TMP, 'p437');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const build = (spec, name) => {
+    const specPath = join(dir, `${name}.json`);
+    writeFileSync(specPath, JSON.stringify(spec));
+    const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', 'build', specPath, '--out', join(dir, `${name}.excalidraw`), '--defaults', '--seed', '1'], { encoding: 'utf8' });
+    eq(r.status, 0, `${name}: ${r.stderr}`);
+    return JSON.parse(r.stdout);
+  };
+  const report = build({
+    nodes: [
+      { id: 'q', kind: 'icon', icon: 'zqxwv plorbatron', label: 'Plorbatron', col: 0, row: 0 },
+      { id: 'b', kind: 'wibble', label: 'B', col: 1, row: 0, style: 'fill' },
+      { id: 'c', kind: 'box', label: 'Postgres', col: 2, row: 0 },
+      { id: 'd', kind: 'box', label: 'VPC', col: 0, row: 1 },
+    ],
+    edges: [{ from: 'q', to: 'c' }, { from: 'b', to: 'c', kind: 'zap' }],
+  }, 'bad');
+  const { todo } = report;
+  assert(Array.isArray(todo), 'the report has a todo list');
+  const lines = (prefix) => todo.filter((t) => t.startsWith(prefix));
+  eq(lines('unknownKinds: ').length, 2, `the node and the edge kind: ${todo.join(' | ')}`);
+  assert(lines('unknownKinds: ').some((t) => t.includes('edges[1].kind') && t.includes('zap') && t.includes('drawnAs flow')), 'names the field, the value and what it drew');
+  eq(lines('unknownFields: ').length, 1, 'the style field');
+  eq(lines('looksLikeBoundary: ').length, 1, 'the VPC box');
+  eq(lines('namesAProduct: ').length, 1, 'the Postgres box');
+  eq(lines('placeholders.forComponents: ').join(), 'placeholders.forComponents: zqxwv plorbatron', 'the empty slot');
+  eq(lines('crossings: ').length, report.crossings.length, 'every crossing');
+  assert(report.crossings.length > 0, 'the edge from q to c runs through b');
+  eq(lines('notes: ').length, report.notes.length, 'every note');
+  const validated = validator.validateFile(join(dir, 'bad.excalidraw'));
+  assert(validated.warnings.length > 0, 'the fixture draws shapes validate warns on');
+  eq(lines('validate warning: ').join('\n'), validated.warnings.map((w) => `validate warning: ${w}`).join('\n'), 'every validate warning, as printed');
+  eq(report.validate, `PASS, ${validated.warnings.length} warning${validated.warnings.length > 1 ? 's' : ''}`, 'the verdict validate prints');
+  eq(todo.length, validated.warnings.length + 2 + 1 + 1 + 1 + 1 + report.crossings.length + report.notes.length, 'nothing else');
+
+  // validate passes every committed example with no warning. Two lay out icons
+  // nothing connects on purpose, the gallery and the platform's cross-cutting
+  // services, and carry the note that says so; nothing else.
+  for (const file of readdirSync(join(SKILL, 'assets', 'templates')).filter((f) => f.endsWith('.spec.json'))) {
+    const clean = build(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', file), 'utf8')), file.replace('.spec.json', ''));
+    eq(clean.validate, 'PASS', file);
+    eq(JSON.stringify(clean.todo), JSON.stringify(clean.notes.map((n) => `notes: ${n}`)), file);
+    assert(clean.notes.every((n) => /^\d+ icons? ha(?:s|ve) no edge: /.test(n)), `${file}: ${clean.notes.join(' | ')}`);
+  }
+  eq(JSON.stringify(build(JSON.parse(readFileSync(STARTER_SPEC, 'utf8')), 'starter').todo), '[]', 'the starter, every kind drawn, leaves nothing to do');
 });
 
 // "For the README" routes to Excalidraw, and GitHub cannot show a .excalidraw.

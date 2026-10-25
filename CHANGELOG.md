@@ -14,6 +14,11 @@ separate file, no naming scheme, no required format beyond that.
 ### Added
 
 - `render --embed`, in both engines, writes an SVG or PNG for a README that holds its own source byte for byte: `<base>.drawio.svg` carries the whole `.drawio`, every page and the spec, the way Draw.io's `-e` export does, and `<scene>.excalidraw.svg` carries the scene the way Excalidraw's "Embed scene" export does. GitHub shows the picture, and Draw.io, its VS Code extension or the Excalidraw app opens it as the diagram. `spec`, `analyze` and `validate` in both engines now read such an image and say so; a PNG or SVG that holds nothing is reported as such. Without `--embed`, renders and their names are unchanged. Draw.io's `validate` error for a plain SVG now ends ", and no diagram is embedded in it". Each skill's reading table names the README image beside a failed render (#439, #447).
+- Both builders validate the file they just wrote and end their report with two keys: `validate`, the verdict `validate` prints (`PASS, 1 warning`), and `todo`, one line per thing to fix or report. `todo` holds `validate`'s errors and warnings as printed, then one line per entry of `style.errors`, `unknownKinds`, `unknownFields`, `looksLikeBoundary`, `namesAProduct`, Draw.io's `icons.missing`, `ambiguous`, `needsFetch`, `lifecycle` and `logos.missing` / `opaqueBackground`, Excalidraw's `placeholders` and `crossings`, and `notes`; it is empty when there is nothing to do. Step 4 of both drawing skills and of `AGENTS.md` names `todo` in place of a list of keys, which had left out `icons.missing`. Every other key and the exit code are unchanged, and a build takes about 0.2 s longer. The `shared-icon-gallery` and `aws-data-platform` examples' `todo` is their one existing "icons have no edge" note (#437).
+
+### Changed
+
+- `AGENTS.md` §5, the whole editing route on hosts other than Claude Code, names the spec a built file carries: `arkitect <engine> spec <file>` prints it, then change it and rebuild over the file. It had named only `analyze` and a hand edit. The bytes came from step 4's shorter text, so `AGENTS.md` is 14,645 of its 14,800 bytes, down from 14,786 (#406).
 
 ### Removed
 

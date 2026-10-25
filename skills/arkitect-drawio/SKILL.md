@@ -87,13 +87,12 @@ the report.
    `"pack"`. The build refuses, before writing anything and listing every
    problem (exit 1), a spec whose edges or parents name something that does not
    exist, or whose numbers are not numbers (a string `col`, a size of 0 or
-   less). Fix the spec; never drop the edge. A missing `col` or `row` is 0. An
-   unknown node or edge `kind` still builds and is listed under `unknownKinds`,
-   a key no part of a spec takes — `style` above all — under `unknownFields`,
-   a box faking a boundary under `looksLikeBoundary`, a box naming a bundled
-   product under `namesAProduct`: fix each or report it,
-   and never treat a field the builder dropped as applied. Hand-written XML is only for what the spec cannot
-   express — see `references/editing.md`.
+   less). Fix the spec; never drop the edge. A missing `col` or `row` is 0.
+   The build then validates the file and ends its report with `todo`, one line
+   per thing to act on — an unknown `kind`, a dropped field (`style` above
+   all), an unresolved icon, a `validate` warning. Fix the spec or report the
+   line; a dropped field never applied. Hand-written XML is only for what the
+   spec cannot express — see `references/editing.md`.
 
 5. **Never overwrite blind.** The builder backs up an existing file first and
    keeps the oldest backup plus the newest five (`--keep-backups N`; `0` keeps

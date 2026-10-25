@@ -136,6 +136,9 @@ a text's size and place, an arrow's route (#403).
   listed at once, exit `1`, nothing written.
 - **An unknown kind or field still builds,** and the report lists it under
   `unknownKinds` or `unknownFields`. Treat a non-empty list as something to fix.
+- **A build validates what it wrote.** Its report ends with `validate`, the
+  verdict `validate` prints, and `todo`: one line per thing to fix or report,
+  empty when there is nothing (#437).
 - **Backups.** A build copies an existing target to
   `<name>.backup-YYYYMMDD-HHMMSS.<ext>` first, then keeps the oldest backup and
   the newest five (`--keep-backups N`, `0` keeps all). When the target holds
@@ -167,6 +170,8 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341) |
 | `crossings` | Excalidraw: an edge through a node it doesn't connect |
 | `notes` | an icon no edge touches, and similar things worth a look: a diagram of more than three nodes with edges and no `note` to hold the assumptions, or a legend turned off over two or more connector kinds (#384). First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
+| `validate` | the verdict `validate` gives the file just written: `PASS`, `FAIL`, and how many warnings (#437) |
+| `todo` | one line per entry above that needs acting on, prefixed with its key, after `validate`'s own errors and warnings as it prints them. Not listed: what resolved or embedded, `sameArtwork`, `selfCaptioned`, and a bundled mark's `opaqueBackground`, which describe the artwork. Empty when there is nothing to do (#437) |
 
 `validate` ends its warnings with the rule: each is a defect to fix, or to
 quote in a report with every id it names (#248). Excalidraw names the spec

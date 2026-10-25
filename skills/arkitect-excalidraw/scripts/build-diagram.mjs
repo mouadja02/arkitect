@@ -32,7 +32,8 @@ import {
   normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
 } from './lib/excalidraw-core.mjs';
 import { resolveIcon, unattended } from './find-icon.mjs';
-import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES } from './validate-excalidraw.mjs';
+import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES, validateFile } from './validate-excalidraw.mjs';
+import { todoOf, verdict } from '../../arkitect-drawio/scripts/lib/todo.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
@@ -1734,7 +1735,7 @@ function main(argv) {
   const pruned = pruneBackups(out, { keep: Number(keep) });
 
   const view = bbox(scene.elements);
-  console.log(JSON.stringify({
+  const printed = {
     wrote: out,
     backup,
     pruned,
@@ -1782,7 +1783,11 @@ function main(argv) {
     notes: report.notes,
     // Which style drew this: the house style, or this install's override (#90).
     style: styleSummary(style),
-  }, null, 2));
+  };
+  // The scene as written, checked as `validate` checks it, and every line above
+  // that needs acting on, in one list (#437).
+  const validated = validateFile(out);
+  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated) }, null, 2));
 }
 
 if (process.argv[1] && process.argv[1].endsWith('build-diagram.mjs')) main(process.argv.slice(2));

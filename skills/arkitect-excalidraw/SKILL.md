@@ -87,13 +87,12 @@ Do not undo them.
    The build writes nothing and lists every problem (exit 1) when an edge or
    parent names something missing or a number is not one (a string `col`, a
    size ≤ 0). Edges connect nodes, not boundaries. Fix the spec; never drop the
-   edge. A missing `col` or `row` is 0. The report lists an unknown `kind` under
-   `unknownKinds`, a key no part of a spec takes — a node's `style` above all — under
-   `unknownFields`, a shape faking a boundary under `looksLikeBoundary`, a
-   shape naming a bundled product under `namesAProduct`, and an edge through a
-   node it does not connect under `crossings` (move that node): fix each or
-   report it; a field the builder dropped never applied. Hand-written JSON only for what
-   the spec cannot express: `references/editing.md`.
+   edge. A missing `col` or `row` is 0. The build then validates the scene and
+   ends its report with `todo`, one line per thing to act on — an unknown
+   `kind`, a dropped field (a node's `style` above all), a placeholder, an
+   edge through a node (move that node), a `validate` warning. Fix the spec or
+   report the line; a dropped field never applied. Hand-written JSON only for
+   what the spec cannot express: `references/editing.md`.
 
 5. **Never overwrite blind.** The builder backs up an existing file, keeping the
    oldest plus the newest five (`--keep-backups N`, `0` keeps all). Every other
