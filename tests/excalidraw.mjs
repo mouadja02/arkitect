@@ -8,9 +8,10 @@
 // without that file they skip rather than fail, so the suite runs on a clean
 // checkout.
 //
-// The icon-store tests write into the real store under a `zz-test-` prefix and
-// clean up after themselves, because the alternative - a mock filesystem -
-// would stop testing the thing that actually breaks.
+// The icon-store tests write real files, under a `zz-test-` prefix, and clean
+// up after themselves, because the alternative - a mock filesystem - would
+// stop testing the thing that actually breaks. The store they write is the one
+// ARKITECT_HOME names below, inside tests/output/, never the user's (#438).
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync, statSync, linkSync } from 'node:fs';

@@ -56,6 +56,10 @@ const CLAIMS = [
     re: /([\d,]+) packs, ([\d,]+) marks \+ built-in/ },
   { files: ['README.md'], facts: ['excalidrawItems', 'excalidrawLibraries', 'committed'],
     re: /([\d,]+) native items across ([\d,]+) libraries \+ ([\d,]+) shared marks/ },
+  // The badge writes its comma URL-encoded, so the counts above never saw it,
+  // and it stayed at 6,005 when they moved (#438).
+  { files: ['README.md'], facts: ['bundled'],
+    re: /img\.shields\.io\/badge\/icons-([\d]+(?:%2C\d{3})*)%20bundled/ },
 
   { files: ['docs/icons.md'], facts: ['bundled'],
     re: /ships\s+([\d,]+) marks and refuses to fake/ },
@@ -111,10 +115,13 @@ const CLAIMS = [
 
 const PACK_TABLE_HEAD = '| Pack | Icons | What is in it |';
 
-const num = (text) => Number(text.replace(/,/g, ''));
+const num = (text) => Number(text.replace(/,|%2C/g, ''));
 // Suggest the value written the way the doc writes it, so the fix is a retype
 // of the digits and nothing else.
-const like = (value, found) => (found.includes(',') ? value.toLocaleString('en-US') : String(value));
+const like = (value, found) => {
+  if (found.includes('%2C')) return value.toLocaleString('en-US').replace(/,/g, '%2C');
+  return found.includes(',') ? value.toLocaleString('en-US') : String(value);
+};
 
 function hasAnswer(row) {
   const answer = row[1];

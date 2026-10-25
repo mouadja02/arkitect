@@ -5,11 +5,11 @@ node tests/run-tests.mjs                # all three suites
 node tests/run-tests.mjs drawio         # or one: drawio, excalidraw, toolkit
 ```
 
-Offline and deterministic: no network, no Docker, no dependencies. About 20
-seconds on a laptop, up to a minute on a CI runner. It needs a clone; the npm
-package doesn't carry it.
+Offline and deterministic: no network, no Docker, no dependencies. A full run
+took about two minutes on a laptop in October 2026 (#438). It needs a clone;
+the npm package doesn't carry it.
 
-On a fresh clone expect `517 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `519 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -19,10 +19,10 @@ declared with `sourceTest()`. A pull request that adds a test updates the line,
 and the runner prints the one to use. With local sources present it prints the
 fresh-clone expectation beside the local numbers; quote that one (#47).
 
-Each suite writes scratch to `tests/output/<engine>/` in its own process. The
-icon-store tests write to your real store under a `zz-test-` prefix and clean
-up before and after; the suite points `ARKITECT_HOME` into `tests/output/`
-otherwise.
+Each suite writes scratch to `tests/output/<engine>/` in its own process, and
+points `ARKITECT_HOME` into it, so no test reads or writes your own store: the
+icon-store tests too, which still name their icons with a `zz-test-` prefix
+and clean them up before and after.
 
 ## What is covered
 
@@ -32,12 +32,12 @@ Every test is named for the case it covers, with the issue it came from, so
 | area | holds |
 |---|---|
 | generation | native, valid output in both engines; every edge bound at both ends; committed templates rebuild byte for byte (Draw.io) or element for element (Excalidraw) from their specs (#50) |
-| specs | a spec naming what doesn't exist, or with a bad number, is refused before any write, every problem listed; unknown kinds and fields build and are reported (#36, #48, #115, #205, #221) |
+| specs | a spec naming what doesn't exist, or with a bad number, is refused before any write, every problem listed; unknown kinds and fields build and are reported; `docs/cli.md` names every field each builder accepts (#36, #48, #115, #205, #221, #441) |
 | layout | Draw.io sides, spread ends, waypoints round obstacles, label and title placement (#237, #241, #239); Excalidraw boundaries hold every caption, a scope its inside label at any size and a frame its own edges, text is measured as the app draws it, `route: "avoid"` keeps clear and writes fixed segments, edges leave below captions and spread ends that share a side, diagonal labels clear their line (#191, #222, #124, #314, #313, #315, #427, #428) |
 | validation | Draw.io `validate` sees edges through icons, text over containers, shared trunks, dense pages; the Excalidraw validator sees one-sided bindings, bindings the app can't keep, crossings, shared runs, arrows through text, frame members past the frame's edge and a boundary's name over a node (#242–#247, #125, #294, #313, #316, #427, #428) |
 | icons | search and resolution in both engines against the answer keys; generic words, vendor names, title ties, exact ids and refs in either spelling, on-demand entries, lifecycle, identical artwork, and what an unsure search draws (#75, #77, #83, #95, #231, #283, #285, #432, #440, #443) |
 | icon packs | every library loads the way Draw.io reads one; every payload is well-formed; no mark paints only white; every shipped mark is reviewed at the artwork that ships (#33, #72, #73, #81, #85) |
-| icon counts | every count a doc quotes matches the catalog, the library index and the answer keys; the failure names the number to write (#78) |
+| icon counts | every count a doc quotes matches the catalog, the library index and the answer keys, the README badge included; the failure names the number to write. The Node badge matches `engines.node`, and the example's node count its spec (#78, #438) |
 | style | an override restyles tokens and kinds, a bad one is ignored whole, `--defaults` ignores it, the shipped record holds no diagram content (#89, #90) |
 | safety | backups before every overwrite and retention of six (#35, #49); the style record carries no labels; the redaction check |
 | CLI | strict arguments, one-line errors, every documented command dispatchable, rendering failures never reported as renders (#37, #116, #157) |
