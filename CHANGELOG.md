@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- The two release workflows pin `actions/checkout` and `actions/setup-node` to immutable commit SHAs, with their v7 versions kept in comments, so moving tags cannot change code that runs with release credentials (#449).
+
 ## [2.5.0] — 2026-10-25
 
 ### Added
