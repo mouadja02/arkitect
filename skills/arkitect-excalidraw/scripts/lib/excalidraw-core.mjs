@@ -584,6 +584,16 @@ export function reindex(elements) {
   return elements;
 }
 
+// The key a built scene carries the spec it was drawn from under, on an
+// element's customData (#388), and that spec read back from a scene's
+// elements, or null when it carries none. Here, not in the builder, so the
+// validator can read it.
+export const SPEC_KEY = 'arkitectSpec';
+export function carriedSpec(elements) {
+  const spec = (Array.isArray(elements) ? elements : []).find((el) => el && !el.isDeleted && el.customData?.[SPEC_KEY])?.customData[SPEC_KEY];
+  return spec && typeof spec === 'object' ? spec : null;
+}
+
 // ---------------------------------------------------------------- embedded scenes
 
 // An .excalidraw.svg or .excalidraw.png is a picture that also holds its scene,

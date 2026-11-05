@@ -5174,6 +5174,102 @@ test('validate warns on a plain box named like a boundary, and on one named for 
   }
 });
 
+// A label longer than the gap between its two nodes is drawn over both, and its
+// grey chip covers the line and the arrowhead: the page shows two boxes and a
+// caption and no connector. The chip was measured (`beforeArrow`, #241) and
+// compared with containers only (#243), so validate passed it (#473).
+test('validate warns once on an edge label that lies over a node or over its own arrowhead (#473)', () => {
+  const dir = join(TMP, 'p473');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = (label, worker = { col: 1 }) => ({
+    nodes: [{ id: 'orders', kind: 'box', label: 'Orders', col: 0, row: 0 }, { id: 'worker', kind: 'box', label: 'Worker', row: 0, ...worker }],
+    edges: [{ from: 'orders', to: 'worker', label }],
+  });
+  const check = (s, name) => {
+    const file = join(dir, `${name}.drawio`);
+    writeFileSync(file, builder.buildDiagram(s).xml);
+    const r = validator.validateFile(file);
+    return { r, mine: r.warnings.filter((w) => /lies over cell|covers its own arrowhead/.test(w)) };
+  };
+  const clear = check(spec('order events'), 'clear');
+  eq(clear.r.warnings.join(' | '), '', 'a label that fits the gap');
+  eq(clear.r.info.pages[0].labelsOverCells, 0, 'none counted');
+  for (const label of ['publishes order events', 'publishes order events nightly']) {
+    const { r, mine } = check(spec(label), `n${label.length}`);
+    eq(mine.length, 1, `${label.length} characters: one warning for the label, not one per cell and one for the arrowhead: ${r.warnings.join(' | ')}`);
+    assert(mine[0].includes('edge "e1"') && mine[0].includes('cell "orders"') && mine[0].includes('cell "worker"'), mine[0]);
+    assert(mine[0].includes('covers its own arrowhead'), mine[0]);
+    assert(/widen the gap/.test(mine[0]) && /shorten the label/.test(mine[0]), 'it says what to do');
+    assert(!mine[0].includes('publishes'), 'prints ids, never a label');
+    eq(r.info.pages[0].labelsOverCells, 1, 'counted');
+  }
+  // The fix the warning names: a node a column further on holds the label.
+  const wide = check(spec('publishes order events nightly', { col: 2 }), 'wide');
+  eq(wide.r.warnings.join(' | '), '', 'a fractional or larger col widens the gap');
+  // Eleven labels over their nodes are ten warnings, and all eleven are counted.
+  const many = { nodes: [], edges: [] };
+  for (let i = 0; i < 11; i++) {
+    many.nodes.push({ id: `a${i}`, kind: 'box', label: 'A', col: 0, row: i }, { id: `b${i}`, kind: 'box', label: 'B', col: 1, row: i });
+    many.edges.push({ from: `a${i}`, to: `b${i}`, label: 'publishes order events nightly' });
+  }
+  const capped = check(many, 'many');
+  eq(capped.mine.length, 10, 'capped at ten');
+  eq(capped.r.info.pages[0].labelsOverCells, 11, 'counted in full');
+  // A label that only crosses a container's border lies over no cell: that one is #243's.
+  const boxed = check({ boundaries: [{ id: 'zone', label: 'Zone', col: 0, row: 0, cols: 1, rows: 1 }],
+    nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0, parent: 'zone' }, { id: 'b', kind: 'box', label: 'B', col: 2, row: 0 }],
+    edges: [{ from: 'a', to: 'b', label: 'out' }] }, 'boxed');
+  eq(boxed.mine.length, 0, boxed.r.warnings.join(' | '));
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.drawio'))) {
+    const t = validator.validateFile(join(SKILL, 'assets', 'templates', f));
+    eq(t.warnings.filter((w) => /lies over cell|covers its own arrowhead/.test(w)).join(), '', f);
+    eq(t.info.pages.reduce((n, p) => n + p.labelsOverCells, 0), 0, `${f} counts none`);
+  }
+});
+
+// "Assumption: one region" is the note both skills ask for on every drawing, and
+// its last word is a boundary word. The build leaves a note out of the
+// boundary-name and product-name checks; validate decided what was plain from
+// the file, which cannot tell a note from a box, and the warning sent the agent
+// to turn its assumptions into an empty boundary (#474).
+test('validate leaves a note out of the boundary-name and product-name warnings, and a plain box still warns (#474)', () => {
+  const dir = join(TMP, 'p474');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const nodes = [{ id: 'orders', kind: 'box', label: 'Orders', col: 0, row: 0 }, { id: 'worker', kind: 'box', label: 'Worker', col: 1, row: 0 }];
+  const edges = [{ from: 'orders', to: 'worker' }];
+  const check = (spec, name, edit = (x) => x) => {
+    const built = builder.buildDiagram(spec);
+    const file = join(dir, `${name}.drawio`);
+    writeFileSync(file, edit(built.xml));
+    return { built, r: validator.validateFile(file) };
+  };
+  const named = (r) => r.warnings.filter((w) => /named like a boundary|bundled mark/.test(w));
+  for (const text of ['Assumption: one region', 'Assumption: single AWS account']) {
+    const { built, r } = check({ nodes: [...nodes, { id: 'note', kind: 'note', label: text, col: 0, row: 1 }], edges }, `note${text.length}`);
+    eq(built.report.looksLikeBoundary.length + built.report.namesAProduct.length, 0, `the build leaves "${text.length}" characters out`);
+    eq(named(r).join(' | '), '', `${text}: validate does too`);
+  }
+  // The same words in a plain box are still a box that owns nothing, beside a note.
+  const both = check({ nodes: [...nodes, { id: 'vpc', kind: 'box', label: 'Prod VPC', col: 2, row: 0 },
+    { id: 'note', kind: 'note', label: 'Assumption: one region', col: 0, row: 1 }], edges }, 'both');
+  eq(named(both.r).length, 1, named(both.r).join(' | '));
+  assert(named(both.r)[0].includes('cell "vpc"'), named(both.r)[0]);
+  // A file that no longer carries its spec cannot say which box is a note, and
+  // keeps the warning it had.
+  const bare = check({ nodes: [...nodes, { id: 'note', kind: 'note', label: 'Assumption: one region', col: 0, row: 1 }], edges }, 'bare',
+    (xml) => xml.replace(/ arkitect-spec="[^"]*"/, ''));
+  eq(named(bare.r).length, 1, 'a file with no spec keeps today\'s behaviour');
+  // A page is checked against its own page of the spec, not the first one's.
+  const pages = check({ pages: [
+    { name: 'One', nodes: [{ id: 'vpc', kind: 'box', label: 'Prod VPC', col: 0, row: 0 }, nodes[1]], edges: [{ from: 'vpc', to: 'worker' }] },
+    { name: 'Two', nodes: [...nodes, { id: 'note', kind: 'note', label: 'Assumption: one region', col: 0, row: 1 }], edges },
+  ] }, 'pages');
+  eq(named(pages.r).length, 1, named(pages.r).join(' | '));
+  assert(named(pages.r)[0].startsWith('page 0: cell "vpc"'), named(pages.r)[0]);
+});
+
 // The edit eval's fixture: three plain rounded boxes, no icon. The agent added
 // Redis as a matching plain box, the product warning fired, and it swapped in
 // the mark in 6 runs of 6 (#366). A plain page gets a note that says both.
@@ -6161,12 +6257,17 @@ test('build validates what it wrote and ends its report with one todo line per t
   eq(lines('icons.missing: ').length, 1, 'the unresolved icon, which the skill\'s key list left out');
   assert(lines('icons.missing: ')[0].includes('node q'), 'names its node');
   eq(lines('notes: ').length, report.notes.length, 'every note');
-  // validate's own warnings, as validate prints them, beside the build's keys.
+  // validate's own warnings, as validate prints them, beside the build's keys. The
+  // VPC box is both a warning and a looksLikeBoundary entry, and is listed once,
+  // under the key, which names the spec node (#477).
   const validated = validator.validateFile(join(dir, 'bad.drawio'));
   assert(validated.warnings.length > 0, 'the fixture draws a box validate warns on');
-  eq(lines('validate warning: ').join('\n'), validated.warnings.map((w) => `validate warning: ${w}`).join('\n'), 'every validate warning, as printed');
+  const restated = validated.warnings.filter((w) => w.includes(validator.RESTATED.looksLikeBoundary));
+  eq(restated.length, 1, 'validate warns on the VPC box as well');
+  eq(lines('validate warning: ').join('\n'), validated.warnings.filter((w) => !restated.includes(w)).map((w) => `validate warning: ${w}`).join('\n'),
+    'every other validate warning, as printed');
   eq(report.validate, `PASS, ${validated.warnings.length} warning${validated.warnings.length > 1 ? 's' : ''}`, 'the verdict validate prints');
-  eq(todo.length, validated.warnings.length + 2 + 1 + 1 + 1 + 1 + report.notes.length, 'nothing else');
+  eq(todo.length, validated.warnings.length - restated.length + 2 + 1 + 1 + 1 + 1 + report.notes.length, 'nothing else');
 
   // A validate error comes first, then warnings, then the build's keys.
   eq(todoLib.todoOf({ notes: ['n'], icons: { missing: [{ node: 'x', query: 'y' }] } }, { ok: false, errors: ['E'], warnings: ['W'] }).join('|'),
@@ -6178,6 +6279,37 @@ test('build validates what it wrote and ends its report with one todo line per t
     eq(JSON.stringify(clean.todo), '[]', `${file}: ${clean.todo?.join(' | ')}`);
     eq(clean.validate, 'PASS', file);
   }
+});
+
+// Every build validates itself (#437), so a box named for a boundary was listed
+// twice: as validate's warning, then as the build's own key. `todo` is the one
+// list a small model works through, and two lines read as two defects (#477).
+test('todo lists a defect once: a validate warning the build already lists under its key is left out (#477)', () => {
+  const dir = join(TMP, 'p477');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const spec = {
+    nodes: ['Web app', 'API', 'Queue', 'Postgres', 'Prod VPC'].map((label, i) => ({ id: ['web', 'api', 'queue', 'db', 'vpc'][i], kind: 'box', label, col: i, row: 0 })),
+    edges: [{ from: 'web', to: 'api' }, { from: 'api', to: 'queue' }, { from: 'queue', to: 'db' }, { from: 'web', to: 'db' }],
+  };
+  writeFileSync(join(dir, 'five.json'), JSON.stringify(spec));
+  const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', 'build', join(dir, 'five.json'), '--out', join(dir, 'five.drawio'), '--defaults'], { encoding: 'utf8' });
+  eq(r.status, 0, r.stderr);
+  const report = JSON.parse(r.stdout);
+  eq(report.todo.map((t) => t.split(':')[0]).join(), 'looksLikeBoundary,namesAProduct,notes', `one line per thing to fix: ${report.todo.join(' | ')}`);
+  assert(report.todo[0].includes('node vpc'), 'the key\'s line names the spec node');
+  eq(report.validate, 'PASS, 1 warning', 'validate itself still counts the box');
+  assert(validator.validateFile(join(dir, 'five.drawio')).warnings.some((w) => w.includes(validator.RESTATED.looksLikeBoundary)), 'and still prints it');
+
+  // todoOf: a warning a key restates is dropped only when that key lists something.
+  const result = { errors: [], warnings: ['cell "a" is a plain box named like a boundary (vpc)', 'something else'] };
+  const phrases = { looksLikeBoundary: 'is a plain box named like a boundary' };
+  eq(todoLib.todoOf({ looksLikeBoundary: [{ node: 'a' }] }, result, phrases).join('|'), 'validate warning: something else|looksLikeBoundary: node a', 'the key\'s line stands for the warning');
+  eq(todoLib.todoOf({ looksLikeBoundary: [] }, result, phrases).length, 2, 'a key that lists nothing leaves validate\'s warning the only report');
+  eq(todoLib.todoOf({ looksLikeBoundary: [{ node: 'a' }] }, result).length, 3, 'no phrases, nothing dropped');
+  // cap: ten entries and a count, as validate caps.
+  eq(todoLib.cap(['a', 'b', 'c'], 2).join('|'), 'a|b|and 1 more', 'over the cap');
+  eq(todoLib.cap(['a', 'b'], 2).join('|'), 'a|b', 'at the cap');
 });
 
 // GitHub shows neither a .drawio nor an .excalidraw, so a README got a preview

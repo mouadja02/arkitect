@@ -29,11 +29,12 @@ import {
   bindLabel, bindArrow, canBind, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
-  normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed,
+  normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed, SPEC_KEY,
 } from './lib/excalidraw-core.mjs';
+export { SPEC_KEY };
 import { resolveIcon, unattended } from './find-icon.mjs';
-import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES, validateFile } from './validate-excalidraw.mjs';
-import { todoOf, verdict } from '../../arkitect-drawio/scripts/lib/todo.mjs';
+import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES, RESTATED, validateFile } from './validate-excalidraw.mjs';
+import { todoOf, verdict, cap } from '../../arkitect-drawio/scripts/lib/todo.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
@@ -696,7 +697,6 @@ export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {})
 // build wrote: the app moves an element's version whenever it changes one, so
 // a scene changed in an editor since no longer matches it. Every label in the
 // spec is already in the scene.
-export const SPEC_KEY = 'arkitectSpec';
 const builtPrint = (elements) => {
   const live = elements.filter((el) => el && !el.isDeleted);
   return `${live.length}:${live.reduce((n, el) => n + (Number(el.version) || 0), 0)}`;
@@ -776,7 +776,7 @@ function assemble(spec, style) {
   scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
-    icons: [], iconSources: {}, missingIcons: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
+    icons: [], iconSources: {}, missingIcons: [], missingNodes: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
     style: { source: style.source, reason: style.reason, file: style.file, overridden: style.overridden, errors: style.errors },
   };
   // A known field with a value the format has no word for: written and drawn
@@ -880,6 +880,7 @@ function assemble(spec, style) {
       const resolved = n.kind === 'placeholder' ? null : resolveIcon(n.icon ?? n.label);
       if (!resolved) {
         report.missingIcons.push(n.icon ?? n.label);
+        report.missingNodes.push(n.id);
         // A slot to be filled in by hand, not a stand-in for the real mark. It
         // has to be impossible to mistake for a finished node, so a plain box
         // in the node's own colour is the wrong answer. Nothing else in the
@@ -1756,7 +1757,8 @@ function main(argv) {
     // named here, so it gets mentioned to the user rather than shipped.
     placeholders: report.missingIcons.length ? {
       count: report.missingIcons.length,
-      forComponents: report.missingIcons,
+      // The node and the search text, as Draw.io's icons.missing has them (#477).
+      forComponents: report.missingIcons.map((query, i) => ({ node: report.missingNodes[i], query })),
       drawnAs: 'a dotted violet square with a "?", captioned, grouped',
       resolve: [
         'node find-icon.mjs "<component>"                    search the bundled libraries again',
@@ -1778,8 +1780,9 @@ function main(argv) {
     // text. Paste an entry's `replace` over its node, or say why it stays text
     // (#240, #287).
     namesAProduct: report.namesAProduct,
-    // A connector drawn through a node it does not connect (#125).
-    crossings: report.crossings,
+    // A connector drawn through a node it does not connect (#125). Ten, and how
+    // many more, as validate stops at ten: a big scene's list ran to kilobytes (#477).
+    crossings: cap(report.crossings),
     notes: report.notes,
     // Which style drew this: the house style, or this install's override (#90).
     style: styleSummary(style),
@@ -1787,7 +1790,7 @@ function main(argv) {
   // The scene as written, checked as `validate` checks it, and every line above
   // that needs acting on, in one list (#437).
   const validated = validateFile(out);
-  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated) }, null, 2));
+  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated, RESTATED) }, null, 2));
 }
 
 if (process.argv[1] && process.argv[1].endsWith('build-diagram.mjs')) main(process.argv.slice(2));

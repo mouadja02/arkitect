@@ -307,6 +307,16 @@ export function parseMxfile(text, path = null) {
   return { path, attrs: opening ? parseAttrs(opening) : {}, opening, pages, bytes: Buffer.byteLength(text) };
 }
 
+// The attribute a built file carries the spec it was drawn from in (#388), and
+// that spec read back from a parsed <mxfile>'s attributes, or null when it
+// carries none. Here, not in the builder, so the validator can read it.
+export const SPEC_ATTR = 'arkitect-spec';
+export function carriedSpec(attrs) {
+  const value = attrs?.[SPEC_ATTR];
+  if (value == null) return null;
+  try { return JSON.parse(value); } catch { return null; }
+}
+
 // ---------------------------------------------------------------- cells
 
 export function parseStyle(style) {

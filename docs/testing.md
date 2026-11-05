@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. A full run
 took about two minutes on a laptop in October 2026 (#438). It needs a clone;
 the npm package doesn't carry it.
 
-On a fresh clone expect `525 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `531 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -34,7 +34,7 @@ Every test is named for the case it covers, with the issue it came from, so
 | generation | native, valid output in both engines; every edge bound at both ends; committed templates rebuild byte for byte (Draw.io) or element for element (Excalidraw) from their specs (#50) |
 | specs | a spec naming what doesn't exist, or with a bad number, is refused before any write, every problem listed; unknown kinds and fields build and are reported; `docs/cli.md` names every field each builder accepts (#36, #48, #115, #205, #221, #441) |
 | layout | Draw.io sides, spread ends, waypoints round obstacles, label and title placement (#237, #241, #239); Excalidraw boundaries hold every caption, a scope its inside label at any size and a frame its own edges, text is measured as the app draws it, `route: "avoid"` keeps clear and writes fixed segments, edges leave below captions and spread ends that share a side, diagonal labels clear their line (#191, #222, #124, #314, #313, #315, #427, #428) |
-| validation | Draw.io `validate` sees edges through icons, text over containers, shared trunks, dense pages; the Excalidraw validator sees one-sided bindings, bindings the app can't keep, crossings, shared runs, arrows through text, frame members past the frame's edge and a boundary's name over a node (#242–#247, #125, #294, #313, #316, #427, #428) |
+| validation | Draw.io `validate` sees edges through icons, text over containers, shared trunks, dense pages; the Excalidraw validator sees one-sided bindings, bindings the app can't keep, crossings, shared runs, arrows through text, frame members past the frame's edge and a boundary's name over a node; both validators warn on an edge label over a node or, in Draw.io, over its own arrowhead, and leave a note out of the boundary-name and product-name warnings; `todo` lists each defect once (#242–#247, #125, #294, #313, #316, #427, #428, #473, #474, #477) |
 | icons | search and resolution in both engines against the answer keys; generic words, vendor names, title ties, exact ids and refs in either spelling, on-demand entries, lifecycle, identical artwork, and what an unsure search draws (#75, #77, #83, #95, #231, #283, #285, #432, #440, #443) |
 | icon packs | every library loads the way Draw.io reads one; every payload is well-formed; no mark paints only white; every shipped mark is reviewed at the artwork that ships (#33, #72, #73, #81, #85) |
 | icon counts | every count a doc quotes matches the catalog, the library index and the answer keys, the README badge included; the failure names the number to write. The Node badge matches `engines.node`, and the example's node count its spec (#78, #438) |

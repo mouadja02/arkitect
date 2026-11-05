@@ -28,10 +28,19 @@ const at = (report, key) => key.split('.').reduce((v, k) => v?.[k], report);
 export const verdict = (result) => `${result.ok ? 'PASS' : 'FAIL'}`
   + `${result.warnings.length ? `, ${result.warnings.length} warning${result.warnings.length > 1 ? 's' : ''}` : ''}`;
 
-export function todoOf(report, result) {
+// At most `max` entries, then how many were left out, as `validate` stops at ten.
+export const cap = (list, max = 10) => (list.length > max ? [...list.slice(0, max), `and ${list.length - max} more`] : list);
+
+// `restated` maps a build key to the phrase its `validate` warning carries
+// (each validator's RESTATED). A warning for something the build lists under
+// that key is the key's line already, and the key's names the spec node and
+// carries the entry to paste; so it is left out, and the defect is listed once.
+// A key that lists nothing leaves `validate`'s warning the only report (#477).
+export function todoOf(report, result, restated = {}) {
+  const listed = Object.entries(restated).filter(([key]) => (at(report, key) ?? []).length).map(([, phrase]) => phrase);
   return [
     ...result.errors.map((e) => `validate error: ${e}`),
-    ...result.warnings.map((w) => `validate warning: ${w}`),
+    ...result.warnings.filter((w) => !listed.some((phrase) => w.includes(phrase))).map((w) => `validate warning: ${w}`),
     ...TODO_KEYS.flatMap((key) => (at(report, key) ?? []).map((entry) => `${key}: ${brief(entry)}`)),
   ];
 }

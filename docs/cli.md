@@ -164,14 +164,14 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | key | lists |
 |---|---|
 | `icons` | what resolved and from where; Draw.io adds `missing`, `ambiguous`, `needsFetch`, `sameArtwork` and `lifecycle`, Excalidraw `selfCaptioned` and `opaqueBackground`. A Draw.io search the resolver is unsure of draws a labelled box, listed under `missing` with its `reason` and `alternatives`; `ambiguous` holds only one product's same-title variants, whose leader draws (#432). Each Draw.io entry names its `node` (#409). Each shared mark is named by `ref` and `pack`; `--verbose` adds `icons.sources`, its source, licence and hash once per ref (#386) |
-| `placeholders` | Excalidraw: each empty slot drawn, and why |
+| `placeholders` | Excalidraw: each empty slot drawn, and why; `forComponents` names each one's `node` and `query`, as Draw.io's `icons.missing` does (#477) |
 | `logos` | Draw.io: the fetched logos a build embedded |
 | `namesAProduct` | a plain box whose label names a bundled product with artwork to draw, never an on-demand one (#434); `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
-| `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341) |
-| `crossings` | Excalidraw: an edge through a node it doesn't connect |
+| `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341), and leaves a `note` node out, as the build does, for a file that carries its spec (#474) |
+| `crossings` | Excalidraw: an edge through a node it doesn't connect. The first ten, then `and N more`, as `validate` stops at ten (#477) |
 | `notes` | an icon no edge touches, and similar things worth a look: a diagram of more than three nodes with edges and no `note` to hold the assumptions, or a legend turned off over two or more connector kinds (#384). First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
 | `validate` | the verdict `validate` gives the file just written: `PASS`, `FAIL`, and how many warnings (#437) |
-| `todo` | one line per entry above that needs acting on, prefixed with its key, after `validate`'s own errors and warnings as it prints them. Not listed: what resolved or embedded, `sameArtwork`, `selfCaptioned`, and a bundled mark's `opaqueBackground`, which describe the artwork. Empty when there is nothing to do (#437) |
+| `todo` | one line per entry above that needs acting on, prefixed with its key, after `validate`'s own errors and warnings as it prints them, except a warning for a box named like a boundary or for a product, or an edge through a node, when the key above already lists it: that is the key's line, which names the spec node, and is not repeated (#477). Not listed: what resolved or embedded, `sameArtwork`, `selfCaptioned`, and a bundled mark's `opaqueBackground`, which describe the artwork. Empty when there is nothing to do (#437) |
 
 `validate` ends its warnings with the rule: each is a defect to fix, or to
 quote in a report with every id it names (#248). Excalidraw names the spec
