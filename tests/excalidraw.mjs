@@ -1542,6 +1542,77 @@ test('validate warns on a plain shape named like a boundary, once each, and not 
   }
 });
 
+// A label longer than the gap between its two nodes is drawn over both, across
+// their outlines. The builder slides a label off a node when its run has room
+// and leaves it where it is when it has none, and no check compared a free
+// label with a shape, so validate passed it (#473).
+test('validate warns once on an edge label that lies over a node (#473)', () => {
+  const spec = (label, col = 1) => ({
+    nodes: [{ id: 'orders', kind: 'box', label: 'Orders', col: 0, row: 0 }, { id: 'worker', kind: 'box', label: 'Worker', col, row: 0 }],
+    edges: [{ from: 'orders', to: 'worker', label }],
+  });
+  const check = (s) => validator.validateScene(builder.buildDiagram(s, { seed: 1 }).scene);
+  const over = (r) => r.warnings.filter((w) => w.startsWith('edge label '));
+  const clear = check(spec('order events'));
+  eq(clear.warnings.join(' | '), '', 'a label that fits the gap');
+  eq(clear.info.labelsOverNodes, 0, 'none counted');
+  for (const label of ['publishes order events', 'publishes order events nightly']) {
+    const r = check(spec(label));
+    const w = over(r);
+    eq(w.length, 1, `${label.length} characters: one warning for the label, not one per node: ${r.warnings.join(' | ')}`);
+    assert(w[0].includes('(edge "orders->worker")') && w[0].includes('(node "orders")') && w[0].includes('(node "worker")'), w[0]);
+    assert(/shorten the label/.test(w[0]) && /widen the gap/.test(w[0]), 'it says what to do');
+    assert(!w[0].includes('publishes'), 'prints ids, never a label');
+    eq(r.info.labelsOverNodes, 1, 'counted');
+  }
+  eq(check(spec('publishes order events nightly', 2)).warnings.join(' | '), '', 'a node a column on holds the label');
+  // Eleven labels over their nodes are ten warnings, and all eleven are counted.
+  const many = { nodes: [], edges: [] };
+  for (let i = 0; i < 11; i++) {
+    many.nodes.push({ id: `a${i}`, kind: 'box', label: 'A', col: 0, row: i }, { id: `b${i}`, kind: 'box', label: 'B', col: 1, row: i });
+    many.edges.push({ from: `a${i}`, to: `b${i}`, label: 'publishes order events nightly' });
+  }
+  const capped = check(many);
+  eq(over(capped).length, 10, 'capped at ten');
+  eq(capped.info.labelsOverNodes, 11, 'counted in full');
+  // A scene a person or another tool drew carries no edge tags: nothing to compare.
+  const bare = builder.buildDiagram(spec('publishes order events nightly'), { seed: 1 }).scene;
+  for (const el of bare.elements) if (el.customData) delete el.customData.arkitect;
+  eq(over(validator.validateScene(bare)).length, 0, 'an untagged scene keeps today\'s behaviour');
+  for (const f of readdirSync(join(SKILL, 'assets', 'templates')).filter((n) => n.endsWith('.excalidraw'))) {
+    const r = validator.validateScene(JSON.parse(readFileSync(join(SKILL, 'assets', 'templates', f), 'utf8')));
+    eq(over(r).join(), '', f);
+    eq(r.info.labelsOverNodes, 0, `${f} counts none`);
+  }
+});
+
+// "Assumption: one region" is the note both skills ask for on every drawing, and
+// its last word is a boundary word. The build leaves a note out of the
+// boundary-name and product-name checks; validate decided what was plain from
+// the scene, which cannot tell a note from a box, and the warning sent the agent
+// to turn its assumptions into an empty boundary or the AWS Account icon (#474).
+test('validate leaves a note out of the boundary-name and product-name warnings, and a plain shape still warns (#474)', () => {
+  const nodes = [{ id: 'orders', kind: 'box', label: 'Orders', col: 0, row: 0 }, { id: 'worker', kind: 'box', label: 'Worker', col: 1, row: 0 }];
+  const edges = [{ from: 'orders', to: 'worker' }];
+  const named = (r) => r.warnings.filter((w) => /named like a boundary|bundled mark/.test(w));
+  for (const text of ['Assumption: one region', 'Assumption: single AWS account']) {
+    const built = builder.buildDiagram({ nodes: [...nodes, { id: 'note', kind: 'note', label: text, col: 0, row: 1 }], edges }, { seed: 1 });
+    eq(built.report.looksLikeBoundary.length + built.report.namesAProduct.length, 0, `the build leaves "${text.length}" characters out`);
+    eq(named(validator.validateScene(built.scene)).join(' | '), '', `${text}: validate does too`);
+  }
+  // The same words in a plain shape are still a shape that owns nothing, beside a note.
+  const both = builder.buildDiagram({ nodes: [...nodes, { id: 'vpc', kind: 'box', label: 'Prod VPC', col: 2, row: 0 },
+    { id: 'note', kind: 'note', label: 'Assumption: one region', col: 0, row: 1 }], edges }, { seed: 1 });
+  const warned = named(validator.validateScene(both.scene));
+  eq(warned.length, 1, warned.join(' | '));
+  assert(warned[0].includes('(node "vpc")'), warned[0]);
+  // A scene that no longer carries its spec cannot say which shape is a note,
+  // and keeps the warning it had.
+  const bare = builder.buildDiagram({ nodes: [...nodes, { id: 'note', kind: 'note', label: 'Assumption: one region', col: 0, row: 1 }], edges }, { seed: 1 }).scene;
+  for (const el of bare.elements) if (el.customData) delete el.customData.arkitectSpec;
+  eq(named(validator.validateScene(bare)).length, 1, 'a scene with no spec keeps today\'s behaviour');
+});
+
 // A pattern fragment as a spec: an edge into the page around it, like
 // "<first-node>", gets a stand-in node far to the right.
 const fragmentSpecs = (file) => Object.entries(JSON.parse(readFileSync(file, 'utf8')))
@@ -5311,15 +5382,21 @@ test('build validates what it wrote and ends its report with one todo line per t
   eq(lines('unknownFields: ').length, 1, 'the style field');
   eq(lines('looksLikeBoundary: ').length, 1, 'the VPC box');
   eq(lines('namesAProduct: ').length, 1, 'the Postgres box');
-  eq(lines('placeholders.forComponents: ').join(), 'placeholders.forComponents: zqxwv plorbatron', 'the empty slot');
+  eq(lines('placeholders.forComponents: ').join(), 'placeholders.forComponents: node q, query zqxwv plorbatron', 'the empty slot, and the node it is in (#477)');
   eq(lines('crossings: ').length, report.crossings.length, 'every crossing');
   assert(report.crossings.length > 0, 'the edge from q to c runs through b');
   eq(lines('notes: ').length, report.notes.length, 'every note');
   const validated = validator.validateFile(join(dir, 'bad.excalidraw'));
   assert(validated.warnings.length > 0, 'the fixture draws shapes validate warns on');
-  eq(lines('validate warning: ').join('\n'), validated.warnings.map((w) => `validate warning: ${w}`).join('\n'), 'every validate warning, as printed');
+  // A crossing, the VPC shape and the Postgres shape are each a warning and a
+  // build key's entry; they are listed once, under the key, which names the
+  // spec node (#477).
+  const restated = validated.warnings.filter((w) => Object.values(validator.RESTATED).some((phrase) => w.includes(phrase)));
+  assert(restated.length >= 3, `validate restates what the build lists: ${restated.length}`);
+  eq(lines('validate warning: ').join('\n'), validated.warnings.filter((w) => !restated.includes(w)).map((w) => `validate warning: ${w}`).join('\n'),
+    'every other validate warning, as printed');
   eq(report.validate, `PASS, ${validated.warnings.length} warning${validated.warnings.length > 1 ? 's' : ''}`, 'the verdict validate prints');
-  eq(todo.length, validated.warnings.length + 2 + 1 + 1 + 1 + 1 + report.crossings.length + report.notes.length, 'nothing else');
+  eq(todo.length, validated.warnings.length - restated.length + 2 + 1 + 1 + 1 + 1 + report.crossings.length + report.notes.length, 'nothing else');
 
   // validate passes every committed example with no warning. Two lay out icons
   // nothing connects on purpose, the gallery and the platform's cross-cutting
@@ -5331,6 +5408,52 @@ test('build validates what it wrote and ends its report with one todo line per t
     assert(clean.notes.every((n) => /^\d+ icons? ha(?:s|ve) no edge: /.test(n)), `${file}: ${clean.notes.join(' | ')}`);
   }
   eq(JSON.stringify(build(JSON.parse(readFileSync(STARTER_SPEC, 'utf8')), 'starter').todo), '[]', 'the starter, every kind drawn, leaves nothing to do');
+});
+
+// Every build validates itself (#437), so a shape named for a boundary or a
+// product, and every edge through a node, was listed twice in `todo`: once as
+// validate's warning, once as the build's key. The `crossings` key had no cap,
+// where validate stops at ten, so a big scene's report ran to tens of
+// kilobytes; and a placeholder named its search text, not its node (#477).
+test('todo lists a defect once, the crossings stop at ten, and a placeholder names its node (#477)', () => {
+  const dir = join(TMP, 'p477');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const build = (spec, name) => {
+    writeFileSync(join(dir, `${name}.json`), JSON.stringify(spec));
+    const r = spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', 'build', join(dir, `${name}.json`), '--out', join(dir, `${name}.excalidraw`), '--defaults', '--seed', '1'],
+      { encoding: 'utf8', maxBuffer: 1 << 28 });
+    eq(r.status, 0, `${name}: ${r.stderr}`);
+    return { raw: r.stdout, report: JSON.parse(r.stdout) };
+  };
+  const five = build({
+    nodes: ['Web app', 'API', 'Queue', 'Postgres', 'Prod VPC'].map((label, i) => ({ id: ['web', 'api', 'queue', 'db', 'vpc'][i], kind: 'box', label, col: i, row: 0 })),
+    edges: [{ from: 'web', to: 'api' }, { from: 'api', to: 'queue' }, { from: 'queue', to: 'db' }, { from: 'web', to: 'db' }],
+  }, 'five').report;
+  eq(five.todo.map((t) => t.split(':')[0]).join(), 'looksLikeBoundary,namesAProduct,crossings,crossings,notes', `one line per thing to fix: ${five.todo.join(' | ')}`);
+  eq(five.validate, 'PASS, 4 warnings', 'validate itself still counts all four');
+  assert(validator.validateFile(join(dir, 'five.excalidraw')).warnings.some((w) => w.includes(validator.RESTATED.crossings)), 'and still prints them');
+
+  // Sixty boxes on ten columns, chained: each wrap-around edge runs through a row.
+  const chain = (n, cols) => ({
+    nodes: Array.from({ length: n }, (_, i) => ({ id: `n${i}`, kind: 'box', label: `Step ${i}`, col: i % cols, row: Math.floor(i / cols) })),
+    edges: Array.from({ length: n - 1 }, (_, i) => ({ from: `n${i}`, to: `n${i + 1}` })),
+  });
+  const all = builder.buildDiagram(chain(60, 10), { seed: 1 }).report.crossings.length;
+  assert(all > 10, `the fixture crosses more than ten nodes: ${all}`);
+  const { report: big } = build(chain(60, 10), 'chain60');
+  eq(big.crossings.length, 11, 'ten entries and a count');
+  eq(big.crossings[10], `and ${all - 10} more`, 'which says how many');
+  eq(big.todo.filter((t) => t.startsWith('crossings: ')).length, 11, 'the same in todo');
+  eq(big.todo.filter((t) => t.startsWith('validate warning: ') && t.includes(validator.RESTATED.crossings)).length, 0, 'and validate\'s ten are not a second copy');
+  eq(builder.buildDiagram(chain(60, 10), { seed: 1 }).report.crossings.length, all, 'the report --draft replay still has every one');
+  const { raw } = build(chain(240, 16), 'chain240');
+  assert(Buffer.byteLength(raw) < 8 * 1024, `a 240-node chain\'s report stays under 8 KB: ${Buffer.byteLength(raw)} bytes`);
+
+  const slot = build({ nodes: [{ id: 'a', kind: 'icon', icon: 'zzqx frobnicator', label: 'Frob', col: 0, row: 0 }, { id: 'b', kind: 'box', label: 'B', col: 1, row: 0 }],
+    edges: [{ from: 'a', to: 'b' }] }, 'slot').report;
+  eq(JSON.stringify(slot.placeholders.forComponents), JSON.stringify([{ node: 'a', query: 'zzqx frobnicator' }]), 'as Draw.io\'s icons.missing has it');
+  eq(slot.todo.filter((t) => t.startsWith('placeholders.forComponents: ')).join(), 'placeholders.forComponents: node a, query zzqx frobnicator', 'the todo line names the node');
 });
 
 // "For the README" routes to Excalidraw, and GitHub cannot show a .excalidraw.

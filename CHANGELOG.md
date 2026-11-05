@@ -11,6 +11,15 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- A build's `todo` lists each defect once (#477). A `validate` warning for a box named like a boundary or for a product, or for an edge through a node, is left out when the build's own key lists the same thing, since that line names the spec node and carries the entry to paste. `validate` itself, its verdict (`PASS, 4 warnings`) and `--json` are unchanged. In Excalidraw's printed report, `crossings` keeps its first ten and then says `and N more`, as `validate` stops at ten, so a 240-node chain's report falls from 45 KB to 3 KB; and each `placeholders.forComponents` entry is now `{ node, query }`, as Draw.io's `icons.missing` has it, where it was the search text alone. A consumer that read those entries as strings reads the `query` field instead. What either engine draws does not change.
+
+### Fixed
+
+- `validate` warns, in both engines, on an edge label longer than the gap between its nodes, which is drawn over them (#473). Draw.io's grey chip also covers the connector and its arrowhead, and its validator had measured that (`beforeArrow`) and never said so. One warning for a label, naming what it covers and that shortening the label or widening the gap (a fractional `col`, a larger `layout.colPitch`) clears it; each engine's `info` counts them (`labelsOverCells`, `labelsOverNodes`). A spec with such a label now gains a warning and draws as before.
+- `validate` no longer tells an agent to turn its assumptions note into a boundary, or into the AWS Account icon (#474). A note such as "Assumption: one region" ends in a boundary word, and both validators warned that it was a plain box named like a boundary, where the builders leave notes out of that check and the skills ask for a note on every drawing. A file that carries its spec now says which nodes are notes; a file that does not keeps the warning.
+
 ## [2.5.0] — 2026-10-25
 
 ### Added

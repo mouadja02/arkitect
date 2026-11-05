@@ -13,7 +13,7 @@
 import { parseJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import {
   elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
-  parseCliOrExit, exitUsage, readProblem, readSceneText, noSceneIn,
+  parseCliOrExit, exitUsage, readProblem, readSceneText, noSceneIn, carriedSpec,
 } from './lib/excalidraw-core.mjs';
 import { catalog, unattended } from './find-icon.mjs';
 import { namedProducts } from '../../arkitect-drawio/scripts/lib/named-products.mjs';
@@ -24,6 +24,16 @@ const MAX_COORD = 200000;
 // The values Excalidraw draws; the builder reports anything else (#380).
 export const STROKE_STYLES = ['solid', 'dashed', 'dotted'];
 export const FILL_STYLES = ['hachure', 'cross-hatch', 'solid', 'zigzag'];
+
+// The phrase in each warning that restates a key the build report lists, with
+// the entry to paste. `todo` leaves such a warning out once the key lists the
+// same thing, so a defect is one line (#477). The warnings below are built
+// from these, so a rewording cannot part them.
+export const RESTATED = {
+  looksLikeBoundary: 'labels a plain shape named like a boundary',
+  namesAProduct: 'labels a plain shape, but its product has a bundled mark',
+  crossings: ', which it does not connect',
+};
 
 const KNOWN_TYPES = new Set([
   'rectangle', 'ellipse', 'diamond', 'arrow', 'line', 'text', 'image',
@@ -416,6 +426,28 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
     }
   }
 
+  // An edge label longer than the gap between its nodes is drawn over them,
+  // across their outlines. The builder slides a label off a node when its run
+  // has room and leaves it where it is when it has none, and no check compared
+  // a free label with a shape. One warning for a label, whatever it covers:
+  // shortening it or widening the gap clears every cause at once (#473).
+  let labelsOverNodes = 0;
+  for (const t of live.filter((el) => el.type === 'text' && !el.containerId && typeof tagOf(el)?.edge === 'string')) {
+    const a = elementBox(t);
+    const under = [];
+    for (const drawn of drawnNodes.values()) {
+      const b = bbox(drawn);
+      const ox = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const oy = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+      if (ox > 1 && oy > 1) under.push(`${who(drawn[0].id)} by ${Math.round(ox)}x${Math.round(oy)}px`);
+    }
+    if (!under.length) continue;
+    labelsOverNodes++;
+    if (labelsOverNodes > 10) continue;
+    warnings.push(`edge label ${who(t.id)} lies over ${under.slice(0, 3).join(' and ')}${under.length > 3 ? ` and ${under.length - 3} more` : ''}; `
+      + 'shorten the label, or widen the gap between the nodes with a fractional `col` or a larger `layout.colPitch`');
+  }
+
   let tight = 0;
   for (const el of live) {
     if (el.type !== 'text' || !el.containerId) continue;
@@ -436,7 +468,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
 
   const crossings = connectorCrossings(live);
   for (const c of crossings.slice(0, 10)) {
-    warnings.push(`arrow ${who(c.arrow)} crosses ${who(c.node)}, which it does not connect; move that shape off the line or give the edge "route": "avoid"`);
+    warnings.push(`arrow ${who(c.arrow)} crosses ${who(c.node)}${RESTATED.crossings}; move that shape off the line or give the edge "route": "avoid"`);
   }
 
   const through = textCrossings(live);
@@ -455,13 +487,18 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   // over it, and an agent read that as done and reported a mark the file did
   // not have (#326). Here it is a warning, the last thing read before the
   // report. Only the mark's ref is printed, never the label.
-  for (const b of plainBoundaries(live).slice(0, 10)) {
-    warnings.push(`text ${who(b.text)} labels a plain shape named like a boundary (${b.named}), which owns nothing; `
+  // A note is prose, and the builder leaves it out of both. The scene cannot
+  // tell a note from a shape by itself, so a scene that carries its spec is
+  // asked; one that does not keeps every shape (#474).
+  const specNodes = carriedSpec(scene.elements)?.nodes;
+  const notes = new Set((Array.isArray(specNodes) ? specNodes : []).filter((n) => n?.kind === 'note').map((n) => n.id));
+  for (const b of plainBoundaries(live, notes).slice(0, 10)) {
+    warnings.push(`text ${who(b.text)} ${RESTATED.looksLikeBoundary} (${b.named}), which owns nothing; `
       + 'move it to `boundaries` in the spec and give each node inside it `parent`');
   }
-  const named = products ? plainProducts(live) : [];
+  const named = products ? plainProducts(live, notes) : [];
   for (const p of named.slice(0, 10)) {
-    warnings.push(`text ${who(p.text)} labels a plain shape, but its product has a bundled mark, ${p.icon}; `
+    warnings.push(`text ${who(p.text)} ${RESTATED.namesAProduct}, ${p.icon}; `
       + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
   }
 
@@ -489,6 +526,7 @@ export function validateScene(scene, { path = '<scene>', products = true } = {})
   info.crossings = crossings.length;
   info.sharedRuns = trunks.length;
   info.textCrossings = through.length;
+  info.labelsOverNodes = labelsOverNodes;
   info.canvas = { width: Math.round(view.width), height: Math.round(view.height) };
   // Off-palette colour is legal Excalidraw and sometimes correct - a brand
   // colour in a traced logo, for one - so it is reported, never failed.
@@ -555,7 +593,7 @@ export function connectorCrossings(elements) {
 // diamond, or the free text of a group drawn from such shapes and lines (a
 // cylinder). A group with an image is an icon and its text a caption; a shape
 // around another shape is a boundary.
-function plainLabels(elements) {
+function plainLabels(elements, notes = new Set()) {
   const live = elements.filter((el) => !el.isDeleted);
   const byId = new Map(live.map((el) => [el.id, el]));
   const PLAIN = new Set(['rectangle', 'ellipse', 'diamond']);
@@ -566,8 +604,10 @@ function plainLabels(elements) {
     && o.x + o.width <= box.x + box.width && o.y + o.height <= box.y + box.height && !(o.groupIds ?? []).includes(outer(box)));
   const labels = [];
   for (const el of live) {
-    // A note is prose, which the build never asks either (#240).
+    // A note is prose, which the build never asks either (#240): a long one is
+    // told by its length, a short one by the spec's word for its node (#474).
     if (el.type !== 'text' || !el.text || el.text.split('\n').length > 3) continue;
+    if (notes.has(el.customData?.arkitect?.node)) continue;
     const container = el.containerId && byId.get(el.containerId);
     if (container) {
       if (PLAIN.has(container.type) && !outer(container) && !encloses(container)) labels.push(el);
@@ -587,13 +627,13 @@ function plainLabels(elements) {
 // A plain shape named like a boundary, "Management Account" or "Prod VPC",
 // owns nothing: the build lists it under looksLikeBoundary, and validate said
 // nothing (#341). The rule is the build's own.
-export const plainBoundaries = (elements) => plainLabels(elements)
+export const plainBoundaries = (elements, notes) => plainLabels(elements, notes)
   .map((el) => ({ text: el.id, named: boundaryWord(el.text.replace(/\n/g, ' '))?.toLowerCase() })).filter((b) => b.named);
 
 // Plain shapes whose label names a product with a bundled mark. The verdict
 // is the build's own namesAProduct one (#240).
-export function plainProducts(elements) {
-  const labels = plainLabels(elements);
+export function plainProducts(elements, notes) {
+  const labels = plainLabels(elements, notes);
   if (!labels.length) return [];
   const entries = catalog();
   // Only a shape named for one product, as its whole label or a whole line of
