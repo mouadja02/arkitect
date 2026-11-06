@@ -489,6 +489,18 @@ a version already published. Setup, once, in the repository settings:
 
 The same steps run locally: `node scripts/release.mjs empty | draft | next <bump> | prepare <bump> | notes <X.Y.Z> | check <X.Y.Z>`, and `resume-prepare` / `resume-publish` answer what a rerun would do from state you pass on the command line.
 
+**The release workflows' actions are pinned by commit SHA** (#449). Both run with
+the npm and repository tokens, and a tag can be moved to other code where a
+commit cannot. Nothing bumps these pins: there is no Dependabot here, so a new
+`actions/checkout` or `actions/setup-node` is taken by hand. Resolve the new tag
+with `git ls-remote https://github.com/actions/<action> refs/tags/<tag> 'refs/tags/<tag>^{}'`
+(an annotated tag prints a second line ending `^{}`, and that one is the
+commit), put the SHA in `uses:` and the tag in the comment after it
+(`uses: actions/checkout@<sha> # v7.0.1`), and run the suite: `tests/toolkit.mjs`
+fails a `uses:` in either workflow that is not a first-party `actions/` SHA with
+a version comment.
+`ci.yml`, `drawio-desktop.yml` and `upstream-watch.yml` still use major tags.
+
 ## What is never automated
 
 An automated maintainer may open pull requests and issues, and nothing else. It

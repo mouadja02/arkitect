@@ -2910,7 +2910,6 @@ test('release workflows pin every action to a commit SHA (#449)', () => {
       const matched = /^(actions\/[\w-]+)@([0-9a-f]{40})$/.exec(target);
       assert(matched, `${file}: ${target} is not a first-party action pinned to a full commit SHA`);
       const [, action, ref] = matched;
-      assert(/^[0-9a-f]{40}$/.test(ref), `${file}: ${action}@${ref} is not pinned to a full commit SHA`);
       assert(/^v\d+(?:\.\d+)*$/.test(version ?? ''), `${file}: ${action}@${ref} has no readable version comment`);
     }
   }
