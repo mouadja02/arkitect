@@ -14,6 +14,7 @@ separate file, no naming scheme, no required format beyond that.
 ### Changed
 
 - A build's `todo` lists each defect once (#477). A `validate` warning for a box named like a boundary or for a product, or for an edge through a node, is left out when the build's own key lists the same thing, since that line names the spec node and carries the entry to paste. `validate` itself, its verdict (`PASS, 4 warnings`) and `--json` are unchanged. In Excalidraw's printed report, `crossings` keeps its first ten and then says `and N more`, as `validate` stops at ten, so a 240-node chain's report falls from 45 KB to 3 KB; and each `placeholders.forComponents` entry is now `{ node, query }`, as Draw.io's `icons.missing` has it, where it was the search text alone. A consumer that read those entries as strings reads the `query` field instead. What either engine draws does not change.
+- The two release workflows pin `actions/checkout` and `actions/setup-node` to immutable commit SHAs, with their v7 versions kept in comments, so moving tags cannot change code that runs with release credentials (#449).
 
 ### Fixed
 

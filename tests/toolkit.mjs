@@ -2874,7 +2874,10 @@ test('every workflow pins a Node 24 action and names its Ubuntu image (#122)', (
 
   for (const file of files) {
     const yml = readFileSync(join(dir, file), 'utf8');
-    for (const [, action, major] of yml.matchAll(/uses:\s*(actions\/[\w-]+)@v(\d+)/g)) {
+    for (const [, action, taggedMajor, pinnedMajor] of yml.matchAll(
+      /uses:\s*(actions\/[\w-]+)@(?:v(\d+)|[0-9a-f]{40}\s+#\s+v(\d+)(?:\.\d+)*)/g,
+    )) {
+      const major = taggedMajor ?? pinnedMajor;
       const floor = FLOOR[action];
       assert(floor !== undefined,
         `${file}: ${action} is not in this test's floor table - check which major declares node24 and add it`);
@@ -2891,6 +2894,24 @@ test('every workflow pins a Node 24 action and names its Ubuntu image (#122)', (
   for (const image of ['ubuntu-24.04', 'ubuntu-26.04']) {
     assert(images.has(image),
       `no workflow runs on ${image}; both run until ubuntu-latest has migrated and the older one is dropped deliberately`);
+  }
+});
+
+// The release jobs hold publish and repository credentials. A moving major
+// tag can change the code those credentials run; a full commit SHA cannot
+// (#449). Keep the readable release beside it for updates.
+test('release workflows pin every action to a commit SHA (#449)', () => {
+  const dir = join(ROOT, '.github', 'workflows');
+  for (const file of ['release-prepare.yml', 'release-publish.yml']) {
+    const yml = readFileSync(join(dir, file), 'utf8');
+    const uses = [...yml.matchAll(/^\s*-?\s*uses:\s*(\S+)(?:\s+#\s*(v\d+(?:\.\d+)*))?/gm)];
+    assert(uses.length > 0, `${file}: no actions found`);
+    for (const [, target, version] of uses) {
+      const matched = /^(actions\/[\w-]+)@([0-9a-f]{40})$/.exec(target);
+      assert(matched, `${file}: ${target} is not a first-party action pinned to a full commit SHA`);
+      const [, action, ref] = matched;
+      assert(/^v\d+(?:\.\d+)*$/.test(version ?? ''), `${file}: ${action}@${ref} has no readable version comment`);
+    }
   }
 });
 
