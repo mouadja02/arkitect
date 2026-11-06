@@ -29,7 +29,8 @@ import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote,
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, unattended, drawnMark, catalogId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf, EXCALIDRAW_ITEM } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
-import { parseCliOrExit, exitUsage, parseMxfile, extractCells, parseStyle, parseDataUri } from './lib/drawio-core.mjs';
+import { parseCliOrExit, exitUsage, parseMxfile, extractCells, parseStyle, parseDataUri, SPEC_ATTR, carriedSpec } from './lib/drawio-core.mjs';
+export { SPEC_ATTR };
 import { readJson } from './lib/read-json.mjs';
 import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
@@ -45,7 +46,7 @@ import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.
 import { planEdges, readEnd, SIDES } from './lib/edge-plan.mjs';
 import { captionBox } from './lib/routes.mjs';
 import { todoOf, verdict } from './lib/todo.mjs';
-import { validateFile } from './validate-drawio.mjs';
+import { validateFile, RESTATED } from './validate-drawio.mjs';
 
 // ---------------------------------------------------------------- tokens
 
@@ -855,15 +856,10 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
 // The builder writes agent="arkitect-drawio" on <mxfile>; Draw.io Desktop
 // rewrites it on save, so a file edited by hand since read as not ours (#339).
 // The spec it also writes there survives the save, and says the same (#388).
-export const SPEC_ATTR = 'arkitect-spec';
 export const isArkitectDrawio = (text) => /<mxfile\b[^>]*\b(agent="arkitect-drawio"|arkitect-spec=")/.test(text.slice(0, 4096));
 
 // The spec a file was built from, parsed, or null when it carries none.
-export function specOf(text) {
-  const value = parseMxfile(text).attrs[SPEC_ATTR];
-  if (value == null) return null;
-  try { return JSON.parse(value); } catch { return null; }
-}
+export const specOf = (text) => carriedSpec(parseMxfile(text).attrs);
 
 // The cells of a file this build replaces that the build does not draw (#376):
 // added since by hand, or dropped from the spec. The ids the builder makes up
@@ -1017,7 +1013,7 @@ function main(argv) {
   // The file as written, checked as `validate` checks it, and every line above
   // that needs acting on, in one list (#437).
   const validated = validateFile(out);
-  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated) }, null, 2));
+  console.log(JSON.stringify({ ...printed, validate: verdict(validated), todo: todoOf(printed, validated, RESTATED) }, null, 2));
 }
 
 if (process.argv[1] && process.argv[1].endsWith('build-diagram.mjs')) main(process.argv.slice(2));

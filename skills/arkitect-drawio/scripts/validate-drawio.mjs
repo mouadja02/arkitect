@@ -7,7 +7,7 @@
 // Nothing here prints cell labels - only ids, counts and geometry.
 
 import {
-  readDiagram, parseMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs,
+  readDiagram, parseMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs, carriedSpec,
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { checkXml } from './lib/xml-check.mjs';
@@ -25,6 +25,15 @@ const MIN_GAP = 8;            // px of clear space expected between siblings
 const TRUNK_MIN = 10;         // px two edges may share into one port (#246)
 const SLIDE_WIDTH = 1920;     // px a page is fit to when it is shown (#247)
 const TEXT_FLOOR = 9;         // px a label may shrink to at that width (#247)
+
+// The phrase in each warning that restates a key the build report lists, with
+// the entry to paste. `todo` leaves such a warning out once the key lists the
+// same thing, so a defect is one line (#477). The warnings below are built
+// from these, so a rewording cannot part them.
+export const RESTATED = {
+  looksLikeBoundary: 'is a plain box named like a boundary',
+  namesAProduct: 'is a plain box, but its product has a bundled mark',
+};
 
 function absoluteGeometry(cells) {
   const byId = new Map(cells.map((c) => [c.id, c]));
@@ -120,6 +129,8 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
   const pageIds = new Set();
   const pageNames = new Set();
   const pages = [];
+  // The spec a built file carries says which of its boxes are notes (#474).
+  const carried = carriedSpec(mx.attrs);
 
   mx.pages.forEach((page, idx) => {
     if (pageIndex !== null && idx !== pageIndex) return;
@@ -414,7 +425,12 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
     // accounts shipped as flat boxes, and validate said nothing (#341, #326).
     // Here they are warnings, the last thing read before the report. Only ids
     // and refs are printed, never a label.
-    const plainBoxes = leaves.filter((c) => !isIcon(c.style) && parseStyle(c.style).shape === undefined)
+    // A note is prose, and the builders leave it out of both checks. The file
+    // cannot tell a note from a box by itself, so a file that carries its spec
+    // is asked; one that does not keeps every box (#474).
+    const specPage = Array.isArray(carried?.pages) ? carried.pages[idx] : carried;
+    const noteIds = new Set((Array.isArray(specPage?.nodes) ? specPage.nodes : []).filter((n) => n?.kind === 'note').map((n) => n.id));
+    const plainBoxes = leaves.filter((c) => !isIcon(c.style) && parseStyle(c.style).shape === undefined && !noteIds.has(c.id))
       .map((c) => ({ id: c.id, label: textLines(c.value).filter(Boolean).join('\n') }))
       .filter((b) => b.label && b.label.split('\n').length <= 3);
     let fakeBoundaries = 0;
@@ -423,7 +439,7 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
       if (!word) continue;
       fakeBoundaries++;
       if (fakeBoundaries <= 10) {
-        warnings.push(`${label}: cell "${b.id}" is a plain box named like a boundary (${word.toLowerCase()}) and owns nothing; `
+        warnings.push(`${label}: cell "${b.id}" ${RESTATED.looksLikeBoundary} (${word.toLowerCase()}) and owns nothing; `
           + 'move it to `boundaries` in the spec and give each node inside it `parent`, so it draws as a container');
       }
     }
@@ -442,7 +458,7 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
         for (const p of named) {
           productBoxes++;
           if (productBoxes <= 10) {
-            warnings.push(`${label}: cell "${p.node}" is a plain box, but its product has a bundled mark, ${p.icon}; `
+            warnings.push(`${label}: cell "${p.node}" ${RESTATED.namesAProduct}, ${p.icon}; `
               + `give that node "kind": "icon", "icon": "${p.icon}" in the spec and rebuild`);
           }
         }
@@ -502,9 +518,12 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
       const o = c.geometry?.offset ?? { x: 0, y: 0 };
       const [p, q] = segments.at(-1);
       const half = Math.abs(p.y - q.y) < 1 ? t.width / 2 + 2 : t.height / 2 + 1;
-      labels.push({ id: c.id, beforeArrow: Math.round(lengthOf(segments) * (1 - ((c.geometry?.x ?? 0) + 1) / 2) - half) });
+      const beforeArrow = Math.round(lengthOf(segments) * (1 - ((c.geometry?.x ?? 0) + 1) / 2) - half);
+      labels.push({ id: c.id, beforeArrow });
       texts.push({
         id: c.edge ? `the label of edge "${c.id}"` : `"${c.id}"`,
+        edge: c.edge ? c.id : c.parent,
+        beforeArrow,
         box: { x: at.x + o.x - t.width / 2 - 2, y: at.y + o.y - t.height / 2 - 1, width: t.width + 4, height: t.height + 2 },
       });
     }
@@ -549,6 +568,26 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
         textOnContainers++;
         if (textOnContainers <= 10) warnings.push(`${label}: ${t.id} ${what} container "${c.id}"`);
       }
+    }
+
+    // An edge label longer than the gap between its nodes is drawn over them,
+    // and its grey chip covers the line end to end, arrowhead included: two
+    // boxes and a caption, and no connector. The chip was measured above
+    // (`beforeArrow`, #241) and compared with containers only. One warning for
+    // a label, whatever it covers; widening the gap or shortening the label
+    // clears every cause at once (#473).
+    let labelsOverCells = 0;
+    for (const t of texts) {
+      if (t.edge === undefined) continue;
+      const under = leaves.filter((k) => overlap(t.box, abs.get(k.id)));
+      const arrowhead = t.beforeArrow < 0;
+      if (!under.length && !arrowhead) continue;
+      labelsOverCells++;
+      if (labelsOverCells > 10) continue;
+      const cellsUnder = under.slice(0, 3).map((k) => `cell "${k.id}"`);
+      if (under.length > 3) cellsUnder.push(`${under.length - 3} more`);
+      const what = [under.length ? `lies over ${cellsUnder.join(' and ')}` : '', arrowhead ? 'covers its own arrowhead' : ''].filter(Boolean).join(' and ');
+      warnings.push(`${label}: the label of edge "${t.edge}" ${what}; shorten the label, or widen the gap between the nodes with a fractional \`col\` or a larger \`layout.colPitch\``);
     }
 
     // A cell that names a container as its parent but is drawn past its
@@ -602,7 +641,7 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
       vertices: cells.filter((c) => c.vertex).length,
       edges: cells.filter((c) => c.edge).length,
       danglingEdges: dangling, embeddedImages: embedded, externalImages: remote,
-      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, outsideContainers, fakeBoundaries, productBoxes, density, labels,
+      overlaps, clippedLabels: clipped, nodeCrossings, captionCrossings, sharedTrunks, textOnContainers, labelsOverCells, outsideContainers, fakeBoundaries, productBoxes, density, labels,
       bounds: Number.isFinite(minX)
         ? { minX: Math.round(minX), minY: Math.round(minY), width: Math.round(maxX - minX), height: Math.round(maxY - minY) }
         : null,
