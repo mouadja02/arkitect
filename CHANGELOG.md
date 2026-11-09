@@ -18,6 +18,7 @@ separate file, no naming scheme, no required format beyond that.
 
 ### Fixed
 
+- A Draw.io `aws-group` boundary with no `grIcon`, or one Draw.io does not know, draws the same group without a corner icon and is listed under `unknownKinds` and `todo`, where it wrote `grIcon=undefined` or silently drew an empty corner. `docs/cli.md` lists the 25 accepted AWS4 group shapes; a valid `grIcon` draws as before (#476).
 - `validate` warns, in both engines, on an edge label longer than the gap between its nodes, which is drawn over them (#473). Draw.io's grey chip also covers the connector and its arrowhead, and its validator had measured that (`beforeArrow`) and never said so. One warning for a label, naming what it covers and that shortening the label or widening the gap (a fractional `col`, a larger `layout.colPitch`) clears it; each engine's `info` counts them (`labelsOverCells`, `labelsOverNodes`). A spec with such a label now gains a warning and draws as before.
 - `validate` no longer tells an agent to turn its assumptions note into a boundary, or into the AWS Account icon (#474). A note such as "Assumption: one region" ends in a boundary word, and both validators warned that it was a plain box named like a boundary, where the builders leave notes out of that check and the skills ask for a note on every drawing. A file that carries its spec now says which nodes are notes; a file that does not keeps the warning.
 

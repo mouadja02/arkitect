@@ -4605,7 +4605,8 @@ test('an unknown node or edge kind is named in the build report with what it was
     assert(u.valid.includes(expected) && !u.valid.includes(u.value), `${u.field} lists the valid kinds`);
   }
   eq(builder.buildDiagram({
-    boundaries: [{ id: 's', kind: 'scope' }, { id: 'c', kind: 'aws-cloud' }, { id: 'g', kind: 'aws-group' }, { id: 'l', kind: 'lane' }, { id: 'o' }],
+    boundaries: [{ id: 's', kind: 'scope' }, { id: 'c', kind: 'aws-cloud' },
+      { id: 'g', kind: 'aws-group', grIcon: 'mxgraph.aws4.group_region' }, { id: 'l', kind: 'lane' }, { id: 'o' }],
     nodes: [{ id: 'a', kind: 'note', label: 'A', col: 0, row: 0 }, { id: 'd', label: 'D', col: 1, row: 0 }],
     edges: [{ from: 'a', to: 'd', kind: 'error' }, { from: 'd', to: 'a' }],
   }).report.unknownKinds.length, 0, 'known and omitted kinds report nothing');
@@ -4618,6 +4619,36 @@ test('an unknown node or edge kind is named in the build report with what it was
   const out = JSON.parse(execFileSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', join(TMP, 'unknown-kinds.drawio')], { encoding: 'utf8' }));
   eq(JSON.stringify(out.unknownKinds.map((u) => u.value)), JSON.stringify(['aws-clod', 'cylinder', 'constructor', 'asnyc', 'toString']),
     'the CLI prints them and the build still succeeds');
+});
+
+test('an aws-group reports a missing or unknown grIcon and never writes undefined (#476)', () => {
+  const spec = {
+    boundaries: [
+      { id: 'missing', kind: 'aws-group', label: 'Missing', col: 0 },
+      { id: 'short', kind: 'aws-group', label: 'Short', col: 1, grIcon: 'region' },
+      { id: 'typo', kind: 'aws-group', label: 'Typo', col: 2, grIcon: 'mxgraph.aws4.group_regoin' },
+      { id: 'known', kind: 'aws-group', label: 'Known', col: 3, grIcon: 'mxgraph.aws4.group_region' },
+    ],
+  };
+  const { xml, report } = builder.buildDiagram(spec);
+  eq(JSON.stringify(report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
+    ['boundaries[0].grIcon', undefined, 'plain aws-group'],
+    ['boundaries[1].grIcon', 'region', 'plain aws-group'],
+    ['boundaries[2].grIcon', 'mxgraph.aws4.group_regoin', 'plain aws-group'],
+  ]), 'each absent or unknown group icon is reported with its fallback');
+  for (const u of report.unknownKinds) {
+    assert(u.valid.includes('mxgraph.aws4.group_region'), `${u.field} lists known group icons`);
+  }
+  assert(!xml.includes('grIcon=undefined'), 'a missing group icon is never serialized as undefined');
+  assert(xml.includes('grIcon=mxgraph.aws4.group_region'), 'a known group icon is still drawn');
+
+  const specPath = join(TMP, 'aws-group-gricon.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = buildCli(specPath, '--out', join(TMP, 'aws-group-gricon.drawio'));
+  eq(out.status, 0, 'the CLI build succeeds with the honest fallback');
+  const printed = JSON.parse(out.stdout);
+  assert(printed.todo.some((line) => line.includes('boundaries[0].grIcon')),
+    `the missing icon reaches todo: ${JSON.stringify(printed.todo)}`);
 });
 
 // A misspelled or invented field was the one spec mistake that passed in

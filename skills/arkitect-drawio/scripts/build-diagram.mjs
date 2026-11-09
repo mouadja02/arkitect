@@ -74,6 +74,16 @@ const TITLE_GAP = 12;
 // named in the build report so a typo cannot silently change the diagram (#48).
 const NODE_KINDS = ['box', 'icon', 'aws4', 'logo', 'note', 'text'];
 const BOUNDARY_KINDS = ['scope', 'aws-cloud', 'aws-group', 'lane'];
+// Draw.io Desktop's AWS4 sidebar group icons. Keeping the finite list here
+// makes a typo visible instead of drawing an empty corner (#476).
+const AWS_GROUP_ICONS = [
+  'group_account', 'group_actions', 'group_auto_scaling_group', 'group_availability_zone',
+  'group_aws_cloud', 'group_aws_cloud_alt', 'group_aws_step_functions_workflow', 'group_config',
+  'group_corporate_data_center', 'group_director', 'group_ec2_instance_contents', 'group_elastic_beanstalk',
+  'group_elastic_load_balancing', 'group_iot_greengrass', 'group_iot_greengrass_deployment', 'group_map',
+  'group_on_premise', 'group_region', 'group_security_group', 'group_service', 'group_spot_fleet',
+  'group_subnet', 'group_switch', 'group_vpc', 'group_vpc2',
+].map((name) => `mxgraph.aws4.${name}`);
 
 // Every key each part of a spec may carry. An unknown key is not a broken
 // spec - one written against a field this builder does not have yet still has
@@ -184,8 +194,8 @@ const stylesFor = (T, EDGE_KINDS) => ({
   awsGroup: (grIcon, color) => 'points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],'
     + '[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;'
     + `whiteSpace=wrap;fontSize=${T.fontBody};fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;`
-    + `shape=mxgraph.aws4.group;grIcon=${grIcon};strokeColor=${color};fillColor=none;verticalAlign=top;align=left;`
-    + `spacingLeft=30;fontColor=${color};dashed=0;`,
+    + `shape=mxgraph.aws4.group;${grIcon ? `grIcon=${grIcon};` : ''}strokeColor=${color};fillColor=none;verticalAlign=top;align=left;`
+    + `spacingLeft=${grIcon ? 30 : 8};fontColor=${color};dashed=0;`,
   scope: (color, dashed) => `rounded=${T.rounded};whiteSpace=wrap;html=1;fillColor=none;strokeColor=${color};strokeWidth=${T.scopeStrokeWidth};`
     + `${dashed ? `dashed=1;dashPattern=${T.scopeDashPattern};` : 'dashed=0;'}fontColor=${color};fontSize=${T.fontBody};`
     + 'verticalAlign=top;align=left;spacingLeft=8;spacingTop=2;container=1;collapsible=0;pointerEvents=0;',
@@ -541,7 +551,15 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       }
       let style;
       if (b.kind === 'aws-cloud') style = STYLE.awsGroup('mxgraph.aws4.group_aws_cloud_alt', b.color ?? T.text);
-      else if (b.kind === 'aws-group') style = STYLE.awsGroup(b.grIcon, b.color ?? T.text);
+      else if (b.kind === 'aws-group') {
+        const known = AWS_GROUP_ICONS.includes(b.grIcon);
+        if (!known) {
+          report.unknownKinds.push({
+            field: `${at}boundaries[${i}].grIcon`, value: b.grIcon, drawnAs: 'plain aws-group', valid: AWS_GROUP_ICONS,
+          });
+        }
+        style = STYLE.awsGroup(known ? b.grIcon : null, b.color ?? T.text);
+      }
       else if (b.kind === 'lane') style = STYLE.lane;
       else style = STYLE.scope(b.color ?? T.neutralStroke, b.dashed !== false);
       if (b.labelAlign !== undefined) {
