@@ -206,6 +206,18 @@ the builder stamps on everything it draws (#353).
 | edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used; `legend: false` turns it off, and the report notes it (#384) |
 | edge | `id`, `from`, `to`, `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
 
+An `aws-group` boundary's `grIcon` is one of Draw.io's AWS4 group shapes:
+`mxgraph.aws4.group_account`, `group_actions`, `group_auto_scaling_group`,
+`group_availability_zone`, `group_aws_cloud`, `group_aws_cloud_alt`,
+`group_aws_step_functions_workflow`, `group_config`, `group_corporate_data_center`,
+`group_director`, `group_ec2_instance_contents`, `group_elastic_beanstalk`,
+`group_elastic_load_balancing`, `group_iot_greengrass`,
+`group_iot_greengrass_deployment`, `group_map`, `group_on_premise`, `group_region`,
+`group_security_group`, `group_service`, `group_spot_fleet`, `group_subnet`,
+`group_switch`, `group_vpc` or `group_vpc2` (each short name after the first keeps
+the same `mxgraph.aws4.` prefix). A missing or unknown value draws the group
+without a corner icon and is listed in the build's `todo`.
+
 The builder chooses every edge's sides from the grid: between columns an edge
 leaves and enters sideways, within a column it runs vertically below the
 caption, and ends that would share a point are spread apart. Only a route that
