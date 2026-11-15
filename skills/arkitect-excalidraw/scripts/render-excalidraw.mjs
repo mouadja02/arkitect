@@ -19,6 +19,7 @@
 
 import { writeFileSync, statSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
+import { otherEngineLines } from '../../arkitect-drawio/scripts/lib/other-engine.mjs';
 import { readScene, readSceneText, embedScene, elementBox, bbox, LINE_HEIGHT } from './lib/excalidraw-core.mjs';
 import { locateBrowser, rasteriseSvg, workRootFor } from './lib/browser.mjs';
 import { roughPath, roughRect, roughDiamond, roughEllipse, roundedRectPath, adaptiveRadius } from './lib/rough.mjs';
@@ -405,6 +406,8 @@ export function run(argv, { log = console.log, error = console.error, platform =
     return 2;
   }
   if (options.help) { log(RENDER_USAGE); return 0; }
+  const other = otherEngineLines([options.scene], 'excalidraw', 'render');
+  if (other.length) { error(other.join('\n')); return 2; }
 
   let scene;
   try {

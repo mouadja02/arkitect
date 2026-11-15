@@ -120,6 +120,14 @@ rebuild names the spec entry of an element restyled, moved or retitled since.
 What the app recomputes when it opens a scene is left out: versions, indices,
 a text's size and place, an arrow's route (#403).
 
+Both engines' `spec` says a PNG or SVG that holds no diagram or scene, as a README image rendered
+without `--embed` is, is exactly that, and names the source to open or rebuild: it is not a diagram
+file to edit in place. It exits 1, as for any file with no spec (#479). `validate`, `analyze`,
+`render` and `spec` handed the other engine's file, image or not, exit 2 with one line naming it and
+the command to run from any folder: ``x.drawio is a Draw.io file: run `node "<install>/bin/arkitect.mjs" drawio validate x.drawio` ``.
+The line carries the file and the verb, not the flags typed, which are each engine's own. A file
+of neither engine answers as it always did (#493).
+
 ## Behaviour both engines share
 
 - **Arguments are strict.** An unknown flag, a missing value, a repeated flag or

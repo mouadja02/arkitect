@@ -15,6 +15,7 @@
 
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
+import { refuseOtherEngine } from '../../arkitect-drawio/scripts/lib/other-engine.mjs';
 import {
   readScene, readSceneText, elementBox, bbox, decodeDataUrl, sha256, parseCliOrExit, exitUsage, readProblem,
 } from './lib/excalidraw-core.mjs';
@@ -287,6 +288,7 @@ function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
     { values: { '--out': null, '--find': null }, switches: ['--cells', '--images', '--all'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .excalidraw file', USAGE);
+  refuseOtherEngine(files, 'excalidraw', 'analyze');
   const outBad = options.out && outProblem(options.out, { inputs: files, refuse: DIAGRAM_EXTS });
   if (outBad) exitUsage(outBad, USAGE);
   if (options.find !== undefined) {

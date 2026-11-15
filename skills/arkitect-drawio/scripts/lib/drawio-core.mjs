@@ -226,7 +226,7 @@ export function decompressPage(b64) {
 // extension open either as the diagram; spec, analyze and validate read them
 // here (#439).
 const MX_KEYWORD = 'mxGraphModel';
-const SVG_ROOT = /^\s*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg\b/;
+export const SVG_ROOT = /^\s*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg\b/;
 // Escaped down to the line breaks, so the attribute reads back as the very text.
 const attrText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   .replace(/\n/g, '&#10;').replace(/\r/g, '&#13;').replace(/\t/g, '&#9;');
@@ -258,6 +258,8 @@ export function diagramInImage(bytes) {
   if (content?.startsWith('%')) try { return decodeURIComponent(content); } catch { /* not the file */ }
   return null;
 }
+
+export const noDiagramIn = (image) => `${image === 'png' ? 'a PNG' : 'an SVG'} with no diagram embedded in it`;
 
 // The mxfile text at a path, and `image`: 'svg' or 'png' when it came out of an
 // exported image, null for the file itself. A PNG that holds nothing reads as
