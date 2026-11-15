@@ -131,9 +131,11 @@ a text's size and place, an arrow's route (#403).
   writes its summary anywhere but over a diagram.
 - **A bad spec is refused whole.** An edge or `parent` naming something that
   doesn't exist, a missing, repeated or reserved id, a string where a number
-  goes, a size of 0 or less, a spec with neither a node nor a boundary (an
-  Excalidraw spec whose nodes sit under `pages` is one): every problem is
-  listed at once, exit `1`, nothing written.
+  goes, a size of 0 or less, a `label`, `sublabel`, `title` or `subtitle` that
+  is a list or an object (write `"Search index\nOpenSearch"`, not a list of
+  lines; a number draws as its digits), a spec with neither a node nor a
+  boundary (an Excalidraw spec whose nodes sit under `pages` is one): every
+  problem is listed at once, exit `1`, nothing written.
 - **An unknown kind or field still builds,** and the report lists it under
   `unknownKinds` or `unknownFields`. Treat a non-empty list as something to fix.
 - **A build validates what it wrote.** Its report ends with `validate`, the
@@ -201,7 +203,7 @@ the builder stamps on everything it draws (#353).
 | spec | `title`, `subtitle`, `titleColor` (the title's colour), `context.packs`, `layout`, `pages`, `legend`, `legendX`, `legendY`; a one-page spec also takes `page` (its tab's name, `Architecture` by default) and `pageId` |
 | `layout` | `originX`, `originY` (where column 0, row 0 sits: 80, 100), `colPitch`, `rowPitch` (320, 190) |
 | node `kind` | `icon` (a bundled mark, by name or id), `logo` (a fetched logo), `aws4` (a built-in shape), `box`, `note`, `text` |
-| node | `id`, `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line); a `text` node takes `color`, `fontSize`, `bold` and `align`, an `aws4` node `resIcon` (its `mxgraph.aws4.*` shape) and `color` (its fill) |
+| node | `id`, `col`, `row` (missing is 0; fractions are fine), `parent`, `pack`, `size`, `width`, `height`, `label` (`\n` breaks a line); a `text` node takes `color`, `fontSize`, `bold` and `align`, an `aws4` node `resIcon` (its `mxgraph.aws4.*` shape; with none it draws as a labelled box and is listed under `unknownKinds`) and `color` (its fill) |
 | boundary `kind` | `aws-cloud`, `aws-group` (with `grIcon`), `lane`, or a plain scope; `id`, `label`, `parent`, `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `labelAlign`, `color` (the outline), and `dashed`, which `false` draws solid on a scope. A boundary grows to hold every node and boundary naming it as `parent`, captions included; a span it asks for is the minimum, and one that asks for none is as big as what it holds (#295) |
 | edge `kind` | `flow`, `async`, `error`, `success`, `light`, plus any your override adds; a legend appears once two are used; `legend: false` turns it off, and the report notes it (#384) |
 | edge | `id`, `from`, `to`, `label`, `labelPos` (-1 at the source to 1 at the target), `exit`, `entry` |
@@ -271,6 +273,14 @@ and `as-is-to-be.spec.json` (two pages), each with its PNG. Pattern fragments:
 | node | `id`, `kind`, `label`, `col`, `row` (missing is 0), `parent`, `width`, `height`, `size` (an icon's), `icon`, `sublabel`, `accent` (a palette name or a `#rrggbb`), `fill` (a colour, or `false` for none), `fillStyle`, `strokeStyle`, `strokeWidth`, `roughness`, `fontSize`, `fontFamily`, `labelColor`; a `text` node also takes `align` |
 | boundary | `id`, `kind`, `label`, `parent`, `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `color` or `accent`, `fill`, `dashed` (`false` draws it solid), `strokeStyle`, `strokeWidth`, `roughness`, `labelPlacement` (`inside`, or `outside`: a large name above the top-left corner), `fontSize` |
 | edge | `id`, `from`, `to`, `kind`, `label`, `route`, `routing`, `color`, `strokeStyle`, `strokeWidth`, `roughness`, `startArrowhead` (none by default), `endArrowhead` (`arrow`; `null` for none), `gap` (between an end and its node, 8), `labelColor`, `labelSize` (16), `labelBound` (`true` binds the label to the arrow). An edge whose `color`, `strokeStyle` or `strokeWidth` differs from its kind's is named in `notes`, since the legend no longer matches it |
+
+An arrowhead is `arrow`, `triangle`, `triangle_outline`, `dot`, `circle`,
+`circle_outline`, `bar`, `diamond` or `diamond_outline`. A colour (`fill`,
+`labelColor`, an edge's `color`, a boundary's `fill`) is a hex colour (`#rgb`, `#rrggbb`, or either with alpha),
+`transparent` or a palette name, which draws as that swatch's stroke (its
+background for a `fill`). `canvasBackground` is one of its five names or a hex
+colour. Any other value, `sky-blue` or `banana`, is listed under `unknownKinds`
+and in `todo` with what was drawn instead, as an unknown `accent` is (#490).
 
 **Boundaries** are `scope` (a dashed rectangle, nestable) or `frame` (an
 Excalidraw frame, top level). Both are sized from everything their nodes draw,

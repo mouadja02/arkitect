@@ -36,6 +36,7 @@ import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
 } from './lib/spec-numbers.mjs';
+import { textProblems } from './lib/spec-text.mjs';
 import { engineStore } from './lib/store.mjs';
 import { looksLikeBoundary } from './lib/fake-boundaries.mjs';
 import { strayMembers, strayNote } from './lib/stray-members.mjs';
@@ -477,6 +478,12 @@ function pageProblems(spec, at, { layout = false, pageOf = null, n = 0 } = {}) {
   nodes.forEach((n, i) => { if (isObject(n)) errors.push(...numberProblems(`${at}nodes[${i}]`, n, NODE_NUMBERS)); });
   edges.forEach((e, i) => { if (isObject(e)) errors.push(...numberProblems(`${at}edges[${i}]`, e, { labelPos: FINITE })); });
 
+  // Text a list or an object would draw as its String() (#488).
+  errors.push(...textProblems(at ? at.slice(0, -1) : 'spec', spec, ['title', 'subtitle']));
+  for (const [key, list] of [['boundaries', boundaries], ['nodes', nodes], ['edges', edges]]) {
+    list.forEach((item, i) => { if (isObject(item)) errors.push(...textProblems(`${at}${key}[${i}]`, item, ['label'])); });
+  }
+
   return errors;
 }
 
@@ -590,7 +597,16 @@ export function buildDiagram(spec, { style = resolveStyle() } = {}) {
       let style;
       if (n.kind === 'note') style = STYLE.note;
       else if (n.kind === 'text') style = STYLE.text(n.fontSize ?? T.fontBody, n.color ?? T.text, n.bold ?? false, n.align ?? 'center');
-      else if (n.kind === 'aws4') style = STYLE.aws4(n.resIcon, n.color ?? '#ED7100');
+      else if (n.kind === 'aws4') {
+        // No shape name drew an empty orange square with `resIcon=undefined` (#489).
+        if (typeof n.resIcon === 'string' && n.resIcon) style = STYLE.aws4(n.resIcon, n.color ?? '#ED7100');
+        else {
+          report.unknownKinds.push({
+            field: `${at}nodes[${i}].resIcon`, value: n.resIcon, drawnAs: 'box', valid: ['mxgraph.aws4.<shape>'],
+          });
+          style = STYLE.box;
+        }
+      }
       else if (n.kind === 'icon') {
         const icon = resolveIcon(n.icon ? n : { ...n, icon: n.label }, catalog, report, contextPacks);
         if (icon) {
