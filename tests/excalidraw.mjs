@@ -5305,6 +5305,99 @@ test('an unknown style or route value is listed under unknownKinds and drawn as 
   }
 });
 
+test('an unknown colour or arrowhead is listed under unknownKinds and never reaches the scene (#490)', () => {
+  const bad = {
+    canvasBackground: 'sky-blue',
+    boundaries: [{ id: 'g', label: 'G', fill: 'pale' }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'Orders', fill: '#12', labelColor: 'navy blue', parent: 'g' },
+      { id: 'b', kind: 'box', label: 'Worker', col: 1, accent: 'sky-blue' },
+    ],
+    edges: [{ from: 'a', to: 'b', label: 'x', color: 'crimson red', labelColor: 'dark', endArrowhead: 'banana', startArrowhead: 'dot2' }],
+  };
+  const { scene, report } = builder.buildDiagram(bad, { seed: 1 });
+  eq(JSON.stringify(report.unknownKinds.map((u) => [u.field, u.value]).sort()), JSON.stringify([
+    ['boundaries[0].fill', 'pale'], ['canvasBackground', 'sky-blue'], ['edges[0].color', 'crimson red'],
+    ['edges[0].endArrowhead', 'banana'], ['edges[0].labelColor', 'dark'], ['edges[0].startArrowhead', 'dot2'],
+    ['nodes[0].fill', '#12'], ['nodes[0].labelColor', 'navy blue'], ['nodes[1].accent', 'sky-blue'],
+  ]), 'one entry for each field');
+  // The scene carries the spec as written, in customData; what is drawn is the elements' own fields.
+  const written = JSON.stringify(scene.elements.map(({ customData, ...el }) => el)) + scene.appState.viewBackgroundColor;
+  for (const value of ['sky-blue', '#12', 'navy blue', 'crimson red', 'banana', 'dot2', 'pale', '"dark"']) {
+    assert(!written.includes(value), `"${value}" was written into the scene`);
+  }
+  const arrow = scene.elements.find((el) => el.type === 'arrow');
+  eq(`${arrow.startArrowhead}/${arrow.endArrowhead}`, 'null/arrow', 'an unknown arrowhead draws the default');
+  eq(validator.validateScene(scene).ok, true, 'and the scene still validates');
+  for (const u of report.unknownKinds.filter((u) => /Arrowhead/.test(u.field))) assert(u.valid.includes('triangle'), `${u.field} lists the arrowheads`);
+
+  // Valid values build as they did: a hex colour, `transparent`, `false`, null for no arrowhead, each arrowhead.
+  const ok = {
+    canvasBackground: '#fdf8f6',
+    boundaries: [{ id: 'g', label: 'G', fill: false }],
+    nodes: [
+      { id: 'a', kind: 'box', label: 'A', fill: '#eee', labelColor: '#333', parent: 'g' },
+      { id: 'b', kind: 'box', label: 'B', col: 1, fill: 'transparent' },
+      { id: 'c', kind: 'note', label: 'C', col: 2, row: 1, fill: '#fff3bf' },
+    ],
+    edges: [{ from: 'a', to: 'b', color: '#e03131', labelColor: '#111', label: 'x', endArrowhead: null, startArrowhead: 'bar' }],
+  };
+  const built = builder.buildDiagram(ok, { seed: 1 });
+  eq(JSON.stringify(built.report.unknownKinds), '[]', 'valid values report nothing');
+  eq(built.scene.appState.viewBackgroundColor, '#fdf8f6', 'a hex canvas is kept');
+  assert(built.scene.elements.some((el) => el.backgroundColor === '#eee') && built.scene.elements.some((el) => el.strokeColor === '#333'), 'node colours are kept');
+  eq(JSON.stringify(built.scene.elements.filter((el) => el.type === 'arrow').map((el) => [el.startArrowhead, el.endArrowhead])), '[["bar",null]]', 'null still means none');
+  for (const head of ['arrow', 'triangle', 'triangle_outline', 'dot', 'circle', 'circle_outline', 'bar', 'diamond', 'diamond_outline']) {
+    const r = builder.buildDiagram({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b', endArrowhead: head }] }, { seed: 1 });
+    eq(JSON.stringify(r.report.unknownKinds), '[]', `${head} is accepted`);
+  }
+  // A palette name is a swatch, not a string the app has to guess at.
+  const named = builder.buildDiagram({ nodes: [{ id: 'a', label: 'A', fill: 'red', labelColor: 'sky' }, { id: 'b', label: 'B', col: 1 }], edges: [{ from: 'a', to: 'b', color: 'violet' }] }, { seed: 1 });
+  eq(JSON.stringify(named.report.unknownKinds), '[]', 'palette names are accepted');
+  assert(named.scene.elements.some((el) => el.backgroundColor === '#ffc9c9'), 'a fill name draws as the swatch background');
+  assert(named.scene.elements.some((el) => el.type === 'arrow' && el.strokeColor === '#6741d9'), 'an edge colour name draws as the swatch stroke');
+});
+
+test('a label, sublabel or title that is not text is refused, and a number draws as its digits (#488)', () => {
+  const spec = {
+    title: ['Orders', 'platform'],
+    boundaries: [{ id: 'g', label: { text: 'G' } }],
+    nodes: [
+      { id: 'a', kind: 'box', label: ['Search index', 'OpenSearch'], sublabel: ['x'], parent: 'g' },
+      { id: 'b', kind: 'box', label: { text: 'Worker' }, col: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: ['writes'] }],
+  };
+  eq(builder.validateSpec(spec).join('\n'), [
+    'spec.title: expected text, got a list; join the lines with \\n',
+    'boundaries[0].label: expected text, got an object',
+    'nodes[0].label: expected text, got a list; join the lines with \\n',
+    'nodes[0].sublabel: expected text, got a list; join the lines with \\n',
+    'nodes[1].label: expected text, got an object',
+    'edges[0].label: expected text, got a list; join the lines with \\n',
+  ].join('\n'), 'every field that is not text');
+  let thrown;
+  try { builder.buildDiagram(spec, { seed: 1 }); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram refuses it instead of writing a scene that fails');
+
+  // As Draw.io does: a number is its digits, and the file still carries the spec as written.
+  const { scene } = builder.buildDiagram({ title: 7, nodes: [{ id: 'a', kind: 'box', label: 42, sublabel: 1 }, { id: 'b', kind: 'box', label: 'B', col: 1 }],
+    edges: [{ from: 'a', to: 'b', label: 3 }] }, { seed: 1 });
+  const v = validator.validateScene(scene);
+  assert(v.ok, `the scene validates: ${v.errors.join('; ')}`);
+  assert(scene.elements.some((el) => el.type === 'text' && el.text === '42'), 'a number label is drawn as text');
+
+  const dir = join(TMP, 'label-not-text');
+  mkdirSync(dir, { recursive: true });
+  const specPath = join(dir, 'spec.json');
+  const outPath = join(dir, 'out.excalidraw');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), specPath, '--out', outPath, '--defaults'], { encoding: 'utf8' });
+  eq(out.status, 1, 'the CLI refuses the spec');
+  assert(!existsSync(outPath), 'nothing is written');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // `layout.colPich` moved nothing and was named nowhere (#393).
 test('unknownFields names an unknown key inside layout and style (#393)', () => {
   const typo = builder.buildDiagram({ layout: { colPich: 1000 }, style: { nodeWidht: 3 }, nodes: [{ id: 'a', col: 1 }] }, { seed: 1 }).report.unknownFields;

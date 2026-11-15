@@ -4651,6 +4651,75 @@ test('an aws-group reports a missing or unknown grIcon and never writes undefine
     `the missing icon reaches todo: ${JSON.stringify(printed.todo)}`);
 });
 
+test('an aws4 node with no resIcon is drawn as a box and reported, and never writes undefined (#489)', () => {
+  const spec = {
+    nodes: [
+      { id: 'a', kind: 'aws4', label: 'Orders' },
+      { id: 'b', kind: 'aws4', resIcon: 'mxgraph.aws4.lambda', label: 'Worker', col: 1 },
+      { id: 'c', kind: 'aws4', resIcon: 7, label: 'Number', col: 2 },
+    ],
+    edges: [{ from: 'a', to: 'b' }],
+  };
+  const { xml, report } = builder.buildDiagram(spec);
+  eq(JSON.stringify(report.unknownKinds.map((u) => [u.field, u.value, u.drawnAs])), JSON.stringify([
+    ['nodes[0].resIcon', undefined, 'box'],
+    ['nodes[2].resIcon', 7, 'box'],
+  ]), 'each aws4 node without a shape name is reported with its fallback');
+  assert(!xml.includes('resIcon=undefined') && !xml.includes('resIcon=7'), 'no resIcon is written for them');
+  eq(xml.match(/resIcon=/g).length, 1, 'only the node that named a shape draws as a resource icon');
+  assert(xml.includes('resIcon=mxgraph.aws4.lambda'), 'a node with a resIcon is drawn as before');
+  eq(builder.buildDiagram({ nodes: [spec.nodes[1]] }).report.unknownKinds.length, 0, 'a valid resIcon reports nothing');
+
+  const specPath = join(TMP, 'aws4-resicon.spec.json');
+  writeFileSync(specPath, JSON.stringify(spec));
+  const out = buildCli(specPath, '--out', join(TMP, 'aws4-resicon.drawio'), '--defaults');
+  eq(out.status, 0, 'the CLI build succeeds with the honest fallback');
+  assert(JSON.parse(out.stdout).todo.some((line) => line.includes('nodes[0].resIcon')), 'the missing shape reaches todo');
+});
+
+test('a label, title or subtitle that is not text is refused, naming its field and the \\n spelling (#488)', () => {
+  const spec = {
+    title: ['Orders', 'platform'], subtitle: { text: 'v2' },
+    boundaries: [{ id: 'g', label: true }],
+    nodes: [
+      { id: 'a', kind: 'box', label: ['Search index', 'OpenSearch'], parent: 'g' },
+      { id: 'b', kind: 'box', label: { text: 'Worker' }, col: 1 },
+    ],
+    edges: [{ from: 'a', to: 'b', label: ['writes'] }],
+  };
+  eq(builder.validateSpec(spec).join('\n'), [
+    'spec.title: expected text, got a list; join the lines with \\n',
+    'spec.subtitle: expected text, got an object',
+    'boundaries[0].label: expected text, got true',
+    'nodes[0].label: expected text, got a list; join the lines with \\n',
+    'nodes[1].label: expected text, got an object',
+    'edges[0].label: expected text, got a list; join the lines with \\n',
+  ].join('\n'), 'every field that is not text');
+  let thrown;
+  try { builder.buildDiagram(spec); } catch (e) { thrown = e; }
+  assert(thrown instanceof builder.SpecError, 'buildDiagram refuses it instead of drawing [object Object]');
+  eq(builder.validateSpec({ pages: [{ id: 'p', name: 'P', nodes: [{ id: 'a', label: ['x'] }] }] }).join(),
+    'pages[0].nodes[0].label: expected text, got a list; join the lines with \\n', 'on a page of a multi-page spec too');
+
+  // What still draws: a string with \n, a number, an absent or null label, and the empty string.
+  const { xml } = builder.buildDiagram({
+    title: 7,
+    nodes: [{ id: 'a', kind: 'box', label: 'Search index\nOpenSearch' }, { id: 'b', kind: 'box', label: 42, col: 1 },
+      { id: 'c', kind: 'box', label: null, col: 2 }, { id: 'd', kind: 'box', label: '', col: 3 }],
+    edges: [{ from: 'a', to: 'b', label: 3 }],
+  });
+  assert(xml.includes('value="Search index&lt;br&gt;OpenSearch"') && xml.includes('value="42"') && xml.includes('value="3"'),
+    'a \\n label and a number still draw');
+
+  const specPath = join(TMP, 'label-not-text.spec.json');
+  const outPath = join(TMP, 'label-not-text.drawio');
+  writeFileSync(specPath, JSON.stringify(spec));
+  rmSync(outPath, { force: true });
+  const out = buildCli(specPath, '--out', outPath, '--defaults');
+  eq(out.status, 1, 'the CLI refuses the spec');
+  assert(!existsSync(outPath), 'nothing is written');
+});
+
 // A misspelled or invented field was the one spec mistake that passed in
 // silence: the build succeeded, the report said nothing, and the agent that
 // wrote a deliberate visual choice was never told it had no effect. An eval run
