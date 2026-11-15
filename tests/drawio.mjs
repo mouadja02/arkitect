@@ -17,6 +17,7 @@ import * as zlib from 'node:zlib';
 import { deflateRawSync, deflateSync, inflateSync } from 'node:zlib';
 import { repoFiles } from './repo-files.mjs';
 import * as readJsonLib from '../skills/arkitect-drawio/scripts/lib/read-json.mjs';
+import { command } from '../skills/arkitect-drawio/scripts/lib/command.mjs';
 import { createHarness, settle, fakeWeb } from './harness.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -2508,7 +2509,7 @@ test('only an on-demand entry with pinned artwork offers a fetch command; the re
     const slug = i.id.slice(i.pack.length + 1);
     if (i.upstreamUrl) {
       eq(i.artwork, 'pinned', i.id);
-      eq(i.fetch, `node scripts/fetch-logo.mjs --url ${i.upstreamUrl} --name ${slug}`, `${i.id} fetch`);
+      eq(i.fetch, command('drawio', 'logo', '--url', i.upstreamUrl, '--name', slug), `${i.id} fetch`);
     } else {
       eq(i.artwork, 'none pinned', i.id);
       assert(i.fetch === undefined, `${i.id} offers a command with nothing to download: ${i.fetch}`);
@@ -2525,7 +2526,7 @@ test('only an on-demand entry with pinned artwork offers a fetch command; the re
   let threw = null;
   try { finder.dataUriFor(unpinned); } catch (e) { threw = e; }
   assert(threw && /nothing to fetch/.test(threw.message) && threw.message.includes('https://delta.io/')
-    && threw.message.includes('--file <path> --name deltalake') && !threw.message.includes('--url'), threw?.message);
+    && threw.message.includes('--file "<path>" --name deltalake') && !threw.message.includes('--url'), threw?.message);
 
   const variant = (query, id) => JSON.parse(node('find-icon.mjs', [query])).matches.flatMap((m) => m.variants).find((v) => v.id === id);
   const shownPinned = variant('openai', pinned.id);

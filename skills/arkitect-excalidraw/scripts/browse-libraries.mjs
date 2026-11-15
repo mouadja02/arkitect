@@ -24,6 +24,7 @@ import {
 } from './lib/excalidraw-core.mjs';
 import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { download } from '../../arkitect-drawio/scripts/lib/download.mjs';
+import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -294,7 +295,7 @@ async function main(argv) {
         slug: m.slug, name: m.name, items: m.items, authors: m.authors, source: m.source,
       }));
       console.log(JSON.stringify(rows.length ? rows : {
-        installed: 0, hint: 'node browse-libraries.mjs --update then --search "aws"',
+        installed: 0, hint: `${command('excalidraw', 'browse', '--update')} then ${command('excalidraw', 'browse', '--search', 'aws')}`,
       }, null, 2));
       return;
     }
@@ -332,7 +333,7 @@ async function main(argv) {
       console.log(JSON.stringify({
         installed: meta.slug, name: meta.name, items: meta.items, authors: meta.authors,
         licence: 'library authors keep their own licence and trademarks; check the entry before redistributing',
-        next: `node find-icon.mjs "<component>"  |  node browse-libraries.mjs --show ${meta.slug}`,
+        next: `${command('excalidraw', 'icon', '<component>')}  |  ${command('excalidraw', 'browse', '--show', meta.slug)}`,
       }, null, 2));
       return;
     }
@@ -358,7 +359,7 @@ async function main(argv) {
         itemCount: h.lib.itemNames?.length ?? null,
         ...(has('--items') ? { items: h.lib.itemNames ?? [] } : { sampleItems: h.matchedItems }),
       })),
-      next: 'node browse-libraries.mjs --install <source>',
+      next: command('excalidraw', 'browse', '--install', '<source>'),
     }, null, 2));
   } catch (e) {
     console.error(`failed: ${e.message}`);
