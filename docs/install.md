@@ -12,15 +12,26 @@ toolkit any other agent drives, and a CLI. Pick the route your tool needs.
 
 ## Requirements
 
-Node.js 22 or newer. There are no npm dependencies to install. Everything else
-is optional and only widens what the agent can see:
+Node.js 22 or newer. There are no npm dependencies to install. That is all an
+agent needs to build, validate, analyze and edit diagrams in both engines.
+Everything else is optional and only widens what the agent can see or what a
+person can do by hand:
 
 | | needed for |
 |---|---|
-| [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases) | rendering `.drawio` to PNG or PDF; `--drawio-exe` or `DRAWIO_EXE` pins a build |
+| [Draw.io Desktop](https://github.com/jgraph/drawio-desktop/releases) | rendering `.drawio` to PNG or PDF, so the agent can look at the result; `--drawio-exe` or `DRAWIO_EXE` pins a build |
 | Xvfb | Draw.io rendering on headless Linux (`sudo apt install -y xvfb`) |
-| Edge, Chrome or Chromium | rendering `.excalidraw` to PNG; SVG needs nothing |
-| Docker | the local Excalidraw app ([apps.md](apps.md)) |
+| Edge, Chrome or Chromium | rendering `.excalidraw` to PNG, so the agent can look at the result; SVG needs nothing |
+| Docker | the local Excalidraw app ([apps.md](apps.md)), where a person opens and edits a `.excalidraw` by hand |
+| [Draw.io MCP server](#mcp) | an agent editing an existing `.drawio` over its pages |
+
+**Not needed to draw a diagram:** Docker, the Excalidraw app, and any MCP
+server. There is no Excalidraw MCP server. Without the Draw.io MCP, an edit to
+a file Arkitect built goes through the spec it carries (`arkitect drawio spec
+<file>`, change it, rebuild), and an edit to any other file through `analyze`
+and a backed-up targeted edit; the MCP only makes a large hand-drawn file
+easier to work on a page at a time. Without a renderer the agent can still
+build and validate, but cannot look at the result, and says so in its report.
 
 `arkitect doctor` says which of these it found.
 

@@ -1,8 +1,11 @@
 # The local apps
 
-Generation and validation need neither app. They are where you look at a
-diagram and edit it by hand, and where an agent edits an existing Draw.io file
-page by page.
+Generation and validation need neither app, and neither needs Docker or an MCP
+server: Node 22 alone builds, validates and analyzes both engines' files. The
+apps are where a person looks at a diagram and edits it by hand, and the Draw.io
+MCP server is where an agent edits an existing Draw.io file page by page. All
+three are optional; [install.md](install.md#requirements) says what each one
+adds and what the agent does without it. Excalidraw has no MCP server.
 
 ## Excalidraw container
 
