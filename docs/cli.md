@@ -124,8 +124,9 @@ Both engines' `spec` says a PNG or SVG that holds no diagram or scene, as a READ
 without `--embed` is, is exactly that, and names the source to open or rebuild: it is not a diagram
 file to edit in place. It exits 1, as for any file with no spec (#479). `validate`, `analyze`,
 `render` and `spec` handed the other engine's file, image or not, exit 2 with one line naming it and
-the command to run from any folder: ``x.drawio is a Draw.io file: run node "<install>/bin/arkitect.mjs" drawio validate x.drawio``.
-A file of neither engine answers as it always did (#493).
+the command to run from any folder: ``x.drawio is a Draw.io file: run `node "<install>/bin/arkitect.mjs" drawio validate x.drawio` ``.
+The line carries the file and the verb, not the flags typed, which are each engine's own. A file
+of neither engine answers as it always did (#493).
 
 ## Behaviour both engines share
 

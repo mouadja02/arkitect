@@ -20,27 +20,23 @@ const NAMES = { drawio: 'a Draw.io file', excalidraw: 'an Excalidraw scene' };
 // Declarations and comments may come before the root, as in XML anywhere.
 const MX_ROOT = /^\s*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<(?:mxfile|mxGraphModel)[\s>/]/;
 const SVG_ROOT = /^\s*(?:(?:<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg\b/;
+const JSON_START = /^﻿?\s*\{/;
 
-// 'drawio', 'excalidraw', or null for a file that is neither's or cannot be read:
-// the command then answers as it always did. A .excalidrawlib is the Excalidraw
-// validator's own file, so it is not named here.
-export function engineOfFile(path) {
-  let bytes;
-  try { bytes = readFileSync(path); } catch { return null; }
-  try {
-    if (isPng(bytes)) {
-      if (textChunk(bytes, 'zTXt', 'mxGraphModel')) return 'drawio';
-      return textChunk(bytes, 'tEXt', EXCALIDRAW_MIME) ? 'excalidraw' : null;
-    }
-    const head = bytes.subarray(0, 4096).toString('utf8');
-    if (SVG_ROOT.test(head)) {
-      if (diagramInImage(bytes) != null) return 'drawio';
-      return bytes.toString('utf8').includes(`payload-type:${EXCALIDRAW_MIME}`) ? 'excalidraw' : null;
-    }
-    if (MX_ROOT.test(head)) return 'drawio';
-    if (/^﻿?\s*\{/.test(head)) return parseJson(bytes.toString('utf8'))?.type === 'excalidraw' ? 'excalidraw' : null;
-  } catch { /* not a file of either engine */ }
-  return null;
+// True when the bytes are a file of `engine`, image or not. A file of neither is
+// nobody's: the command then answers as it always did, and a .excalidrawlib is
+// the Excalidraw validator's own, so it is not named here. Only the signature of
+// the engine NOT being run is tested, so a command handed its own engine's file
+// costs a head test and never a second parse of the scene.
+function holds(bytes, engine) {
+  if (isPng(bytes)) {
+    return engine === 'drawio' ? !!textChunk(bytes, 'zTXt', 'mxGraphModel') : !!textChunk(bytes, 'tEXt', EXCALIDRAW_MIME);
+  }
+  const head = bytes.subarray(0, 4096).toString('utf8');
+  if (SVG_ROOT.test(head)) {
+    return engine === 'drawio' ? diagramInImage(bytes) != null : bytes.toString('utf8').includes(`payload-type:${EXCALIDRAW_MIME}`);
+  }
+  if (engine === 'drawio') return MX_ROOT.test(head);
+  return JSON_START.test(head) && parseJson(bytes.toString('utf8'))?.type === 'excalidraw';
 }
 
 // The command that runs from any folder, as the adapters print it.
@@ -48,12 +44,15 @@ const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'
 const shown = (path) => (/^[\w./\\:@%+=,-]+$/.test(path) ? path : JSON.stringify(path));
 
 // One line per file that belongs to the other engine; empty when every file is
-// this engine's, or neither's.
+// this engine's, or neither's, or cannot be read. The line carries the file and
+// the verb, not the flags typed: the other engine's flags are its own.
 export function otherEngineLines(files, engine, verb) {
+  const owner = engine === 'drawio' ? 'excalidraw' : 'drawio';
   const lines = [];
   for (const file of files) {
-    const owner = engineOfFile(file);
-    if (owner && owner !== engine) lines.push(`${file} is ${NAMES[owner]}: run \`node "${CLI}" ${owner} ${verb} ${shown(file)}\``);
+    let found = false;
+    try { found = holds(readFileSync(file), owner); } catch { /* unreadable, or not that engine's */ }
+    if (found) lines.push(`${file} is ${NAMES[owner]}: run \`node "${CLI}" ${owner} ${verb} ${shown(file)}\``);
   }
   return lines;
 }
