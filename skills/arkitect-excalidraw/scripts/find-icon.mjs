@@ -29,6 +29,7 @@ import { loadCatalog as loadSharedCatalog, byExactId, lifecycleOf } from '../../
 import { onlyGenericWords, vendorOf, GENERIC_VENDOR, KEEP_PLACEHOLDER } from '../../arkitect-drawio/scripts/lib/generic-words.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath } from 'node:path';
+import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
 
 // Every candidate mark, flattened: bundled items first, then house icons, then
 // anything downloaded from the public catalogue, then shared-pack metadata.
@@ -297,7 +298,7 @@ export function compactAnswer(query, hits, verdict) {
   const choice = (h) => ({ ref: h.ref, name: h.name, score: h.score });
   if (!hits.length) {
     return { query, found: 0,
-      next: 'Nothing matches. Try browse-libraries.mjs --search, or make-icon.mjs from the real logo; else a labelled shape, said so.' };
+      next: `Nothing matches. Try ${command('excalidraw', 'browse', '--search', '<query>')}, or ${command('excalidraw', 'make-icon', '--url', '<logo url>', '--name', '<product>')} from the real logo; else a labelled shape, said so.` };
   }
   if (verdict.entry) {
     const ref = verdict.entry.ref;
@@ -390,8 +391,8 @@ function main(argv) {
       matches: [],
       advice: [
         'No installed library, house icon or committed shared-pack icon matches.',
-        'node browse-libraries.mjs --search "<query>"  - look for a public Excalidraw library',
-        'node make-icon.mjs --url <logo url> --name <product> [--trace]  - build the icon from the real logo',
+        `${command('excalidraw', 'browse', '--search', '<query>')}  - look for a public Excalidraw library`,
+        `${command('excalidraw', 'make-icon', '--url', '<logo url>', '--name', '<product>')} [--trace]  - build the icon from the real logo`,
         'Or draw it as a labelled shape and say so. Never reuse a different product\'s mark.',
       ],
     }, null, 2));
@@ -406,7 +407,7 @@ function main(argv) {
     matches: hits.map((h) => ({
       ref: h.ref, name: h.name, kind: h.kind, provider: h.provider, score: h.score, ...h.detail,
     })),
-    next: 'node find-icon.mjs --resolve <ref>   |   spec node: { "kind": "icon", "icon": "<ref>" }',
+    next: `${command('excalidraw', 'icon', '--resolve', '<ref>')}   |   spec node: { "kind": "icon", "icon": "<ref>" }`,
   }, null, 2));
 }
 

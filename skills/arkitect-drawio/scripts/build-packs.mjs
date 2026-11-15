@@ -490,10 +490,11 @@ function licenceOf(source, manifest) {
   return 'see sources.json';
 }
 
-// Only an entry with a pinned artwork file gets a fetch command. The rest have
+// Only an entry with a pinned artwork file offers a fetch command. The rest have
 // nothing a command can download - a press kit, a request form, no logo at all
 // - and say so, so an agent branches on `artwork` instead of running a
-// placeholder URL (#84).
+// placeholder URL (#84). The command is not stored here: it names the install,
+// so find-icon's loadCatalog builds it from `upstreamUrl` and the slug (#478).
 function onDemandEntries(pack) {
   return (pack.onDemand ?? []).map((o) => ({
     id: `${pack.id}/${o.slug}`,
@@ -509,7 +510,7 @@ function onDemandEntries(pack) {
     bytes: 'on-demand',
     reason: o.reason,
     ...(o.upstreamUrl
-      ? { artwork: 'pinned', fetch: `node scripts/fetch-logo.mjs --url ${o.upstreamUrl} --name ${o.slug}` }
+      ? { artwork: 'pinned' }
       : { artwork: 'none pinned' }),
   }));
 }

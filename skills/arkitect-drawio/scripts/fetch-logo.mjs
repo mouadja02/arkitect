@@ -18,6 +18,7 @@ import { dirname, join, extname } from 'node:path';
 import { sha256, parseDataUri, imageDimensions, fitCell } from './lib/drawio-core.mjs';
 import { cacheDir, mergedRegistry } from './lib/store.mjs';
 import { download } from './lib/download.mjs';
+import { command } from './lib/command.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -186,7 +187,7 @@ async function main(argv) {
       name: e.name, mime: e.mime, size: `${e.width}x${e.height}`,
       transparent: e.transparent, source: e.source,
     }));
-    console.log(JSON.stringify(rows.length ? rows : { cached: 0, hint: 'node fetch-logo.mjs --url <https url> --name <product>' }, null, 2));
+    console.log(JSON.stringify(rows.length ? rows : { cached: 0, hint: command('drawio', 'logo', '--url', '<https url>', '--name', '<product>') }, null, 2));
     return;
   }
 

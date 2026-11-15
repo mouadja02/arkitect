@@ -4193,6 +4193,65 @@ test('a command handed the other engine\'s file names that engine and the comman
   assert(library.status !== 2 && !/ is a Draw\.io file/.test(library.stderr), `a library is not another engine's file: ${library.stdout}${library.stderr}`);
 });
 
+// A next-step hint is run from the project folder, where `node scripts/x.mjs`
+// and `node x.mjs` fail with "Cannot find module" (#478). Every command a hint
+// prints is `node "<install>/bin/arkitect.mjs" <engine> <verb> ...`.
+test('every command a hint prints runs from the project folder, not only from the skill folder (#478)', () => {
+  // A folder outside the install, as a project folder is.
+  const dir = mkdtempSync(join(tmpdir(), 'ark478-'));
+  try {
+    const run = (args) => spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', cwd: dir, maxBuffer: 32 * 1024 * 1024 });
+    const catalog = JSON.parse(readFileSync(join(ROOT, 'skills', 'arkitect-drawio', 'references', 'icon-catalog.json'), 'utf8'));
+    const pinned = catalog.icons.find((i) => i.bytes === 'on-demand' && i.artwork === 'pinned');
+    const unpinned = catalog.icons.find((i) => i.bytes === 'on-demand' && i.artwork === 'none pinned');
+    const slugOf = (i) => i.id.slice(i.pack.length + 1);
+    // An on-demand mark with a file to fetch, one with none, and one nobody has.
+    writeFileSync(join(dir, 'd.json'), JSON.stringify({ nodes: [
+      { id: 'a', kind: 'icon', icon: slugOf(pinned), label: 'A' },
+      { id: 'b', kind: 'icon', icon: slugOf(unpinned), label: 'B', col: 1 },
+      { id: 'c', kind: 'icon', icon: 'plorbatron', label: 'C', col: 2 },
+    ] }));
+    writeFileSync(join(dir, 'e.json'), JSON.stringify({ nodes: [{ id: 'c', kind: 'icon', icon: 'plorbatron', label: 'C' }] }));
+    // Every output that carries a next-step command, read as the JSON it is.
+    const text = [
+      ['drawio', 'icon', slugOf(pinned), '--compact'], ['drawio', 'icon', slugOf(unpinned), '--compact'],
+      ['drawio', 'icon', slugOf(pinned)], ['drawio', 'icon', '--list-packs'], ['drawio', 'logo', '--list'],
+      ['drawio', 'build', 'd.json', '--out', 'd.drawio', '--defaults'],
+      ['excalidraw', 'build', 'e.json', '--out', 'e.excalidraw', '--defaults', '--seed', '1'],
+      ['excalidraw', 'icon', 'plorbatron'], ['excalidraw', 'icon', 'postgres'], ['excalidraw', 'icon', 'postgres', '--compact'],
+      ['excalidraw', 'libraries', '--unnamed'], ['excalidraw', 'browse', '--list'], ['excalidraw', 'make-icon', '--list'],
+    ].map((args) => {
+      const r = run(args);
+      let out = r.stdout;
+      try { out = JSON.parse(out); } catch { /* a plain-text answer */ }
+      return JSON.stringify(out, null, 1).replace(/\\"/g, '"').replace(/\\\\/g, '\\') + r.stderr;
+    }).join('\n');
+    // Nothing names a script by a path or a bare file name another folder cannot see.
+    eq((text.match(/\bnode (?:scripts\/)?[\w-]+\.mjs[^\n]{0,60}/g) ?? []).join(' | '), '', 'a hint names a script a project folder does not hold');
+    // Every command printed exists and runs from here. `--help` returns before any
+    // fetch, so none of them reaches the network.
+    const commands = new Map();
+    for (const m of text.matchAll(/node "([^"\n]+?arkitect\.mjs)" (drawio|excalidraw) ([\w-]+)/g)) commands.set(`${m[2]} ${m[3]}`, m[1]);
+    for (const want of ['drawio logo', 'drawio icon', 'excalidraw icon', 'excalidraw browse', 'excalidraw make-icon', 'excalidraw libraries']) {
+      assert(commands.has(want), `no hint prints \`${want}\`: ${[...commands.keys()].join(', ')}`);
+    }
+    for (const [what, cli] of commands) {
+      eq(resolve(cli), CLI, `${what} names this install`);
+      const r = spawnSync(process.execPath, [cli, ...what.split(' '), '--help'], { encoding: 'utf8', cwd: dir, maxBuffer: 32 * 1024 * 1024 });
+      assert(!/Cannot find module/.test(r.stderr) && (r.status === 0 || /usage:/.test(r.stdout + r.stderr)), `${what} --help from the project folder: ${r.status} ${r.stderr}`);
+    }
+    // The mark that has a file says how to fetch it; the one with none, how to use a file the user holds.
+    assert(new RegExp(`drawio logo --url \\S+ --name ${slugOf(pinned)}\\b`).test(text), 'the fetch command names the mark and its file');
+    assert(new RegExp(`drawio logo --file "<path>" --name ${slugOf(unpinned)}\\b`).test(text), 'a mark with no file pinned names the --file route');
+    // The committed catalog holds no command only the skill folder can run (the
+    // command is built where it is printed), and no script source prints one.
+    eq(catalog.icons.filter((i) => i.fetch !== undefined).length, 0, 'the catalog stores a path-relative command');
+    const sources = FILES.filter((f) => /^skills\/[^/]+\/scripts\/.*\.mjs$/.test(relative(ROOT, f).replace(/\\/g, '/')) && basename(f) !== 'upstream.mjs')
+      .filter((f) => /\bnode (?:scripts\/)?[\w-]+\.mjs/.test(readFileSync(f, 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')));
+    eq(sources.map((f) => relative(ROOT, f).replace(/\\/g, '/')).join(', '), '', 'a script source prints a `node x.mjs` command');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 // -------------------------------------------------------------
 
 finish();

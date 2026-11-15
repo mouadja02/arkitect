@@ -23,6 +23,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { dirname, join, basename } from 'node:path';
 import { readLibrary, bbox, normalizeName, writeScene } from './lib/excalidraw-core.mjs';
 import { contactSheet } from './browse-libraries.mjs';
+import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -214,7 +215,7 @@ function main(argv) {
       libraries: rows,
       advice: 'Items here carry no name and can only be chosen by looking. Read the '
         + 'committed contact sheet, then reference the item by number: "<slug>:<n>".',
-      rebuild: 'node index-libraries.mjs --sheet <slug>   (then render the scene it writes)',
+      rebuild: `${command('excalidraw', 'libraries', '--sheet', '<slug>')}   (then render the scene it writes)`,
     }, null, 2));
     return;
   }

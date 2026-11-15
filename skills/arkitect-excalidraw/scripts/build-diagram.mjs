@@ -49,6 +49,7 @@ import {
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
 } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
 import { textProblems, numbersAsText } from '../../arkitect-drawio/scripts/lib/spec-text.mjs';
+import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
 import { STYLE, HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
@@ -1798,8 +1799,8 @@ function main(argv) {
       forComponents: report.missingIcons.map((query, i) => ({ node: report.missingNodes[i], query })),
       drawnAs: 'a dotted violet square with a "?", captioned, grouped',
       resolve: [
-        'node find-icon.mjs "<component>"                    search the bundled libraries again',
-        'node index-libraries.mjs --unnamed                  libraries whose items need looking at',
+        `${command('excalidraw', 'icon', '<component>')}   search the bundled libraries again`,
+        `${command('excalidraw', 'libraries', '--unnamed')}   libraries whose items need looking at`,
         'Then set "icon": "<library>:<n>" on the node and rebuild,',
         'or open the scene and drop the mark on top of the slot by hand.',
       ],

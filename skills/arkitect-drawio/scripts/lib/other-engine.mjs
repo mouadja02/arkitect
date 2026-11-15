@@ -6,11 +6,10 @@
 // the engine it belongs to and the command to run instead.
 
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { isPng, textChunk } from './png-chunks.mjs';
 import { diagramInImage } from './drawio-core.mjs';
 import { parseJson } from './read-json.mjs';
+import { command } from './command.mjs';
 
 // excalidraw-core's SCENE_MIME, which a Draw.io install may not import from;
 // tests/toolkit.mjs checks the two agree.
@@ -39,10 +38,6 @@ function holds(bytes, engine) {
   return JSON_START.test(head) && parseJson(bytes.toString('utf8'))?.type === 'excalidraw';
 }
 
-// The command that runs from any folder, as the adapters print it.
-const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'bin', 'arkitect.mjs');
-const shown = (path) => (/^[\w./\\:@%+=,-]+$/.test(path) ? path : JSON.stringify(path));
-
 // One line per file that belongs to the other engine; empty when every file is
 // this engine's, or neither's, or cannot be read. The line carries the file and
 // the verb, not the flags typed: the other engine's flags are its own.
@@ -52,7 +47,7 @@ export function otherEngineLines(files, engine, verb) {
   for (const file of files) {
     let found = false;
     try { found = holds(readFileSync(file), owner); } catch { /* unreadable, or not that engine's */ }
-    if (found) lines.push(`${file} is ${NAMES[owner]}: run \`node "${CLI}" ${owner} ${verb} ${shown(file)}\``);
+    if (found) lines.push(`${file} is ${NAMES[owner]}: run \`${command(owner, verb, file)}\``);
   }
   return lines;
 }

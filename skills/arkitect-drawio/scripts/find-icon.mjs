@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { readLibrary, normalizeTitle, fitCell, ICON_FOOTPRINT } from './lib/drawio-core.mjs';
 import { caveat } from './lib/lifecycle.mjs';
+import { command } from './lib/command.mjs';
 import { onlyGenericWords, VENDOR_PACKS, GENERIC_VENDOR, KEEP_PLACEHOLDER } from './lib/generic-words.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -39,7 +40,15 @@ const LIB_DIR = join(SKILL_ROOT, 'assets', 'libraries');
 
 let catalogCache = null;
 export function loadCatalog() {
-  if (!catalogCache) catalogCache = JSON.parse(readFileSync(CATALOG_FILE, 'utf8'));
+  if (!catalogCache) {
+    catalogCache = JSON.parse(readFileSync(CATALOG_FILE, 'utf8'));
+    // An on-demand mark with a pinned artwork file gets its fetch command here,
+    // from the url and the slug the catalog holds: the command names this
+    // install's path, so the committed catalog cannot (#478).
+    for (const i of catalogCache.icons) {
+      if (i.artwork === 'pinned') i.fetch = command('drawio', 'logo', '--url', i.upstreamUrl, '--name', i.id.slice(i.pack.length + 1));
+    }
+  }
   return catalogCache;
 }
 
@@ -304,7 +313,7 @@ export function onDemandNext(icon) {
   const slug = icon.id.slice(icon.id.indexOf('/') + 1);
   return `No artwork file is pinned${icon.brandUrl ? ` (brand page: ${icon.brandUrl})` : ''}, so there is `
     + 'nothing to fetch. Draw a named placeholder, or, with the vendor\'s own file and permission to use it, '
-    + `run node scripts/fetch-logo.mjs --file <path> --name ${slug}`;
+    + `run ${command('drawio', 'logo', '--file', '<path>', '--name', slug)}`;
 }
 
 export function dataUriFor(icon) {
@@ -502,7 +511,7 @@ function main(argv) {
       onDemand: 'catalogued without bytes; onDemandPinned of them have an artwork file fetch-logo can download, '
         + 'the rest have nothing to fetch and draw as a named placeholder',
       resolutionOrder: 'lower rank wins at equal match strength; rank 90 is the catch-all',
-      usage: 'node find-icon.mjs <query> [--pack <id>] [--context <id,id>]',
+      usage: `${command('drawio', 'icon', '<query>')} [--pack <id>] [--context <id,id>]`,
     }, null, 2));
     return;
   }

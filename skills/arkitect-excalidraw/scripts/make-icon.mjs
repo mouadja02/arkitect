@@ -38,6 +38,7 @@ import { parseSvg, simplify, signedArea } from './lib/svg-path.mjs';
 import { svgDimensions } from '../../arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { cacheDir, mergedRegistry } from '../../arkitect-drawio/scripts/lib/store.mjs';
 import { download } from '../../arkitect-drawio/scripts/lib/download.mjs';
+import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(HERE, '..');
@@ -416,7 +417,7 @@ async function main(argv) {
     }));
     console.log(JSON.stringify(rows.length ? rows : {
       icons: 0,
-      hint: 'node make-icon.mjs --url <https url> --name <product> [--trace]',
+      hint: `${command('excalidraw', 'make-icon', '--url', '<https url>', '--name', '<product>')} [--trace]`,
     }, null, 2));
     return;
   }
@@ -483,7 +484,7 @@ async function main(argv) {
     console.log(JSON.stringify({
       stored: r.entry.name,
       ...report(r.entry, { trace: r.traceReport, house: r.house }),
-      next: `node find-icon.mjs "${r.entry.name}"  |  use it in a spec: { "kind": "icon", "icon": "${r.entry.name}" }`,
+      next: `${command('excalidraw', 'icon', r.entry.name)}  |  use it in a spec: { "kind": "icon", "icon": "${r.entry.name}" }`,
     }, null, 2));
   } catch (e) {
     console.error(`failed: ${e.message}`);
