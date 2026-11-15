@@ -16,6 +16,9 @@ import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
 import { liveCounts, checkDocCounts } from './icon-count-guard.mjs';
 import { createHarness, settle } from './harness.mjs';
+import { embedDiagram } from '../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { EXCALIDRAW_MIME } from '../skills/arkitect-drawio/scripts/lib/other-engine.mjs';
+import { embedScene, SCENE_MIME } from '../skills/arkitect-excalidraw/scripts/lib/excalidraw-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -4129,6 +4132,65 @@ test('drawio sheets --help prints usage and exits 0 before reading the catalog (
     eq(r.status, 2, `sheets ${args.join(' ')}`);
     assert(r.stderr.startsWith('usage:') && !/at .*contact-sheet\.mjs/.test(r.stderr), `no stack trace: ${r.stderr}`);
   }
+});
+
+// A command handed the other engine's file answered with a message about
+// something else: "an SVG with no scene", "page 0 is out of range", "was not
+// built by Arkitect" (#493). It now names the engine the file belongs to and
+// the command to run, in a form that runs from the project folder.
+test('a command handed the other engine\'s file names that engine and the command to run (#493)', () => {
+  const dir = join(TMP, 'p493');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const run = (args) => spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', cwd: dir });
+  writeFileSync(join(dir, 'one.json'), JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'Orders' }] }));
+  eq(run(['drawio', 'build', 'one.json', '--out', 'x.drawio', '--defaults']).status, 0, 'a Draw.io file');
+  eq(run(['excalidraw', 'build', 'one.json', '--out', 'es.excalidraw', '--defaults', '--seed', '1']).status, 0, 'an Excalidraw scene');
+  // The same two, as a README image holds them (#439, #447).
+  const drawioText = readFileSync(join(dir, 'x.drawio'), 'utf8');
+  const sceneText = readFileSync(join(dir, 'es.excalidraw'), 'utf8');
+  const png = readFileSync(join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', 'starter-architecture.png'));
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8"/></svg>');
+  writeFileSync(join(dir, 'x.drawio.svg'), embedDiagram(svg, 'svg', drawioText));
+  writeFileSync(join(dir, 'x.drawio.png'), embedDiagram(png, 'png', drawioText));
+  writeFileSync(join(dir, 'es.excalidraw.svg'), embedScene(svg, 'svg', sceneText));
+  writeFileSync(join(dir, 'es.excalidraw.png'), embedScene(png, 'png', sceneText));
+  // Each verb with the flags its own engine needs, so a missing one cannot be what fails.
+  const flags = { drawio: { render: ['--out-dir', 'r'] }, excalidraw: { render: ['--out', 'r.svg'] } };
+  const named = { drawio: 'a Draw.io file', excalidraw: 'an Excalidraw scene' };
+  for (const [owner, files] of [['drawio', ['x.drawio', 'x.drawio.svg', 'x.drawio.png']], ['excalidraw', ['es.excalidraw', 'es.excalidraw.svg', 'es.excalidraw.png']]]) {
+    const other = owner === 'drawio' ? 'excalidraw' : 'drawio';
+    for (const file of files) {
+      for (const verb of ['validate', 'analyze', 'render', 'spec']) {
+        const r = run([other, verb, file, ...(flags[other][verb] ?? [])]);
+        const said = `${other} ${verb} ${file}: ${r.stdout}${r.stderr}`;
+        eq(r.status, 2, said);
+        assert(r.stdout === '', `nothing on stdout: ${said}`);
+        const line = r.stderr.trimEnd();
+        assert(!line.includes('\n'), `one line: ${said}`);
+        const m = /^(\S+) is (a Draw\.io file|an Excalidraw scene): run `node "([^"]+)" (\w+) (\w+) (\S+)`$/.exec(line);
+        assert(m, `names the file's engine and a command: ${said}`);
+        eq(`${m[1]}|${m[2]}|${m[4]}|${m[5]}|${m[6]}`, `${file}|${named[owner]}|${owner}|${verb}|${file}`, said);
+        // The printed command runs from the project folder, and reads the file. render
+        // needs a browser or Draw.io Desktop, so it is checked by its words only.
+        if (verb === 'render') continue;
+        const again = spawnSync(process.execPath, [m[3], m[4], m[5], m[6]], { encoding: 'utf8', cwd: dir });
+        assert(!/ is (a Draw\.io file|an Excalidraw scene): run/.test(again.stderr), `the printed command reads the file: ${again.stderr}`);
+        if (verb === 'validate') eq(again.status, 0, `and passes it: ${again.stdout}`);
+      }
+    }
+  }
+  // validate takes several files: one of the other engine's refuses the run and names it.
+  const mixed = run(['drawio', 'validate', 'x.drawio', 'es.excalidraw']);
+  eq(mixed.status, 2, mixed.stderr);
+  assert(mixed.stderr.startsWith('es.excalidraw is an Excalidraw scene: run '), mixed.stderr);
+  eq(EXCALIDRAW_MIME, SCENE_MIME, 'the copy of the scene MIME beside the Draw.io readers is the scene reader\'s');
+  // A file of neither engine keeps the message it had, and so does an Excalidraw library.
+  const stranger = run(['excalidraw', 'spec', 'one.json']);
+  assert(stranger.status === 1 && /carries no spec/.test(stranger.stderr), stranger.stderr);
+  writeFileSync(join(dir, 'l.excalidrawlib'), JSON.stringify({ type: 'excalidrawlib', version: 2, source: 'test', libraryItems: [] }));
+  const library = run(['excalidraw', 'validate', 'l.excalidrawlib']);
+  assert(library.status !== 2 && !/ is a Draw\.io file/.test(library.stderr), `a library is not another engine's file: ${library.stdout}${library.stderr}`);
 });
 
 // -------------------------------------------------------------

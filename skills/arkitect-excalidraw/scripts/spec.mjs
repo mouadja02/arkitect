@@ -4,8 +4,8 @@
 // and on a copy's, so deleting that node keeps it (#408).
 import { specCli } from '../../arkitect-drawio/scripts/lib/spec-cli.mjs';
 import { specOf, changedSince, isArkitectScene } from './build-diagram.mjs';
-import { readSceneText } from './lib/excalidraw-core.mjs';
+import { readSceneText, noSceneIn } from './lib/excalidraw-core.mjs';
 
 process.exit(specCli(process.argv.slice(2), {
-  specOf, savedSince: changedSince, isOurs: isArkitectScene, kind: 'excalidraw', read: (file) => readSceneText(file).text,
+  specOf, savedSince: changedSince, isOurs: isArkitectScene, kind: 'excalidraw', noneIn: noSceneIn, read: readSceneText,
 }));

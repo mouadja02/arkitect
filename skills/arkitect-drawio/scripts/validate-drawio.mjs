@@ -7,10 +7,11 @@
 // Nothing here prints cell labels - only ids, counts and geometry.
 
 import {
-  readDiagram, parseMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs, carriedSpec,
+  readDiagram, noDiagramIn, parseMxfile, extractCells, parseStyle, parseDataUri, graphModelAttrs, carriedSpec,
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { checkXml } from './lib/xml-check.mjs';
+import { refuseOtherEngine } from './lib/other-engine.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { routeThrough, crosses, captionBox, lengthOf, pointAt } from './lib/routes.mjs';
 import { boundaryWord } from './lib/fake-boundaries.mjs';
@@ -91,7 +92,7 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
   }
   // A .drawio.svg or .drawio.png is checked as the file it holds (#439).
   if (image === 'png' && !text) {
-    errors.push('a PNG with no diagram embedded in it');
+    errors.push(noDiagramIn(image));
     return { path, ok: false, errors, warnings, notes, info };
   }
   if (image) notes.push(`read the diagram embedded in this ${image.toUpperCase()}`);
@@ -663,6 +664,7 @@ function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv,
     { values: { '--page': pageIndexArg }, switches: ['--json', '--strict'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  refuseOtherEngine(files, 'drawio', 'validate');
   const pageIndex = options.page ?? null;
 
   let bad = 0;

@@ -6440,9 +6440,14 @@ test('render --embed writes a .drawio.svg and .drawio.png holding the whole file
   const plain = cli('validate', join(dir, 'plain.png'));
   assert(plain.status === 1 && plain.stdout.includes('a PNG with no diagram embedded in it'), plain.stdout);
   assert(cli('validate', join(dir, 'plain.svg')).stdout.includes('no diagram is embedded in it'), 'a plain SVG');
-  for (const image of ['plain.png', 'plain.svg']) {
+  // spec says what validate says (#479): the file is a picture holding nothing, not a diagram file
+  // to edit in place, and the way on is the source it was rendered from.
+  for (const [image, said] of [['plain.png', 'a PNG with no diagram embedded in it'], ['plain.svg', 'an SVG with no diagram embedded in it']]) {
     const none = cli('spec', join(dir, image));
-    assert(none.status === 1 && /carries no spec/.test(none.stderr), `${image}: ${none.stderr}`);
+    assert(none.status === 1 && none.stdout === '', `${image}: ${none.status} ${none.stdout}`);
+    assert(none.stderr.includes(`${image} is ${said}: `), `${image}: ${none.stderr}`);
+    assert(/open the .drawio it was rendered from, or rebuild it; render --embed writes an image that holds its source/.test(none.stderr), `${image}: ${none.stderr}`);
+    assert(!/not built by Arkitect|Edit it in place/.test(none.stderr), `${image} is not sent to edit a picture in place: ${none.stderr}`);
   }
   rmSync(dir, { recursive: true, force: true });
 });

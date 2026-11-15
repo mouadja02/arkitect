@@ -5539,7 +5539,11 @@ test('render --embed writes an .excalidraw.svg and .excalidraw.png the app reads
     const checked = cli('validate', join(dir, image));
     assert(checked.status === 1 && checked.stdout.includes(said), `${image}: ${checked.stdout}`);
     const none = cli('spec', join(dir, image));
-    assert(none.status === 1 && /carries no spec/.test(none.stderr), `${image}: ${none.stderr}`);
+    // spec says what validate says (#479): a picture holding nothing, and the source to go back to.
+    assert(none.status === 1 && none.stdout === '', `${image}: ${none.status} ${none.stdout}`);
+    assert(none.stderr.includes(`${image} is ${said}: `), `${image}: ${none.stderr}`);
+    assert(/open the .excalidraw it was rendered from, or rebuild it; render --embed writes an image that holds its source/.test(none.stderr), `${image}: ${none.stderr}`);
+    assert(!/not built by Arkitect|Edit it in place/.test(none.stderr), `${image} is not sent to edit a picture in place: ${none.stderr}`);
   }
   rmSync(dir, { recursive: true, force: true });
 });

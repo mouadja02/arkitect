@@ -9,7 +9,7 @@ Offline and deterministic: no network, no Docker, no dependencies. A full run
 took about two minutes on a laptop in October 2026 (#438). It needs a clone;
 the npm package doesn't carry it.
 
-On a fresh clone expect `533 passed, 0 failed, 7 skipped`. The skips need
+On a fresh clone expect `534 passed, 0 failed, 7 skipped`. The skips need
 reference diagrams of your own, listed in `.analysis/sources.local.json`
 ([getting-started.md](getting-started.md#the-local-source-list)).
 
@@ -40,7 +40,7 @@ Every test is named for the case it covers, with the issue it came from, so
 | icon counts | every count a doc quotes matches the catalog, the library index and the answer keys, the README badge included; the failure names the number to write. The Node badge matches `engines.node`, and the example's node count its spec (#78, #438) |
 | style | an override restyles tokens and kinds, a bad one is ignored whole, `--defaults` ignores it, the shipped record holds no diagram content (#89, #90) |
 | safety | backups before every overwrite and retention of six (#35, #49); the style record carries no labels; the redaction check |
-| CLI | strict arguments, one-line errors, every documented command dispatchable, rendering failures never reported as renders (#37, #116, #157) |
+| CLI | strict arguments, one-line errors, every documented command dispatchable, rendering failures never reported as renders, a file handed to the other engine's command named for its engine, `spec` on a picture holding nothing (#37, #116, #157, #479, #493) |
 | packaging | the real `npm pack` tarball ships every bundled asset and no cache, and its CLI runs from outside the checkout (#38) |
 | plugin | manifests agree, six skills, the learning and apply skills user-invoked only, each `SKILL.md` plus its pattern section within 12,000 bytes (#113), the hooks |
 | releases | version bumps, changelog rolling, the release workflows gated on a merged `release/v*` PR, npm only after the Release (#88, #126) |

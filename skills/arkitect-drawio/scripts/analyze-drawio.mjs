@@ -15,6 +15,7 @@ import {
   parseCliOrExit, exitUsage, pageIndexArg, pageRangeError,
 } from './lib/drawio-core.mjs';
 import { outProblem, DIAGRAM_EXTS } from './lib/backups.mjs';
+import { refuseOtherEngine } from './lib/other-engine.mjs';
 
 const USAGE = 'usage: analyze-drawio.mjs <file...> [--out out.json]\n'
   + '       analyze-drawio.mjs <file> [--page N] (--cells [--all] | --images | --find <label>)';
@@ -288,6 +289,7 @@ function main(argv) {
   const { options: opts, positionals: files } = parseCliOrExit(argv,
     { values: { '--out': null, '--page': pageIndexArg, '--find': null }, switches: ['--cells', '--images', '--all'] }, USAGE);
   if (!files.length) exitUsage('expected at least one .drawio file', USAGE);
+  refuseOtherEngine(files, 'drawio', 'analyze');
   if (opts.all && !opts.cells) exitUsage('--all goes with --cells', USAGE);
   const outBad = opts.out && outProblem(opts.out, { inputs: files, refuse: DIAGRAM_EXTS });
   if (outBad) exitUsage(outBad, USAGE);

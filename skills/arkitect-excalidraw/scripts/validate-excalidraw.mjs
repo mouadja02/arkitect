@@ -11,6 +11,7 @@
 // Nothing here prints element text, only ids, counts and geometry.
 
 import { parseJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
+import { refuseOtherEngine } from '../../arkitect-drawio/scripts/lib/other-engine.mjs';
 import {
   elementBox, bbox, canBind, decodeDataUrl, measureText, PALETTE, FONT, LINE_HEIGHT,
   parseCliOrExit, exitUsage, readProblem, readSceneText, noSceneIn, carriedSpec,
@@ -781,6 +782,7 @@ function main(argv) {
   const { options, positionals: files } = parseCliOrExit(argv, { switches: ['--json', '--strict'] }, USAGE);
   const { json, strict } = options;
   if (!files.length) exitUsage('expected at least one .excalidraw or .excalidrawlib file', USAGE);
+  refuseOtherEngine(files, 'excalidraw', 'validate');
 
   let bad = 0;
   for (const f of files) {

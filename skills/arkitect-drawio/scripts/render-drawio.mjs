@@ -8,6 +8,7 @@
 import { accessSync, constants, statSync, readFileSync, writeFileSync, mkdtempSync, rmSync, mkdirSync, existsSync, copyFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { readMxfile, readDiagram, embedDiagram } from './lib/drawio-core.mjs';
+import { otherEngineLines } from './lib/other-engine.mjs';
 import { posix, win32, resolve, basename, extname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -240,6 +241,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   catch (error) { console.error(error.message); process.exitCode = 2; }
   if (options?.help) console.log(USAGE);
   else if (options) {
+    const other = otherEngineLines([options.file], 'drawio', 'render');
+    if (other.length) { console.error(other.join('\n')); process.exit(2); }
     try { process.exitCode = render(options).ok ? 0 : 1; }
     catch (error) { console.error(error.message); process.exitCode = 1; }
   }
