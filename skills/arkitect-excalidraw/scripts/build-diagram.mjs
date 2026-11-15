@@ -48,6 +48,7 @@ import {
   numberProblems, defaulted, gridProblems, nonFiniteBoxes,
   FINITE, POSITIVE, NON_NEGATIVE, SPAN,
 } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
+import { textProblems, numbersAsText } from '../../arkitect-drawio/scripts/lib/spec-text.mjs';
 import { STYLE, HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
@@ -107,6 +108,13 @@ const LAYOUT_FIELDS = ['originX', 'originY', 'colPitch', 'rowPitch', 'cell', 'ro
 // The values the router knows (#380); the scene's own are the validator's.
 const ROUTES = ['auto', 'straight', 'elbow', 'avoid'];
 const ROUTINGS = ['elbow', 'points'];
+// The fields that hold text a scene draws (#488).
+const TEXT_FIELDS = { spec: ['title'], boundaries: ['label'], nodes: ['label', 'sublabel'], edges: ['label'] };
+// The arrowheads `references/excalidraw-format.md` lists, and `null` for none (#490).
+const ARROWHEADS = ['arrow', 'triangle', 'triangle_outline', 'dot', 'circle', 'circle_outline',
+  'bar', 'diamond', 'diamond_outline'];
+// #rgb, #rgba, #rrggbb or #rrggbbaa: what a CSS colour string in a scene may be.
+const HEX_COLOUR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 export function unknownFields(spec, styleFields = Object.keys(STYLE)) {
   const out = [];
@@ -666,6 +674,12 @@ export function validateSpec(spec) {
   nodes.forEach((n, i) => { if (isObject(n)) errors.push(...numberProblems(`nodes[${i}]`, n, NODE_NUMBERS)); });
   edges.forEach((e, i) => { if (isObject(e)) errors.push(...numberProblems(`edges[${i}]`, e, EDGE_NUMBERS)); });
 
+  // Text a list or an object would draw as nothing or as a scene that fails (#488).
+  errors.push(...textProblems('spec', spec, TEXT_FIELDS.spec));
+  for (const [key, list] of [['boundaries', boundaries], ['nodes', nodes], ['edges', edges]]) {
+    list.forEach((item, i) => { if (isObject(item)) errors.push(...textProblems(`${key}[${i}]`, item, TEXT_FIELDS[key])); });
+  }
+
   return errors;
 }
 
@@ -685,7 +699,8 @@ export function buildDiagram(spec, { style = resolveStyle(), seed = null } = {})
   }
   // Taken before anything reads the spec, so the scene carries it as written.
   const carried = JSON.stringify(spec);
-  return withSeed(seed, () => carry(assemble(spec, style), spec, carried));
+  const drawn = numbersAsText(spec, TEXT_FIELDS);
+  return withSeed(seed, () => carry(assemble(drawn, style), spec, carried));
 }
 
 // The scene carries its spec, so an edit can print it, change it and rebuild
@@ -773,7 +788,6 @@ function assemble(spec, style) {
     ...defaulted(spec.layout),
   };
   const scene = emptyScene();
-  scene.appState.viewBackgroundColor = CANVAS_BG[spec.canvasBackground] ?? spec.canvasBackground ?? S.canvasBackground;
 
   const report = {
     icons: [], iconSources: {}, missingIcons: [], missingNodes: [], opaqueIcons: [], selfCaptioned: [], notes: [], unknownKinds: [], unknownFields: unknownFields(spec, Object.keys(style.tokens)), looksLikeBoundary: [], namesAProduct: [], crossings: [],
@@ -792,6 +806,27 @@ function assemble(spec, style) {
     report.unknownKinds.push({ field, value, drawnAs: fallback ?? 'black', valid: [...Object.keys(PALETTE), ...Object.keys(HOUSE_ACCENTS), '#rrggbb'] });
     return fallback;
   };
+  // A colour field the app would have to guess at: `sky-blue` or `#12` was
+  // written as given. A palette name draws as that swatch's stroke (its
+  // background for a fill); anything else that is not a hex colour is said and
+  // drawn as the default (#490).
+  const colourOf = (field, value, part, fallback, drawnAs = fallback) => {
+    if (value == null) return fallback;
+    if (typeof value === 'string') {
+      if (HEX_COLOUR.test(value) || value === 'transparent') return value;
+      const swatch = Object.hasOwn(PALETTE, value) ? PALETTE[value] : Object.hasOwn(HOUSE_ACCENTS, value) ? HOUSE_ACCENTS[value] : null;
+      if (swatch) return swatch[part];
+    }
+    report.unknownKinds.push({ field, value, drawnAs, valid: [...Object.keys(PALETTE), ...Object.keys(HOUSE_ACCENTS), '#rrggbb', 'transparent'] });
+    return fallback;
+  };
+  const canvas = spec.canvasBackground;
+  let canvasColour = Object.hasOwn(CANVAS_BG, canvas) ? CANVAS_BG[canvas] : S.canvasBackground;
+  if (canvas != null && !Object.hasOwn(CANVAS_BG, canvas)) {
+    if (typeof canvas === 'string' && HEX_COLOUR.test(canvas)) canvasColour = canvas;
+    else report.unknownKinds.push({ field: 'canvasBackground', value: canvas, drawnAs: canvasColour, valid: [...Object.keys(CANVAS_BG), '#rrggbb'] });
+  }
+  scene.appState.viewBackgroundColor = canvasColour;
   L.route = choose('layout.route', L.route, ROUTES, 'auto');
   const colX = (c) => L.originX + c * L.colPitch;
   const rowY = (r) => L.originY + r * L.rowPitch;
@@ -849,8 +884,9 @@ function assemble(spec, style) {
       roughness: n.roughness ?? S.roughness,
       fillStyle: choose(`nodes[${i}].fillStyle`, n.fillStyle, FILL_STYLES, S.fillStyle),
     };
-    if (n.fill === false) look.bg = 'transparent';
-    if (n.fill && typeof n.fill === 'string') look.bg = n.fill;
+    const fillBg = n.fill === false ? 'transparent' : colourOf(`nodes[${i}].fill`, n.fill, 'bg', undefined, look.bg);
+    if (fillBg !== undefined) look.bg = fillBg;
+    const labelTint = colourOf(`nodes[${i}].labelColor`, n.labelColor, 'stroke', look.stroke);
 
     const w = n.width ?? (n.kind === 'icon' ? (n.size ?? S.iconSize) : S.nodeWidth);
     const h = n.height ?? (n.kind === 'icon' ? (n.size ?? S.iconSize) : S.nodeHeight);
@@ -863,7 +899,7 @@ function assemble(spec, style) {
     const labelOpts = {
       fontSize: n.fontSize ?? FONT.S,
       fontFamily: n.fontFamily ?? S.fontFamily,
-      color: n.labelColor ?? look.stroke,
+      color: labelTint,
     };
     const captionOpts = { ...labelOpts, fontSize: n.fontSize ?? S.captionSize };
     const produced = [];
@@ -961,7 +997,7 @@ function assemble(spec, style) {
         fontSize: n.fontSize ?? FONT.M,
         fontFamily: n.fontFamily ?? S.fontFamily,
         textAlign: n.align ?? 'left',
-        strokeColor: n.labelColor ?? look.stroke,
+        strokeColor: labelTint,
         x, y,
       });
       produced.push(t);
@@ -974,7 +1010,7 @@ function assemble(spec, style) {
       const height = n.height ?? Math.max(h, m.height + 28);
       const r = rectangle({
         x, y, width: w, height,
-        strokeColor: look2.stroke, backgroundColor: n.fill ?? look2.bg, fillStyle: 'solid',
+        strokeColor: look2.stroke, backgroundColor: fillBg ?? look2.bg, fillStyle: 'solid',
         strokeWidth: STROKE_WIDTH.thin, roughness: n.roughness ?? S.roughness,
         roundness: S.rounded ? ROUND : null,
       });
@@ -1200,7 +1236,7 @@ function assemble(spec, style) {
     const r = rectangle({
       x: box.x, y: box.y, width: box.width, height: box.height,
       strokeColor: look.stroke,
-      backgroundColor: b.fill ?? 'transparent',
+      backgroundColor: b.fill === false ? 'transparent' : colourOf(`boundaries[${i}].fill`, b.fill, 'bg', 'transparent'),
       fillStyle: 'solid',
       strokeWidth: b.strokeWidth ?? S.boundaryStrokeWidth,
       strokeStyle: b.dashed === false ? 'solid' : choose(`boundaries[${i}].strokeStyle`, b.strokeStyle, STROKE_STYLES, S.boundaryStroke),
@@ -1256,7 +1292,8 @@ function assemble(spec, style) {
     usedKinds.add(kind);
     const k = EDGE_KINDS[kind];
     const edgeStyle = {
-      color: e.color ?? k.color,
+      labelColor: colourOf(`edges[${i}].labelColor`, e.labelColor, 'stroke', k.color),
+      color: colourOf(`edges[${i}].color`, e.color, 'stroke', k.color),
       strokeStyle: choose(`edges[${i}].strokeStyle`, e.strokeStyle, STROKE_STYLES, k.strokeStyle),
       strokeWidth: e.strokeWidth ?? k.width,
     };
@@ -1326,8 +1363,8 @@ function assemble(spec, style) {
       strokeWidth: edgeStyle.strokeWidth,
       strokeStyle: edgeStyle.strokeStyle,
       roughness: e.roughness ?? style.tokens.roughness,
-      endArrowhead: e.endArrowhead === null ? null : (e.endArrowhead ?? 'arrow'),
-      startArrowhead: e.startArrowhead ?? null,
+      endArrowhead: e.endArrowhead === null ? null : choose(`edges[${i}].endArrowhead`, e.endArrowhead, ARROWHEADS, 'arrow'),
+      startArrowhead: choose(`edges[${i}].startArrowhead`, e.startArrowhead, ARROWHEADS, null),
       elbowed,
     });
     // The app keeps a fixed segment where it is when either end moves, and
@@ -1407,7 +1444,7 @@ function assemble(spec, style) {
       const t = text({
         text: e.label, fontSize: size, fontFamily: S.fontFamily,
         textAlign: 'center', verticalAlign: 'middle',
-        strokeColor: e.labelColor ?? k.color,
+        strokeColor: edgeStyle.labelColor,
         containerId: bound ? a.id : null,
         width: m.width, height: m.height,
         x: Math.round(at(sign, slide).x),
