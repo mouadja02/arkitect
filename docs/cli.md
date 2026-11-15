@@ -276,7 +276,7 @@ and `as-is-to-be.spec.json` (two pages), each with its PNG. Pattern fragments:
 
 An arrowhead is `arrow`, `triangle`, `triangle_outline`, `dot`, `circle`,
 `circle_outline`, `bar`, `diamond` or `diamond_outline`. A colour (`fill`,
-`labelColor`, an edge's `color`, a boundary's `fill`) is a `#rgb` or `#rrggbb`,
+`labelColor`, an edge's `color`, a boundary's `fill`) is a hex colour (`#rgb`, `#rrggbb`, or either with alpha),
 `transparent` or a palette name, which draws as that swatch's stroke (its
 background for a `fill`). `canvasBackground` is one of its five names or a hex
 colour. Any other value, `sky-blue` or `banana`, is listed under `unknownKinds`
