@@ -58,7 +58,42 @@ Draw.io: open the file in Draw.io Desktop or the VS Code extension, never the
 hosted editor. [apps.md](apps.md) covers both, and the MCP server for editing
 existing Draw.io files.
 
-## 3. Get the icons right
+## 3. Change it later
+
+Ask the agent for the change and name the existing file. An Arkitect-built
+diagram carries its spec, so the agent can change that and rebuild the file;
+the builder backs up the existing file before replacing it.
+
+By hand:
+
+```bash
+arkitect excalidraw spec docs/orders.excalidraw > edit.json
+# edit edit.json
+arkitect excalidraw build edit.json --out docs/orders.excalidraw
+```
+
+Use `drawio` and a `.drawio` file for the other engine. A rebuild reports
+shapes moved, restyled or added in an editor and keeps their backup, but those
+editor changes are not part of the carried spec. [cli.md](cli.md#excalidraw)
+has the complete editing behaviour for both engines.
+
+## 4. Put it in a README
+
+GitHub does not display `.drawio` or `.excalidraw` files directly. Render an
+embedded SVG, then link the image from the README:
+
+```bash
+arkitect excalidraw render docs/orders.excalidraw --embed --format svg --out-dir docs
+```
+
+In the README, use standard Markdown image syntax with
+`docs/orders.excalidraw.svg` as the image target. GitHub shows the picture,
+while Draw.io or Excalidraw can open that same SVG back as the editable source.
+Re-render it after the next build. The
+[rendering reference](cli.md#rendering) covers both engines and multi-page
+Draw.io files.
+
+## 5. Get the icons right
 
 6,012 marks ship with Arkitect: 4,850 across 18 Draw.io packs, AWS, Azure and
 Google Cloud among them, and 1,162 items across 36 Excalidraw libraries.
@@ -73,7 +108,7 @@ When nothing matches, there are three honest answers: a placeholder (the
 default), a fetched logo, or an icon built from one. Another product's mark is
 never one of them. [icons.md](icons.md).
 
-## 4. Make the style yours
+## 6. Make the style yours
 
 What ships is a house style with the evidence for each rule. Teach Arkitect
 yours from diagrams you've already drawn:
