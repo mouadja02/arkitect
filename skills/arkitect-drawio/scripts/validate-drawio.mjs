@@ -507,6 +507,11 @@ export function validateFile(path, { pageIndex = null, products = true } = {}) {
     // source to 1 at the target, over the whole length.
     const along = (segments, x) => pointAt(segments, ((x ?? 0) + 1) / 2 * lengthOf(segments));
     const routeOf = new Map(routes.map((r) => [r.id, r.segments]));
+    // A self-loop is left to Draw.io, which draws it out of one side and back
+    // in; its estimated route is one segment on its own node, so a label placed
+    // along it lay over that node and over its own arrowhead, a claim the page
+    // does not bear out. Nothing models the loop, so its label is not checked (#491).
+    for (const r of routes) if (r.source === r.target) routeOf.delete(r.id);
     // How far each label's chip ends before its arrowhead, along the route (#241).
     const labels = [];
     for (const c of cells) {

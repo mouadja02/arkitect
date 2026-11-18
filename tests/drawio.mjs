@@ -5329,6 +5329,40 @@ test('validate warns once on an edge label that lies over a node or over its own
   }
 });
 
+// The builder leaves a self-loop to Draw.io, and validate models a route as a
+// line between two ports, so a loop became one segment lying on its own node:
+// its label then "lay over" that node and "covered its own arrowhead", advice
+// no spec can follow, for a page that shows the label beside the loop with the
+// arrowhead clear. Nothing models where Draw.io draws the loop, so validate
+// says nothing about its label (#491). Excalidraw's validator never did.
+test('validate leaves a labelled self-loop alone, and still warns on a long label between neighbours (#491)', () => {
+  const dir = join(TMP, 'p491');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const check = (s, name) => {
+    const file = join(dir, `${name}.drawio`);
+    writeFileSync(file, builder.buildDiagram(s).xml);
+    return { r: validator.validateFile(file) };
+  };
+  const loop = check({ nodes: [{ id: 'a', kind: 'box', label: 'Orders' }], edges: [{ from: 'a', to: 'a', label: 'retry' }] }, 'loop');
+  eq(loop.r.warnings.join(' | '), '', 'the loop is not claimed to lie over its own node');
+  eq(loop.r.info.pages[0].labelsOverCells, 0, 'none counted');
+  eq(loop.r.info.pages[0].labels.length, 0, 'no label distance is reported for a loop nothing models');
+  // A long label on the loop, inside a boundary narrower than its chip: the
+  // chip's place is not modelled, so it is not said to cross the border either.
+  const boxed = check({ boundaries: [{ id: 'zone', label: 'Zone', col: 0, row: 0, cols: 1, rows: 1 }],
+    nodes: [{ id: 'a', kind: 'box', label: 'Orders', col: 0, row: 0, parent: 'zone' }],
+    edges: [{ from: 'a', to: 'a', label: 'retry the whole failing pipeline step again' }] }, 'boxed');
+  eq(boxed.r.warnings.join(' | '), '', 'a loop label in a boundary');
+  // The same spec with a long label between two adjacent nodes: #473's warning stands, and names that edge only.
+  const mixed = check({ nodes: [{ id: 'orders', kind: 'box', label: 'Orders' }, { id: 'worker', kind: 'box', label: 'Worker', col: 1 }],
+    edges: [{ from: 'orders', to: 'orders', label: 'retry' }, { from: 'orders', to: 'worker', label: 'publishes order events nightly' }] }, 'mixed');
+  const mine = mixed.r.warnings.filter((w) => /lies over cell|covers its own arrowhead/.test(w));
+  eq(mine.length, 1, mixed.r.warnings.join(' | '));
+  assert(mine[0].includes('edge "e2"') && !mine[0].includes('edge "e1"'), mine[0]);
+  eq(mixed.r.info.pages[0].labelsOverCells, 1, 'counted: the edge between the nodes, not the loop');
+});
+
 // "Assumption: one region" is the note both skills ask for on every drawing, and
 // its last word is a boundary word. The build leaves a note out of the
 // boundary-name and product-name checks; validate decided what was plain from
