@@ -11,6 +11,8 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+## [2.5.1] — 2026-11-18
+
 ### Changed
 
 - Both renderers back up an image they replace through the builders' backups, and say when git would commit it (#472, #497). `excalidraw render` copied nothing aside, so an edit saved into a `--embed` image was gone after the next render; it now writes `<name>.backup-<stamp>.<ext>` first and keeps the oldest and the newest five (`--keep-backups N`, `0` keeps all), and its JSON report gains `backup` and `pruned` when it replaced an image. `drawio render` kept a backup of its own that nothing deleted, so a render-look-fix loop left one more beside the README image every turn; its backup is now named `<name>.backup-<stamp>.<ext>` where it was `<name>.<ext>.backup-<stamp>`, retention applies, each page in the result carries `pruned`, and backups already on disk are left alone. A build or render that writes a backup in a git repository whose `.gitignore` does not cover it says so in one line (`the backup beside <file> is not ignored: add *.backup-* to .gitignore`): in a build's `notes`, which reaches `todo`, in Excalidraw's render JSON `notes`, and as a logged line from `drawio render`; the standing `.gitignore` suggestion is gone from step 5 of both drawing skills and from `AGENTS.md`, 67 bytes from the Draw.io skill, 53 from the Excalidraw skill and 140 from `AGENTS.md`. This repository's `.gitignore` now covers `*.backup-*.svg` and `*.backup-*.png`.
