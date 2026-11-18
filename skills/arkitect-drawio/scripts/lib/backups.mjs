@@ -117,6 +117,79 @@ export function pruneBackups(path, { keep = DEFAULT_KEEP_BACKUPS } = {}) {
   return pruned;
 }
 
+// A backup lands in someone's repository, megabytes of it once icons are
+// embedded, one `git add .` from a commit. The standing advice to ignore
+// `*.backup-*` was read on every drawing, including a first build that writes
+// none, and nothing checked it (#497). The script that wrote the backup knows
+// whether git would pick it up, so it says so, once, exactly then. It reads the
+// `.gitignore` files from the repository root down to the backup's folder and
+// runs no subprocess; `.git/info/exclude` and a global ignore file are not
+// read, so a project ignoring backups only there hears the note once too often.
+const globRe = (glob) => {
+  let re = '';
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === '*' && glob[i + 1] === '*') {
+      if (glob[i + 2] === '/') { re += '(?:.*/)?'; i += 2; } else { re += '.*'; i += 1; }
+    } else if (c === '*') re += '[^/]*';
+    else if (c === '?') re += '[^/]';
+    else if (c === '[' && glob.indexOf(']', i + 2) > 0) {
+      const end = glob.indexOf(']', i + 2);
+      re += `[${glob.slice(i + 1, end).replace(/^[!^]/, '^').replace(/\\/g, '\\\\')}]`;
+      i = end;
+    } else if (c === '\\' && i + 1 < glob.length) re += quoteRe(glob[++i]);
+    else re += quoteRe(c);
+  }
+  return new RegExp(`^${re}$`);
+};
+
+const ignoreRules = (dir) => {
+  let text;
+  try { text = readFileSync(join(dir, '.gitignore'), 'utf8'); } catch { return []; }
+  const rules = [];
+  for (let line of text.split(/\r?\n/)) {
+    line = line.replace(/(?<!\\)\s+$/, '');
+    if (!line || line.startsWith('#')) continue;
+    const negated = line.startsWith('!');
+    if (negated) line = line.slice(1);
+    const dirOnly = line.endsWith('/');
+    if (dirOnly) line = line.slice(0, -1);
+    if (!line) continue;
+    rules.push({ dir, negated, dirOnly, anchored: line.includes('/'), re: globRe(line.replace(/^\//, '')) });
+  }
+  return rules;
+};
+
+// The note for a backup that `git add .` would pick up, or null: nothing was
+// backed up, the folder is not inside a repository, or a `.gitignore` between it
+// and the repository root covers the backup, directly or through a folder above.
+export function unignoredBackupNote(path, backup) {
+  if (!backup) return null;
+  const file = resolve(backup);
+  const folders = [];
+  // `.git` is a file in a worktree or a submodule, so existence is the test.
+  for (let dir = dirname(file); ; dir = dirname(dir)) {
+    folders.unshift(dir);
+    if (existsSync(join(dir, '.git'))) break;
+    if (dirname(dir) === dir) return null;
+  }
+  const rules = folders.flatMap(ignoreRules);
+  const parts = relative(folders[0], file).split(/[\\/]/);
+  for (let i = 1; i <= parts.length; i++) {
+    const at = join(folders[0], ...parts.slice(0, i));
+    const isDir = i < parts.length;
+    let ignored = false;
+    for (const rule of rules) {
+      if (rule.dirOnly && !isDir) continue;
+      const rel = relative(rule.dir, at).split(/[\\/]/);
+      if (rel[0] === '..' || rel[0] === '') continue;
+      if (rule.re.test(rule.anchored ? rel.join('/') : rel.at(-1))) ignored = !rule.negated;
+    }
+    if (ignored) return null;
+  }
+  return `the backup beside ${path} is not ignored: add *.backup-* to .gitignore`;
+}
+
 // Why an --out may not be written, or null. `analyze x.drawio --out x.drawio`
 // put a JSON summary where the diagram was, with no backup, and `build` would
 // write a diagram over its own spec (#349). `exts` is what the file must end

@@ -25,7 +25,7 @@
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
-import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, changedNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
+import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote, droppedNote, changedNote, unignoredBackupNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, unattended, drawnMark, catalogId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf, EXCALIDRAW_ITEM } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
@@ -1012,6 +1012,9 @@ function main(argv) {
   writeFileSync(out, xml);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
   else report.notes.unshift(...(dropped.length ? [droppedNote(out, backup, dropped)] : []), ...(changed.length ? [changedNote(out, backup, changed)] : []));
+  // A backup that git would commit, said once and only then (#497).
+  const unignored = unignoredBackupNote(out, backup);
+  if (unignored) report.notes.push(unignored);
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

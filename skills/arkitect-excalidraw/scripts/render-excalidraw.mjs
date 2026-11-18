@@ -18,6 +18,7 @@
 // so a README image opens back in the app as the scene (#447).
 
 import { writeFileSync, statSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { backupExisting, pruneBackups, unignoredBackupNote, DEFAULT_KEEP_BACKUPS } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { basename, dirname, extname, join } from 'node:path';
 import { otherEngineLines } from '../../arkitect-drawio/scripts/lib/other-engine.mjs';
 import { readScene, readSceneText, embedScene, elementBox, bbox, LINE_HEIGHT } from './lib/excalidraw-core.mjs';
@@ -309,16 +310,18 @@ export function sceneToSvg(scene, { padding = 40, scale = 1, style = 'rough', ba
 }
 
 export const RENDER_USAGE = `usage: render-excalidraw.mjs <scene.excalidraw> [--out FILE.svg|FILE.png | --out-dir DIR [--format png|svg]]
-  [--embed] [--style rough|clean] [--scale N] [--padding PX] [--background COLOUR] [--width PX] [--browser PATH] [--no-sandbox]
+  [--embed] [--keep-backups N] [--style rough|clean] [--scale N] [--padding PX] [--background COLOUR] [--width PX] [--browser PATH] [--no-sandbox]
 With no output flag it writes <scene>.svg beside the scene; --out-dir writes PNG unless --format svg.
 A PNG needs a local Edge, Chrome or Chromium (--browser or ARKITECT_BROWSER pins one) and is --width px wide (default 2200).
 --embed puts the scene in the image, named <scene>.excalidraw.svg|png: a picture a README shows
 that the app opens as the scene, and spec, analyze and validate read.
+An image it replaces is copied to <name>.backup-<stamp>.<ext> first; the oldest copy and the newest N
+stay (default 5; --keep-backups 0 keeps all).
 --no-sandbox is opt-in, for a Linux host where Chromium cannot start its sandbox.`;
 
 export class RenderUsageError extends Error {}
 
-const VALUE_FLAGS = ['--out', '--out-dir', '--format', '--style', '--scale', '--padding', '--background', '--width', '--browser'];
+const VALUE_FLAGS = ['--out', '--out-dir', '--format', '--style', '--scale', '--padding', '--background', '--width', '--browser', '--keep-backups'];
 const isDirectory = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 // Every flag is checked before anything is drawn or written (#39). The --out
@@ -360,6 +363,8 @@ export function parseRenderArgs(argv) {
   if (background !== null && !/^[#\w(),.% -]+$/.test(background)) {
     throw new RenderUsageError(`--background expects a colour such as #ffffff or white, got ${background}`);
   }
+  // Checked with the other flags, before anything is drawn or deleted (#472).
+  const keepBackups = numberFlag('--keep-backups', DEFAULT_KEEP_BACKUPS, Number.isSafeInteger, 'a whole number of backups to keep (0 keeps all)');
   const format = given['--format'];
   if (format !== undefined && format !== 'png' && format !== 'svg') throw new RenderUsageError(`--format expects png or svg, got ${format}`);
 
@@ -390,7 +395,7 @@ export function parseRenderArgs(argv) {
     }
     if (given.noSandbox) throw new RenderUsageError('--no-sandbox only applies to PNG output');
   }
-  return { scene, out: target, format: kind, style, scale, padding, width, background, browser: given['--browser'], noSandbox: Boolean(given.noSandbox), embed: Boolean(given.embed) };
+  return { scene, out: target, format: kind, style, scale, padding, width, background, browser: given['--browser'], keepBackups, noSandbox: Boolean(given.noSandbox), embed: Boolean(given.embed) };
 }
 
 // Exit 0 written, 1 when the PNG could not be made (nothing replaced), 2 on a
@@ -459,16 +464,22 @@ export function run(argv, { log = console.log, error = console.error, platform =
   // The scene file's own text, byte for byte, so the image restores it exactly.
   if (options.embed) bytes = embedScene(bytes, options.format, readSceneText(options.scene).text);
 
-  // Only now is the previous preview replaced, and atomically: a crash part-way
-  // through a write never leaves a truncated file under its name.
+  // Only now is the previous image replaced, and atomically: a crash part-way
+  // through a write never leaves a truncated file under its name. It is copied
+  // aside first, as a build does, since an image holding a scene can hold work
+  // someone saved into it, and retention runs only after the write (#472).
   mkdirSync(dirname(options.out), { recursive: true });
   const temporary = `${options.out}.${process.pid}.tmp`;
+  let backup = null;
   try {
     writeFileSync(temporary, bytes);
+    backup = backupExisting(options.out);
     renameSync(temporary, options.out);
   } finally {
     rmSync(temporary, { force: true });
   }
+  const pruned = pruneBackups(options.out, { keep: options.keepBackups });
+  const ignoreNote = unignoredBackupNote(options.out, backup);
 
   const live = scene.elements.filter((e) => !e.isDeleted);
   const view = bbox(live);
@@ -480,6 +491,8 @@ export function run(argv, { log = console.log, error = console.error, platform =
     height: dims.height,
     ...(browser ? { browser } : {}),
     ...(options.embed ? { embedded: 'scene' } : {}),
+    ...(backup ? { backup, pruned } : {}),
+    ...(ignoreNote ? { notes: [ignoreNote] } : {}),
     elements: live.length,
     files: Object.keys(scene.files ?? {}).length,
     canvas: `${Math.round(view.width)}x${Math.round(view.height)}`,

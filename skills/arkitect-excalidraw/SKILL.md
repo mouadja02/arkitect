@@ -97,8 +97,7 @@ Do not undo them.
 5. **Never overwrite blind.** The builder backs up an existing file, keeping the
    oldest plus the newest five (`--keep-backups N`, `0` keeps all). Every other
    edit goes `analyze → back up → edit → validate`, and the backup is
-   `node scripts/backup.mjs "<file>"` before the first write. Suggest
-   `*.backup-*` for the user's `.gitignore`.
+   `node scripts/backup.mjs "<file>"` before the first write.
 
 6. **Validate.**
    ```bash

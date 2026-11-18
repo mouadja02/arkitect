@@ -74,7 +74,7 @@ like `.analysis/`.
 | `tests/sensitive-tokens.*.sha256` | salted digests derived from your corpus |
 | `skills/*/assets/logos/`, `assets/icons/` | third-party marks under their own terms |
 | `skills/arkitect-excalidraw/assets/libraries/*` (non-bundled) | other people's libraries, re-installable |
-| `*.backup-*.drawio`, `*.backup-*.excalidraw` | the copies taken before an in-place edit |
+| `*.backup-*.drawio`, `*.backup-*.excalidraw`, `*.backup-*.svg`, `*.backup-*.png` | the copies taken before an in-place edit, or before a render replaces an image |
 | `.$*.bkp` | Draw.io Desktop's autosave: a full copy of an open diagram, images included |
 
 ## The redaction check

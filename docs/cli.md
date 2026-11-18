@@ -156,9 +156,10 @@ of neither engine answers as it always did (#493).
   it drew that were restyled, moved or relabelled since, `notes` names them
   and the backup is `<name>.backup-YYYYMMDD-HHMMSS-kept.<ext>`, which
   retention never deletes (#376, #403). `arkitect <engine>
-  backup <file>` does the same for any other edit. Add `*.backup-*` to your
-  `.gitignore`, and `.$*.bkp`: the autosave Draw.io Desktop leaves beside a
-  file it has open.
+  backup <file>` does the same for any other edit. In a git repository whose
+  `.gitignore` does not cover the backup, `notes` says so and names
+  `*.backup-*`; add that to your `.gitignore`, and `.$*.bkp`: the autosave
+  Draw.io Desktop leaves beside a file it has open.
 - **Your style.** A build merges your override from `~/.arkitect/<engine>/`
   and says so under `style`, with what each edge kind means on this install.
   `--defaults` ignores it; use it for anything
@@ -334,7 +335,12 @@ Draw.io, its VS Code extension or the Excalidraw app opens it as the diagram;
 `spec`, `analyze` and `validate` read it, and say so. Draw.io's is named
 `<base>.drawio.svg` (`<base>.p<N>.drawio.svg` for a file of several pages, each
 holding them all), Excalidraw's `<scene>.excalidraw.svg`. Either holds the
-source byte for byte; a re-render after the next build replaces it.
+source byte for byte; a re-render after the next build replaces it. A render copies an
+image it replaces to `<name>.backup-YYYYMMDD-HHMMSS.<ext>` first, as a build does, since
+an image that holds its source can hold edits saved into it: the oldest copy and the newest
+five stay (`--keep-backups N`, `0` keeps all), and Excalidraw's JSON report lists `backup`
+and `pruned` and Draw.io's pages carry them. Draw.io's backup was `<name>.<ext>.backup-<stamp>`,
+never deleted, and the ones already on disk are left alone.
 
 | | Draw.io | Excalidraw |
 |---|---|---|
