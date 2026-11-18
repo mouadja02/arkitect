@@ -79,8 +79,8 @@ or under 12,000 bytes (#113), and `tests/toolkit.mjs` measures it:
 
 | skill | `SKILL.md` | largest pattern section | total |
 |---|---|---|---|
-| `arkitect-drawio` | 11,081 | 735 | 11,816 |
-| `arkitect-excalidraw` | 11,013 | 882 | 11,895 |
+| `arkitect-drawio` | 11,014 | 735 | 11,749 |
+| `arkitect-excalidraw` | 10,960 | 882 | 11,842 |
 
 The worked example an agent copies comes on top. A rule that holds on every
 drawing stays in `SKILL.md`; a rule for one situation moves beside it.
@@ -117,8 +117,9 @@ Excalidraw library catalogue. A change that adds a third needs a very good
 reason and its own pull request. The Draw.io MCP tools that open the hosted
 editor stay forbidden on user content.
 
-**7. Backups before overwrites.** Both builders write a timestamped sibling
-backup before replacing an existing file. Do not remove that, and do not add a
+**7. Backups before overwrites.** Both builders, and both renderers over an
+existing image (#472), write a timestamped sibling backup before replacing an
+existing file. Do not remove that, and do not add a
 write path that skips it. Retention (#49) deletes only the builder's own
 exact-name backups of the file it just wrote, only after that write succeeded,
 and always keeps the newest and the oldest; do not widen what it may delete.

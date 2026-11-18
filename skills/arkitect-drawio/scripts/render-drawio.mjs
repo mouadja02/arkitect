@@ -6,6 +6,7 @@
 // clamps to the last page of a two-page file. These are build observations,
 // not platform rules: split pages and omit the unstable flag by default.
 import { accessSync, constants, statSync, readFileSync, writeFileSync, mkdtempSync, rmSync, mkdirSync, existsSync, copyFileSync, unlinkSync } from 'node:fs';
+import { backupExisting, pruneBackups, unignoredBackupNote, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { tmpdir } from 'node:os';
 import { readMxfile, readDiagram, embedDiagram } from './lib/drawio-core.mjs';
 import { otherEngineLines } from './lib/other-engine.mjs';
@@ -65,9 +66,11 @@ export function render(options, { platform = process.platform, env = process.env
       // Linux 24.7.17 misreads --disable-gpu before -x as the input file.
       if (options.disableGpu) args.push('--disable-gpu');
       if (options.noSandbox) args.push('--no-sandbox');
-      // Remove stale output only after making a collision-safe sibling backup.
+      // Remove stale output only after making a backup, the builders' own, so
+      // it is named <stem>.backup-<stamp><ext> and retention bounds it (#472).
       // A fresh nonempty file, not stderr/exit status or mtime, proves export.
-      const backup = backupOutput(output);
+      const backup = backupExisting(output) ?? undefined;
+      if (backup) unlinkSync(output);
       let result;
       try { result = runner(xvfb ?? exe, xvfb ? ['-a', exe, ...args] : args, { env, encoding: 'utf8', shell: false }); }
       catch (error) { result = { error }; }
@@ -88,12 +91,17 @@ export function render(options, { platform = process.platform, env = process.env
         }
       }
       if (!ok && backup) copyFileSync(backup, output);
+      // Only once the new image is written: a failed export keeps every backup.
+      const pruned = ok ? pruneBackups(output, { keep: options.keepBackups }) : [];
+      const note = ok ? unignoredBackupNote(output, backup) : null;
       // A fresh nonempty export is still the only success signal; stderr is
       // read only on failure, so the log can say why instead of just FAILED.
       if (!ok && !why) why = exportFailure(result);
       const reason = why ? ` (${why})` : '';
       log(`${ok ? `rendered page ${index}${whole !== null ? ' with the file embedded' : ''}` : `page ${index} FAILED`} -> ${output} (${size} bytes)${reason}`);
-      pages.push({ index, output, size, ok, backup, status: result.status });
+      if (pruned.length) log(`pruned ${pruned.length} older backup${pruned.length > 1 ? 's' : ''}`);
+      if (note) log(note);
+      pages.push({ index, output, size, ok, backup, pruned, status: result.status });
     } finally {
       if (temporary) rmSync(temporary, { recursive: true, force: true });
     }
@@ -133,18 +141,6 @@ export function exportFailure(result) {
   const ended = result?.signal ? `killed by ${result.signal}`
     : Number.isInteger(result?.status) && result.status !== 0 ? `exit ${result.status}` : '';
   return [ended, said?.slice(0, 200)].filter(Boolean).join(': ');
-}
-
-function backupOutput(output) {
-  if (!existsSync(output)) return undefined;
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
-  for (let n = 0; ; n++) {
-    const backup = `${output}.backup-${stamp}${n ? `-${n}` : ''}`;
-    try { copyFileSync(output, backup, constants.COPYFILE_EXCL); }
-    catch (error) { if (error.code === 'EEXIST') continue; throw error; }
-    unlinkSync(output);
-    return backup;
-  }
 }
 
 function executable(path) {
@@ -196,19 +192,21 @@ export function discoverDrawio(override, deps) {
 
 export const USAGE = `usage: render-drawio.mjs <file> [--page-index N] [--all]
   [--width N] [--padding N] [--out-dir DIR] [--format png|jpg|svg|pdf|vsdx|xml|html]
-  [--embed] [--drawio-exe PATH] [--disable-gpu] [--no-sandbox] [--page-index-passthrough]
+  [--embed] [--keep-backups N] [--drawio-exe PATH] [--disable-gpu] [--no-sandbox] [--page-index-passthrough]
 Page indexes are zero-based; defaults: page 0, width 2200, padding 20, directory ., PNG.
 --embed (svg or png) writes <name>.drawio.svg|png holding the whole file: an image a
 README shows that Draw.io opens as the diagram, and spec, analyze and validate read.
 --padding 0 crops flush to the drawing, as Desktop does on its own.
+An image it replaces is copied to <name>.backup-<stamp>.<ext> first; the oldest copy and the
+newest N stay (default 5; --keep-backups 0 keeps all).
 Default export splits pages without decoding/re-encoding their contents.
 Debug --page-index-passthrough sends the original file and raw index to Desktop.
 Electron flags are opt-in; --no-sandbox disables Chromium sandbox protection.`;
 
 export function parseArgs(args) {
   const options = { file: undefined, pageIndex: 0, all: false, width: 2200, padding: 20,
-    outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false };
-  const values = { '--page-index': 'pageIndex', '--width': 'width', '--padding': 'padding', '--out-dir': 'outDir', '--format': 'format', '--drawio-exe': 'drawioExe' };
+    outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false, keepBackups: DEFAULT_KEEP_BACKUPS };
+  const values = { '--page-index': 'pageIndex', '--width': 'width', '--padding': 'padding', '--out-dir': 'outDir', '--format': 'format', '--drawio-exe': 'drawioExe', '--keep-backups': 'keepBackups' };
   const switches = { '--all': 'all', '--disable-gpu': 'disableGpu', '--no-sandbox': 'noSandbox', '--page-index-passthrough': 'pageIndexPassthrough', '--embed': 'embed' };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -217,7 +215,7 @@ export function parseArgs(args) {
     if (Object.hasOwn(values, arg)) {
       const value = args[++i];
       if (!value || value.startsWith('--')) throw new Error(`Expected value for ${arg}`);
-      if (arg === '--width' || arg === '--page-index' || arg === '--padding') {
+      if (arg === '--width' || arg === '--page-index' || arg === '--padding' || arg === '--keep-backups') {
         const n = Number(value);
         if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < (arg === '--width' ? 1 : 0)) {
           throw new Error(`${arg} must be a ${arg === '--width' ? 'positive' : 'non-negative'} integer`);

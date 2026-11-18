@@ -12,6 +12,9 @@ tests/sensitive-tokens.*.sha256
 # Backups written before an in-place update
 *.backup-*.drawio
 *.backup-*.excalidraw
+# ...and before a render replaces an image
+*.backup-*.svg
+*.backup-*.png
 # Draw.io Desktop's own autosave beside a file it has open
 .$*.bkp
 

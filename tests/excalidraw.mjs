@@ -5641,6 +5641,65 @@ test('render --embed writes an .excalidraw.svg and .excalidraw.png the app reads
   rmSync(dir, { recursive: true, force: true });
 });
 
+// `render --embed` made the image a README shows a file that can hold someone's
+// work, and a re-render replaced it with no copy (#472). A replaced image goes
+// through the builders' backups: one copy, bounded, named so `*.backup-*` covers it.
+test('a render over an existing image backs it up first, keeps the oldest and the newest five, and honours --keep-backups (#472)', () => {
+  const dir = join(TMP, 'p472');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const scenePath = join(dir, 'arch.excalidraw');
+  core.writeScene(scenePath, built.scene);
+  const lines = [];
+  const errors = [];
+  const deps = { platform: 'linux', env: { PATH: '' }, isExecutable: () => false, log: (s) => lines.push(s), error: (s) => errors.push(s) };
+  const image = join(dir, 'arch.excalidraw.svg');
+  const render = (...extra) => {
+    eq(renderer.run([scenePath, '--embed', '--format', 'svg', '--out-dir', dir, ...extra], deps), 0, `render: ${errors.join(' | ')}`);
+    return JSON.parse(lines.at(-1));
+  };
+  const backupsOf = () => readdirSync(dir).filter((f) => /^arch[.]excalidraw[.]backup-\d{8}-\d{6}(?:-\d+)?[.]svg$/.test(f));
+
+  const first = render();
+  eq(first.backup, undefined, 'a first render has nothing to back up');
+  eq(readdirSync(dir).sort().join(), 'arch.excalidraw,arch.excalidraw.svg', 'and writes no other file');
+
+  // Someone saves into the image, as an editor does, and the next render replaces it.
+  const edited = readFileSync(image, 'utf8').replace('</svg>', '<!-- edited in the image --></svg>');
+  writeFileSync(image, edited);
+  const second = render();
+  assert(second.backup && existsSync(second.backup), 'the replaced image is backed up');
+  eq(readFileSync(second.backup, 'utf8'), edited, 'and the backup holds what was in the image');
+  assert(/arch[.]excalidraw[.]backup-\d{8}-\d{6}[.]svg$/.test(second.backup), `named so *.backup-* covers it: ${second.backup}`);
+  assert(!readFileSync(image, 'utf8').includes('edited in the image'), 'the image itself is the fresh render');
+
+  for (let i = 0; i < 6; i++) render();
+  eq(backupsOf().length, 6, 'eight renders leave the oldest backup and the newest five');
+  assert(backupsOf().some((f) => readFileSync(join(dir, f), 'utf8') === edited), 'and the oldest one is the edited image');
+  const two = render('--keep-backups', '2');
+  eq(backupsOf().length, 3, '--keep-backups 2 leaves the oldest and the newest two');
+  eq(two.pruned.length, 4, 'and reports the four it removed');
+  eq(render('--keep-backups', '0').pruned.length, 0, '--keep-backups 0 removes nothing');
+  eq(backupsOf().length, 4, 'and keeps the new backup');
+
+  const before = readdirSync(dir).sort().join();
+  for (const bad of [['--keep-backups', '-1'], ['--keep-backups', 'two'], ['--keep-backups', '1.5'], ['--keep-backups']]) {
+    errors.length = 0;
+    eq(renderer.run([scenePath, '--embed', '--format', 'svg', '--out-dir', dir, ...bad], deps), 2, `${bad.join(' ')} exits 2`);
+    assert(/--keep-backups/.test(errors.join('\n')), `and names the flag: ${errors.join(' | ')}`);
+  }
+  eq(readdirSync(dir).sort().join(), before, 'a refused flag writes no backup and deletes none');
+
+  // A browser that fails leaves the image as it was and writes no backup.
+  const png = join(dir, 'arch.excalidraw.png');
+  writeFileSync(png, 'old png');
+  const failed = renderer.run([scenePath, '--embed', '--out-dir', dir], { ...deps, isExecutable: (p) => p === '/usr/bin/chromium', runner: () => { throw new Error('no screenshot'); } });
+  eq(failed, 1, 'a failed browser exits 1');
+  eq(readFileSync(png, 'utf8'), 'old png', 'and leaves the image unchanged');
+  eq(readdirSync(dir).filter((f) => f.endsWith('.png')).join(), 'arch.excalidraw.png', 'with no backup of it');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 cleanTestIcons();
 
 finish(haveSources ? null : '(reference-scene tests skipped: .analysis/sources.local.json not present)');

@@ -36,7 +36,7 @@ import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES, RESTATED, validateFile } from './validate-excalidraw.mjs';
 import { todoOf, verdict, cap } from '../../arkitect-drawio/scripts/lib/todo.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
-import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
+import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote, unignoredBackupNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
 import { strayMembers, strayNote } from '../../arkitect-drawio/scripts/lib/stray-members.mjs';
@@ -1770,6 +1770,9 @@ function main(argv) {
   writeScene(out, scene);
   if (foreign) report.notes.unshift(foreignNote(out, backup));
   else report.notes.unshift(...(dropped.length ? [droppedNote(out, backup, dropped)] : []), ...(changed.length ? [changedNote(out, backup, changed)] : []));
+  // A backup that git would commit, said once and only then (#497).
+  const unignored = unignoredBackupNote(out, backup);
+  if (unignored) report.notes.push(unignored);
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

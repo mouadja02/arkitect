@@ -1756,12 +1756,104 @@ test('neither drawing skill denies an export format its renderer accepts (#256)'
 // beside any file it has open; the ignore advice named only our own backups
 // (#252).
 test('the ignore advice and this repository cover Draw.io Desktop\'s own .bkp (#252)', () => {
-  for (const path of ['AGENTS.md', 'docs/cli.md', 'skills/arkitect-drawio/SKILL.md']) {
-    const text = readFileSync(join(ROOT, path), 'utf8');
-    assert(text.includes('`*.backup-*`') && text.includes('`.$*.bkp`'), `${path} does not suggest both patterns`);
+  // The standing sentence moved out of the agents' reading path into the build,
+  // which says so only when a backup it wrote is not ignored (#497); the user's
+  // own docs still carry both patterns.
+  const text = readFileSync(join(ROOT, 'docs', 'cli.md'), 'utf8');
+  assert(text.includes('`*.backup-*`') && text.includes('`.$*.bkp`'), 'docs/cli.md does not suggest both patterns');
+  for (const path of ['AGENTS.md', 'skills/arkitect-drawio/SKILL.md', 'skills/arkitect-excalidraw/SKILL.md']) {
+    assert(!/Suggest\s+`\*\.backup-\*`/.test(readFileSync(join(ROOT, path), 'utf8')), `${path} still carries the standing .gitignore suggestion, which the build report makes when it applies (#497)`);
   }
-  assert(readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/).includes('.$*.bkp'), '.gitignore has no .$*.bkp line');
+  const ignore = readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/);
+  assert(ignore.includes('.$*.bkp'), '.gitignore has no .$*.bkp line');
+  // A render over an image leaves `<name>.backup-<stamp>.svg|png` beside it (#472).
+  for (const rule of ['*.backup-*.drawio', '*.backup-*.excalidraw', '*.backup-*.svg', '*.backup-*.png']) {
+    assert(ignore.includes(rule), `.gitignore does not cover ${rule}`);
+  }
   assert(readFileSync(join(ROOT, 'docs', 'privacy.md'), 'utf8').includes('| `.$*.bkp` |'), 'docs/privacy.md does not list .$*.bkp');
+});
+
+// A backup is megabytes once icons are embedded and one `git add .` from a
+// commit. The build says so when the project does not ignore it, and only then:
+// not on a first build, outside a repository, or when a `.gitignore` between the
+// output and the repository root covers it (#497).
+test('a rebuild or re-render names a backup git would commit, and says nothing when it is ignored (#497)', () => {
+  const root = join(TMP, 'unignored-backup');
+  rmSync(root, { recursive: true, force: true });
+  const spec = JSON.stringify({ nodes: [{ id: 'a', kind: 'box', label: 'A', col: 0, row: 0 }] });
+  const note = (out) => `the backup beside ${out} is not ignored: add *.backup-* to .gitignore`;
+  let n = 0;
+  // A scratch repository: `.git` is what ends the walk, so this one never reaches the checkout's own .gitignore.
+  const repo = (gitignore, { git = true } = {}) => {
+    const dir = join(root, `case${n++}`);
+    mkdirSync(join(dir, 'docs'), { recursive: true });
+    if (git) mkdirSync(join(dir, '.git'));
+    for (const [where, text] of Object.entries(gitignore)) writeFileSync(join(dir, where), text);
+    writeFileSync(join(dir, 'spec.json'), spec);
+    return dir;
+  };
+  const rebuild = (engine, dir) => {
+    const out = join(dir, 'docs', engine === 'drawio' ? 'arch.drawio' : 'arch.excalidraw');
+    const build = () => JSON.parse(cli([engine, 'build', join(dir, 'spec.json'), '--out', out, '--defaults']));
+    const first = build();
+    const second = build();
+    return { out, first, second };
+  };
+
+  for (const engine of ['drawio', 'excalidraw']) {
+    const bare = rebuild(engine, repo({}));
+    eq(bare.first.notes.length, 0, `${engine}: a first build writes no backup and says nothing`);
+    eq(bare.first.backup ?? null, null, `${engine}: and has none`);
+    eq(JSON.stringify(bare.second.notes), JSON.stringify([note(bare.out)]), `${engine}: a rebuild with no .gitignore names the backup`);
+    assert(bare.second.todo.some((line) => line.includes(note(bare.out))), `${engine}: and it reaches todo: ${JSON.stringify(bare.second.todo)}`);
+
+    // Every way a project may already ignore it, and the ways it does not.
+    for (const [label, files, ignored] of [
+      ['the literal pattern', { '.gitignore': '*.backup-*\n' }, true],
+      ['the pattern with an extension', { '.gitignore': '*.backup-*.drawio\n*.backup-*.excalidraw\n' }, true],
+      ['a pattern for the other engine only', { '.gitignore': '*.backup-*.drawio\n' }, engine === 'drawio'],
+      ['a CRLF file', { '.gitignore': '# backups\r\n*.backup-*\r\n' }, true],
+      ['the folder', { '.gitignore': 'docs/\n' }, true],
+      ['an anchored folder', { '.gitignore': '/docs\n' }, true],
+      ['the pattern in the output folder', { 'docs/.gitignore': '*.backup-*\n' }, true],
+      ['the pattern commented out', { '.gitignore': '#*.backup-*\n' }, false],
+      ['the pattern negated again', { '.gitignore': '*.backup-*\n!*.backup-*\n' }, false],
+      ['a folder that is not this one', { '.gitignore': 'build/\n' }, false],
+      ['a pattern for a folder only', { '.gitignore': '*.backup-*/\n' }, false],
+    ]) {
+      const r = rebuild(engine, repo(files));
+      eq(JSON.stringify(r.second.notes), JSON.stringify(ignored ? [] : [note(r.out)]), `${engine}: ${label}`);
+    }
+
+    // `.git` is a file in a worktree or a submodule; it still marks the root.
+    const worktree = repo({}, { git: false });
+    writeFileSync(join(worktree, '.git'), 'gitdir: elsewhere\n');
+    eq(rebuild(engine, worktree).second.notes.length, 1, `${engine}: a worktree's .git file marks the repository`);
+
+    // Outside any repository there is nothing to commit.
+    const loose = mkdtempSync(join(tmpdir(), 'arkitect-unignored-'));
+    try {
+      let above = loose;
+      for (; dirname(above) !== above; above = dirname(above)) if (existsSync(join(above, '.git'))) break;
+      if (!existsSync(join(above, '.git'))) {
+        mkdirSync(join(loose, 'docs'));
+        writeFileSync(join(loose, 'spec.json'), spec);
+        eq(rebuild(engine, loose).second.notes.length, 0, `${engine}: outside a repository`);
+      }
+    } finally { rmSync(loose, { recursive: true, force: true }); }
+  }
+
+  // A render over an image, the README route, says it too (#472).
+  const dir = repo({});
+  const scene = join(dir, 'docs', 'arch.excalidraw');
+  cli(['excalidraw', 'build', join(dir, 'spec.json'), '--out', scene, '--defaults']);
+  const render = () => JSON.parse(cli(['excalidraw', 'render', scene, '--embed', '--format', 'svg', '--out-dir', join(dir, 'docs')]));
+  eq(render().notes, undefined, 'a first render has no backup, and says nothing');
+  const again = render();
+  eq(JSON.stringify(again.notes), JSON.stringify([note(join(dir, 'docs', 'arch.excalidraw.svg'))]), 'a re-render names the backup of the image');
+  writeFileSync(join(dir, '.gitignore'), '*.backup-*\n');
+  eq(render().notes, undefined, 'and nothing once the pattern is there');
+  rmSync(root, { recursive: true, force: true });
 });
 
 // docs/maintenance.md quotes the same measured SKILL.md + largest-pattern totals (#161).

@@ -129,7 +129,7 @@ function rejects(fn, pattern) {
 test('renderer parses defaults, explicit options and rejects invalid CLI input', () => {
   assert(typeof renderer.parseArgs === 'function', 'renderer parseArgs is missing');
   const defaults = renderer.parseArgs(['a.drawio']);
-  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, padding: 20, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false }), 'defaults');
+  eq(JSON.stringify(defaults), JSON.stringify({ file: 'a.drawio', pageIndex: 0, all: false, width: 2200, padding: 20, outDir: '.', format: 'png', drawioExe: undefined, disableGpu: false, noSandbox: false, pageIndexPassthrough: false, embed: false, keepBackups: 5 }), 'defaults');
   const opts = renderer.parseArgs(['--all', 'a.drawio', '--page-index', '2', '--width', '800', '--out-dir', 'with spaces', '--format', 'svg', '--drawio-exe', '/custom app', '--disable-gpu', '--no-sandbox']);
   eq(opts.pageIndex, 2, 'page index'); eq(opts.width, 800, 'width');
   eq(opts.outDir, 'with spaces', 'directory'); eq(opts.format, 'svg', 'format');
@@ -389,6 +389,64 @@ test('renderer backs up before export, rejects stale or empty output and continu
   assert(!thrown.ok, 'spawn failure reported');
   eq(readFileSync(target, 'utf8'), 'original', 'spawn failure restores original');
   rejects(() => renderer.render({ ...options, file: join(TMP, 'absent.drawio') }, deps), /no such diagram/i);
+});
+
+// Draw.io's renderer kept a backup of its own, `<out>.backup-<stamp>`, and never
+// deleted one, so a render-look-fix loop left a new one beside the README image
+// every turn (#472). It goes through the builders' backups now.
+test('a render backs up the image it replaces as the builders do, and keeps the oldest and the newest five (#472)', () => {
+  const dir = join(TMP, 'render-retention');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, 's.drawio');
+  writeFileSync(file, '<mxfile><diagram/></mxfile>');
+  const target = join(dir, 's.p0.svg');
+  const lines = [];
+  let n = 0;
+  const deps = { platform: 'linux', env: {}, isExecutable: () => true, log: (s) => lines.push(s),
+    runner: (exe, args) => { writeFileSync(args[args.indexOf('-o') + 1], `render ${++n}`); return { status: 0 }; } };
+  const run = (...extra) => renderer.render(renderer.parseArgs([file, '--format', 'svg', '--out-dir', dir, ...extra]), deps);
+  const backupsOf = () => readdirSync(dir).filter((f) => /^s[.]p0[.]backup-\d{8}-\d{6}(?:-\d+)?[.]svg$/.test(f));
+  const held = () => backupsOf().map((f) => readFileSync(join(dir, f), 'utf8')).sort();
+
+  for (let i = 0; i < 9; i++) eq(run().ok, true, `render ${i}`);
+  // Nine renders replace eight images; the oldest and the newest five stay.
+  eq(held().join(), 'render 1,render 4,render 5,render 6,render 7,render 8', 'the oldest backup and the newest five');
+  eq(readdirSync(dir).filter((f) => f.includes('.svg.backup-')).length, 0, 'and none in the old <out>.backup-<stamp> form');
+  eq(readFileSync(target, 'utf8'), 'render 9', 'and the image is the newest render');
+
+  const two = run('--keep-backups', '2');
+  eq(two.pages[0].pruned.length, 4, '--keep-backups 2 reports the four it removed');
+  eq(backupsOf().length, 3, 'and leaves the oldest and the newest two');
+  eq(run('--keep-backups', '0').pages[0].pruned.length, 0, '--keep-backups 0 removes nothing');
+  eq(backupsOf().length, 4, 'and keeps the new backup');
+  for (const bad of [['--keep-backups', '-1'], ['--keep-backups', 'two'], ['--keep-backups', '1.5'], ['--keep-backups']]) {
+    rejects(() => renderer.parseArgs([file, ...bad]), /--keep-backups/);
+  }
+
+  // What it deleted is printed, as `backup` prints it, and not only returned.
+  lines.length = 0;
+  run('--keep-backups', '1');
+  const lastHere = n;
+  assert(lines.some((s) => /^pruned \d+ older backups?$/.test(s)), `the log says what was pruned: ${lines.join(' | ')}`);
+
+  // In a repository that does not ignore the backup, the render says so, once it has written one (#497).
+  const repo = join(dir, 'repo');
+  mkdirSync(join(repo, '.git'), { recursive: true });
+  const inRepo = (...extra) => { lines.length = 0; renderer.render(renderer.parseArgs([file, '--format', 'svg', '--out-dir', repo, ...extra]), deps); return lines.filter((s) => /is not ignored/.test(s)); };
+  eq(inRepo().length, 0, 'a first render writes no backup and says nothing');
+  eq(inRepo().join(), `the backup beside ${join(repo, 's.p0.svg')} is not ignored: add *.backup-* to .gitignore`, 'a re-render names the backup');
+  writeFileSync(join(repo, '.gitignore'), '*.backup-*\n');
+  eq(inRepo().length, 0, 'and says nothing once a .gitignore covers it');
+
+  // A failed export restores the image and prunes nothing.
+  const failing = { ...deps, runner: () => ({ status: 1, stderr: 'no export' }) };
+  const before = backupsOf().length;
+  const failed = renderer.render(renderer.parseArgs([file, '--format', 'svg', '--out-dir', dir, '--keep-backups', '1']), failing);
+  eq(failed.ok, false, 'a failed export fails');
+  eq(readFileSync(target, 'utf8'), `render ${lastHere}`, 'and restores the image');
+  eq(backupsOf().length, before + 1, 'and prunes no backup');
+  rmSync(dir, { recursive: true, force: true });
 });
 
 test('renderer CLI exposes help, validates arguments and propagates through the dispatcher', () => {
