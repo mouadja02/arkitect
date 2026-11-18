@@ -99,6 +99,7 @@ export function render(options, { platform = process.platform, env = process.env
       if (!ok && !why) why = exportFailure(result);
       const reason = why ? ` (${why})` : '';
       log(`${ok ? `rendered page ${index}${whole !== null ? ' with the file embedded' : ''}` : `page ${index} FAILED`} -> ${output} (${size} bytes)${reason}`);
+      if (pruned.length) log(`pruned ${pruned.length} older backup${pruned.length > 1 ? 's' : ''}`);
       if (note) log(note);
       pages.push({ index, output, size, ok, backup, pruned, status: result.status });
     } finally {

@@ -424,12 +424,27 @@ test('a render backs up the image it replaces as the builders do, and keeps the 
     rejects(() => renderer.parseArgs([file, ...bad]), /--keep-backups/);
   }
 
+  // What it deleted is printed, as `backup` prints it, and not only returned.
+  lines.length = 0;
+  run('--keep-backups', '1');
+  const lastHere = n;
+  assert(lines.some((s) => /^pruned \d+ older backups?$/.test(s)), `the log says what was pruned: ${lines.join(' | ')}`);
+
+  // In a repository that does not ignore the backup, the render says so, once it has written one (#497).
+  const repo = join(dir, 'repo');
+  mkdirSync(join(repo, '.git'), { recursive: true });
+  const inRepo = (...extra) => { lines.length = 0; renderer.render(renderer.parseArgs([file, '--format', 'svg', '--out-dir', repo, ...extra]), deps); return lines.filter((s) => /is not ignored/.test(s)); };
+  eq(inRepo().length, 0, 'a first render writes no backup and says nothing');
+  eq(inRepo().join(), `the backup beside ${join(repo, 's.p0.svg')} is not ignored: add *.backup-* to .gitignore`, 'a re-render names the backup');
+  writeFileSync(join(repo, '.gitignore'), '*.backup-*\n');
+  eq(inRepo().length, 0, 'and says nothing once a .gitignore covers it');
+
   // A failed export restores the image and prunes nothing.
   const failing = { ...deps, runner: () => ({ status: 1, stderr: 'no export' }) };
   const before = backupsOf().length;
   const failed = renderer.render(renderer.parseArgs([file, '--format', 'svg', '--out-dir', dir, '--keep-backups', '1']), failing);
   eq(failed.ok, false, 'a failed export fails');
-  eq(readFileSync(target, 'utf8'), `render ${n}`, 'and restores the image');
+  eq(readFileSync(target, 'utf8'), `render ${lastHere}`, 'and restores the image');
   eq(backupsOf().length, before + 1, 'and prunes no backup');
   rmSync(dir, { recursive: true, force: true });
 });
