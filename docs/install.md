@@ -60,7 +60,7 @@ now.
 | `learn-drawio-style`, `learn-excalidraw-style` | only when you type the command |
 | `apply-drawio-style`, `apply-excalidraw-style` | only when you type the command |
 
-The plugin also carries five hooks:
+The plugin also carries six hooks:
 
 - `hooks/style-question.mjs`: when a prompt asks about a diagram's style, it
   adds one sentence saying a style carries over only through `/learn-*-style`,
@@ -88,10 +88,17 @@ The plugin also carries five hooks:
   replaces: a `mkdir`, a redirect or an `--out` after a `cd` into a skill
   folder, above all. Running a script from there passes, and so does
   everything when the project is the plugin itself (#404).
+- `hooks/hosted-editor.mjs`: before a Draw.io MCP tool named `open_drawio_xml`,
+  `open_drawio_csv` or `open_drawio_mermaid` runs, whichever server provides
+  it, it asks you first. Those tools open app.diagrams.net with the diagram in
+  the URL; the question names Draw.io Desktop and the VS Code extension as the
+  local way. `list_pages`, `get_page`, `set_page` and `search_shapes` are not
+  asked about (#487).
 
 None reads anything but the prompt, a `*.spec.json` it names, the last reply,
-the size of a diagram about to be read, the session's tool calls and the path
-a command or edit is about to write. None blocks a prompt.
+the size of a diagram about to be read, the session's tool calls, the path
+a command or edit is about to write and the name of an MCP tool about to run.
+None blocks a prompt.
 
 ## npm
 

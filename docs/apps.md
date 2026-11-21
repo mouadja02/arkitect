@@ -106,7 +106,7 @@ other hosts:
 | `get_page` | only for a small page |
 | `set_page` | only after `arkitect drawio backup <file>` |
 | `search_shapes` | fine |
-| `open_drawio_xml`, `open_drawio_csv`, `open_drawio_mermaid` | **never on your content**: they open the hosted editor with the diagram in the URL |
+| `open_drawio_xml`, `open_drawio_csv`, `open_drawio_mermaid` | **never on your content**: they open the hosted editor with the diagram in the URL; the Claude Code plugin asks you before they run |
 
 Real diagrams embed their icons as base64 and run to 4–7 MB, so the editing
 route reads a summary first:

@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Added
+
+- The Claude Code plugin asks before a Draw.io MCP tool opens the hosted editor (#487). A new `PreToolUse` hook, `hooks/hosted-editor.mjs`, matches `open_drawio_xml`, `open_drawio_csv` and `open_drawio_mermaid` from any server, plugin-bundled ones included, and asks you with a sentence naming Draw.io Desktop and the VS Code extension as the local route. It asks and does not refuse, since a script cannot tell your diagram from other content. `list_pages`, `get_page`, `set_page` and `search_shapes` are untouched, and no build, command or output changes. The plugin now carries six hooks. Other hosts keep the written rule only.
+
 ### Changed
 
 - A build names a README picture it leaves behind, in both engines (#480). After writing, it looks beside the output for the names `render --embed` gives (`<name>.drawio.svg|png`, `<name>.p<N>.drawio.svg|png`, `<name>.excalidraw.svg|png`), and a picture that holds some other diagram than the one just written is one `notes` line, so it reaches `todo`, with the command that renders it again; Excalidraw compares what each element looks like and the carried spec, so an unseeded rebuild of the same spec is not a change. A Draw.io file whose page count changed is told which pictures belong to the old count, which the render command does not rewrite. A build with no such picture, or one whose picture is current, reports as before; a picture in another folder, or one that holds no diagram, is not checked.
