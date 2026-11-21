@@ -29,13 +29,14 @@ import {
   bindLabel, bindArrow, canBind, cloneElements, bbox, elementBox, translate, scaleElements,
   addFile, newId, newSeed, measureText, wrapText,
   PALETTE, CANVAS_BG, FONT, FONT_FAMILY, STROKE_WIDTH, ROUGHNESS, ROUND, EDGE_POINT,
-  normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed, SPEC_KEY,
+  normalizeName, parseCliOrExit, exitUsage, readProblem, withSeed, parseSeed, SPEC_KEY, sceneInImage,
 } from './lib/excalidraw-core.mjs';
 export { SPEC_KEY };
 import { resolveIcon, unattended } from './find-icon.mjs';
 import { connectorCrossings, segmentHitsBox, STROKE_STYLES, FILL_STYLES, RESTATED, validateFile } from './validate-excalidraw.mjs';
 import { todoOf, verdict, cap } from '../../arkitect-drawio/scripts/lib/todo.mjs';
 import { engineStore } from '../../arkitect-drawio/scripts/lib/store.mjs';
+import { staleImageNotes } from '../../arkitect-drawio/scripts/lib/embedded-images.mjs';
 import { outProblem, replacesForeign, foreignNote, droppedNote, changedNote, unignoredBackupNote } from '../../arkitect-drawio/scripts/lib/backups.mjs';
 import { readJson } from '../../arkitect-drawio/scripts/lib/read-json.mjs';
 import { looksLikeBoundary } from '../../arkitect-drawio/scripts/lib/fake-boundaries.mjs';
@@ -766,6 +767,13 @@ export function changedElements(oldText) {
   }
   return [...changed.values()];
 }
+// What a scene is, for telling whether a README picture holds this one (#480): the spec it
+// carries and what each live element looks like, in any order and whatever its id or stroke
+// seed, which an unseeded rebuild draws anew while drawing the same diagram.
+export const sceneIdentity = (scene) => {
+  const live = (scene.elements ?? []).filter((el) => el && typeof el === 'object' && !el.isDeleted);
+  return JSON.stringify([live.find((el) => el.customData?.[SPEC_KEY])?.customData[SPEC_KEY] ?? null, live.map(elementPrint).sort()]);
+};
 const carrierOf = (text) => (JSON.parse(text).elements ?? []).find((el) => el && !el.isDeleted && el.customData?.[SPEC_KEY]);
 // The spec a scene was built from, or null when it carries none.
 export function specOf(text) {
@@ -1773,6 +1781,12 @@ function main(argv) {
   // A backup that git would commit, said once and only then (#497).
   const unignored = unignoredBackupNote(out, backup);
   if (unignored) report.notes.push(unignored);
+  // A README picture rendered from the scene this build replaced still holds that scene (#480).
+  let written;
+  report.notes.push(...staleImageNotes(out, 'excalidraw', (bytes) => {
+    const held = sceneInImage(bytes);
+    return held == null ? null : sceneIdentity(JSON.parse(held)) === (written ??= sceneIdentity(scene));
+  }));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

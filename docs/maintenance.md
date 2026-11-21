@@ -262,14 +262,27 @@ Then:
 3. Rebuild every committed worked example with `--defaults` and re-render it,
    so the shipped examples are in the learned style:
    ```bash
+   # The loop leaves the README's hero without its source; the second block below renders it again with --embed.
    for n in starter-architecture aws-data-platform; do
      node skills/arkitect-excalidraw/scripts/build-diagram.mjs skills/arkitect-excalidraw/assets/templates/$n.spec.json --out skills/arkitect-excalidraw/assets/templates/$n.excalidraw --defaults --seed 1
      node bin/arkitect.mjs excalidraw render skills/arkitect-excalidraw/assets/templates/$n.excalidraw --out-dir skills/arkitect-excalidraw/assets/templates
    done
    ```
    Draw.io's examples rebuild the same way from
-   `skills/arkitect-drawio/assets/templates/`. Delete the `*.backup-*` siblings
-   the builds leave. Look at every PNG: a style change that makes the small
+   `skills/arkitect-drawio/assets/templates/`. The two pictures the README shows,
+   Excalidraw's `aws-data-platform.png` and Draw.io's `starter-architecture.png`,
+   are rendered with `--embed` in the second block below, so each holds its source and opens as the diagram
+   when dropped into the app or Draw.io (#482); a test fails when either holds
+   another diagram than its template. Draw.io names an embedded picture
+   `<name>.drawio.png`, so render it into a scratch folder and move it over the
+   committed name:
+   ```bash
+   node bin/arkitect.mjs excalidraw render skills/arkitect-excalidraw/assets/templates/aws-data-platform.excalidraw --embed --out skills/arkitect-excalidraw/assets/templates/aws-data-platform.png
+   node bin/arkitect.mjs drawio render skills/arkitect-drawio/assets/templates/starter-architecture.drawio --embed --format png --out-dir "$TMPDIR"
+   mv "$TMPDIR/starter-architecture.drawio.png" skills/arkitect-drawio/assets/templates/starter-architecture.png
+   ```
+   Delete the `*.backup-*` siblings
+   the builds and renders leave. Look at every PNG: a style change that makes the small
    example look fine can still break the large one, where regions are narrow and
    edges are crowded.
 4. Run `node tests/run-tests.mjs`; the redaction check regenerates from the

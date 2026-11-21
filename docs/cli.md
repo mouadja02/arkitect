@@ -162,6 +162,13 @@ of neither engine answers as it always did (#493).
   `.gitignore` does not cover the backup, `notes` says so and names
   `*.backup-*`; add that to your `.gitignore`, and `.$*.bkp`: the autosave
   Draw.io Desktop leaves beside a file it has open.
+- **A README picture.** After writing, a build looks in the output folder for the
+  names `render --embed` gives (`<name>.drawio.svg|png`, `<name>.p<N>.drawio.svg|png`,
+  `<name>.excalidraw.svg|png`). A picture that holds some other diagram than the one
+  just written is named in `notes`, with the command that renders it again, one
+  line per format (#480). A Draw.io file whose page count changed is told which
+  pictures belong to the old count, since the command writes others. One that holds
+  no diagram, or sits in another folder, is not checked. A build with no such picture reports as before.
 - **Your style.** A build merges your override from `~/.arkitect/<engine>/`
   and says so under `style`, with what each edge kind means on this install.
   `--defaults` ignores it; use it for anything
@@ -182,7 +189,7 @@ Both builders print a JSON report. Beyond the file written and its backup:
 | `namesAProduct` | a plain box whose label names a bundled product with artwork to draw, never an on-demand one (#434); `replace` is the icon node to paste over it, when the product is the whole label or a line of it (#287). Both engines' `validate` warn on each such shape until it is replaced (#326, #341); Draw.io only on a page that already draws an icon, and a page of plain boxes gets a note instead, since an edit follows the file (#366). A concept glyph, an agent's "Memory" or a "Process" icon, is not a product (#352) |
 | `looksLikeBoundary` | a box laid over nodes it doesn't own, sized in grid cells, or named like an account or a VPC; `boundary` is the entry to paste (#204, #203). `validate` warns on a box named like one (#341), and leaves a `note` node out, as the build does, for a file that carries its spec (#474) |
 | `crossings` | Excalidraw: an edge through a node it doesn't connect. The first ten, then `and N more`, as `validate` stops at ten (#477) |
-| `notes` | an icon no edge touches, and similar things worth a look: a diagram of more than three nodes with edges and no `note` to hold the assumptions, or a legend turned off over two or more connector kinds (#384). First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
+| `notes` | an icon no edge touches, and similar things worth a look: a diagram of more than three nodes with edges and no `note` to hold the assumptions, or a legend turned off over two or more connector kinds (#384), a README picture rendered with `--embed` that still holds the diagram this build replaced (#480). First, when `--out` replaced a file with no sign of an Arkitect build (Draw.io's `agent="arkitect-drawio"`, Excalidraw's `customData.arkitect`): what was lost, and the backup holding the original (#339) |
 | `validate` | the verdict `validate` gives the file just written: `PASS`, `FAIL`, and how many warnings (#437) |
 | `todo` | one line per entry above that needs acting on, prefixed with its key, after `validate`'s own errors and warnings as it prints them, except a warning for a box named like a boundary or for a product, or an edge through a node, when the key above already lists it: that is the key's line, which names the spec node, and is not repeated (#477). Not listed: what resolved or embedded, `sameArtwork`, `selfCaptioned`, and a bundled mark's `opaqueBackground`, which describe the artwork. Empty when there is nothing to do (#437) |
 

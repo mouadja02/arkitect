@@ -16,9 +16,9 @@ import { gunzipSync } from 'node:zlib';
 import { repoFiles, trackedButIgnored } from './repo-files.mjs';
 import { liveCounts, checkDocCounts } from './icon-count-guard.mjs';
 import { createHarness, settle } from './harness.mjs';
-import { embedDiagram } from '../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
+import { embedDiagram, diagramInImage } from '../skills/arkitect-drawio/scripts/lib/drawio-core.mjs';
 import { EXCALIDRAW_MIME } from '../skills/arkitect-drawio/scripts/lib/other-engine.mjs';
-import { embedScene, SCENE_MIME } from '../skills/arkitect-excalidraw/scripts/lib/excalidraw-core.mjs';
+import { embedScene, sceneInImage, SCENE_MIME } from '../skills/arkitect-excalidraw/scripts/lib/excalidraw-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -623,6 +623,29 @@ test('the count guard catches a drifted number and a dropped sentence (#78)', ()
   });
   assert(badge.some((p) => p.startsWith('README.md: quotes 6%2C005 marks bundled across both engines')
     && p.endsWith(`so write ${bundled}`)), `a stale icon badge went unreported: ${badge.join(' | ')}`);
+});
+
+// The README claims "you keep editing it in Draw.io or Excalidraw", and its pictures
+// are the one place a visitor can test that without installing anything: each is
+// rendered with --embed, so it holds the template it shows, and dropping it into
+// the app, or Draw.io, opens the diagram (#482). A template re-rendered without
+// --embed, or a spec rebuilt and not re-rendered, would leave a picture that
+// looks right and opens as nothing, or as the old diagram.
+test('each template picture the README shows holds the diagram it was rendered from, and spec reads it back (#482)', () => {
+  const shown = [...readFileSync(join(ROOT, 'README.md'), 'utf8').matchAll(/<img src="([^"]+\.png)"/g)].map((m) => m[1])
+    .filter((p) => /^skills\/arkitect-(?:drawio|excalidraw)\/assets\/templates\//.test(p));
+  eq(shown.map((p) => p.split('/')[1]).sort().join(' '), 'arkitect-drawio arkitect-excalidraw', 'the README shows one template picture of each engine');
+  for (const image of shown) {
+    const engine = image.split('/')[1].replace('arkitect-', '');
+    const source = image.replace(/\.png$/, engine === 'drawio' ? '.drawio' : '.excalidraw');
+    const held = engine === 'drawio' ? diagramInImage(readFileSync(join(ROOT, image))) : sceneInImage(readFileSync(join(ROOT, image)));
+    assert(held != null, `${image} holds no ${engine === 'drawio' ? 'diagram' : 'scene'} to open: render it with --embed (docs/maintenance.md)`);
+    assert(held === readFileSync(join(ROOT, source), 'utf8'), `${image} holds a different diagram than ${source}: render it again with --embed`);
+    const spec = (file) => spawnSync(process.execPath, [CLI, engine, 'spec', join(ROOT, file)], { encoding: 'utf8' });
+    const fromImage = spec(image);
+    eq(fromImage.status, 0, `${image}: ${fromImage.stderr}`);
+    eq(fromImage.stdout, spec(source).stdout, `${image}: spec prints the template's spec`);
+  }
 });
 
 // The README's Node badge said ≥20 two majors after the floor became 22, and
@@ -4257,7 +4280,8 @@ test('a command handed the other engine\'s file names that engine and the comman
   // The same two, as a README image holds them (#439, #447).
   const drawioText = readFileSync(join(dir, 'x.drawio'), 'utf8');
   const sceneText = readFileSync(join(dir, 'es.excalidraw'), 'utf8');
-  const png = readFileSync(join(ROOT, 'skills', 'arkitect-drawio', 'assets', 'templates', 'starter-architecture.png'));
+  // A plain picture, not a template render, which already holds its own source.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
   const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8"/></svg>');
   writeFileSync(join(dir, 'x.drawio.svg'), embedDiagram(svg, 'svg', drawioText));
   writeFileSync(join(dir, 'x.drawio.png'), embedDiagram(png, 'png', drawioText));
