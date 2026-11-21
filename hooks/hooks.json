@@ -18,6 +18,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/install-write.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*__open_drawio_(xml|csv|mermaid)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/hosted-editor.mjs\""
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

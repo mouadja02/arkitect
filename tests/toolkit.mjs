@@ -3625,6 +3625,46 @@ test('a whole Read of a diagram is refused until it is analyzed, and always when
   }
 });
 
+// Three Draw.io MCP tools open the hosted editor with the diagram in the URL,
+// and the rule against them was prose only (#487). Claude Code now asks first.
+const hostedHook = await import(pathToFileURL(join(ROOT, 'hooks', 'hosted-editor.mjs')).href);
+test('a Draw.io MCP tool that opens the hosted editor asks first, and the other tools are not touched (#487)', () => {
+  const pre = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks.PreToolUse;
+  eq(JSON.stringify(pre[2]), JSON.stringify({ matcher: 'mcp__.*__open_drawio_(xml|csv|mermaid)',
+    hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/hosted-editor.mjs"' }] }), 'an MCP hook, third');
+  eq(pre[2].matcher, hostedHook.MATCHER, 'the manifest and the script name the same tools');
+  // Claude Code reads a matcher holding `.` or `(` as an unanchored regular expression.
+  const matches = (name) => new RegExp(pre[2].matcher).test(name);
+  for (const server of ['drawio', 'plugin_arkitect_drawio', 'plugin_my-plugin_db']) {
+    for (const tool of ['xml', 'csv', 'mermaid']) {
+      const tool_name = `mcp__${server}__open_drawio_${tool}`;
+      assert(matches(tool_name), `matcher: ${tool_name}`);
+      const said = JSON.parse(hostedHook.respond({ hook_event_name: 'PreToolUse', tool_name, tool_input: { content: '<mxfile/>' } }));
+      eq(said.hookSpecificOutput.hookEventName, 'PreToolUse', 'the event');
+      eq(said.hookSpecificOutput.permissionDecision, 'ask', `${tool_name} asks, not denies`);
+      const reason = said.hookSpecificOutput.permissionDecisionReason;
+      assert(/app\.diagrams\.net/.test(reason) && /Draw\.io Desktop/.test(reason) && /VS Code/.test(reason),
+        `names the hosted editor and the local route: ${reason}`);
+    }
+    for (const tool of ['list_pages', 'get_page', 'set_page', 'search_shapes', 'get_drawio_reference']) {
+      const tool_name = `mcp__${server}__${tool}`;
+      assert(!matches(tool_name), `matcher leaves ${tool_name}`);
+      eq(hostedHook.askFor({ hook_event_name: 'PreToolUse', tool_name }), null, `${tool_name} passes`);
+    }
+  }
+  // The matcher is unanchored, so the script anchors the name itself.
+  for (const tool_name of ['Read', 'Bash', 'open_drawio_xml', 'mcp__drawio__open_drawio_xml_extra']) {
+    eq(hostedHook.askFor({ hook_event_name: 'PreToolUse', tool_name }), null, `${tool_name} passes the script`);
+  }
+  eq(hostedHook.askFor({ hook_event_name: 'PostToolUse', tool_name: 'mcp__drawio__open_drawio_xml' }), null, 'only before the call');
+  const run = (input) => spawnSync(process.execPath, [join(ROOT, 'hooks', 'hosted-editor.mjs')], { input, encoding: 'utf8' });
+  assert(/"ask"/.test(run(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'mcp__drawio__open_drawio_csv', tool_input: {} })).stdout), 'from the CLI');
+  for (const input of ['', 'not json', JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'mcp__drawio__list_pages' })]) {
+    const quiet = run(input);
+    eq([quiet.status, quiet.stdout].join('|'), '0|', `silent and exit 0 on ${input.slice(0, 40)}`);
+  }
+});
+
 // Agents cd into a skill folder to run its scripts, then mkdir or write a
 // spec relative to it: inside the install, which the next update deletes
 // (#404). A command or an edit that would write there is refused, naming the
