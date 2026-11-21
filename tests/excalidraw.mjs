@@ -5659,6 +5659,54 @@ test('render --embed writes an .excalidraw.svg and .excalidraw.png the app reads
   rmSync(dir, { recursive: true, force: true });
 });
 
+// A rebuild left the README picture made by render --embed holding the old
+// scene, with nothing in the report to say so (#480). The build looks beside the
+// scene for the names --embed writes, and a picture that holds another scene
+// is one note, which reaches todo, naming it and the command that renders it again.
+test('a rebuild names an embedded README image that holds the scene it replaced, and says nothing once it is rendered again (#480)', () => {
+  const dir = join(TMP, 'p480');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(join(dir, 'docs'), { recursive: true });
+  const specPath = join(dir, 'spec.json');
+  const spec = { title: 'T', nodes: [{ id: 'orders', kind: 'box', label: 'Orders' }, { id: 'worker', kind: 'box', label: 'Worker', col: 1 }], edges: [{ from: 'orders', to: 'worker' }] };
+  const scene = join(dir, 'docs', 'arch.excalidraw');
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8' });
+  const build = (out = scene) => {
+    writeFileSync(specPath, JSON.stringify(spec));
+    const r = cli('build', specPath, '--out', out, '--defaults');
+    eq(r.status, 0, r.stderr);
+    return JSON.parse(r.stdout);
+  };
+  const stale = (report) => report.todo.filter((l) => l.includes('a different diagram than this build wrote'));
+  const embed = () => eq(cli('render', scene, '--embed', '--format', 'svg', '--out-dir', join(dir, 'docs')).status, 0, 'render --embed');
+
+  eq(stale(build()).length, 0, 'no picture, no note');
+  embed();
+  // Built again, unseeded: new ids and stroke seeds, the same diagram.
+  eq(stale(build()).length, 0, 'the same spec rebuilt is the picture it holds');
+  spec.nodes.push({ id: 'dlq', kind: 'box', label: 'Dead letters', col: 2 });
+  spec.edges.push({ from: 'worker', to: 'dlq' });
+  const report = build();
+  eq(stale(report).length, 1, JSON.stringify(report.todo));
+  const note = stale(report)[0];
+  assert(note.startsWith('notes: ') && note.includes('arch.excalidraw.svg') && report.notes.includes(note.slice(7)), note);
+  assert(/excalidraw render \S*arch\.excalidraw --embed --format svg --out-dir \S*docs/.test(note), 'it names the command that renders it again: ' + note);
+  // Not another diagram's picture.
+  eq(stale(build(join(dir, 'docs', 'other.excalidraw'))).length, 0, 'arch.excalidraw.svg is not other.excalidraw\'s');
+  embed();
+  eq(stale(build()).length, 0, 'rendered again, the next build has no note');
+  // A scene edited and rendered is another diagram than the spec's.
+  const edited = JSON.parse(readFileSync(scene, 'utf8'));
+  edited.elements.find((el) => el.type === 'rectangle').strokeColor = '#e03131';
+  writeFileSync(scene, JSON.stringify(edited));
+  embed();
+  eq(stale(build()).length, 1, 'a picture rendered from a restyled scene is not what the build wrote');
+  // A picture that holds no scene says nothing about whether it is out of date.
+  writeFileSync(join(dir, 'docs', 'arch.excalidraw.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');
+  eq(stale(build()).length, 0, 'a plain render is left alone');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // `render --embed` made the image a README shows a file that can hold someone's
 // work, and a re-render replaced it with no copy (#472). A replaced image goes
 // through the builders' backups: one copy, bounded, named so `*.backup-*` covers it.

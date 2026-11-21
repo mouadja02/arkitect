@@ -6633,6 +6633,60 @@ test('render --embed writes a .drawio.svg and .drawio.png holding the whole file
   rmSync(dir, { recursive: true, force: true });
 });
 
+// The same for Draw.io (#480): a rebuild over a file whose README picture was
+// rendered with --embed names the picture when it holds another diagram, one
+// note per format and one command, with --all for a picture per page.
+test('a rebuild names an embedded README image that holds the diagram it replaced, and says nothing once it is rendered again (#480)', () => {
+  const dir = join(TMP, 'p480');
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(join(dir, 'docs'), { recursive: true });
+  const specPath = join(dir, 'spec.json');
+  const spec = { title: 'T', nodes: [{ id: 'orders', kind: 'box', label: 'Orders' }, { id: 'worker', kind: 'box', label: 'Worker', col: 1 }], edges: [{ from: 'orders', to: 'worker' }] };
+  const file = join(dir, 'docs', 'arch.drawio');
+  const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'drawio', ...args], { encoding: 'utf8' });
+  const build = (out = file) => {
+    writeFileSync(specPath, JSON.stringify(spec));
+    const r = cli('build', specPath, '--out', out, '--defaults');
+    eq(r.status, 0, r.stderr);
+    return JSON.parse(r.stdout);
+  };
+  const stale = (report) => report.todo.filter((l) => l.includes('a different diagram than this build wrote'));
+  // What render --embed writes, without Draw.io Desktop: any SVG or PNG, with the file in it.
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const picture = (name, format) => writeFileSync(join(dir, 'docs', name), core.embedDiagram(format === 'svg' ? svg : png, format, readFileSync(file, 'utf8')));
+
+  eq(stale(build()).length, 0, 'no picture, no note');
+  picture('arch.drawio.svg', 'svg');
+  eq(stale(build()).length, 0, 'the same spec rebuilt is the picture it holds');
+  spec.nodes.push({ id: 'dlq', kind: 'box', label: 'Dead letters', col: 2 });
+  spec.edges.push({ from: 'worker', to: 'dlq' });
+  const report = build();
+  eq(stale(report).length, 1, JSON.stringify(report.todo));
+  const note = stale(report)[0];
+  assert(note.startsWith('notes: ') && note.includes('arch.drawio.svg') && report.notes.includes(note.slice(7)), note);
+  assert(/drawio render \S*arch\.drawio --embed --format svg --out-dir \S*docs/.test(note) && !note.includes('--all'), 'it names the command that renders it again: ' + note);
+  picture('arch.drawio.svg', 'svg');
+  eq(stale(build()).length, 0, 'rendered again, the next build has no note');
+
+  // A picture per format and per page: one note for each format, --all for pages.
+  spec.nodes.push({ id: 'audit', kind: 'box', label: 'Audit', col: 3 });
+  picture('arch.drawio.png', 'png');
+  picture('arch.p0.drawio.svg', 'svg');
+  picture('arch.p1.drawio.svg', 'svg');
+  const several = stale(build());
+  eq(several.length, 2, JSON.stringify(several));
+  const bySvg = several.find((l) => l.includes('--format svg') && l.includes('arch.p0.drawio.svg'));
+  assert(bySvg && bySvg.includes('arch.drawio.svg') && bySvg.includes('arch.p1.drawio.svg') && bySvg.includes('hold a different'), String(bySvg));
+  assert(bySvg.includes('--all --embed'), 'pages ask for --all: ' + bySvg);
+  assert(several.some((l) => l.includes('arch.drawio.png') && l.includes('--format png')), 'the PNG has its own');
+  // Not another diagram's picture, and not one that holds no diagram.
+  writeFileSync(join(dir, 'docs', 'arch.drawio.png'), png);
+  eq(stale(build(join(dir, 'docs', 'other.drawio'))).length, 0, 'a picture is its own diagram\'s');
+  eq(stale(build()).filter((l) => l.includes('png')).length, 0, 'a PNG that holds no diagram is left alone');
+  rmSync(dir, { recursive: true, force: true });
+});
+
 // -------------------------------------------------------------
 
 finish(haveSources ? null : '(reference-diagram tests skipped: .analysis/sources.local.json not present)');

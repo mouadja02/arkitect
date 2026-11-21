@@ -29,7 +29,8 @@ import { backupExisting, pruneBackups, outProblem, replacesForeign, foreignNote,
 export { backupExisting, pruneBackups, DEFAULT_KEEP_BACKUPS } from './lib/backups.mjs';
 import { resolve, unattended, drawnMark, catalogId, recommendedSize, styleSafeDataUri, loadCatalog, onDemandNext, lifecycleOf, EXCALIDRAW_ITEM } from './find-icon.mjs';
 import { getLogo, logoStyle, logoBox, DEFAULT_LOGO_SIZE } from './fetch-logo.mjs';
-import { parseCliOrExit, exitUsage, parseMxfile, extractCells, parseStyle, parseDataUri, SPEC_ATTR, carriedSpec } from './lib/drawio-core.mjs';
+import { parseCliOrExit, exitUsage, parseMxfile, extractCells, parseStyle, parseDataUri, SPEC_ATTR, carriedSpec, diagramInImage } from './lib/drawio-core.mjs';
+import { staleImageNotes } from './lib/embedded-images.mjs';
 export { SPEC_ATTR };
 import { readJson } from './lib/read-json.mjs';
 import {
@@ -1016,6 +1017,8 @@ function main(argv) {
   // A backup that git would commit, said once and only then (#497).
   const unignored = unignoredBackupNote(out, backup);
   if (unignored) report.notes.push(unignored);
+  // A README picture rendered from the file this build replaced still holds that diagram (#480).
+  report.notes.push(...staleImageNotes(out, 'drawio', (bytes) => { const held = diagramInImage(bytes); return held == null ? null : held === xml; }));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 
