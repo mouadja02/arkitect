@@ -124,11 +124,11 @@ By hand:
 node bin/arkitect.mjs drawio learn     --sources "C:\a.drawio" "C:\b.drawio" --merge
 node bin/arkitect.mjs drawio findings  --derive
 node bin/arkitect.mjs drawio apply     --list
-node bin/arkitect.mjs drawio build     --print-style
+node bin/arkitect.mjs drawio build     --print-style --verbose
 node bin/arkitect.mjs excalidraw learn --sources "C:\a.excalidraw" --merge
 node bin/arkitect.mjs excalidraw findings  --derive
 node bin/arkitect.mjs excalidraw apply     --list
-node bin/arkitect.mjs excalidraw build     --print-style
+node bin/arkitect.mjs excalidraw build     --print-style --verbose
 ```
 
 **`--merge` is what preserves prior knowledge.** It bumps `version`, appends to

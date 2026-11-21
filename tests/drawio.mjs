@@ -2934,13 +2934,14 @@ const plantOverride = (value) => {
 };
 const buildCli = (...args) => spawnSync(process.execPath, [join(SCRIPTS, 'build-diagram.mjs'), ...args], { encoding: 'utf8' });
 const toolCli = (script, ...args) => spawnSync(process.execPath, [join(SCRIPTS, script), ...args], { encoding: 'utf8' });
+const SQL_QUERY_LOOK = { stroke: '#7A00CC', dashed: 0, width: 2, meaning: 'SQL query' };
 const PERSONAL = {
   schemaVersion: 1,
   engine: 'drawio',
   tokens: { rounded: 1, noteFill: '#FFF4CC' },
   edgeKinds: {
     flow: { meaning: 'trigger' },
-    query: { stroke: '#7A00CC', dashed: 0, width: 2, meaning: 'SQL query' },
+    query: SQL_QUERY_LOOK,
   },
 };
 
@@ -3105,17 +3106,35 @@ test('--print-style shows the style a build would use, and writes nothing (#89)'
   const r = buildCli('--print-style');
   eq(r.status, 0, `--print-style: ${r.stderr}`);
   const shown = JSON.parse(r.stdout);
-  eq(shown.store, OWN_STORE, 'it names the store');
   eq(shown.source, 'override', 'a byte-order mark does not make the override unreadable');
-  eq(shown.edgeKinds.query.meaning, 'SQL query', 'every active kind, in full');
-  eq(shown.edgeKinds.error.meaning, 'failure or exception path', 'shipped kinds included');
-  eq(shown.tokens.rounded, 1, 'every token');
+  eq(shown.edgeKinds.query, 'SQL query', 'a kind the override added is its meaning');
+  eq(JSON.stringify(shown.overridden['edgeKinds.query']), JSON.stringify(SQL_QUERY_LOOK), 'and its look is under overridden, where it differs from the house style');
+  eq(shown.edgeKinds.flow, 'trigger', 'one whose meaning alone changed is its meaning');
+  eq(shown.overridden['edgeKinds.flow.meaning'], 'trigger', 'which overridden lists too');
+  eq(shown.edgeKinds.error, 'failure or exception path', 'shipped kinds, by meaning');
+  eq(shown.overridden['tokens.rounded'], 1, 'each overridden token with its value');
+  assert(!('tokens' in shown) && !('store' in shown), 'and nothing the override left alone');
+  const full = JSON.parse(buildCli('--print-style', '--verbose').stdout);
+  eq(full.store, OWN_STORE, '--verbose names the store');
+  eq(full.edgeKinds.query.meaning, 'SQL query', '--verbose has every active kind, in full');
+  eq(full.edgeKinds.error.meaning, 'failure or exception path', 'shipped kinds included');
+  eq(full.tokens.rounded, 1, 'every token');
+  eq(full.overridden.includes('tokens.rounded'), true, 'and overridden as the list of names it always was');
   eq(JSON.parse(buildCli('--print-style', '--defaults').stdout).source, 'defaults', '--defaults shows the house style');
+  const plain = buildCli('--print-style', '--defaults').stdout;
+  assert(Buffer.byteLength(plain) < 400, `the house style prints ${Buffer.byteLength(plain)} bytes, which is not under 400 (#481)`);
+  eq(Object.keys(JSON.parse(plain)).join(), 'source,reason,file,overridden,errors,edgeKinds', 'and is the source, what it changed and each kind');
+  assert(Object.values(JSON.parse(plain).edgeKinds).every((m) => typeof m === 'string'), 'every kind is its meaning');
   const stray = join(TMP, 'print-style-stray.drawio');
   for (const bad of [[SPEC, '--print-style'], ['--print-style', '--out', stray]]) {
     eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);
   }
   assert(!existsSync(stray), 'nothing was written');
+  // A shipped kind whose look changed: the new value is under overridden, and the kind is still its meaning.
+  plantOverride({ schemaVersion: 1, engine: 'drawio', edgeKinds: { flow: { stroke: '#7A00CC' } } });
+  const restyled = JSON.parse(buildCli('--print-style').stdout);
+  eq(restyled.overridden['edgeKinds.flow.stroke'], '#7A00CC', 'the changed look of a shipped kind is listed with its new value');
+  eq(restyled.edgeKinds.flow, 'primary data or control flow', 'and the kind is still its meaning');
   clearStore();
 });
 
@@ -3277,7 +3296,7 @@ test('apply: --list offers only contradictions, --accept says what changed, --re
   const second = json(toolCli('apply-style.mjs', '--accept', 'edgeKinds.flow.meaning'), 'accept on top');
   eq(second.overridden.join(','), 'tokens.rounded,edgeKinds.query,edgeKinds.flow.meaning', 'a later accept keeps what was accepted before');
   eq(json(toolCli('apply-style.mjs', '--list'), 'list after').candidates.length, 0, 'nothing accepted is offered again');
-  eq(json(buildCli('--print-style'), 'print-style').edgeKinds.flow.meaning, 'trigger', 'the next build draws what was accepted');
+  eq(json(buildCli('--print-style'), 'print-style').edgeKinds.flow, 'trigger', 'the next build draws what was accepted');
 
   writeFileSync(OVERRIDES, '{');
   eq(toolCli('apply-style.mjs', '--accept', 'tokens.rounded').status, 1, 'a broken override is never quietly replaced');
@@ -4106,7 +4125,7 @@ test('build reads the spec, not the --out value, and refuses a bad command line 
     [['--out', target], /expected a spec file/],
     [[SPEC], /--out <file.drawio> is required/],
     [[SPEC, '--out'], /--out needs a value/],
-    [[SPEC, '--out', target, '--verbose'], /unknown option --verbose/],
+    [[SPEC, '--out', target, '--verbose'], /--verbose applies to --print-style/],
   ]) {
     const r = drawioCli('build', ...args);
     const shown = args.map((a) => basename(a)).join(' ');

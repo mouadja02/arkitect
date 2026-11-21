@@ -95,6 +95,23 @@ export function styleSummary(style, { full = false } = {}) {
   };
 }
 
+// What `--print-style` prints by default, for the agent about to write a spec
+// (#481): where the style came from, each connector kind by its meaning, and
+// each overridden value as it is now, a token's value or a kind's look. A value
+// the override left alone is the house style's, which the spec never states.
+// `--print-style --verbose` prints every token and kind in full, for the apply
+// skills and for people.
+export function printedStyle(style) {
+  return {
+    source: style.source,
+    reason: style.reason,
+    file: style.file,
+    overridden: Object.fromEntries(style.overridden.map((target) => [target, valueAt(style, target)])),
+    errors: style.errors,
+    edgeKinds: Object.fromEntries(Object.entries(style.edgeKinds).map(([kind, e]) => [kind, e.meaning])),
+  };
+}
+
 // ---------------------------------------------------------------- one engine
 
 // engine        'drawio' or 'excalidraw', the store it reads and writes

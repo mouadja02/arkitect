@@ -21,7 +21,7 @@ product's (`postgres` inside "Azure Database for Postgres") never selects that
 product. Shared packs may supply the correct mark; otherwise it gets a
 placeholder. The search says which up front: `"draws": "<ref>"`, or
 `"placeholder": "<why>"`. With `--compact` it prints only that, a spec `node` or
-at most four `choices`, and a few `others` (#117).
+at most four `choices` when nothing is settled (#117, #498).
 
 **Shared packs** fill coverage gaps with 4,850 original SVG/PNG marks from the
 sibling Draw.io skill. Existing successful resolutions keep their artwork; use

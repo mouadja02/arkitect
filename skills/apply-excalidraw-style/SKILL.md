@@ -63,7 +63,7 @@ so an update never wipes it, and nothing in it is ever committed.
    value and whether that came from the house style or an earlier override, and
    its new value. Then show the style every build now uses:
    ```bash
-   node scripts/build-diagram.mjs --print-style
+   node scripts/build-diagram.mjs --print-style --verbose
    ```
 
 5. Say how to undo it: `node scripts/apply-style.mjs --reset` returns this

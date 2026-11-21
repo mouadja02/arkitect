@@ -54,7 +54,8 @@ arkitect drawio icon --list-packs
 arkitect drawio logo --url https://.../logo.svg --name snowflake
 arkitect drawio build spec.json --out docs/arch.drawio
 arkitect drawio build spec.json --out docs/arch.drawio --defaults   # house style, ignoring yours
-arkitect drawio build --print-style                    # the style a build would use
+arkitect drawio build --print-style                    # source, overrides, each connector kind's meaning
+arkitect drawio build --print-style --verbose          # every token and kind, in full
 arkitect drawio validate docs/arch.drawio              # --page N, --strict, --json
 arkitect drawio render docs/arch.drawio --all --out-dir .analysis/renders
 arkitect drawio analyze docs/arch.drawio --page 0 --cells   # a row per cell; --all, every key
@@ -92,7 +93,8 @@ arkitect excalidraw browse --search "kubernetes"       # the public catalogue
 arkitect excalidraw make-icon --url https://.../dbt.svg --name dbt --trace
 arkitect excalidraw build spec.json --out docs/arch.excalidraw
 arkitect excalidraw build spec.json --out docs/arch.excalidraw --seed 7   # same bytes every time
-arkitect excalidraw build --print-style
+arkitect excalidraw build --print-style               # source, overrides, each connector kind's meaning
+arkitect excalidraw build --print-style --verbose     # every token and kind, in full
 arkitect excalidraw validate docs/arch.excalidraw
 arkitect excalidraw render docs/arch.excalidraw --out-dir .analysis/renders
 arkitect excalidraw analyze docs/arch.excalidraw --cells   # a row per spec entry; --all, per element
@@ -277,7 +279,7 @@ and `as-is-to-be.spec.json` (two pages), each with its PNG. Pattern fragments:
 
 | part | fields |
 |---|---|
-| spec | `title`, `layout`, `boundaries`, `nodes`, `edges`, `legend` (`false` turns it off), `legendX`, `legendY`, `canvasBackground` (`white`, `grey`, `blue`, `yellow`, `pink` or a `#rrggbb`), and `style`, which takes the tokens `build --print-style` lists, for this scene alone |
+| spec | `title`, `layout`, `boundaries`, `nodes`, `edges`, `legend` (`false` turns it off), `legendX`, `legendY`, `canvasBackground` (`white`, `grey`, `blue`, `yellow`, `pink` or a `#rrggbb`), and `style`, which takes the tokens `build --print-style --verbose` lists, for this scene alone |
 | `layout` | `originX`, `originY` (0, 0), `colPitch`, `rowPitch` (320, 200), `cell` (the square a node is centred in, 100), `route` |
 | node | `id`, `kind`, `label`, `col`, `row` (missing is 0), `parent`, `width`, `height`, `size` (an icon's), `icon`, `sublabel`, `accent` (a palette name or a `#rrggbb`), `fill` (a colour, or `false` for none), `fillStyle`, `strokeStyle`, `strokeWidth`, `roughness`, `fontSize`, `fontFamily`, `labelColor`; a `text` node also takes `align` |
 | boundary | `id`, `kind`, `label`, `parent`, `col`, `row`, `cols`, `rows`, `padLeft`/`padTop`/`padRight`/`padBottom`, `color` or `accent`, `fill`, `dashed` (`false` draws it solid), `strokeStyle`, `strokeWidth`, `roughness`, `labelPlacement` (`inside`, or `outside`: a large name above the top-left corner), `fontSize` |

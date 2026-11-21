@@ -43,7 +43,7 @@ import { strayMembers, strayNote } from './lib/stray-members.mjs';
 import { namedProducts } from './lib/named-products.mjs';
 import { numberedEntries, ENTRY_RULE } from './lib/numbered-entries.mjs';
 import { iconKind, unusedIcon } from './lib/icon-kind.mjs';
-import { resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
+import { resolveStyle, loadStyleOrWarn, styleSummary, printedStyle } from './lib/style-tokens.mjs';
 import { planEdges, readEnd, SIDES } from './lib/edge-plan.mjs';
 import { captionBox } from './lib/routes.mjs';
 import { todoOf, verdict } from './lib/todo.mjs';
@@ -941,21 +941,22 @@ export function changedCells(oldText) {
 }
 
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.drawio> [--keep-backups N] [--defaults]\n'
-  + '       build-diagram.mjs --print-style [--defaults]';
+  + '       build-diagram.mjs --print-style [--verbose] [--defaults]';
 
 // styleSummary() says where the style came from and what it changed, and
 // loadStyleOrWarn() warns once about an override it ignores; both are shared with
 // Excalidraw's build, in lib/style-layer.mjs.
 function main(argv) {
   const { options, positionals } = parseCliOrExit(argv, {
-    values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style'],
+    values: { '--out': null, '--keep-backups': null }, switches: ['--defaults', '--print-style', '--verbose'],
   }, USAGE);
+  if (options.verbose && !options['print-style']) exitUsage('--verbose applies to --print-style', USAGE);
   if (options['print-style']) {
     if (positionals.length || options.out !== undefined || options['keep-backups'] !== undefined) {
       exitUsage('--print-style builds nothing, so it takes no spec, --out or --keep-backups', USAGE);
     }
     const style = loadStyleOrWarn(Boolean(options.defaults));
-    console.log(JSON.stringify({ store: engineStore('drawio'), ...styleSummary(style, { full: true }) }, null, 2));
+    console.log(JSON.stringify(options.verbose ? { store: engineStore('drawio'), ...styleSummary(style, { full: true }) } : printedStyle(style), null, 2));
     return;
   }
   if (positionals.length !== 1) {

@@ -291,8 +291,10 @@ export function exactRef(query) {
 }
 
 // The answer an agent acts on, in well under 1KB (#117): what a spec node draws,
-// or why it gets a placeholder, plus a few refs to choose between. A shared mark
-// carries its lifecycle caveat. Nothing is settled by taking the first hit.
+// or why it gets a placeholder, plus a few refs to choose between when nothing
+// is settled. A settled answer lists no alternatives (#498): the full search
+// has them. A shared mark carries its lifecycle caveat. Nothing is settled by
+// taking the first hit.
 export const COMPACT_CHOICES = 4;
 export function compactAnswer(query, hits, verdict) {
   const choice = (h) => ({ ref: h.ref, name: h.name, score: h.score });
@@ -304,11 +306,9 @@ export function compactAnswer(query, hits, verdict) {
     const ref = verdict.entry.ref;
     const shared = ref.startsWith('drawio:') ? byExactId(loadSharedCatalog(), ref.slice('drawio:'.length)) : null;
     const life = shared ? lifecycleOf(shared) : null;
-    const others = hits.filter((h) => h.ref !== ref).slice(0, COMPACT_CHOICES - 1).map(choice);
     return { query, draws: ref, name: verdict.entry.name,
       ...(life ? { lifecycle: life.caveat } : {}),
-      node: { kind: 'icon', icon: ref },
-      ...(others.length ? { others } : {}) };
+      node: { kind: 'icon', icon: ref } };
   }
   // A generic word matched a vendor's mark: those marks are the wrong answer,
   // so they are not offered, and the placeholder is the node to copy (#231).
