@@ -4141,6 +4141,12 @@ test('Excalidraw --print-style shows the style a build would use, and writes not
   assert(Buffer.byteLength(plain) < 400, `the house style prints ${Buffer.byteLength(plain)} bytes, which is not under 400 (#481)`);
   eq(Object.keys(JSON.parse(plain)).join(), 'source,reason,file,overridden,errors,edgeKinds', 'and is the source, what it changed and each kind');
   assert(Object.values(JSON.parse(plain).edgeKinds).every((m) => typeof m === 'string'), 'every kind is its meaning');
+  // A shipped kind whose look changed: the new value is under overridden, and the kind is still its meaning.
+  plantOverride({ schemaVersion: 1, engine: 'excalidraw', edgeKinds: { flow: { color: '#f08c00' } } });
+  const restyled = JSON.parse(buildCli('--print-style').stdout);
+  eq(restyled.overridden['edgeKinds.flow.color'], '#f08c00', 'the changed look of a shipped kind is listed with its new value');
+  eq(restyled.edgeKinds.flow, 'primary flow', 'and the kind is still its meaning');
+  plantOverride(`﻿${JSON.stringify(PERSONAL)}`);
   const stray = join(TMP, 'print-style-stray.excalidraw');
   for (const bad of [[STARTER_SPEC, '--print-style'], ['--print-style', '--out', stray]]) {
     eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);

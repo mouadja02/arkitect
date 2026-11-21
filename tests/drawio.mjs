@@ -3130,6 +3130,11 @@ test('--print-style shows the style a build would use, and writes nothing (#89)'
     eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);
   }
   assert(!existsSync(stray), 'nothing was written');
+  // A shipped kind whose look changed: the new value is under overridden, and the kind is still its meaning.
+  plantOverride({ schemaVersion: 1, engine: 'drawio', edgeKinds: { flow: { stroke: '#7A00CC' } } });
+  const restyled = JSON.parse(buildCli('--print-style').stdout);
+  eq(restyled.overridden['edgeKinds.flow.stroke'], '#7A00CC', 'the changed look of a shipped kind is listed with its new value');
+  eq(restyled.edgeKinds.flow, 'primary data or control flow', 'and the kind is still its meaning');
   clearStore();
 });
 
