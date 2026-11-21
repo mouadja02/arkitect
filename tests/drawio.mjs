@@ -6669,21 +6669,40 @@ test('a rebuild names an embedded README image that holds the diagram it replace
   picture('arch.drawio.svg', 'svg');
   eq(stale(build()).length, 0, 'rendered again, the next build has no note');
 
-  // A picture per format and per page: one note for each format, --all for pages.
+  // A picture per format: one note for each.
   spec.nodes.push({ id: 'audit', kind: 'box', label: 'Audit', col: 3 });
   picture('arch.drawio.png', 'png');
-  picture('arch.p0.drawio.svg', 'svg');
-  picture('arch.p1.drawio.svg', 'svg');
-  const several = stale(build());
-  eq(several.length, 2, JSON.stringify(several));
-  const bySvg = several.find((l) => l.includes('--format svg') && l.includes('arch.p0.drawio.svg'));
-  assert(bySvg && bySvg.includes('arch.drawio.svg') && bySvg.includes('arch.p1.drawio.svg') && bySvg.includes('hold a different'), String(bySvg));
-  assert(bySvg.includes('--all --embed'), 'pages ask for --all: ' + bySvg);
-  assert(several.some((l) => l.includes('arch.drawio.png') && l.includes('--format png')), 'the PNG has its own');
+  const both = stale(build());
+  eq(both.length, 2, JSON.stringify(both));
+  assert(both.some((l) => l.includes('arch.drawio.svg') && l.includes('--format svg')) && both.some((l) => l.includes('arch.drawio.png') && l.includes('--format png')), both.join('\n'));
   // Not another diagram's picture, and not one that holds no diagram.
   writeFileSync(join(dir, 'docs', 'arch.drawio.png'), png);
   eq(stale(build(join(dir, 'docs', 'other.drawio'))).length, 0, 'a picture is its own diagram\'s');
   eq(stale(build()).filter((l) => l.includes('png')).length, 0, 'a PNG that holds no diagram is left alone');
+
+  // A file that grew to two pages is rendered as a picture per page with --all, so the
+  // picture of one page is not what the command writes: said once, not as out of date.
+  const pageSpec = { pages: [{ name: 'As is', nodes: spec.nodes.slice(0, 2), edges: spec.edges.slice(0, 1) }, { name: 'To be', nodes: spec.nodes.slice(0, 2), edges: spec.edges.slice(0, 1) }] };
+  writeFileSync(specPath, JSON.stringify(pageSpec));
+  const grown = JSON.parse(cli('build', specPath, '--out', file, '--defaults').stdout);
+  const mismatch = grown.todo.filter((l) => l.includes('rendered when this file had'));
+  eq(mismatch.length, 1, JSON.stringify(grown.todo));
+  assert(mismatch[0].includes('arch.drawio.svg') && mismatch[0].includes('one page') && mismatch[0].includes('now has 2') && !mismatch[0].includes('render it again'), mismatch[0]);
+  eq(stale(grown).length, 0, 'and it is not asked to render the same command again');
+  picture('arch.p0.drawio.svg', 'svg');
+  picture('arch.p1.drawio.svg', 'svg');
+  eq(stale(JSON.parse(cli('build', specPath, '--out', file, '--defaults').stdout)).length, 0, 'a picture per page of this file is current');
+  pageSpec.pages[1].nodes = [...pageSpec.pages[1].nodes, { id: 'audit', kind: 'box', label: 'Audit', col: 2 }];
+  writeFileSync(specPath, JSON.stringify(pageSpec));
+  const pages = stale(JSON.parse(cli('build', specPath, '--out', file, '--defaults').stdout));
+  eq(pages.length, 1, JSON.stringify(pages));
+  assert(pages[0].includes('arch.p0.drawio.svg') && pages[0].includes('arch.p1.drawio.svg') && pages[0].includes('hold a different') && pages[0].includes('--all --embed --format svg'), pages[0]);
+  // And back to one page: the pictures of the pages belong to the other count.
+  writeFileSync(specPath, JSON.stringify(spec));
+  const shrunk = cli('build', specPath, '--out', file, '--defaults');
+  const back = JSON.parse(shrunk.stdout).todo.filter((l) => l.includes('rendered when this file had'));
+  eq(back.length, 1, shrunk.stdout);
+  assert(back[0].includes('arch.p0.drawio.svg') && back[0].includes('several pages') && back[0].includes('now has 1'), back[0]);
   rmSync(dir, { recursive: true, force: true });
 });
 

@@ -262,6 +262,7 @@ Then:
 3. Rebuild every committed worked example with `--defaults` and re-render it,
    so the shipped examples are in the learned style:
    ```bash
+   # The loop leaves the README's hero without its source; the second block below renders it again with --embed.
    for n in starter-architecture aws-data-platform; do
      node skills/arkitect-excalidraw/scripts/build-diagram.mjs skills/arkitect-excalidraw/assets/templates/$n.spec.json --out skills/arkitect-excalidraw/assets/templates/$n.excalidraw --defaults --seed 1
      node bin/arkitect.mjs excalidraw render skills/arkitect-excalidraw/assets/templates/$n.excalidraw --out-dir skills/arkitect-excalidraw/assets/templates
@@ -270,7 +271,7 @@ Then:
    Draw.io's examples rebuild the same way from
    `skills/arkitect-drawio/assets/templates/`. The two pictures the README shows,
    Excalidraw's `aws-data-platform.png` and Draw.io's `starter-architecture.png`,
-   are rendered with `--embed`, so each holds its source and opens as the diagram
+   are rendered with `--embed` in the second block below, so each holds its source and opens as the diagram
    when dropped into the app or Draw.io (#482); a test fails when either holds
    another diagram than its template. Draw.io names an embedded picture
    `<name>.drawio.png`, so render it into a scratch folder and move it over the

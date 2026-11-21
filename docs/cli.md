@@ -166,8 +166,9 @@ of neither engine answers as it always did (#493).
   names `render --embed` gives (`<name>.drawio.svg|png`, `<name>.p<N>.drawio.svg|png`,
   `<name>.excalidraw.svg|png`). A picture that holds some other diagram than the one
   just written is named in `notes`, with the command that renders it again, one
-  line per format (#480). One that holds no diagram, or sits in another folder, is
-  not checked. A build with no such picture reports as before.
+  line per format (#480). A Draw.io file whose page count changed is told which
+  pictures belong to the old count, since the command writes others. One that holds
+  no diagram, or sits in another folder, is not checked. A build with no such picture reports as before.
 - **Your style.** A build merges your override from `~/.arkitect/<engine>/`
   and says so under `style`, with what each edge kind means on this install.
   `--defaults` ignores it; use it for anything

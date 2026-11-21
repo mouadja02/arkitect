@@ -1018,7 +1018,7 @@ function main(argv) {
   const unignored = unignoredBackupNote(out, backup);
   if (unignored) report.notes.push(unignored);
   // A README picture rendered from the file this build replaced still holds that diagram (#480).
-  report.notes.push(...staleImageNotes(out, 'drawio', (bytes) => { const held = diagramInImage(bytes); return held == null ? null : held === xml; }));
+  report.notes.push(...staleImageNotes(out, 'drawio', (bytes) => { const held = diagramInImage(bytes); return held == null ? null : held === xml; }, { pages: parseMxfile(xml).pages.length }));
   // Only once the new file is written: a failed write keeps every backup (#49).
   const pruned = pruneBackups(out, { keep: Number(keep) });
 

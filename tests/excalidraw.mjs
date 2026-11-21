@@ -5668,7 +5668,8 @@ test('a rebuild names an embedded README image that holds the scene it replaced,
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(join(dir, 'docs'), { recursive: true });
   const specPath = join(dir, 'spec.json');
-  const spec = { title: 'T', nodes: [{ id: 'orders', kind: 'box', label: 'Orders' }, { id: 'worker', kind: 'box', label: 'Worker', col: 1 }], edges: [{ from: 'orders', to: 'worker' }] };
+  // An icon node too: its mark travels in the scene as an embedded file, and a rebuild must still be the same diagram.
+  const spec = { title: 'T', nodes: [{ id: 'orders', kind: 'icon', icon: 'postgres', label: 'Orders' }, { id: 'worker', kind: 'box', label: 'Worker', col: 1 }], edges: [{ from: 'orders', to: 'worker' }] };
   const scene = join(dir, 'docs', 'arch.excalidraw');
   const cli = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin', 'arkitect.mjs'), 'excalidraw', ...args], { encoding: 'utf8' });
   const build = (out = scene) => {
@@ -5693,8 +5694,11 @@ test('a rebuild names an embedded README image that holds the scene it replaced,
   assert(/excalidraw render \S*arch\.excalidraw --embed --format svg --out-dir \S*docs/.test(note), 'it names the command that renders it again: ' + note);
   // Not another diagram's picture.
   eq(stale(build(join(dir, 'docs', 'other.excalidraw'))).length, 0, 'arch.excalidraw.svg is not other.excalidraw\'s');
-  embed();
-  eq(stale(build()).length, 0, 'rendered again, the next build has no note');
+  // The command the note prints, run as printed, is what clears it.
+  const printed = /render it again: node "([^"]+)" (.+)$/.exec(note);
+  const args = [...printed[2].matchAll(/"([^"]*)"|(\S+)/g)].map((m) => m[1] ?? m[2]);
+  eq(spawnSync(process.execPath, [printed[1], ...args], { encoding: 'utf8' }).status, 0, 'the printed command runs');
+  eq(stale(build()).length, 0, 'rendered as the note says, the next build has no note');
   // A scene edited and rendered is another diagram than the spec's.
   const edited = JSON.parse(readFileSync(scene, 'utf8'));
   edited.elements.find((el) => el.type === 'rectangle').strokeColor = '#e03131';
