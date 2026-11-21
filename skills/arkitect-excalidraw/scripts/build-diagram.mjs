@@ -50,7 +50,7 @@ import {
 } from '../../arkitect-drawio/scripts/lib/spec-numbers.mjs';
 import { textProblems, numbersAsText } from '../../arkitect-drawio/scripts/lib/spec-text.mjs';
 import { command } from '../../arkitect-drawio/scripts/lib/command.mjs';
-import { STYLE, HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary } from './lib/style-tokens.mjs';
+import { STYLE, HOUSE_ACCENTS, resolveStyle, loadStyleOrWarn, styleSummary, printedStyle } from './lib/style-tokens.mjs';
 
 // ---------------------------------------------------------------- style
 
@@ -1699,7 +1699,7 @@ export function droppedElements(oldText, scene) {
 }
 
 const USAGE = 'usage: build-diagram.mjs <spec.json> --out <file.excalidraw> [--seed N] [--keep-backups N] [--defaults] [--verbose]\n'
-  + '       build-diagram.mjs --print-style [--defaults]';
+  + '       build-diagram.mjs --print-style [--verbose] [--defaults]';
 
 function main(argv) {
   const { options, positionals } = parseCliOrExit(argv, {
@@ -1712,7 +1712,7 @@ function main(argv) {
       exitUsage('--print-style builds nothing, so it takes no spec, --out, --seed or --keep-backups', USAGE);
     }
     const style = loadStyleOrWarn(defaults);
-    console.log(JSON.stringify({ store: engineStore('excalidraw'), ...styleSummary(style, { full: true }) }, null, 2));
+    console.log(JSON.stringify(verbose ? { store: engineStore('excalidraw'), ...styleSummary(style, { full: true }) } : printedStyle(style), null, 2));
     return;
   }
   if (positionals.length !== 1) {

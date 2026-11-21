@@ -139,3 +139,5 @@ export const {
   SCHEMA_VERSION, ENGINE, EDGE_KINDS, validateOverrides, resolveStyle, overridesPath, loadStyle, loadStyleOrWarn,
   parseTarget, targetErrors, valueAt, shippedAt, sameValue, styleSummary, DEFAULT_STYLE,
 } = LAYER;
+
+export { printedStyle } from '../../../arkitect-drawio/scripts/lib/style-layer.mjs';

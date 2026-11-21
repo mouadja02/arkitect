@@ -3150,6 +3150,21 @@ test('a test callback that returns a promise fails instead of passing before it 
   assert(!probeLog.some((line) => line.startsWith('ok    ') && line.includes('later')), 'nothing async is logged as ok');
 });
 
+test('a settled Excalidraw compact search prints what it draws and no alternatives; an unsettled one keeps its choices (#498)', () => {
+  const settled = ['postgres', 'kafka', 'redis', 'lambda', 's3', 'snowflake', 'kubernetes', 'grafana', 'dbt'];
+  let bytes = 0;
+  for (const query of settled) {
+    const out = cli(['excalidraw', 'icon', query, '--compact']);
+    bytes += Buffer.byteLength(out);
+    const answer = JSON.parse(out);
+    assert(answer.draws && answer.node?.icon === answer.draws, `"${query}" settles on a ref to put in the spec`);
+    assert(!('others' in answer), `"${query}" lists no alternatives: ${out.trim()}`);
+  }
+  assert(bytes < 1200, `the nine settled answers print ${bytes} bytes, which is not under 1,200`);
+  const unsettled = JSON.parse(cli(['excalidraw', 'icon', 'api gateway', '--compact']));
+  assert(!('draws' in unsettled) && unsettled.choices.length > 1, 'an unsettled search still offers its choices');
+});
+
 test('a compact icon search answers in under 1KB and keeps every verdict (#117)', () => {
   const ask = (engine, query) => {
     const out = cli([engine, 'icon', query, '--compact']);
@@ -3166,7 +3181,8 @@ test('a compact icon search answers in under 1KB and keeps every verdict (#117)'
   const postgres = ask('excalidraw', 'postgres');
   eq(postgres.draws, full('excalidraw', 'postgres').draws, 'excalidraw: the same verdict as the full search');
   eq(postgres.node.icon, postgres.draws, 'excalidraw: a spec node');
-  assert(postgres.others.length <= 3, 'excalidraw: alternatives are bounded');
+  assert(!('others' in postgres), 'excalidraw: a settled answer lists no alternatives (#498)');
+  assert(full('excalidraw', 'postgres').matches.length > 1, 'excalidraw: the full search still lists them');
 
   // Ambiguity stays a question, with bounded choices, in both engines. It was
   // "monitor" until that became a generic word, answered with a placeholder

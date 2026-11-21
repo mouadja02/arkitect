@@ -4123,12 +4123,24 @@ test('Excalidraw --print-style shows the style a build would use, and writes not
   const r = buildCli('--print-style');
   eq(r.status, 0, `--print-style: ${r.stderr}`);
   const shown = JSON.parse(r.stdout);
-  eq(shown.store, OWN_STORE, 'it names the store');
   eq(shown.source, 'override', 'a byte-order mark does not make the override unreadable');
-  eq(shown.edgeKinds.query.meaning, 'SQL query', 'every active kind, in full');
-  eq(shown.edgeKinds.error.meaning, 'failure path', 'shipped kinds included');
-  eq(shown.tokens.fillStyle, 'hachure', 'every token');
+  eq(shown.edgeKinds.query, 'SQL query', 'a kind the override added is its meaning');
+  eq(JSON.stringify(shown.overridden['edgeKinds.query']), JSON.stringify(QUERY), 'and its look is under overridden, where it differs from the house style');
+  eq(shown.edgeKinds.flow, 'trigger', 'one whose meaning alone changed is its meaning');
+  eq(shown.edgeKinds.error, 'failure path', 'shipped kinds, by meaning');
+  eq(shown.overridden['tokens.fillStyle'], 'hachure', 'each overridden token with its value');
+  assert(!('tokens' in shown) && !('store' in shown), 'and nothing the override left alone');
+  const full = JSON.parse(buildCli('--print-style', '--verbose').stdout);
+  eq(full.store, OWN_STORE, '--verbose names the store');
+  eq(full.edgeKinds.query.meaning, 'SQL query', '--verbose has every active kind, in full');
+  eq(full.edgeKinds.error.meaning, 'failure path', 'shipped kinds included');
+  eq(full.tokens.fillStyle, 'hachure', 'every token');
+  eq(full.overridden.includes('tokens.fillStyle'), true, 'and overridden as the list of names it always was');
   eq(JSON.parse(buildCli('--print-style', '--defaults').stdout).source, 'defaults', '--defaults shows the house style');
+  const plain = buildCli('--print-style', '--defaults').stdout;
+  assert(Buffer.byteLength(plain) < 400, `the house style prints ${Buffer.byteLength(plain)} bytes, which is not under 400 (#481)`);
+  eq(Object.keys(JSON.parse(plain)).join(), 'source,reason,file,overridden,errors,edgeKinds', 'and is the source, what it changed and each kind');
+  assert(Object.values(JSON.parse(plain).edgeKinds).every((m) => typeof m === 'string'), 'every kind is its meaning');
   const stray = join(TMP, 'print-style-stray.excalidraw');
   for (const bad of [[STARTER_SPEC, '--print-style'], ['--print-style', '--out', stray]]) {
     eq(buildCli(...bad).status, 2, `${bad.join(' ')} is a usage error`);

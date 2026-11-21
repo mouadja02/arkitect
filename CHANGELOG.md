@@ -11,6 +11,10 @@ separate file, no naming scheme, no required format beyond that.
 
 ## [Unreleased]
 
+### Changed
+
+- Two outputs an agent reads before every first diagram now print only what the spec uses (#481, #498). `build --print-style`, in both engines, prints `source`, `reason`, `file`, `errors`, `overridden` and `edgeKinds` as `{ "<kind>": "<meaning>" }`: 348 bytes with the house style, down from 1,464 in Draw.io and 1,697 in Excalidraw. `overridden` is now an object that gives each overridden target its current value (`"tokens.rounded": 1`, `"edgeKinds.query": { … }`), where it was a list of names, and the `store` path, `tokens` and each kind's stroke, dash and width are gone from it. `--print-style --verbose` prints the whole object as it was (`store`, every token and kind, `overridden` as a list); the two apply skills pass it, and Draw.io's build now accepts `--verbose` for that and nothing else. A script that read `edgeKinds.<kind>.meaning` or `tokens` from plain `--print-style` reads them from `--verbose`. `excalidraw icon "<product>" --compact` no longer lists `others` when it has settled what a node draws: the nine settled answers measured in #498 fall from 2,860 to about 1,000 bytes. An unsettled search keeps its `choices`, and the full search still lists every match. Neither changes what a build draws.
+
 ## [2.5.1] — 2026-11-18
 
 ### Changed

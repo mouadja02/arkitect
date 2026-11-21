@@ -90,4 +90,4 @@ export const {
   parseTarget, targetErrors, valueAt, shippedAt, sameValue, styleSummary, DEFAULT_STYLE,
 } = LAYER;
 
-export { EDGE_KIND_NAME } from './style-layer.mjs';
+export { EDGE_KIND_NAME, printedStyle } from './style-layer.mjs';
