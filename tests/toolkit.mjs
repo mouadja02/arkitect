@@ -2277,6 +2277,38 @@ function packOnce() {
   return packResult.value;
 }
 
+function packageFilesNotTracked(files, tracked) {
+  return files.filter((file) => !tracked.has(file));
+}
+
+function trackedCheckoutFiles() {
+  const top = spawnSync('git', ['-C', ROOT, 'rev-parse', '--show-toplevel'], {
+    encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (top.status !== 0 || realpathSync(top.stdout.trim()) !== realpathSync(ROOT)) return null;
+  const out = execFileSync('git', ['-C', ROOT, 'ls-files', '-z'], {
+    encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  return new Set(out.split('\0').filter(Boolean));
+}
+
+function assertPackageFilesTracked(files, tracked = trackedCheckoutFiles()) {
+  if (!tracked) return;
+  const untracked = packageFilesNotTracked(files, tracked);
+  assert(!untracked.length, `untracked files in the package:\n        ${untracked.slice(0, 10).join('\n        ')}`);
+}
+
+test('the npm package refuses files git does not track (#496)', () => {
+  let message = '';
+  try {
+    assertPackageFilesTracked(
+      ['README.md', 'docs/getting-started.md', 'docs/local-note.md'],
+      new Set(['README.md', 'docs/getting-started.md']),
+    );
+  } catch (error) { message = error.message; }
+  eq(message, 'untracked files in the package:\n        docs/local-note.md');
+});
+
 test('the npm package ships the bundled assets and nothing local (#38)', () => {
   const info = { filename: 'arkitect-1.1.0.tgz' };
   eq(packInfo(JSON.stringify([info])).filename, info.filename, 'npm array output');
@@ -2292,6 +2324,7 @@ test('the npm package ships the bundled assets and nothing local (#38)', () => {
 
   const leaked = files.filter(isLocalOnly);
   assert(!leaked.length, `local-only files in the package:\n        ${leaked.slice(0, 10).join('\n        ')}`);
+  assertPackageFilesTracked(files);
   for (const dir of ['tests', 'evals', '.github', '.analysis']) {
     assert(!files.some((f) => f.startsWith(`${dir}/`)), `${dir}/ is in the package`);
   }
